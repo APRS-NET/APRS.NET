@@ -6,3 +6,5 @@ Async APRS-IS client.
 > between any two releases. Install with `--prerelease`. Not for production use.
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
+
+<sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

@@ -74,4 +74,9 @@ dotnet list AprsNet.slnx package --outdated --format json > outdated.json
 dotnet run tools/ci/PackageReport.cs -- --vulnerable vulnerable.json --outdated outdated.json --out package-report.md
 ```
 
+## AI assistance
+
+APRS.NET is developed with an AI coding assistant (Claude Code) working alongside the maintainer, who understands,
+reviews and commits every change. See [AI-DECLARATION.md](AI-DECLARATION.md).
+
 Licensed under the [MIT License](LICENSE).

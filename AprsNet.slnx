@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="AI-DECLARATION.md" />
     <File Path="BannedSymbols.txt" />
     <File Path="BannedSymbols.Library.txt" />
     <File Path="Directory.Build.props" />
