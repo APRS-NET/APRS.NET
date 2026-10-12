@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-10-12)
+
+
+### Bug Fixes
+
+* **corpus:** close anonymizer gaps found in a German capture ([852c9f3](https://github.com/APRS-NET/APRS.NET/commit/852c9f376d6dc1825cd56d3fac76a4d4d95e11e1))
+
 ## [0.1.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-10-12)
 
 
