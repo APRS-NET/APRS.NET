@@ -130,6 +130,7 @@ internal sealed partial class Anonymizer(Mapping map)
         "TENTH",
         "APRSFI", // aprs.fi's APRS-IS login (APRSFI-I3)
         "WINLINK",
+        "QTH", // "location": one DMR hotspot puts it in the path
         "DEMO", // APRS-IS simulators (DEMO-002, MARSQ-052): not people, and their 3-digit SSIDs are worth keeping
         "MARSQ",
     };
@@ -137,7 +138,9 @@ internal sealed partial class Anonymizer(Mapping map)
     public static (string? Stamp, string Packet) SplitCapture(string line)
     {
         var space = line.IndexOf(' ', StringComparison.Ordinal);
-        return space == 24 && line[4] == '-' && line[^1] != ' ' ? (line[..space], line[(space + 1)..]) : (null, line);
+        return space == 24 && line[4] == '-' && line.Length > space + 1
+            ? (line[..space], line[(space + 1)..])
+            : (null, line);
     }
 
     public void Learn(string packet)
@@ -335,6 +338,12 @@ internal sealed partial class Anonymizer(Mapping map)
 
     private string MapToken(string token)
     {
+        var (tag, station) = SplitTag(token);
+        if (tag.Length > 0)
+        {
+            return tag + MapToken(station);
+        }
+
         var dash = token.IndexOf('-', StringComparison.Ordinal);
         var call = dash < 0 ? token : token[..dash];
         var ssid = dash < 0 ? "" : token[dash..];
@@ -356,8 +365,10 @@ internal sealed partial class Anonymizer(Mapping map)
 
     private void LearnToken(string token)
     {
+        token = SplitTag(token).Station;
         var call = token.Split('-')[0];
-        if (token.Length == 0 || _keep.Contains(token) || _keep.Contains(call) || IsGeneric(token))
+        // A one-letter path element (one LoRa firmware sends "Q") identifies nobody, and its X-name would be ambiguous.
+        if (call.Length < 2 || _keep.Contains(token) || _keep.Contains(call) || IsGeneric(token))
         {
             return;
         }
@@ -382,6 +393,11 @@ internal sealed partial class Anonymizer(Mapping map)
     }
 
     private static string BaseCall(string call) => call.Split('-')[0];
+
+    /// <summary>Splits a tag that is not an identity off a station name: SvxLink calls its EchoLink nodes EL-call
+    /// (link) and ER-call (repeater).</summary>
+    private static (string Tag, string Station) SplitTag(string token) =>
+        EchoLinkTag().Match(token) is { Success: true } m ? (m.Value, token[m.Length..]) : ("", token);
 
     private static bool IsGeneric(string token) => Generic().IsMatch(token);
 
@@ -495,8 +511,12 @@ internal sealed partial class Anonymizer(Mapping map)
     )]
     private static partial Regex CallsignInText();
 
+    [GeneratedRegex(@"^E[LR]-(?=(?:[A-Z]{1,2}|[0-9][A-Z]|[A-Z][0-9])[0-9][A-Z]{1,4}(?:-|$))", RegexOptions.IgnoreCase)]
+    private static partial Regex EchoLinkTag();
+
     [GeneratedRegex(
-        @"^(?:WIDE[1-7](?:-[1-7])?|TRACE[1-7]?(?:-[1-7])?|TEMP[1-7]-[1-7]|qA[A-Za-z]|T2[A-Z0-9]+|[A-Z]{2,5}[1-7]-[1-7]|AMBCWOP-\d+|WLNK-\d+|CWOP-\d+|CORE-\d+)$"
+        @"^(?:WIDE[1-7](?:-[1-7])?|TRACE[1-7]?(?:-[1-7])?|TEMP[1-7]-[1-7]|qA[A-Za-z]|T2[A-Z0-9]+|[A-Z]{2,5}[1-7]-[1-7]|AMBCWOP-\d+|WLNK-\d+|CWOP-\d+|CORE-\d+)$",
+        RegexOptions.IgnoreCase // some stations send lower-case aliases (wide2-1)
     )]
     private static partial Regex Generic();
 
