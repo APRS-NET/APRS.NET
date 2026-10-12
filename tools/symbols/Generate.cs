@@ -5,7 +5,7 @@
 // Draws the APRS symbol set from tools/symbols/catalogue.json and writes one SVG per drawn symbol plus a review
 // gallery.
 //
-//   dotnet run tools/symbols/Generate.cs -- [--style conventional] [--out artifacts/symbols]   (from the repository root)
+//   dotnet run tools/symbols/Generate.cs -- [--style conventional|modern] [--out artifacts/symbols]   (from the repository root)
 //
 // Clean-room: the catalogue holds meanings from the specification text (APRS101 Appendix 2, APRS 1.1 and 1.2), and
 // every drawing below is designed from those descriptions. No artwork from other symbol sets is used or traced.
@@ -37,13 +37,12 @@ var symbols = catalogue
     .Select(Symbol.From)
     .ToDictionary(s => s.Key, StringComparer.Ordinal);
 
-#pragma warning disable CA1859 // one style so far; the modern style joins this switch next
 ISymbolStyle style = styleName switch
 {
     "conventional" => new ConventionalStyle(),
-    _ => throw new ArgumentException($"unknown style '{styleName}' (known: conventional)"),
+    "modern" => new ModernStyle(new ConventionalStyle()),
+    _ => throw new ArgumentException($"unknown style '{styleName}' (known: conventional, modern)"),
 };
-#pragma warning restore CA1859
 Directory.CreateDirectory(Path.Combine(outDir, style.Name));
 var drawn = new List<(Symbol Symbol, string Svg)>();
 foreach (var symbol in symbols.Values)
@@ -90,12 +89,18 @@ var overlays = overlayDemos
     )
     .ToList();
 
-File.WriteAllText(Path.Combine(outDir, "gallery.html"), Gallery.Html(style.Name, drawn, unassigned, overlays));
-Console.WriteLine(
-    $"{drawn.Count} of {symbols.Count} symbols drawn ({style.Name}) -> {outDir}; gallery: {outDir}/gallery.html"
-);
+var gallery = Path.Combine(outDir, style.Name, "gallery.html");
+File.WriteAllText(gallery, Gallery.Html(style.Name, drawn, unassigned, overlays));
+Console.WriteLine($"{drawn.Count} of {symbols.Count} symbols drawn ({style.Name}) -> {outDir}; gallery: {gallery}");
 
-internal sealed record Symbol(char Table, char Code, string Name, string Status, Dictionary<char, string> Overlays)
+internal sealed record Symbol(
+    char Table,
+    char Code,
+    string Name,
+    string Status,
+    string Category,
+    Dictionary<char, string> Overlays
+)
 {
     public string Key => $"{Table}{Code}";
 
@@ -110,6 +115,7 @@ internal sealed record Symbol(char Table, char Code, string Name, string Status,
             e.GetProperty("code").GetString()![0],
             e.GetProperty("name").GetString()!,
             e.GetProperty("status").GetString()!,
+            e.GetProperty("category").GetString()!,
             e.TryGetProperty("overlays", out var o)
                 ? o.EnumerateArray()
                     .ToDictionary(
@@ -121,21 +127,63 @@ internal sealed record Symbol(char Table, char Code, string Name, string Status,
 }
 
 /// <summary>Builds one 48×48 SVG. Every drawing uses the same grid, outline colour and line weights.</summary>
-internal sealed class Svg
+internal sealed partial class Svg
 {
     public const string Ink = "#1b1b1b";
+    private const string Paper = "#ffffff";
+
+    // Fills that are details (glass, screens, wheel hubs): cut out of a single-colour silhouette.
+    private static readonly HashSet<string> _details = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "#bfe3ff",
+        "#74c0fc",
+        "#c9c9c9",
+        "#d3f9d8",
+    };
+
     private readonly StringBuilder _body = new();
+
+    /// <summary>
+    /// When set, drawings become white silhouettes: outlines and halos are dropped, details are cut out in this
+    /// colour, and containers (<see cref="Backdrop"/>) are skipped because the caller supplies its own.
+    /// </summary>
+    public string? Mono { get; set; }
+
+    private const string CutPrefix = "cut:";
+
+    /// <summary>
+    /// Marks a colour as a detail: drawn as given in colour styles, cut out of the silhouette in single-colour ones.
+    /// </summary>
+    public static string Cut(string color) => CutPrefix + color;
+
+    private string F(string fill) =>
+        fill.StartsWith(CutPrefix, StringComparison.Ordinal) ? Mono ?? fill[CutPrefix.Length..]
+        : Mono is null || fill == "none" ? fill
+        : _details.Contains(fill) ? Mono
+        : Paper;
+
+    private string? S(string? stroke, string fill) =>
+        stroke is null ? null
+        : Mono is null || fill == "none" ? F(stroke)
+        : null;
+
+    /// <summary>A container shape (badge square, label disc) that a single-colour style replaces with its own.</summary>
+    public Svg Backdrop(Func<Svg, Svg> draw) => Mono is null ? draw(this) : this;
 
     public Svg Path(string d, string fill, string? stroke = Ink, double width = 1.6)
     {
-        _body.Append(CultureInfo.InvariantCulture, $"<path d=\"{d}\" fill=\"{fill}\"{Stroke(stroke, width)}/>");
+        _body.Append(
+            CultureInfo.InvariantCulture,
+            $"<path d=\"{d}\" fill=\"{F(fill)}\"{Stroke(S(stroke, fill), width)}/>"
+        );
         return this;
     }
 
     /// <summary>Round-capped lines; a halo draws the same lines wider underneath so thin line art reads on any map.</summary>
     public Svg Line(string d, string stroke, double width, double? halo = null, string haloColor = Ink)
     {
-        if (halo is { } h)
+        stroke = F(stroke);
+        if (halo is { } h && Mono is null)
         {
             _body.Append(
                 CultureInfo.InvariantCulture,
@@ -154,7 +202,7 @@ internal sealed class Svg
     {
         _body.Append(
             CultureInfo.InvariantCulture,
-            $"<circle cx=\"{N(cx)}\" cy=\"{N(cy)}\" r=\"{N(r)}\" fill=\"{fill}\"{Stroke(stroke, width)}/>"
+            $"<circle cx=\"{N(cx)}\" cy=\"{N(cy)}\" r=\"{N(r)}\" fill=\"{F(fill)}\"{Stroke(S(stroke, fill), width)}/>"
         );
         return this;
     }
@@ -163,7 +211,7 @@ internal sealed class Svg
     {
         _body.Append(
             CultureInfo.InvariantCulture,
-            $"<rect x=\"{N(x)}\" y=\"{N(y)}\" width=\"{N(w)}\" height=\"{N(h)}\"{(rx > 0 ? $" rx=\"{N(rx)}\"" : "")} fill=\"{fill}\"{Stroke(stroke, 1.6)}/>"
+            $"<rect x=\"{N(x)}\" y=\"{N(y)}\" width=\"{N(w)}\" height=\"{N(h)}\"{(rx > 0 ? $" rx=\"{N(rx)}\"" : "")} fill=\"{F(fill)}\"{Stroke(S(stroke, fill), 1.6)}/>"
         );
         return this;
     }
@@ -171,11 +219,23 @@ internal sealed class Svg
     public Svg Polygon(IEnumerable<(double X, double Y)> points, string fill, string? stroke = Ink, double width = 1.6)
     {
         var p = string.Join(' ', points.Select(pt => $"{N(pt.X)},{N(pt.Y)}"));
-        _body.Append(CultureInfo.InvariantCulture, $"<polygon points=\"{p}\" fill=\"{fill}\"{Stroke(stroke, width)}/>");
+        _body.Append(
+            CultureInfo.InvariantCulture,
+            $"<polygon points=\"{p}\" fill=\"{F(fill)}\"{Stroke(S(stroke, fill), width)}/>"
+        );
         return this;
     }
 
-    public Svg Star(double cx, double cy, double outer, double inner, string fill, int points = 5) =>
+    public Svg Star(
+        double cx,
+        double cy,
+        double outer,
+        double inner,
+        string fill,
+        int points = 5,
+        string? stroke = Ink,
+        double width = 1.6
+    ) =>
         Polygon(
             Enumerable
                 .Range(0, points * 2)
@@ -185,14 +245,34 @@ internal sealed class Svg
                     var r = i % 2 == 0 ? outer : inner;
                     return (cx + (r * Math.Cos(angle)), cy + (r * Math.Sin(angle)));
                 }),
-            fill
+            fill,
+            stroke,
+            width
         );
 
-    /// <summary>Text in the stroke font, centred on (cx, cy), with a contrasting halo so it reads on any fill.</summary>
-    public Svg Text(string text, double cx, double cy, double height, bool light = true)
+    /// <summary>
+    /// Text in the stroke font, centred on (cx, cy), with a contrasting halo so it reads on any fill. In a
+    /// single-colour style it is drawn larger (the glyph is scaled down with the drawing) and white, or cut out when
+    /// <paramref name="cut"/> says it sits on a white shape.
+    /// </summary>
+    public Svg Text(string text, double cx, double cy, double height, bool light = true, bool cut = false)
     {
+        if (Mono is not null)
+        {
+            height *= 1.45;
+        }
+
         var d = StrokeFont.Path(text, cx, cy, height);
         var width = height * 0.17;
+        if (Mono is not null)
+        {
+            _body.Append(
+                CultureInfo.InvariantCulture,
+                $"<path d=\"{d}\" fill=\"none\" stroke=\"{(cut ? Mono : Paper)}\" stroke-width=\"{N(width)}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+            );
+            return this;
+        }
+
         var (glyph, halo) = light ? ("#ffffff", Ink) : (Ink, "#ffffff");
         _body.Append(
             CultureInfo.InvariantCulture,
@@ -208,6 +288,15 @@ internal sealed class Svg
     /// <summary>An unfilled circle, with a halo underneath so it reads on any map.</summary>
     public Svg Ring(double cx, double cy, double r, string stroke, double width, string halo = "#ffffff")
     {
+        if (Mono is not null)
+        {
+            _body.Append(
+                CultureInfo.InvariantCulture,
+                $"<circle cx=\"{N(cx)}\" cy=\"{N(cy)}\" r=\"{N(r)}\" fill=\"none\" stroke=\"{Paper}\" stroke-width=\"{N(width)}\"/>"
+            );
+            return this;
+        }
+
         _body.Append(
             CultureInfo.InvariantCulture,
             $"<circle cx=\"{N(cx)}\" cy=\"{N(cy)}\" r=\"{N(r)}\" fill=\"none\" stroke=\"{halo}\" stroke-width=\"{N(width + 2)}\"/>"
@@ -235,9 +324,12 @@ internal sealed class Svg
     /// <summary>An element the helpers do not cover (dashed outlines, translucent fills).</summary>
     public Svg Raw(string element)
     {
-        _body.Append(element);
+        _body.Append(Mono is null ? element : HexColor().Replace(element, m => F(m.Value)));
         return this;
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex("#[0-9a-fA-F]{6}")]
+    private static partial System.Text.RegularExpressions.Regex HexColor();
 
     public string Build() =>
         $"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\" width=\"48\" height=\"48\">{_body}</svg>\n";
@@ -416,17 +508,19 @@ internal sealed class ConventionalStyle : ISymbolStyle
             ["/&"] = s => Diamond(s, Charcoal).Text("HF", 24, 24, 10),
             ["\\&"] = s => Diamond(s, Charcoal),
             ["\\a"] = s => Diamond(s, "#c92a2a"),
-            ["\\0"] = s => s.Circle(24, 24, 19, Yellow, width: 2),
+            ["\\0"] = s => s.Backdrop(b => b.Circle(24, 24, 19, Yellow, width: 2)),
             ["\\A"] = s => s.Rect(6, 6, 36, 36, White, rx: 3),
             ["\\i"] = s => s.Rect(6, 6, 36, 36, Orange, rx: 4),
             ["\\n"] = s => s.Polygon([(24, 4), (45, 42), (3, 42)], Red, width: 2),
             ["\\o"] = s => s.Circle(24, 24, 9, White, Svg.Ink, 3),
             ["/n"] = s =>
                 s.Circle(24, 24, 19, Svg.Ink, White, 2)
-                    .Circle(24, 24, 12.5, White, null)
+                    .Circle(24, 24, 12.5, Svg.Cut(White), null)
                     .Circle(24, 24, 6.5, Svg.Ink, null),
             ["/\\"] = s => s.Polygon([(24, 5), (44, 41), (4, 41)], White, Svg.Ink, 3).Circle(24, 29, 3, Svg.Ink, null),
-            ["\\c"] = s => s.Circle(24, 24, 20, Blue, width: 2).Polygon([(24, 9), (38, 34), (10, 34)], White, null),
+            ["\\c"] = s =>
+                s.Backdrop(b => b.Circle(24, 24, 20, Blue, width: 2))
+                    .Polygon([(24, 9), (38, 34), (10, 34)], White, null),
             ["\\_"] = s => s.Star(24, 25.5, 22, 9.5, Green).Circle(24, 25.5, 6.5, Blue, White, 1.4),
 
             // Markers
@@ -441,7 +535,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
                     .Circle(24, 24, 6.5, Orange, width: 1.8),
             ["\\/"] = s =>
                 s.Path("M24,45 C17,34 10,27 10,18 C10,10 16.5,4 24,4 C31.5,4 38,10 38,18 C38,27 31,34 24,45 Z", Red)
-                    .Circle(24, 18, 5, White),
+                    .Circle(24, 18, 5, Svg.Cut(White)),
             ["/G"] = s => Grid(s, 3, Blue),
             ["/q"] = s => Grid(s, 4, Steel),
             ["\\l"] = s =>
@@ -452,15 +546,17 @@ internal sealed class ConventionalStyle : ISymbolStyle
                         "<circle cx=\"31\" cy=\"31\" r=\"13\" fill=\"#ff8787\" fill-opacity=\"0.3\" stroke=\"#d7322b\" stroke-width=\"2.4\" stroke-dasharray=\"4 3\"/>"
                     ),
             ["\\m"] = s =>
-                s.Rect(22, 26, 4, 18, StormGrey).Rect(5, 6, 38, 20, Yellow, rx: 3).Text("123", 24, 16, 10, false),
+                s.Rect(22, 26, 4, 18, StormGrey)
+                    .Rect(5, 6, 38, 20, Yellow, rx: 3)
+                    .Text("123", 24, 16, 10, false, cut: true),
 
             // Labels in badges and discs
             ["/%"] = s => Disc(s, Navy, "DX", 14),
             ["\\d"] = s => Disc(s, Yellow, "DX", 14, light: false),
             ["/,"] = s => Disc(s, "#556b2f", "BS", 14),
             ["\\,"] = s => Disc(s, Green, "GS", 14),
-            ["\\!"] = s => s.Circle(24, 24, 20, Red, width: 2),
-            ["\\$"] = s => s.Rect(5, 5, 38, 38, Green, rx: 7),
+            ["\\!"] = s => s.Backdrop(b => b.Circle(24, 24, 20, Red, width: 2)),
+            ["\\$"] = s => s.Backdrop(b => b.Rect(5, 5, 38, 38, Green, rx: 7)),
             ["/B"] = s => Badge(s, Navy, "BBS", 12),
             ["/I"] = s => Badge(s, "#1971c2", "IP", 16),
             ["/N"] = s => Badge(s, "#5f3dc4", "NTS", 12),
@@ -470,10 +566,10 @@ internal sealed class ConventionalStyle : ISymbolStyle
             ["\\P"] = s => Badge(s, Blue, "P", 26),
             ["\\?"] = s => Badge(s, Blue, "?", 24),
             ["\\X"] = s => Badge(s, Green, "RX", 16),
-            ["/_"] = s => s.Circle(24, 24, 20, Blue, width: 2).Text("WX", 24, 24, 13),
-            ["/W"] = s => s.Circle(24, 24, 19.5, White, Blue, 3.5).Text("NWS", 24, 24, 11, false),
-            ["\\W"] = s => s.Circle(24, 24, 19.5, White, Blue, 3.5),
-            ["/h"] = s => s.Rect(5, 5, 38, 38, Blue, rx: 7).Text("H", 24, 24, 24),
+            ["/_"] = s => s.Backdrop(b => b.Circle(24, 24, 20, Blue, width: 2)).Text("WX", 24, 24, 13),
+            ["/W"] = s => s.Backdrop(b => b.Circle(24, 24, 19.5, White, Blue, 3.5)).Text("NWS", 24, 24, 11, false),
+            ["\\W"] = s => s.Backdrop(b => b.Circle(24, 24, 19.5, White, Blue, 3.5)),
+            ["/h"] = s => s.Backdrop(b => b.Rect(5, 5, 38, 38, Blue, rx: 7)).Text("H", 24, 24, 24),
 
             // Computers
             ["/L"] = s => Monitor(s, "PC"),
@@ -501,7 +597,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
                     White,
                     1.8
                 ),
-            ["/]"] = s => s.Rect(5, 11, 38, 26, White, rx: 2).Line("M6,12 L24,27 L42,12", Svg.Ink, 1.8),
+            ["/]"] = s => s.Rect(5, 11, 38, 26, White, rx: 2).Line("M6,12 L24,27 L42,12", Svg.Cut(Svg.Ink), 1.8),
 
             // Cars, vans and trucks (side views face right)
             ["/>"] = SideCar,
@@ -565,12 +661,13 @@ internal sealed class ConventionalStyle : ISymbolStyle
             ["/d"] = FireStation,
             ["\\+"] = Church,
             ["\\h"] = Store,
-            ["\\D"] = s => s.Path("M5,42 V20 L24,9 L43,20 V42 Z", Grey).Path("M16,42 V31 Q24,22 32,31 V42 Z", Steel),
+            ["\\D"] = s =>
+                s.Path("M5,42 V20 L24,9 L43,20 V42 Z", Grey).Path("M16,42 V31 Q24,22 32,31 V42 Z", Svg.Cut(Steel)),
             ["\\%"] = PowerPlant,
             ["\\z"] = s => s.Polygon([(24, 5), (44, 21), (44, 43), (4, 43), (4, 21)], White, Blue, 3),
             ["/;"] = s =>
                 s.Polygon([(24, 7), (45, 41), (3, 41)], Green)
-                    .Polygon([(24, 20), (31, 41), (17, 41)], DarkGreen, null)
+                    .Polygon([(24, 20), (31, 41), (17, 41)], Svg.Cut(DarkGreen), null)
                     .Line("M2,41 H46", Svg.Ink, 2),
             ["\\;"] = s =>
                 s.Rect(21.5, 28, 5, 15, Brown)
@@ -579,7 +676,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
                         Green
                     ),
             ["/t"] = s =>
-                s.Rect(5, 5, 38, 38, Blue, rx: 7)
+                s.Backdrop(b => b.Rect(5, 5, 38, 38, Blue, rx: 7))
                     .Path("M8,31 V17 H27 V31 Z M28,31 V22 H34 L39,27 V31 Z", White, null)
                     .Circle(14, 32, 3.4, Blue, White, 1.6)
                     .Circle(34, 32, 3.4, Blue, White, 1.6),
@@ -595,14 +692,15 @@ internal sealed class ConventionalStyle : ISymbolStyle
             ["/p"] = Dog,
             ["/E"] = s =>
                 s.Path("M3,24 Q24,4 45,24 Q24,44 3,24 Z", White, width: 1.8)
-                    .Circle(24, 24, 8.5, Blue)
+                    .Circle(24, 24, 8.5, Svg.Cut(Blue))
                     .Circle(24, 24, 3.6, Svg.Ink, null)
                     .Circle(26.5, 21.5, 1.4, White, null),
-            ["/!"] = s => s.Star(24, 24, 21, 11, "#e0a800", 6).Circle(24, 24, 6, Blue),
+            ["/!"] = s => s.Star(24, 24, 21, 11, "#e0a800", 6).Circle(24, 24, 6, Svg.Cut(Blue)),
             ["/P"] = s =>
-                s.Path("M24,3 L41,9 V22 C41,33 33,41 24,45 C15,41 7,33 7,22 V9 Z", Blue).Star(24, 22, 9, 4, Yellow),
+                s.Path("M24,3 L41,9 V22 C41,33 33,41 24,45 C15,41 7,33 7,22 V9 Z", Blue)
+                    .Star(24, 22, 9, 4, Svg.Cut(Yellow)),
             ["/+"] = s => s.Path(Cross(24, 24, 32, 11), Red, width: 1.8),
-            ["/A"] = s => s.Rect(5, 5, 38, 38, Green, rx: 7).Path(Cross(24, 24, 26, 9), White, null),
+            ["/A"] = s => s.Backdrop(b => b.Rect(5, 5, 38, 38, Green, rx: 7)).Path(Cross(24, 24, 26, 9), White, null),
             ["/:"] = s =>
                 s.Path(
                         "M24,3 C30,12 38,18 38,29 C38,38 32,45 24,45 C16,45 10,38 10,29 C10,22 15,18 17,12 C19,17 21,19 23,20 C23,14 22,9 24,3 Z",
@@ -614,7 +712,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
                         null
                     ),
             ["\\)"] = s =>
-                s.Rect(5, 5, 38, 38, "#e8590c", rx: 7)
+                s.Backdrop(b => b.Rect(5, 5, 38, 38, "#e8590c", rx: 7))
                     .Open("translate(12 12) scale(0.5)")
                     .Path(
                         "M24,3 C30,12 38,18 38,29 C38,38 32,45 24,45 C16,45 10,38 10,29 C10,22 15,18 17,12 C19,17 21,19 23,20 C23,14 22,9 24,3 Z",
@@ -626,11 +724,11 @@ internal sealed class ConventionalStyle : ISymbolStyle
             ["\\'"] = s => s.Star(24, 24, 21, 10, Orange, 10).Star(24, 24, 12, 6, Yellow, 10),
             ["\\x"] = s =>
                 s.Polygon([(24, 3), (45, 24), (24, 45), (3, 24)], Yellow, Svg.Ink, 2)
-                    .Line("M17,17 L31,31 M31,17 L17,31", Svg.Ink, 4),
+                    .Line("M17,17 L31,31 M31,17 L17,31", Svg.Cut(Svg.Ink), 4),
             ["\\y"] = s =>
-                s.Circle(24, 24, 20, Navy, width: 2)
+                s.Backdrop(b => b.Circle(24, 24, 20, Navy, width: 2))
                     .Path("M7,24 Q24,9 41,24 Q24,39 7,24 Z", White, null)
-                    .Circle(24, 24, 6, Navy, null),
+                    .Circle(24, 24, 6, Svg.Cut(Navy), null),
             ["\\Q"] = s =>
                 s.Line(
                     "M3,26 H10 L14,16 L19,36 L24,8 L29,40 L33,20 L37,30 L39,26 H45",
@@ -716,7 +814,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
                 s.Path("M31,21 C34,11 28,4 16,5 C22,8 25,12 24.5,16.5 Z", Red, width: 1.4)
                     .Path("M17,27 C14,37 20,44 32,43 C26,40 23,36 23.5,31.5 Z", Red, width: 1.4)
                     .Circle(24, 24, 9, Red, width: 1.6)
-                    .Circle(24, 24, 3.2, White, null),
+                    .Circle(24, 24, 3.2, Svg.Cut(White), null),
             ["\\<"] = s => Pennant(s.Line("M12,4 V45", Svg.Ink, 2.6, halo: 2, haloColor: White), 6),
             ["\\g"] = s => Pennant(Pennant(s.Line("M12,4 V45", Svg.Ink, 2.6, halo: 2, haloColor: White), 6), 20),
             ["\\w"] = s =>
@@ -731,7 +829,8 @@ internal sealed class ConventionalStyle : ISymbolStyle
 
         foreach (var digit in "0123456789")
         {
-            _draw[$"/{digit}"] = s => s.Circle(24, 24, 19, White, width: 2).Text(digit.ToString(), 24, 24, 20, false);
+            _draw[$"/{digit}"] = s =>
+                s.Backdrop(b => b.Circle(24, 24, 19, White, width: 2)).Text(digit.ToString(), 24, 24, 20, false);
         }
 
         _label = new(StringComparer.Ordinal)
@@ -746,6 +845,13 @@ internal sealed class ConventionalStyle : ISymbolStyle
     }
 
     public string Name => "conventional";
+
+    /// <summary>The drawing and optional label for a symbol, for styles that restyle these shapes.</summary>
+    public bool TryGetDrawing(string key, out Action<Svg> draw, out Action<Svg>? label)
+    {
+        label = _label.GetValueOrDefault(key);
+        return _draw.TryGetValue(key, out draw!);
+    }
 
     public string? Draw(Symbol symbol, char? overlay)
     {
@@ -780,10 +886,10 @@ internal sealed class ConventionalStyle : ISymbolStyle
     private static Svg Diamond(Svg s, string fill) => s.Polygon([(24, 3), (45, 24), (24, 45), (3, 24)], fill, White, 2);
 
     private static Svg Badge(Svg s, string fill, string text, double height, bool light = true) =>
-        s.Rect(5, 5, 38, 38, fill, rx: 7).Text(text, 24, 24, height, light);
+        s.Backdrop(b => b.Rect(5, 5, 38, 38, fill, rx: 7)).Text(text, 24, 24, height, light);
 
     private static Svg Disc(Svg s, string fill, string text, double height, bool light = true) =>
-        s.Circle(24, 24, 19.5, fill, width: 2).Text(text, 24, 24, height, light);
+        s.Backdrop(b => b.Circle(24, 24, 19.5, fill, width: 2)).Text(text, 24, 24, height, light);
 
     private static string Cross(double cx, double cy, double length, double thickness)
     {
@@ -796,7 +902,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
 
     private static void Grid(Svg s, int cells, string color)
     {
-        s.Rect(6, 6, 36, 36, White);
+        s.Backdrop(b => b.Rect(6, 6, 36, 36, White));
         var step = 36.0 / cells;
         var d = new StringBuilder();
         for (var i = 1; i < cells; i++)
@@ -815,7 +921,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
         s.Rect(20, 33, 8, 5, Grey)
             .Rect(13, 38, 22, 4, Grey, rx: 2)
             .Rect(5, 6, 38, 28, Charcoal, rx: 3)
-            .Rect(8, 9, 32, 22, Blue, null)
+            .Rect(8, 9, 32, 22, Svg.Cut(Blue), null)
             .Text(label, 24, 20, 11);
 
     private static void Laptop(Svg s) =>
@@ -823,9 +929,9 @@ internal sealed class ConventionalStyle : ISymbolStyle
 
     private static void Server(Svg s) =>
         s.Rect(13, 4, 22, 40, Grey, rx: 3)
-            .Rect(16, 9, 16, 4, Steel, null)
-            .Rect(16, 16, 16, 4, Steel, null)
-            .Rect(16, 23, 16, 4, Steel, null)
+            .Rect(16, 9, 16, 4, Svg.Cut(Steel), null)
+            .Rect(16, 16, 16, 4, Svg.Cut(Steel), null)
+            .Rect(16, 23, 16, 4, Svg.Cut(Steel), null)
             .Circle(31, 36, 1.9, "#40c057", null)
             .Circle(25.5, 36, 1.9, Yellow, null);
 
@@ -1069,10 +1175,10 @@ internal sealed class ConventionalStyle : ISymbolStyle
         Wheel(
             Wheel(
                 s.Path("M3,33 V14 Q3,12 5,12 H31 Q32.5,12 33.5,13.5 L38.5,20 L43,22 Q45,23 45,25 V33 Z", White)
-                    .Rect(3.8, 27, 40.4, 3, Red, null)
+                    .Rect(3.8, 27, 40.4, 3, Svg.Cut(Red), null)
                     .Path("M32,15 L36.5,21 H32 Z", Glass, width: 1)
-                    .Rect(15, 14.5, 4, 11, Red, null)
-                    .Rect(11.5, 18, 11, 4, Red, null),
+                    .Rect(15, 14.5, 4, 11, Svg.Cut(Red), null)
+                    .Rect(11.5, 18, 11, 4, Svg.Cut(Red), null),
                 12,
                 33,
                 5
@@ -1265,15 +1371,15 @@ internal sealed class ConventionalStyle : ISymbolStyle
             .Circle(24, 6.5, 2.8, Yellow)
             .Path("M12,35 H36 Q36,41 24,41 Q12,41 12,35 Z", Charcoal, White, 1.4)
             .Path("M18,35 L20,16 H28 L30,35 Z", Red)
-            .Path("M19.15,24 H28.85 L29.25,28 H18.75 Z", White, null)
+            .Path("M19.15,24 H28.85 L29.25,28 H18.75 Z", Svg.Cut(White), null)
             .Line("M3,40 Q8,36 13,40 T23,40 T33,40 T43,40", Water, 2.4, halo: 1.6, haloColor: White);
 
     private static void Lighthouse(Svg s) =>
         s.Raw("<polygon points=\"28,10 46,4 46,16\" fill=\"#f4c430\" fill-opacity=\"0.7\"/>")
             .Raw("<polygon points=\"20,10 2,4 2,16\" fill=\"#f4c430\" fill-opacity=\"0.7\"/>")
             .Path("M19,42 L21,15 H27 L29,42 Z", White)
-            .Path("M20.6,23 H27.4 L27.9,29 H20.1 Z", Red, null)
-            .Path("M19.7,35 H28.3 L28.8,41 H19.2 Z", Red, null)
+            .Path("M20.6,23 H27.4 L27.9,29 H20.1 Z", Svg.Cut(Red), null)
+            .Path("M19.7,35 H28.3 L28.8,41 H19.2 Z", Svg.Cut(Red), null)
             .Rect(20, 8, 8, 7, Yellow)
             .Polygon([(19, 8), (24, 3), (29, 8)], Red)
             .Rect(14, 42, 20, 3, Charcoal, null);
@@ -1308,15 +1414,15 @@ internal sealed class ConventionalStyle : ISymbolStyle
             .Polygon([(19, 6), (24, 1.5), (29, 6)], StormGrey, width: 1.2)
             .Rect(7, 22, 34, 20, "#c23b2b")
             .Polygon([(4, 23), (24, 11), (44, 23)], StormGrey)
-            .Rect(21, 31, 6, 11, White)
+            .Rect(21, 31, 6, 11, Svg.Cut(White))
             .Rect(11, 27, 6, 6, Glass)
             .Rect(31, 27, 6, 6, Glass);
 
     private static void FireStation(Svg s) =>
         s.Rect(5, 14, 38, 28, Red)
             .Rect(3, 10, 42, 5, "#a61e1e")
-            .Rect(9, 22, 13, 20, White)
-            .Rect(26, 22, 13, 20, White)
+            .Rect(9, 22, 13, 20, Svg.Cut(White))
+            .Rect(26, 22, 13, 20, Svg.Cut(White))
             .Line("M9,27 H22 M9,32 H22 M9,37 H22 M26,27 H39 M26,32 H39 M26,37 H39", Grey, 1.2);
 
     private static void Church(Svg s) =>
@@ -1343,23 +1449,23 @@ internal sealed class ConventionalStyle : ISymbolStyle
     private static void FuelPump(Svg s, string color) =>
         s.Line("M30,16 H34 Q37,16 37,19 V32 Q37,35 34,35", Svg.Ink, 2.4, halo: 1.6, haloColor: White)
             .Rect(10, 7, 20, 34, color, rx: 3)
-            .Rect(14, 11, 12, 8, White, null)
+            .Rect(14, 11, 12, 8, Svg.Cut(White), null)
             .Rect(7, 40, 26, 4, Charcoal, null);
 
     private static void HotelBed(Svg s) =>
-        s.Rect(5, 5, 38, 38, Blue, rx: 7)
+        s.Backdrop(b => b.Rect(5, 5, 38, 38, Blue, rx: 7))
             .Line("M11,15 V35 M11,29 H37 V35", White, 3.2)
             .Rect(14, 22, 7, 5, White, null, rx: 2)
             .Path("M23,22 H35 Q37,22 37,25 V29 H23 Z", White, null);
 
     private static void Restaurant(Svg s) =>
-        s.Rect(5, 5, 38, 38, "#e8590c", rx: 7)
+        s.Backdrop(b => b.Rect(5, 5, 38, 38, "#e8590c", rx: 7))
             .Line("M17,10 V38 M13.5,10 V18 Q13.5,22 17,22 Q20.5,22 20.5,18 V10", White, 2.4)
             .Path("M31,10 Q37,15 35,25 H31 Z", White, null)
             .Line("M31,10 V38", White, 2.4);
 
     private static void Restrooms(Svg s) =>
-        s.Rect(5, 5, 38, 38, Blue, rx: 7)
+        s.Backdrop(b => b.Rect(5, 5, 38, 38, Blue, rx: 7))
             .Circle(15, 12, 3, White, null)
             .Rect(12, 17, 6, 12, White, null, rx: 2)
             .Line("M13.5,29 V38 M16.5,29 V38", White, 2.4)
@@ -1379,7 +1485,7 @@ internal sealed class ConventionalStyle : ISymbolStyle
             .Circle(24, 8.5, 5.2, "#2b4c9b");
 
     private static void Wheelchair(Svg s) =>
-        s.Rect(5, 5, 38, 38, Blue, rx: 7)
+        s.Backdrop(b => b.Rect(5, 5, 38, 38, Blue, rx: 7))
             .Circle(21, 11, 3.3, White, null)
             .Line("M21,16 V27 H31 L35,35 M21,21 H28", White, 3.2)
             .Line("M15.5,23.5 A9.5,9.5 0 1,0 30.5,33", White, 2.8);
@@ -1416,14 +1522,12 @@ internal sealed class ConventionalStyle : ISymbolStyle
 
     private static void Vortac(Svg s)
     {
-        s.Polygon(
-            Enumerable
-                .Range(0, 6)
-                .Select(i => (24 + (13 * Math.Cos(i * Math.PI / 3)), 24 + (13 * Math.Sin(i * Math.PI / 3)))),
-            White,
-            Blue,
-            2.6
-        );
+        var corners = Enumerable
+            .Range(0, 6)
+            .Select(i => (X: 24 + (13 * Math.Cos(i * Math.PI / 3)), Y: 24 + (13 * Math.Sin(i * Math.PI / 3))))
+            .ToList();
+        s.Polygon(corners, Svg.Cut(White), null)
+            .Line("M" + string.Join(" L", corners.Select(c => $"{Svg.N(c.X)},{Svg.N(c.Y)}")) + " Z", Blue, 2.6);
         foreach (var angle in new[] { 30, 150, 270 })
         {
             s.Open(FormattableString.Invariant($"rotate({angle} 24 24)")).Rect(37.5, 18, 6, 12, Blue, White).Close();
@@ -1470,6 +1574,114 @@ internal sealed class ConventionalStyle : ISymbolStyle
         s.Polygon([(13, top), (40, top + 6.5), (13, top + 13)], Red, Svg.Ink, 1.4);
 }
 
+/// <summary>
+/// The modern style: a white glyph on a disc coloured by the symbol's category, so the kind of station shows at a
+/// glance. Overlay families keep their shape (star, diamond, circle, box, triangle) as the coloured container. Glyphs
+/// are the conventional drawings rendered as single-colour silhouettes, unless a symbol has its own modern drawing.
+/// </summary>
+internal sealed class ModernStyle(ConventionalStyle shapes) : ISymbolStyle
+{
+    private const string White = "#ffffff";
+
+    private static readonly Dictionary<string, string> _colors = new(StringComparer.Ordinal)
+    {
+        ["radio"] = "#2b8a3e",
+        ["vehicles"] = "#1971c2",
+        ["aircraft"] = "#862e9c",
+        ["marine"] = "#0b7285",
+        ["emergency"] = "#c92a2a",
+        ["weather"] = "#52667a",
+        ["places"] = "#d9480f",
+        ["people"] = "#a61e4d",
+        ["markers"] = "#343a40",
+    };
+
+    // Overlay families drawn as a coloured shape instead of a disc, with where the overlay character goes.
+    private static readonly Dictionary<string, (Action<Svg, string> Draw, double X, double Y, double H)> _containers =
+        new(StringComparer.Ordinal)
+        {
+            ["/#"] = ((s, c) => Star(s, c).Circle(24, 25.5, 5.5, White, null), 24, 26, 14),
+            ["\\#"] = ((s, c) => Star(s, c), 24, 26, 14),
+            ["\\_"] = ((s, c) => Star(s, c), 24, 26, 14),
+            ["/&"] = ((s, c) => Diamond(s, c).Text("HF", 24, 24, 10), 24, 24, 16),
+            ["\\&"] = ((s, c) => Diamond(s, c), 24, 24, 16),
+            ["\\a"] = ((s, c) => Diamond(s, c), 24, 24, 16),
+            ["\\0"] = ((s, c) => s.Circle(24, 24, 21, c, White, 2), 24, 24, 18),
+            ["\\W"] = ((s, c) => s.Circle(24, 24, 21, c, White, 2), 24, 24, 18),
+            ["\\A"] = ((s, c) => s.Rect(4, 4, 40, 40, c, White, rx: 6), 24, 24, 18),
+            ["\\i"] = ((s, c) => s.Rect(4, 4, 40, 40, c, White, rx: 6), 24, 24, 18),
+            ["\\n"] = ((s, c) => Triangle(s, c), 24, 31, 14),
+            ["\\c"] = ((s, c) => Triangle(s, c), 24, 31, 14),
+        };
+
+    // Shown on a container when no overlay character takes its place.
+    private static readonly Dictionary<string, Action<Svg>> _containerLabels = new(StringComparer.Ordinal)
+    {
+        ["\\W"] = s => s.Text("NWS", 24, 24, 11),
+        ["\\c"] = s => s.Text("CD", 24, 31, 10),
+        ["\\i"] = s => s.Circle(24, 24, 4.5, White, null),
+    };
+
+    public string Name => "modern";
+
+    public string? Draw(Symbol symbol, char? overlay)
+    {
+        if (!shapes.TryGetDrawing(symbol.Key, out var draw, out var label))
+        {
+            return null;
+        }
+
+        var color = _colors[symbol.Category];
+        var svg = new Svg();
+        var hasOverlay = overlay is { } o && StrokeFont.Has(o);
+        if (_containers.TryGetValue(symbol.Key, out var container))
+        {
+            container.Draw(svg, color);
+            if (hasOverlay)
+            {
+                svg.Text(overlay!.Value.ToString(), container.X, container.Y, container.H);
+            }
+            else if (_containerLabels.TryGetValue(symbol.Key, out var containerLabel))
+            {
+                containerLabel(svg);
+            }
+
+            return svg.Build();
+        }
+
+        svg.Circle(24, 24, 21, color, White, 2).Open("translate(24 24) scale(0.6) translate(-24 -24)");
+        svg.Mono = color;
+        draw(svg);
+        if (!hasOverlay)
+        {
+            label?.Invoke(svg);
+        }
+
+        svg.Mono = null;
+        svg.Close();
+        if (hasOverlay)
+        {
+            svg.Circle(38.5, 38.5, 8.5, White, color, 1.8).Text(overlay!.Value.ToString(), 38.5, 38.5, 9.5, false);
+        }
+
+        return svg.Build();
+    }
+
+    public string Unassigned() =>
+        new Svg()
+            .Circle(24, 24, 21, "#868e96", White, 2)
+            .Ring(24, 24, 10, White, 3.4)
+            .Line("M17,17 L31,31", White, 3.4)
+            .Build();
+
+    private static Svg Star(Svg s, string color) => s.Star(24, 25.5, 22.5, 10, color, stroke: White, width: 2);
+
+    private static Svg Diamond(Svg s, string color) =>
+        s.Polygon([(24, 2), (46, 24), (24, 46), (2, 24)], color, White, 2);
+
+    private static Svg Triangle(Svg s, string color) => s.Polygon([(24, 3), (46, 43), (2, 43)], color, White, 2);
+}
+
 internal static class Gallery
 {
     public static string Html(
@@ -1506,6 +1718,11 @@ internal static class Gallery
         }
 
         return Template
+            .Replace(
+                "{{TITLE}}",
+                style == "modern" ? "APRS Modern Symbol Proofs" : "APRS Symbol Proofs",
+                StringComparison.Ordinal
+            )
             .Replace("{{STYLE}}", style, StringComparison.Ordinal)
             .Replace("{{COUNT}}", drawn.Count.ToString(CultureInfo.InvariantCulture), StringComparison.Ordinal)
             .Replace("{{PRIMARY}}", Cards('/'), StringComparison.Ordinal)
@@ -1533,7 +1750,7 @@ internal static class Gallery
     private static string E(string text) => System.Net.WebUtility.HtmlEncode(text);
 
     private const string Template = """
-        <title>APRS Symbol Proofs</title>
+        <title>{{TITLE}}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
         <style>
@@ -1581,7 +1798,7 @@ internal static class Gallery
         <main>
           <div class="intro">
             <span class="eyebrow">APRS.NET · {{STYLE}} style</span>
-            <h1>APRS Symbol Proofs</h1>
+            <h1>{{TITLE}}</h1>
             <p>{{COUNT}} symbols drawn from their specification descriptions: APRS101 Appendix 2 and the APRS 1.1 and 1.2 symbol lists. That is every assigned symbol and every legacy one older stations still send; the remaining codes share the unassigned sign. Each card shows the symbol at 16, 24, 32 and 48 px, large, and over dark, terrain and sea map grounds.</p>
             <p>Overlay characters are drawn with the set's own outline font, so they look the same in every browser and app. Symbols designed for overlays place the character in the middle; any other alternate symbol shows it as a corner badge.</p>
           </div>

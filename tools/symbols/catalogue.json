@@ -5,12 +5,24 @@
     "docs/spec/aprs11/symbols.md",
     "docs/spec/aprs12/symbol-overlays.md"
   ],
+  "categories": {
+    "radio": "Radio, network and computers",
+    "vehicles": "Road and rail vehicles",
+    "aircraft": "Aircraft, space and navigation aids",
+    "marine": "Boats and the water",
+    "emergency": "Emergency and safety",
+    "weather": "Weather",
+    "places": "Places and services",
+    "people": "People and animals",
+    "markers": "Markers and shapes"
+  },
   "symbols": [
     {
       "table": "/",
       "code": "!",
       "name": "Police or sheriff",
       "status": "assigned",
+      "category": "emergency",
       "gps": "BB"
     },
     {
@@ -18,6 +30,7 @@
       "code": "\"",
       "name": "Reserved (was rain)",
       "status": "reserved",
+      "category": "markers",
       "gps": "BC"
     },
     {
@@ -25,6 +38,7 @@
       "code": "#",
       "name": "Digipeater (white centre)",
       "status": "assigned",
+      "category": "radio",
       "gps": "BD"
     },
     {
@@ -32,6 +46,7 @@
       "code": "$",
       "name": "Phone",
       "status": "assigned",
+      "category": "radio",
       "gps": "BE"
     },
     {
@@ -39,6 +54,7 @@
       "code": "%",
       "name": "DX cluster",
       "status": "assigned",
+      "category": "radio",
       "gps": "BF"
     },
     {
@@ -46,6 +62,7 @@
       "code": "&",
       "name": "HF gateway",
       "status": "assigned",
+      "category": "radio",
       "gps": "BG"
     },
     {
@@ -53,6 +70,7 @@
       "code": "'",
       "name": "Small aircraft",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "BH",
       "ssid": 11
     },
@@ -61,6 +79,7 @@
       "code": "(",
       "name": "Mobile satellite station",
       "status": "assigned",
+      "category": "radio",
       "gps": "BI"
     },
     {
@@ -68,6 +87,7 @@
       "code": ")",
       "name": "Wheelchair (handicapped)",
       "status": "assigned",
+      "category": "places",
       "gps": "BJ"
     },
     {
@@ -75,6 +95,7 @@
       "code": "*",
       "name": "Snowmobile",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "BK"
     },
     {
@@ -82,6 +103,7 @@
       "code": "+",
       "name": "Red Cross",
       "status": "assigned",
+      "category": "emergency",
       "gps": "BL"
     },
     {
@@ -89,6 +111,7 @@
       "code": ",",
       "name": "Boy Scouts",
       "status": "assigned",
+      "category": "places",
       "gps": "BM"
     },
     {
@@ -96,6 +119,7 @@
       "code": "-",
       "name": "House (VHF)",
       "status": "assigned",
+      "category": "places",
       "gps": "BN"
     },
     {
@@ -103,6 +127,7 @@
       "code": ".",
       "name": "X",
       "status": "assigned",
+      "category": "markers",
       "gps": "BO"
     },
     {
@@ -110,6 +135,7 @@
       "code": "/",
       "name": "Red dot",
       "status": "assigned",
+      "category": "markers",
       "gps": "BP"
     },
     {
@@ -117,6 +143,7 @@
       "code": "0",
       "name": "Numbered circle 0 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P0"
     },
     {
@@ -124,6 +151,7 @@
       "code": "1",
       "name": "Numbered circle 1 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P1"
     },
     {
@@ -131,6 +159,7 @@
       "code": "2",
       "name": "Numbered circle 2 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P2"
     },
     {
@@ -138,6 +167,7 @@
       "code": "3",
       "name": "Numbered circle 3 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P3"
     },
     {
@@ -145,6 +175,7 @@
       "code": "4",
       "name": "Numbered circle 4 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P4"
     },
     {
@@ -152,6 +183,7 @@
       "code": "5",
       "name": "Numbered circle 5 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P5"
     },
     {
@@ -159,6 +191,7 @@
       "code": "6",
       "name": "Numbered circle 6 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P6"
     },
     {
@@ -166,6 +199,7 @@
       "code": "7",
       "name": "Numbered circle 7 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P7"
     },
     {
@@ -173,6 +207,7 @@
       "code": "8",
       "name": "Numbered circle 8 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P8"
     },
     {
@@ -180,6 +215,7 @@
       "code": "9",
       "name": "Numbered circle 9 (obsolete)",
       "status": "legacy",
+      "category": "markers",
       "gps": "P9"
     },
     {
@@ -187,6 +223,7 @@
       "code": ":",
       "name": "Fire",
       "status": "assigned",
+      "category": "emergency",
       "gps": "MR"
     },
     {
@@ -194,6 +231,7 @@
       "code": ";",
       "name": "Campground (portable operation)",
       "status": "assigned",
+      "category": "places",
       "gps": "MS"
     },
     {
@@ -201,6 +239,7 @@
       "code": "<",
       "name": "Motorcycle",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "MT",
       "ssid": 10
     },
@@ -209,6 +248,7 @@
       "code": "=",
       "name": "Railroad engine",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "MU"
     },
     {
@@ -216,6 +256,7 @@
       "code": ">",
       "name": "Car",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "MV",
       "ssid": 9
     },
@@ -224,6 +265,7 @@
       "code": "?",
       "name": "File server",
       "status": "assigned",
+      "category": "radio",
       "gps": "MW"
     },
     {
@@ -231,6 +273,7 @@
       "code": "@",
       "name": "Hurricane future prediction (dot)",
       "status": "assigned",
+      "category": "weather",
       "gps": "MX"
     },
     {
@@ -238,6 +281,7 @@
       "code": "A",
       "name": "Aid station",
       "status": "assigned",
+      "category": "emergency",
       "gps": "PA"
     },
     {
@@ -245,6 +289,7 @@
       "code": "B",
       "name": "BBS or PBBS",
       "status": "assigned",
+      "category": "radio",
       "gps": "PB"
     },
     {
@@ -252,6 +297,7 @@
       "code": "C",
       "name": "Canoe",
       "status": "assigned",
+      "category": "marine",
       "gps": "PC"
     },
     {
@@ -259,6 +305,7 @@
       "code": "D",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "PD"
     },
     {
@@ -266,6 +313,7 @@
       "code": "E",
       "name": "Eyeball (events)",
       "status": "assigned",
+      "category": "places",
       "gps": "PE"
     },
     {
@@ -273,6 +321,7 @@
       "code": "F",
       "name": "Farm vehicle (tractor)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "PF"
     },
     {
@@ -280,6 +329,7 @@
       "code": "G",
       "name": "Grid square (6 characters)",
       "status": "assigned",
+      "category": "markers",
       "gps": "PG"
     },
     {
@@ -287,6 +337,7 @@
       "code": "H",
       "name": "Hotel (blue bed)",
       "status": "assigned",
+      "category": "places",
       "gps": "PH"
     },
     {
@@ -294,6 +345,7 @@
       "code": "I",
       "name": "TCP/IP on-air network station",
       "status": "assigned",
+      "category": "radio",
       "gps": "PI"
     },
     {
@@ -301,6 +353,7 @@
       "code": "J",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "PJ"
     },
     {
@@ -308,6 +361,7 @@
       "code": "K",
       "name": "School",
       "status": "assigned",
+      "category": "places",
       "gps": "PK"
     },
     {
@@ -315,6 +369,7 @@
       "code": "L",
       "name": "PC user",
       "status": "assigned",
+      "category": "radio",
       "gps": "PL"
     },
     {
@@ -322,6 +377,7 @@
       "code": "M",
       "name": "MacAPRS",
       "status": "assigned",
+      "category": "radio",
       "gps": "PM"
     },
     {
@@ -329,6 +385,7 @@
       "code": "N",
       "name": "NTS station",
       "status": "assigned",
+      "category": "radio",
       "gps": "PN"
     },
     {
@@ -336,6 +393,7 @@
       "code": "O",
       "name": "Balloon",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "PO",
       "ssid": 11
     },
@@ -344,6 +402,7 @@
       "code": "P",
       "name": "Police",
       "status": "assigned",
+      "category": "emergency",
       "gps": "PP"
     },
     {
@@ -351,6 +410,7 @@
       "code": "Q",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "PQ"
     },
     {
@@ -358,6 +418,7 @@
       "code": "R",
       "name": "Recreational vehicle",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "PR",
       "ssid": 13
     },
@@ -366,6 +427,7 @@
       "code": "S",
       "name": "Space shuttle",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "PS"
     },
     {
@@ -373,6 +435,7 @@
       "code": "T",
       "name": "SSTV",
       "status": "assigned",
+      "category": "radio",
       "gps": "PT"
     },
     {
@@ -380,6 +443,7 @@
       "code": "U",
       "name": "Bus",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "PU",
       "ssid": 2
     },
@@ -388,6 +452,7 @@
       "code": "V",
       "name": "ATV (amateur television)",
       "status": "assigned",
+      "category": "radio",
       "gps": "PV"
     },
     {
@@ -395,6 +460,7 @@
       "code": "W",
       "name": "National Weather Service site",
       "status": "assigned",
+      "category": "weather",
       "gps": "PW"
     },
     {
@@ -402,6 +468,7 @@
       "code": "X",
       "name": "Helicopter",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "PX",
       "ssid": 6
     },
@@ -410,6 +477,7 @@
       "code": "Y",
       "name": "Yacht (sailboat)",
       "status": "assigned",
+      "category": "marine",
       "gps": "PY",
       "ssid": 5
     },
@@ -418,6 +486,7 @@
       "code": "Z",
       "name": "WinAPRS",
       "status": "assigned",
+      "category": "radio",
       "gps": "PZ"
     },
     {
@@ -425,6 +494,7 @@
       "code": "[",
       "name": "Human or person",
       "status": "assigned",
+      "category": "people",
       "gps": "HS",
       "ssid": 7
     },
@@ -433,6 +503,7 @@
       "code": "\\",
       "name": "Triangle (DF station)",
       "status": "assigned",
+      "category": "radio",
       "gps": "HT"
     },
     {
@@ -440,6 +511,7 @@
       "code": "]",
       "name": "Mail or post office (was PBBS)",
       "status": "assigned",
+      "category": "places",
       "gps": "HU"
     },
     {
@@ -447,6 +519,7 @@
       "code": "^",
       "name": "Large aircraft",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "HV"
     },
     {
@@ -454,6 +527,7 @@
       "code": "_",
       "name": "Weather station (blue)",
       "status": "assigned",
+      "category": "weather",
       "gps": "HW"
     },
     {
@@ -461,6 +535,7 @@
       "code": "`",
       "name": "Dish antenna",
       "status": "assigned",
+      "category": "radio",
       "gps": "HX"
     },
     {
@@ -468,6 +543,7 @@
       "code": "a",
       "name": "Ambulance",
       "status": "assigned",
+      "category": "emergency",
       "gps": "LA",
       "ssid": 1
     },
@@ -476,6 +552,7 @@
       "code": "b",
       "name": "Bicycle",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "LB",
       "ssid": 4
     },
@@ -484,6 +561,7 @@
       "code": "c",
       "name": "Incident command post",
       "status": "assigned",
+      "category": "emergency",
       "gps": "LC"
     },
     {
@@ -491,6 +569,7 @@
       "code": "d",
       "name": "Fire department",
       "status": "assigned",
+      "category": "emergency",
       "gps": "LD"
     },
     {
@@ -498,6 +577,7 @@
       "code": "e",
       "name": "Horse (equestrian)",
       "status": "assigned",
+      "category": "people",
       "gps": "LE"
     },
     {
@@ -505,6 +585,7 @@
       "code": "f",
       "name": "Fire truck",
       "status": "assigned",
+      "category": "emergency",
       "gps": "LF",
       "ssid": 3
     },
@@ -513,6 +594,7 @@
       "code": "g",
       "name": "Glider",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "LG"
     },
     {
@@ -520,6 +602,7 @@
       "code": "h",
       "name": "Hospital",
       "status": "assigned",
+      "category": "emergency",
       "gps": "LH"
     },
     {
@@ -527,6 +610,7 @@
       "code": "i",
       "name": "IOTA (Islands On The Air)",
       "status": "assigned",
+      "category": "marine",
       "gps": "LI"
     },
     {
@@ -534,6 +618,7 @@
       "code": "j",
       "name": "Jeep",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "LJ",
       "ssid": 12
     },
@@ -542,6 +627,7 @@
       "code": "k",
       "name": "Truck",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "LK",
       "ssid": 14
     },
@@ -550,6 +636,7 @@
       "code": "l",
       "name": "Laptop",
       "status": "assigned",
+      "category": "radio",
       "gps": "LL"
     },
     {
@@ -557,6 +644,7 @@
       "code": "m",
       "name": "Mic-E repeater",
       "status": "assigned",
+      "category": "radio",
       "gps": "LM"
     },
     {
@@ -564,6 +652,7 @@
       "code": "n",
       "name": "Node (black bullseye)",
       "status": "assigned",
+      "category": "radio",
       "gps": "LN"
     },
     {
@@ -571,6 +660,7 @@
       "code": "o",
       "name": "Emergency operations centre",
       "status": "assigned",
+      "category": "emergency",
       "gps": "LO"
     },
     {
@@ -578,6 +668,7 @@
       "code": "p",
       "name": "Rover (puppy or dog)",
       "status": "assigned",
+      "category": "people",
       "gps": "LP"
     },
     {
@@ -585,6 +676,7 @@
       "code": "q",
       "name": "Grid square shown above 128 m",
       "status": "assigned",
+      "category": "markers",
       "gps": "LQ"
     },
     {
@@ -592,6 +684,7 @@
       "code": "r",
       "name": "Repeater",
       "status": "assigned",
+      "category": "radio",
       "gps": "LR"
     },
     {
@@ -599,6 +692,7 @@
       "code": "s",
       "name": "Ship (power boat)",
       "status": "assigned",
+      "category": "marine",
       "gps": "LS",
       "ssid": 8
     },
@@ -607,6 +701,7 @@
       "code": "t",
       "name": "Truck stop",
       "status": "assigned",
+      "category": "places",
       "gps": "LT"
     },
     {
@@ -614,6 +709,7 @@
       "code": "u",
       "name": "Truck (18-wheeler)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "LU"
     },
     {
@@ -621,6 +717,7 @@
       "code": "v",
       "name": "Van",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "LV",
       "ssid": 15
     },
@@ -629,6 +726,7 @@
       "code": "w",
       "name": "Water station",
       "status": "assigned",
+      "category": "places",
       "gps": "LW"
     },
     {
@@ -636,6 +734,7 @@
       "code": "x",
       "name": "X-APRS (Unix)",
       "status": "assigned",
+      "category": "radio",
       "gps": "LX"
     },
     {
@@ -643,6 +742,7 @@
       "code": "y",
       "name": "Yagi antenna at QTH",
       "status": "assigned",
+      "category": "radio",
       "gps": "LY"
     },
     {
@@ -650,6 +750,7 @@
       "code": "z",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "LZ"
     },
     {
@@ -657,6 +758,7 @@
       "code": "{",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "J1"
     },
     {
@@ -664,6 +766,7 @@
       "code": "|",
       "name": "Reserved (TNC stream switch)",
       "status": "reserved",
+      "category": "markers",
       "gps": "J2"
     },
     {
@@ -671,6 +774,7 @@
       "code": "}",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "J3"
     },
     {
@@ -678,6 +782,7 @@
       "code": "~",
       "name": "Reserved (TNC stream switch)",
       "status": "reserved",
+      "category": "markers",
       "gps": "J4"
     },
     {
@@ -685,6 +790,7 @@
       "code": "!",
       "name": "Emergency",
       "status": "assigned",
+      "category": "emergency",
       "gps": "OB",
       "overlays": [
         {
@@ -702,6 +808,7 @@
       "code": "\"",
       "name": "Reserved",
       "status": "reserved",
+      "category": "markers",
       "gps": "OC"
     },
     {
@@ -709,6 +816,7 @@
       "code": "#",
       "name": "Digipeater (green star)",
       "status": "assigned",
+      "category": "radio",
       "gps": "OD",
       "overlayFamily": true,
       "overlays": [
@@ -759,6 +867,7 @@
       "code": "$",
       "name": "Bank or ATM (green box)",
       "status": "assigned",
+      "category": "places",
       "gps": "OE",
       "overlays": [
         {
@@ -780,6 +889,7 @@
       "code": "%",
       "name": "Power plant",
       "status": "assigned",
+      "category": "places",
       "gps": "OF",
       "overlays": [
         {
@@ -829,6 +939,7 @@
       "code": "&",
       "name": "Gateway (diamond)",
       "status": "assigned",
+      "category": "radio",
       "gps": "OG",
       "overlayFamily": true,
       "overlays": [
@@ -867,6 +978,7 @@
       "code": "'",
       "name": "Crash or incident site",
       "status": "assigned",
+      "category": "emergency",
       "gps": "OH",
       "overlays": [
         {
@@ -896,6 +1008,7 @@
       "code": "(",
       "name": "Cloudy",
       "status": "assigned",
+      "category": "weather",
       "gps": "OI"
     },
     {
@@ -903,6 +1016,7 @@
       "code": ")",
       "name": "Firenet MEO, MODIS Earth observation",
       "status": "assigned",
+      "category": "emergency",
       "gps": "OJ"
     },
     {
@@ -910,6 +1024,7 @@
       "code": "*",
       "name": "Snow (now overlay S on \\`)",
       "status": "legacy",
+      "category": "weather",
       "gps": "OK"
     },
     {
@@ -917,6 +1032,7 @@
       "code": "+",
       "name": "Church",
       "status": "assigned",
+      "category": "places",
       "gps": "OL"
     },
     {
@@ -924,6 +1040,7 @@
       "code": ",",
       "name": "Girl Scouts",
       "status": "assigned",
+      "category": "places",
       "gps": "OM"
     },
     {
@@ -931,6 +1048,7 @@
       "code": "-",
       "name": "House (HF)",
       "status": "assigned",
+      "category": "places",
       "gps": "ON",
       "overlays": [
         {
@@ -980,6 +1098,7 @@
       "code": ".",
       "name": "Ambiguous position (question mark)",
       "status": "assigned",
+      "category": "markers",
       "gps": "OO"
     },
     {
@@ -987,6 +1106,7 @@
       "code": "/",
       "name": "Waypoint destination",
       "status": "assigned",
+      "category": "markers",
       "gps": "OP"
     },
     {
@@ -994,6 +1114,7 @@
       "code": "0",
       "name": "Circle (IRLP, EchoLink, WIRES)",
       "status": "assigned",
+      "category": "markers",
       "gps": "A0",
       "overlayFamily": true,
       "overlays": [
@@ -1028,6 +1149,7 @@
       "code": "1",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A1"
     },
     {
@@ -1035,6 +1157,7 @@
       "code": "2",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A2"
     },
     {
@@ -1042,6 +1165,7 @@
       "code": "3",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A3"
     },
     {
@@ -1049,6 +1173,7 @@
       "code": "4",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A4"
     },
     {
@@ -1056,6 +1181,7 @@
       "code": "5",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A5"
     },
     {
@@ -1063,6 +1189,7 @@
       "code": "6",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A6"
     },
     {
@@ -1070,6 +1197,7 @@
       "code": "7",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "A7"
     },
     {
@@ -1077,6 +1205,7 @@
       "code": "8",
       "name": "802.11 or other network node",
       "status": "assigned",
+      "category": "radio",
       "gps": "A8",
       "overlays": [
         {
@@ -1094,6 +1223,7 @@
       "code": "9",
       "name": "Gas station (blue pump)",
       "status": "assigned",
+      "category": "places",
       "gps": "A9"
     },
     {
@@ -1101,6 +1231,7 @@
       "code": ":",
       "name": "Hail (now overlay H on \\`)",
       "status": "legacy",
+      "category": "weather",
       "gps": "NR"
     },
     {
@@ -1108,6 +1239,7 @@
       "code": ";",
       "name": "Park or picnic area",
       "status": "assigned",
+      "category": "places",
       "gps": "NS",
       "overlays": [
         {
@@ -1133,6 +1265,7 @@
       "code": "<",
       "name": "Advisory (single gale flag)",
       "status": "assigned",
+      "category": "weather",
       "gps": "NT"
     },
     {
@@ -1140,6 +1273,7 @@
       "code": "=",
       "name": "Rail (overlay group)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "NU",
       "overlays": [
         {
@@ -1209,6 +1343,7 @@
       "code": ">",
       "name": "Car (top view)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "NV",
       "overlayFamily": true,
       "overlays": [
@@ -1267,6 +1402,7 @@
       "code": "?",
       "name": "Information kiosk (blue box with ?)",
       "status": "assigned",
+      "category": "places",
       "gps": "NW"
     },
     {
@@ -1274,6 +1410,7 @@
       "code": "@",
       "name": "Hurricane or tropical storm",
       "status": "assigned",
+      "category": "weather",
       "gps": "NX"
     },
     {
@@ -1281,6 +1418,7 @@
       "code": "A",
       "name": "Box (DTMF, RFID, XO)",
       "status": "assigned",
+      "category": "markers",
       "gps": "AA",
       "overlayFamily": true,
       "overlays": [
@@ -1327,6 +1465,7 @@
       "code": "B",
       "name": "Blowing snow (now overlay B on \\E)",
       "status": "legacy",
+      "category": "weather",
       "gps": "AB"
     },
     {
@@ -1334,6 +1473,7 @@
       "code": "C",
       "name": "Coast Guard",
       "status": "assigned",
+      "category": "emergency",
       "gps": "AC"
     },
     {
@@ -1341,6 +1481,7 @@
       "code": "D",
       "name": "Depot (was drizzle)",
       "status": "assigned",
+      "category": "places",
       "gps": "AD",
       "overlays": [
         {
@@ -1378,6 +1519,7 @@
       "code": "E",
       "name": "Smoke and other visibility codes",
       "status": "assigned",
+      "category": "weather",
       "gps": "AE",
       "overlays": [
         {
@@ -1407,6 +1549,7 @@
       "code": "F",
       "name": "Freezing rain (now overlay F on \\`)",
       "status": "legacy",
+      "category": "weather",
       "gps": "AF"
     },
     {
@@ -1414,6 +1557,7 @@
       "code": "G",
       "name": "Snow shower (now overlay S on \\I)",
       "status": "legacy",
+      "category": "weather",
       "gps": "AG"
     },
     {
@@ -1421,6 +1565,7 @@
       "code": "H",
       "name": "Haze and hazards",
       "status": "assigned",
+      "category": "weather",
       "gps": "AH",
       "overlays": [
         {
@@ -1446,6 +1591,7 @@
       "code": "I",
       "name": "Rain shower",
       "status": "assigned",
+      "category": "weather",
       "gps": "AI"
     },
     {
@@ -1453,6 +1599,7 @@
       "code": "J",
       "name": "Lightning (now overlay L on \\I)",
       "status": "legacy",
+      "category": "weather",
       "gps": "AJ"
     },
     {
@@ -1460,6 +1607,7 @@
       "code": "K",
       "name": "Kenwood HT",
       "status": "assigned",
+      "category": "radio",
       "gps": "AK"
     },
     {
@@ -1467,6 +1615,7 @@
       "code": "L",
       "name": "Lighthouse",
       "status": "assigned",
+      "category": "marine",
       "gps": "AL"
     },
     {
@@ -1474,6 +1623,7 @@
       "code": "M",
       "name": "MARS (A=Army, N=Navy, F=Air Force)",
       "status": "assigned",
+      "category": "radio",
       "gps": "AM"
     },
     {
@@ -1481,6 +1631,7 @@
       "code": "N",
       "name": "Navigation buoy",
       "status": "assigned",
+      "category": "marine",
       "gps": "AN"
     },
     {
@@ -1488,6 +1639,7 @@
       "code": "O",
       "name": "Rocket (balloon overlay group)",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "AO",
       "overlays": [
         {
@@ -1521,6 +1673,7 @@
       "code": "P",
       "name": "Parking",
       "status": "assigned",
+      "category": "places",
       "gps": "AP"
     },
     {
@@ -1528,6 +1681,7 @@
       "code": "Q",
       "name": "Earthquake",
       "status": "assigned",
+      "category": "emergency",
       "gps": "AQ"
     },
     {
@@ -1535,6 +1689,7 @@
       "code": "R",
       "name": "Restaurant",
       "status": "assigned",
+      "category": "places",
       "gps": "AR",
       "overlays": [
         {
@@ -1560,6 +1715,7 @@
       "code": "S",
       "name": "Satellite or PACSAT",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "AS"
     },
     {
@@ -1567,6 +1723,7 @@
       "code": "T",
       "name": "Thunderstorm",
       "status": "assigned",
+      "category": "weather",
       "gps": "AT"
     },
     {
@@ -1574,6 +1731,7 @@
       "code": "U",
       "name": "Sunny",
       "status": "assigned",
+      "category": "weather",
       "gps": "AU"
     },
     {
@@ -1581,6 +1739,7 @@
       "code": "V",
       "name": "VORTAC navigation aid",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "AV"
     },
     {
@@ -1588,6 +1747,7 @@
       "code": "W",
       "name": "NWS site (with overlay)",
       "status": "assigned",
+      "category": "weather",
       "gps": "AW",
       "overlayFamily": true
     },
@@ -1596,6 +1756,7 @@
       "code": "X",
       "name": "Pharmacy (Rx)",
       "status": "assigned",
+      "category": "places",
       "gps": "AX"
     },
     {
@@ -1603,6 +1764,7 @@
       "code": "Y",
       "name": "Radios and devices",
       "status": "assigned",
+      "category": "radio",
       "gps": "AY",
       "overlays": [
         {
@@ -1632,6 +1794,7 @@
       "code": "Z",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "AZ"
     },
     {
@@ -1639,6 +1802,7 @@
       "code": "[",
       "name": "Wall cloud (humans with overlay)",
       "status": "assigned",
+      "category": "weather",
       "gps": "DS",
       "overlays": [
         {
@@ -1664,6 +1828,7 @@
       "code": "\\",
       "name": "GPS and navigation devices",
       "status": "assigned",
+      "category": "radio",
       "gps": "DT",
       "overlays": [
         {
@@ -1677,6 +1842,7 @@
       "code": "]",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "DU"
     },
     {
@@ -1684,6 +1850,7 @@
       "code": "^",
       "name": "Aircraft (top view)",
       "status": "assigned",
+      "category": "aircraft",
       "gps": "DV",
       "overlayFamily": true,
       "overlays": [
@@ -1738,6 +1905,7 @@
       "code": "_",
       "name": "Weather site with digipeater (green)",
       "status": "assigned",
+      "category": "weather",
       "gps": "DW",
       "overlayFamily": true
     },
@@ -1746,6 +1914,7 @@
       "code": "`",
       "name": "Rain (all precipitation with overlay)",
       "status": "assigned",
+      "category": "weather",
       "gps": "DX"
     },
     {
@@ -1753,6 +1922,7 @@
       "code": "a",
       "name": "ARRL, ARES, Winlink, D-STAR and similar (diamond)",
       "status": "assigned",
+      "category": "emergency",
       "gps": "SA",
       "overlayFamily": true,
       "overlays": [
@@ -1791,6 +1961,7 @@
       "code": "b",
       "name": "Blowing dust or sand (now overlay D on \\E)",
       "status": "legacy",
+      "category": "weather",
       "gps": "SB"
     },
     {
@@ -1798,6 +1969,7 @@
       "code": "c",
       "name": "Civil defence (RACES, SATERN; triangle)",
       "status": "assigned",
+      "category": "emergency",
       "gps": "SC",
       "overlayFamily": true,
       "overlays": [
@@ -1820,6 +1992,7 @@
       "code": "d",
       "name": "DX spot by callsign",
       "status": "assigned",
+      "category": "radio",
       "gps": "SD"
     },
     {
@@ -1827,6 +2000,7 @@
       "code": "e",
       "name": "Sleet (now overlay E on \\`)",
       "status": "legacy",
+      "category": "weather",
       "gps": "SE"
     },
     {
@@ -1834,6 +2008,7 @@
       "code": "f",
       "name": "Funnel cloud",
       "status": "assigned",
+      "category": "weather",
       "gps": "SF"
     },
     {
@@ -1841,6 +2016,7 @@
       "code": "g",
       "name": "Gale flags",
       "status": "assigned",
+      "category": "weather",
       "gps": "SG"
     },
     {
@@ -1848,6 +2024,7 @@
       "code": "h",
       "name": "Store or hamfest",
       "status": "assigned",
+      "category": "places",
       "gps": "SH",
       "overlays": [
         {
@@ -1873,6 +2050,7 @@
       "code": "i",
       "name": "Box or point of interest",
       "status": "assigned",
+      "category": "markers",
       "gps": "SI",
       "overlayFamily": true
     },
@@ -1881,6 +2059,7 @@
       "code": "j",
       "name": "Work zone (steam shovel)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "SJ"
     },
     {
@@ -1888,6 +2067,7 @@
       "code": "k",
       "name": "Special vehicle (SUV, ATV, 4x4)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "SK",
       "overlays": [
         {
@@ -1905,6 +2085,7 @@
       "code": "l",
       "name": "Area (box, circle and other shapes)",
       "status": "assigned",
+      "category": "markers",
       "gps": "SL"
     },
     {
@@ -1912,6 +2093,7 @@
       "code": "m",
       "name": "Value signpost (3-character display)",
       "status": "assigned",
+      "category": "markers",
       "gps": "SM"
     },
     {
@@ -1919,6 +2101,7 @@
       "code": "n",
       "name": "Triangle (with overlay)",
       "status": "assigned",
+      "category": "markers",
       "gps": "SN",
       "overlayFamily": true
     },
@@ -1927,6 +2110,7 @@
       "code": "o",
       "name": "Small circle",
       "status": "assigned",
+      "category": "markers",
       "gps": "SO"
     },
     {
@@ -1934,6 +2118,7 @@
       "code": "p",
       "name": "Partly cloudy (now overlay P on \\()",
       "status": "legacy",
+      "category": "weather",
       "gps": "SP"
     },
     {
@@ -1941,6 +2126,7 @@
       "code": "q",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "SQ"
     },
     {
@@ -1948,6 +2134,7 @@
       "code": "r",
       "name": "Restrooms",
       "status": "assigned",
+      "category": "places",
       "gps": "SR"
     },
     {
@@ -1955,6 +2142,7 @@
       "code": "s",
       "name": "Ship or boat (top view)",
       "status": "assigned",
+      "category": "marine",
       "gps": "SS",
       "overlayFamily": true,
       "overlays": [
@@ -2041,6 +2229,7 @@
       "code": "t",
       "name": "Tornado",
       "status": "assigned",
+      "category": "weather",
       "gps": "ST"
     },
     {
@@ -2048,6 +2237,7 @@
       "code": "u",
       "name": "Truck (with overlay)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "SU",
       "overlayFamily": true,
       "overlays": [
@@ -2082,6 +2272,7 @@
       "code": "v",
       "name": "Van (with overlay)",
       "status": "assigned",
+      "category": "vehicles",
       "gps": "SV",
       "overlayFamily": true
     },
@@ -2090,6 +2281,7 @@
       "code": "w",
       "name": "Flooding (avalanche, slides)",
       "status": "assigned",
+      "category": "weather",
       "gps": "SW",
       "overlays": [
         {
@@ -2127,6 +2319,7 @@
       "code": "x",
       "name": "Wreck or obstruction",
       "status": "assigned",
+      "category": "emergency",
       "gps": "SX"
     },
     {
@@ -2134,6 +2327,7 @@
       "code": "y",
       "name": "Skywarn",
       "status": "assigned",
+      "category": "weather",
       "gps": "SY"
     },
     {
@@ -2141,6 +2335,7 @@
       "code": "z",
       "name": "Shelter (with overlay)",
       "status": "assigned",
+      "category": "emergency",
       "gps": "SZ",
       "overlayFamily": true,
       "overlays": [
@@ -2171,6 +2366,7 @@
       "code": "{",
       "name": "Fog (now overlay F on \\E)",
       "status": "legacy",
+      "category": "weather",
       "gps": "Q1"
     },
     {
@@ -2178,6 +2374,7 @@
       "code": "|",
       "name": "Reserved (TNC stream switch)",
       "status": "reserved",
+      "category": "markers",
       "gps": "Q2"
     },
     {
@@ -2185,6 +2382,7 @@
       "code": "}",
       "name": "Unassigned",
       "status": "unassigned",
+      "category": "markers",
       "gps": "Q3"
     },
     {
@@ -2192,6 +2390,7 @@
       "code": "~",
       "name": "Reserved (TNC stream switch)",
       "status": "reserved",
+      "category": "markers",
       "gps": "Q4"
     }
   ]
