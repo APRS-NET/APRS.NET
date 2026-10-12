@@ -2,7 +2,7 @@
 
 An async-first, dependency-light .NET library family for APRS: parse and build packets, connect to APRS-IS, and later bridge radios and clients through KISS, TCP and WebSocket services.
 
-Status: early scaffolding (M0). See [the plan](.agent/APRS.NET%20-%20Planned%20Features%20and%20Repo%20Structure.md).
+Status: early scaffolding (M0).
 
 ## Layout
 
