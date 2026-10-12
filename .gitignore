@@ -61,3 +61,6 @@ captures/
 
 # Rider per-user settings
 *.DotSettings.user
+
+# Local code coverage output (see README)
+coverage/
