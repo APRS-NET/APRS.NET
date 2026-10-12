@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same pull request cancels the older run; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build:
     strategy:
@@ -15,6 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,6 +40,7 @@ jobs:
   coverage:
     # Coverage on one platform is enough. The gate uses the merged total of every test project and framework.
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write # only to push coverage badges to the badges branch on main
     concurrency:
@@ -96,6 +103,7 @@ jobs:
 
   format:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
