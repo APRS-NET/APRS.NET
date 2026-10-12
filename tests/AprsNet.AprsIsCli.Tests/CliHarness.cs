@@ -48,7 +48,7 @@ internal sealed class CliHarness
                 ClientOptions = options;
                 IAprsTransport transport = ConnectFailure is null ? Transport : new FailingTransport(ConnectFailure);
                 return new AprsIsClient(options, logger, transport);
-            }
+            },
         };
 
         var code = await AprsCli.RunAsync(args, environment, cancellationToken);
@@ -100,9 +100,7 @@ internal sealed class CapturingLoggerProvider : ILoggerProvider
         return new CapturingLogger(categoryName, _entries);
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 
     private sealed class CapturingLogger(string category, List<(string, LogLevel, string)> entries) : ILogger
     {

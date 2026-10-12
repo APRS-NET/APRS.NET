@@ -36,7 +36,8 @@ internal sealed class LineReader(Stream stream, int maxLineLength, ILogger logge
                     continue;
                 }
 
-                if (line.Length > 0 && line[^1] == (byte)'\r') line = line[..^1];
+                if (line.Length > 0 && line[^1] == (byte)'\r')
+                    line = line[..^1];
 
                 if (line.Length > maxLineLength)
                 {
@@ -65,7 +66,8 @@ internal sealed class LineReader(Stream stream, int maxLineLength, ILogger logge
             }
 
             var read = await stream.ReadAsync(_buffer.AsMemory(_end), cancellationToken).ConfigureAwait(false);
-            if (read == 0) return null;
+            if (read == 0)
+                return null;
 
             _end += read;
         }

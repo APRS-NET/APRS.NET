@@ -24,7 +24,8 @@ internal sealed class FakeAprsTransport : IAprsTransport
 
     public async ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
     {
-        if (!await _incoming.Reader.WaitToReadAsync(cancellationToken)) return null;
+        if (!await _incoming.Reader.WaitToReadAsync(cancellationToken))
+            return null;
 
         return _incoming.Reader.TryRead(out var line) ? line : null;
     }

@@ -13,7 +13,8 @@ public class LineReaderTests
     private static async Task<List<string>> ReadAll(LineReader reader)
     {
         var lines = new List<string>();
-        while (await reader.ReadLineAsync(CancellationToken.None) is { } line) lines.Add(line);
+        while (await reader.ReadLineAsync(CancellationToken.None) is { } line)
+            lines.Add(line);
 
         return lines;
     }
@@ -104,15 +105,14 @@ public class LineReaderTests
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            if (_position >= data.Length || buffer.Length == 0) return ValueTask.FromResult(0);
+            if (_position >= data.Length || buffer.Length == 0)
+                return ValueTask.FromResult(0);
 
             buffer.Span[0] = data[_position++];
             return ValueTask.FromResult(1);
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -160,9 +160,7 @@ public class LineReaderTests
             return buffer.Length;
         }
 
-        public override void Flush()
-        {
-        }
+        public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count)
         {

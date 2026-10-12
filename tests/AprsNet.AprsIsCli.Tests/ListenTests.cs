@@ -9,13 +9,14 @@ public class ListenTests
     [
         "W1AW>APRS,TCPIP*:>one",
         "K1ABC>APRS,TCPIP*:>two",
-        "N2XYZ>APRS,TCPIP*:>three"
+        "N2XYZ>APRS,TCPIP*:>three",
     ];
 
     private static CliHarness WithPackets(params string[] lines)
     {
         var harness = new CliHarness().LoginAccepted();
-        foreach (var line in lines) harness.Transport.Server(line);
+        foreach (var line in lines)
+            harness.Transport.Server(line);
 
         return harness;
     }
@@ -73,7 +74,7 @@ public class ListenTests
             [
                 $"2026-10-11T12:00:00.123Z {_packets[0]}",
                 $"2026-10-11T12:00:00.123Z {_packets[1]}",
-                $"2026-10-11T12:00:00.123Z {_packets[2]}"
+                $"2026-10-11T12:00:00.123Z {_packets[2]}",
             ],
             await File.ReadAllLinesAsync(file)
         );
@@ -344,7 +345,7 @@ public class ListenTests
         Assert.Equal(
             [
                 "Packet from W1AW: W1AW>APRS,TCPIP*:>one",
-                "Packet from K1ABC: K1ABC>APRS:>\\x1B[31mtwo" // control characters escaped for the backend
+                "Packet from K1ABC: K1ABC>APRS:>\\x1B[31mtwo", // control characters escaped for the backend
             ],
             logged.Select(e => e.Message)
         );

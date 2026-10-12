@@ -30,3 +30,8 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(deps)"
+    # global.json is a floor, not a pin: any 10.0.x SDK >= 10.0.100 may build.
+    # Distro SDKs (e.g. Fedora) lag on the 1xx feature band, so don't raise it.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]

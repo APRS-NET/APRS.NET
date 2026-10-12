@@ -8,5 +8,5 @@ public enum OverflowPolicy
     Block,
 
     /// <summary>Discard the oldest queued line to make room for the newest.</summary>
-    DropOldest
+    DropOldest,
 }

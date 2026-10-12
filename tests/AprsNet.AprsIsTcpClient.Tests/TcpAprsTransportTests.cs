@@ -38,7 +38,7 @@ public class TcpAprsTransportTests
             Callsign = "NZ0P",
             SoftwareName = "test",
             SoftwareVersion = "1.0",
-            Filter = "t/m"
+            Filter = "t/m",
         };
         await using var client = new AprsIsClient(options);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -48,7 +48,8 @@ public class TcpAprsTransportTests
         await foreach (var line in client.ReadLinesAsync(cts.Token))
         {
             lines.Add(line);
-            if (lines.Count == 2) break;
+            if (lines.Count == 2)
+                break;
         }
 
         await server;
@@ -84,7 +85,7 @@ public class TcpAprsTransportTests
             Endpoint = new AprsIsEndpoint("127.0.0.1", port),
             Callsign = "N0CALL",
             SoftwareName = "test",
-            SoftwareVersion = "1.0"
+            SoftwareVersion = "1.0",
         };
         await using var client = new AprsIsClient(options);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -123,7 +124,8 @@ public class TcpAprsTransportTests
         var one = new byte[1];
         while (await stream.ReadAsync(one) == 1)
         {
-            if (one[0] == '\n') break;
+            if (one[0] == '\n')
+                break;
 
             sb.Append((char)one[0]);
         }

@@ -10,7 +10,7 @@ public class AprsIsClientTests
         {
             Callsign = "NZ0P",
             SoftwareName = "test",
-            SoftwareVersion = "1.0"
+            SoftwareVersion = "1.0",
         };
         configure?.Invoke(options);
         return options;
@@ -23,7 +23,8 @@ public class AprsIsClientTests
         await foreach (var line in client.ReadLinesAsync(cts.Token))
         {
             lines.Add(line);
-            if (lines.Count == count) break;
+            if (lines.Count == count)
+                break;
         }
 
         return lines;
@@ -265,11 +266,13 @@ public class AprsIsClientTests
         );
         await client.ConnectAsync();
 
-        for (var i = 1; i <= 5; i++) transport.Server($"A>B:>{i}");
+        for (var i = 1; i <= 5; i++)
+            transport.Server($"A>B:>{i}");
 
         // Let the receive loop queue all five before the consumer starts, so the queue overflows.
         using var wait = new CancellationTokenSource(_short);
-        while (client.PacketsReceived < 5) await Task.Delay(5, wait.Token);
+        while (client.PacketsReceived < 5)
+            await Task.Delay(5, wait.Token);
 
         await Task.Delay(50, wait.Token);
         transport.Close();
