@@ -221,7 +221,7 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.Transport.Close();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "0.5s"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"]);
 
         Assert.Equal(0, result.ExitCode);
         Assert.True(harness.ConnectionAttempts >= 3, $"only {harness.ConnectionAttempts} attempts");
@@ -260,7 +260,7 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.AddReconnect(_packets[1]);
 
-        var run = harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "--max-silence", "0.5s", "-n", "2"]);
+        var run = harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "--max-silence", "2s", "-n", "2"]);
         await Task.Delay(150);
         harness.Transport.Server("# aprsc keepalive");
         harness.Transport.Server("# aprsc keepalive");
@@ -268,7 +268,7 @@ public class ListenTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains(
-            "no packets from T2TEST for 0.5s (server keepalives in that time: 2)",
+            "no packets from T2TEST for 2s (server keepalives in that time: 2)",
             result.Error,
             StringComparison.Ordinal
         );

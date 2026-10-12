@@ -310,13 +310,14 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(
-            Options(o => o.IdleTimeout = TimeSpan.FromMilliseconds(400)),
+            Options(o => o.IdleTimeout = TimeSpan.FromSeconds(2)),
             transport: transport
         );
         await client.ConnectAsync();
 
-        // Keepalives every 100 ms for well over the idle timeout, then a packet.
-        for (var i = 0; i < 10; i++)
+        // Keepalives every 100 ms for 1.5x the idle timeout, then a packet. The 20x margin between the gap and the
+        // timeout absorbs scheduler stalls on busy CI runners.
+        for (var i = 0; i < 30; i++)
         {
             transport.Server("# aprsc keepalive");
             await Task.Delay(100);
@@ -325,7 +326,7 @@ public class AprsIsClientTests
         transport.Server("W1AW>APRS:>still here");
 
         Assert.Equal(["W1AW>APRS:>still here"], await Take(client, 1));
-        Assert.Equal(10, client.ServerCommentsReceived);
+        Assert.Equal(30, client.ServerCommentsReceived);
     }
 
     [Fact]
