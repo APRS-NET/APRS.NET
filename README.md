@@ -22,8 +22,10 @@ Packages are published to nuget.org as pre-releases, so pass `--prerelease`:
 ```sh
 dotnet add package AprsNet.Packets --prerelease
 dotnet add package AprsNet.AprsIsTcpClient --prerelease
-dotnet tool install --global AprsNet.AprsIsCli --prerelease
 ```
+
+The `aprscli` command-line tool is not published as a package yet; run it from source with
+`dotnet run --project apps/AprsNet.AprsIsCli -- listen --help`.
 
 Each [GitHub release](https://github.com/APRS-NET/APRS.NET/releases) also carries the same packages, and is marked as a
 pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are chosen.
@@ -34,7 +36,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 |-------------------------------|-----------------------------------------|
 | `src/AprsNet.Packets`         | Packet models, parser, encoder (no I/O) |
 | `src/AprsNet.AprsIsTcpClient` | APRS-IS client                          |
-| `apps/AprsNet.AprsIsCli`      | The `aprscli` dotnet tool               |
+| `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool         |
 | `tests/`                      | Unit tests and the packet corpus        |
 
 ## Build
