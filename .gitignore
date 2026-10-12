@@ -63,4 +63,4 @@ captures/
 *.DotSettings.user
 
 # Local code coverage output (see README)
-coverage/
+/coverage/
