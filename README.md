@@ -9,6 +9,24 @@ bridge radios and clients through KISS, TCP and WebSocket services.
 
 Status: early scaffolding (M0).
 
+> [!WARNING]
+> **Alpha software.** Every APRS.NET package is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. APIs,
+> behaviour and package names can change between any two releases without notice, and there is no stability or support
+> guarantee. Do not depend on it in production.
+
+## Install
+
+Packages are published to nuget.org as pre-releases, so pass `--prerelease`:
+
+```sh
+dotnet add package AprsNet.Packets --prerelease
+dotnet add package AprsNet.AprsIsTcpClient --prerelease
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+```
+
+Each [GitHub release](https://github.com/APRS-NET/APRS.NET/releases) also carries the same packages, and is marked as a
+pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are chosen.
+
 ## Layout
 
 | Path                          | Contents                                |

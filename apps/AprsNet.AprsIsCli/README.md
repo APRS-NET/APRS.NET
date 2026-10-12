@@ -2,6 +2,13 @@
 
 The `aprscli` command-line tool for APRS.NET.
 
+> **Alpha pre-release.** APRS.NET packages are versioned `0.x.y-alpha.N` until at least 1.0.0, and the API can change
+> between any two releases. Install with `--prerelease`. Not for production use.
+
+```sh
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+```
+
 ## listen
 
 Connect to APRS-IS and stream raw packet lines to stdout.
