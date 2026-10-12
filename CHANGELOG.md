@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-10-12)
+
+
+### Features
+
+* **symbols:** add the AprsNet.Symbols package ([ead2f48](https://github.com/APRS-NET/APRS.NET/commit/ead2f484c989c3176fb8efd0a5a2cfe12c236fbc))
+
 ## [0.1.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-10-12)
 
 
