@@ -44,6 +44,12 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Information, Message = "Server closed the connection")]
     public static partial void ServerClosed(this ILogger logger);
 
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "No data from the server for {Seconds}s; treating the connection as dead"
+    )]
+    public static partial void IdleTimeout(this ILogger logger, double seconds);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Receive loop failed")]
     public static partial void ReceiveFailed(this ILogger logger, Exception exception);
 }

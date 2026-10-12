@@ -8,6 +8,8 @@ namespace AprsNet.AprsIsTcpClient;
 /// Connects to APRS-IS, logs in, and exposes the incoming packet lines as an async stream.
 /// A client is single-use: connect once, read until the stream ends, then dispose.
 /// Lines are raw APRS text (<c>SRC&gt;DEST,PATH:body</c>); server comments (<c>#</c>) are counted but not delivered.
+/// If the server sends nothing for <see cref="AprsIsClientOptions.IdleTimeout"/>, the stream ends with a
+/// <see cref="TimeoutException"/>.
 /// </summary>
 public sealed class AprsIsClient : IAsyncDisposable
 {
@@ -116,7 +118,8 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     /// <summary>
     /// Yields packet lines until the server closes the connection or the client is disposed.
-    /// Throws if the connection failed with an error. Intended for a single consumer.
+    /// Throws if the connection failed with an error, or <see cref="TimeoutException"/> if the server went silent for
+    /// longer than <see cref="AprsIsClientOptions.IdleTimeout"/>. Intended for a single consumer.
     /// </summary>
     public IAsyncEnumerable<string> ReadLinesAsync(CancellationToken cancellationToken = default) =>
         _channel.Reader.ReadAllAsync(cancellationToken);
@@ -203,11 +206,44 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     private async Task ReceiveLoopAsync(CancellationToken cancellationToken)
     {
+        CancellationTokenSource? idle = null;
         try
         {
             while (true)
             {
-                var line = await _transport.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                string? line;
+                if (_options.IdleTimeout == Timeout.InfiniteTimeSpan)
+                {
+                    line = await _transport.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    // One timer per read. TryReset fails once the timer has fired (for example while a slow
+                    // consumer held up the previous write), so start a fresh source in that case.
+                    if (idle is null || !idle.TryReset())
+                    {
+                        idle?.Dispose();
+                        idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    }
+
+                    idle.CancelAfter(_options.IdleTimeout);
+                    try
+                    {
+                        line = await _transport.ReadLineAsync(idle.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                    {
+                        ClientMetrics.IdleTimeout();
+                        _logger.IdleTimeout(_options.IdleTimeout.TotalSeconds);
+                        _channel.Writer.TryComplete(
+                            new TimeoutException(
+                                $"No data from the server for {_options.IdleTimeout.TotalSeconds:0.#}s."
+                            )
+                        );
+                        return;
+                    }
+                }
+
                 if (line is null)
                 {
                     _logger.ServerClosed();
@@ -242,6 +278,10 @@ public sealed class AprsIsClient : IAsyncDisposable
         {
             _logger.ReceiveFailed(ex);
             _channel.Writer.TryComplete(ex);
+        }
+        finally
+        {
+            idle?.Dispose();
         }
     }
 

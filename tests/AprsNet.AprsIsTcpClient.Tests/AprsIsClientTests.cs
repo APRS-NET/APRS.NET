@@ -280,6 +280,73 @@ public class AprsIsClientTests
         Assert.Equal(["A>B:>4", "A>B:>5"], await Take(client, 10));
     }
 
+    [Fact]
+    public async Task ASilentServerEndsTheStreamWithATimeout()
+    {
+        var transport = new FakeAprsTransport();
+        transport.Server("# logresp NZ0P unverified, server T2TEST");
+        await using var client = new AprsIsClient(
+            Options(o => o.IdleTimeout = TimeSpan.FromMilliseconds(100)),
+            transport: transport
+        );
+        await client.ConnectAsync();
+
+        transport.Server("W1AW>APRS:>before the stall");
+
+        var lines = new List<string>();
+        var ex = await Assert.ThrowsAsync<TimeoutException>(async () =>
+        {
+            using var cts = new CancellationTokenSource(_short);
+            await foreach (var line in client.ReadLinesAsync(cts.Token))
+                lines.Add(line);
+        });
+        Assert.Equal(["W1AW>APRS:>before the stall"], lines);
+        Assert.Contains("No data from the server", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ServerKeepalivesHoldOffTheIdleTimeout()
+    {
+        var transport = new FakeAprsTransport();
+        transport.Server("# logresp NZ0P unverified, server T2TEST");
+        await using var client = new AprsIsClient(
+            Options(o => o.IdleTimeout = TimeSpan.FromMilliseconds(400)),
+            transport: transport
+        );
+        await client.ConnectAsync();
+
+        // Keepalives every 100 ms for well over the idle timeout, then a packet.
+        for (var i = 0; i < 10; i++)
+        {
+            transport.Server("# aprsc keepalive");
+            await Task.Delay(100);
+        }
+
+        transport.Server("W1AW>APRS:>still here");
+
+        Assert.Equal(["W1AW>APRS:>still here"], await Take(client, 1));
+        Assert.Equal(10, client.ServerCommentsReceived);
+    }
+
+    [Fact]
+    public async Task OptionsAcceptAnInfiniteIdleTimeout()
+    {
+        await using var client = new AprsIsClient(
+            Options(o => o.IdleTimeout = Timeout.InfiniteTimeSpan),
+            transport: new FakeAprsTransport()
+        );
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-5)]
+    public void OptionsRejectANonPositiveIdleTimeout(int seconds)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new AprsIsClient(Options(o => o.IdleTimeout = TimeSpan.FromSeconds(seconds)))
+        );
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("TOOLONGCALL1")]

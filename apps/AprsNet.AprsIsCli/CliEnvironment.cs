@@ -16,6 +16,9 @@ internal sealed class CliEnvironment
 
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 
+    /// <summary>First wait before <c>--reconnect</c> tries again; it doubles up to a minute.</summary>
+    public TimeSpan ReconnectDelay { get; init; } = TimeSpan.FromSeconds(5);
+
     public Func<AprsIsClientOptions, ILogger, AprsIsClient> CreateClient { get; init; } =
         (options, logger) => new AprsIsClient(options, logger);
 }

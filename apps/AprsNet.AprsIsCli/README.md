@@ -8,7 +8,7 @@ Connect to APRS-IS and stream raw packet lines to stdout.
 
 ```sh
 aprscli listen --region noam --filter "r/35/-97/200" -t
-aprscli listen -c N0CALL --capture captures/noam.log -q -d 10m
+aprscli listen -c N0CALL --capture captures/noam.log -q -d 10m --reconnect
 aprscli listen --full-feed -n 1000 > sample.txt
 ```
 
@@ -25,6 +25,10 @@ aprscli listen --full-feed -n 1000 > sample.txt
 | `-q`, `--quiet` | No packet output on the console. |
 | `--log-packets` | Also log every packet to OpenTelemetry (never the console). Needs `OTEL_EXPORTER_OTLP_ENDPOINT`. |
 | `-n`, `--count` / `-d`, `--duration` | Stop after N packets / after `90s`, `10m`, `2h`, `1d`. Ctrl+C also stops cleanly. |
+| `--reconnect` | If the connection drops or the server sends nothing for 90 s, reconnect (wait 5 s, doubling to 60 s) and carry on; `--count` spans connections. Only after the first login succeeds, and never after a rejected login. Use it for long captures. |
+| `--max-silence <duration\|off>` | Treat the connection as failed after this long with **no packets**, even if keepalives continue (the server's own feed can stall while it still answers). Default `10m` with `--reconnect`, otherwise off. Raise it or use `off` for filters over quiet areas. |
+
+APRS-IS servers send a `#` keepalive about every 20 s, so 90 s of silence means the link is dead even if TCP has not noticed. A server can also keep sending keepalives after its feed has stalled; `--max-silence` catches that, and its message reports how many keepalives arrived in the gap so you can tell the two apart. Without `--reconnect` either one ends the run with exit code 2.
 
 Packets go to stdout and logs and errors to stderr, so output pipes cleanly. Control characters in packets are escaped on the console (`\x1B`); capture files keep every byte.
 
@@ -34,7 +38,7 @@ Packets go to stdout and logs and errors to stderr, so output pipes cleanly. Con
 | --- | --- |
 | 0 | Finished cleanly: Ctrl+C, `--count` or `--duration` reached |
 | 1 | Unexpected error |
-| 2 | Connection failed or dropped |
+| 2 | Connection failed, dropped or went silent (without `--reconnect`) |
 | 3 | Usage error |
 | 4 | Login rejected or timed out |
 

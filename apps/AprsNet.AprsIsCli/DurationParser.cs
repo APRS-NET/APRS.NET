@@ -41,4 +41,13 @@ internal static class DurationParser
         duration = TimeSpan.FromSeconds(seconds);
         return true;
     }
+
+    /// <summary>Formats a duration the way it is written on the command line, for example <c>10m</c> or <c>90s</c>.</summary>
+    public static string Format(TimeSpan duration) =>
+        duration.TotalSeconds switch
+        {
+            var s when s >= 3600 && s % 3600 == 0 => $"{s / 3600:0}h",
+            var s when s >= 60 && s % 60 == 0 => $"{s / 60:0}m",
+            var s => $"{s:0.###}s",
+        };
 }

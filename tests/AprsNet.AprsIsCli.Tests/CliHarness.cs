@@ -25,6 +25,26 @@ internal sealed class CliHarness
     /// <summary>When set, the client's transport throws this on connect instead of using <see cref="Transport" />.</summary>
     public Exception? ConnectFailure { get; init; }
 
+    /// <summary>
+    /// Transports for the second and later connections, in order. Once used up, further connections are refused.
+    /// </summary>
+    public Queue<FakeAprsTransport> Reconnects { get; } = new();
+
+    /// <summary>How many clients the CLI created, which is one per connection attempt.</summary>
+    public int ConnectionAttempts { get; private set; }
+
+    /// <summary>Queues a later connection whose login succeeds and which then sends <paramref name="lines" />.</summary>
+    public FakeAprsTransport AddReconnect(params string[] lines)
+    {
+        var transport = new FakeAprsTransport();
+        transport.Server($"# logresp NZ0P unverified, server T2TEST{Reconnects.Count + 2}");
+        foreach (var line in lines)
+            transport.Server(line);
+
+        Reconnects.Enqueue(transport);
+        return transport;
+    }
+
     public CliHarness LoginAccepted(string callsign = "NZ0P")
     {
         Transport.Server("# aprsc 2.1.test");
@@ -42,11 +62,18 @@ internal sealed class CliHarness
             Error = error,
             LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddProvider(Logs)),
             TimeProvider = Time,
+            ReconnectDelay = TimeSpan.FromMilliseconds(10),
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
             CreateClient = (options, logger) =>
             {
                 ClientOptions = options;
-                IAprsTransport transport = ConnectFailure is null ? Transport : new FailingTransport(ConnectFailure);
+                IAprsTransport transport = ++ConnectionAttempts switch
+                {
+                    1 when ConnectFailure is not null => new FailingTransport(ConnectFailure),
+                    1 => Transport,
+                    _ when Reconnects.TryDequeue(out var next) => next,
+                    _ => new FailingTransport(SocketFailures.Refused()),
+                };
                 return new AprsIsClient(options, logger, transport);
             },
         };

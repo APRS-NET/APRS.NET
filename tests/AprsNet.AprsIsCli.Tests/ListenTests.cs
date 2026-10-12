@@ -1,4 +1,5 @@
 using System.Text;
+using AprsNet.AprsIsTcpClient.Tests;
 using Microsoft.Extensions.Logging;
 
 namespace AprsNet.AprsIsCli.Tests;
@@ -165,6 +166,157 @@ public class ListenTests
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("connection lost", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ASilentServerIsAConnectionFailureWithoutReconnect()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.Transport.Fail(new TimeoutException("No data from the server for 90s."));
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Contains("connection lost: No data from the server for 90s.", result.Error, StringComparison.Ordinal);
+        Assert.Equal(1, harness.ConnectionAttempts);
+    }
+
+    [Fact]
+    public async Task ReconnectResumesAfterTheServerClosesAndCountSpansConnections()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.Transport.Close();
+        harness.AddReconnect(_packets[1], _packets[2]);
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-n", "2"]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
+        Assert.Contains("closed the connection", result.Error, StringComparison.Ordinal);
+        Assert.Contains("reconnecting to rotate.aprs2.net:14580 in 0s", result.Error, StringComparison.Ordinal);
+        Assert.Equal(2, harness.ConnectionAttempts);
+    }
+
+    [Fact]
+    public async Task ReconnectResumesAfterTheServerGoesSilent()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.Transport.Fail(new TimeoutException("No data from the server for 90s."));
+        harness.AddReconnect(_packets[1]);
+
+        using var capture = new TempDirectory();
+        var file = Path.Combine(capture.Path, "c.log");
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-n", "2", "--capture", file]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("No data from the server", result.Error, StringComparison.Ordinal);
+        var captured = await File.ReadAllLinesAsync(file);
+        Assert.Equal(2, captured.Length);
+        Assert.EndsWith(_packets[1], captured[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReconnectKeepsRetryingAnUnreachableServerUntilTheDurationEnds()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.Transport.Close();
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "0.5s"]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.True(harness.ConnectionAttempts >= 3, $"only {harness.ConnectionAttempts} attempts");
+        Assert.Contains("could not connect", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReconnectDoesNotRetryAFailedFirstConnection()
+    {
+        var harness = new CliHarness { ConnectFailure = SocketFailures.Refused() };
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"]);
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Equal(1, harness.ConnectionAttempts);
+    }
+
+    [Fact]
+    public async Task ReconnectStopsOnARejectedLogin()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.Transport.Close();
+        var second = new FakeAprsTransport();
+        second.Server("# Login by user not allowed");
+        harness.Reconnects.Enqueue(second);
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "5s"]);
+
+        Assert.Equal(4, result.ExitCode);
+        Assert.Equal(2, harness.ConnectionAttempts);
+    }
+
+    [Fact]
+    public async Task MaxSilenceReconnectsWhenOnlyKeepalivesArrive()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.AddReconnect(_packets[1]);
+
+        var run = harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "--max-silence", "0.5s", "-n", "2"]);
+        await Task.Delay(150);
+        harness.Transport.Server("# aprsc keepalive");
+        harness.Transport.Server("# aprsc keepalive");
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(
+            "no packets from T2TEST for 0.5s (server keepalives in that time: 2)",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
+        Assert.Equal(2, harness.ConnectionAttempts);
+    }
+
+    [Fact]
+    public async Task MaxSilenceWithoutReconnectIsAConnectionFailure()
+    {
+        var harness = new CliHarness().LoginAccepted();
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--max-silence", "0.2s"]);
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Contains("no packets from T2TEST for 0.2s", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task MaxSilenceOffDisablesTheReconnectDefault()
+    {
+        var harness = new CliHarness().LoginAccepted();
+
+        var result = await harness.RunAsync([
+            "listen",
+            "-c",
+            "NZ0P",
+            "--reconnect",
+            "--max-silence",
+            "off",
+            "-d",
+            "0.3s",
+        ]);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(1, harness.ConnectionAttempts);
+    }
+
+    [Fact]
+    public async Task AnInvalidMaxSilenceIsAUsageError()
+    {
+        var harness = new CliHarness().LoginAccepted();
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--max-silence", "soon"]);
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("--max-silence 'soon' is not valid", result.Error, StringComparison.Ordinal);
+        Assert.Equal(0, harness.ConnectionAttempts);
     }
 
     [Fact]

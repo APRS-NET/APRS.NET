@@ -11,7 +11,7 @@
     },
     "listen NZ0P Overland Park 20km (capture)": {
       "commandName": "Project",
-      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --capture captures/overland-park.log"
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --capture captures/overland-park.log --reconnect"
     }
   }
 }

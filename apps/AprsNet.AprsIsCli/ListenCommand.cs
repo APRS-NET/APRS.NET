@@ -9,6 +9,7 @@ internal sealed class ListenCommand
 {
     private const string _passcodeVariable = "APRS_PASSCODE";
     public const string DefaultCallsign = "N0CALL";
+    private const string DefaultMaxSilenceText = "10m";
 
     private static readonly string[] _regions = ["noam", "soam", "euro", "asia", "aunz"];
 
@@ -80,6 +81,21 @@ internal sealed class ListenCommand
         Description = "Stop after this long, for example 90s, 10m, 2h or 1d.",
     };
 
+    private readonly Option<bool> _reconnect = new("--reconnect")
+    {
+        Description =
+            "If the connection drops or the server goes silent for 90s, reconnect (waiting 5s, doubling to 60s) "
+            + "and keep going until --count, --duration or Ctrl+C. Only after the first login succeeds.",
+    };
+
+    private readonly Option<string?> _maxSilence = new("--max-silence")
+    {
+        Description =
+            $"Treat the connection as failed after this long with no packets, even if the server still sends "
+            + $"keepalives (its feed may have stalled). Default: {DefaultMaxSilenceText} with --reconnect, "
+            + "otherwise off. Use 'off' to disable.",
+    };
+
     private readonly Option<string> _format = new("--format")
     {
         Description = "Output format. Only raw is available until the parser exists.",
@@ -114,6 +130,8 @@ internal sealed class ListenCommand
                 _logPackets,
                 _count,
                 _duration,
+                _reconnect,
+                _maxSilence,
                 _format,
             }
         )
@@ -189,6 +207,20 @@ internal sealed class ListenCommand
             duration = parsed;
         }
 
+        var reconnect = parseResult.GetValue(_reconnect);
+        TimeSpan? maxSilence = null;
+        var maxSilenceText = parseResult.GetValue(_maxSilence) ?? (reconnect ? DefaultMaxSilenceText : null);
+        if (maxSilenceText is not null && !maxSilenceText.Trim().Equals("off", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!DurationParser.TryParse(maxSilenceText, out var parsedSilence))
+            {
+                error = $"--max-silence '{maxSilenceText}' is not valid. Use 'off' or a duration such as 5m.";
+                return false;
+            }
+
+            maxSilence = parsedSilence;
+        }
+
         var capture = parseResult.GetValue(_capture);
         if (capture is not null && string.IsNullOrWhiteSpace(capture))
         {
@@ -242,6 +274,8 @@ internal sealed class ListenCommand
             LogPackets = logPackets,
             Count = count,
             Duration = duration,
+            Reconnect = reconnect,
+            MaxSilence = maxSilence,
         };
         error = "";
         return true;

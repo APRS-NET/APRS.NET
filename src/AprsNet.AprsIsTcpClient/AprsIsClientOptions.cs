@@ -29,6 +29,13 @@ public sealed class AprsIsClientOptions
     /// <summary>How long to wait for the server's login response.</summary>
     public TimeSpan LoginTimeout { get; set; } = TimeSpan.FromSeconds(15);
 
+    /// <summary>
+    /// How long the server may stay silent before the connection is treated as dead. APRS-IS servers send a
+    /// <c>#</c> keepalive about every 20 seconds, so silence much longer than that means a stalled link that TCP
+    /// alone may not notice for hours. <see cref="Timeout.InfiniteTimeSpan"/> disables the check.
+    /// </summary>
+    public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromSeconds(90);
+
     /// <summary>Longest accepted line in bytes, excluding the terminator. Longer lines are discarded.</summary>
     public int MaxLineLength { get; set; } = 2048;
 
@@ -66,6 +73,11 @@ public sealed class AprsIsClientOptions
 
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ConnectTimeout, TimeSpan.Zero);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(LoginTimeout, TimeSpan.Zero);
+        if (IdleTimeout != Timeout.InfiniteTimeSpan)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(IdleTimeout, TimeSpan.Zero);
+        }
+
         ArgumentOutOfRangeException.ThrowIfLessThan(MaxLineLength, 64);
         ArgumentOutOfRangeException.ThrowIfLessThan(ChannelCapacity, 1);
     }

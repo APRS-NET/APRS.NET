@@ -43,6 +43,17 @@ internal static class ClientMetrics
         _linesReceived.Add(1, new KeyValuePair<string, object?>("kind", "server_comment"));
     }
 
+    private static readonly Counter<long> _idleTimeouts = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.connection.idle_timeouts",
+        "{timeout}",
+        "Connections ended because the server sent nothing within the idle timeout."
+    );
+
+    public static void IdleTimeout()
+    {
+        _idleTimeouts.Add(1);
+    }
+
     public static void Attempt(string outcome)
     {
         _connectionAttempts.Add(1, new KeyValuePair<string, object?>("outcome", outcome));

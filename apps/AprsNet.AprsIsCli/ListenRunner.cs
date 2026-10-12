@@ -9,6 +9,11 @@ namespace AprsNet.AprsIsCli;
 /// <summary>Runs <c>aprscli listen</c>: connect, stream lines to the console and an optional capture file, stop on count, duration or Ctrl+C.</summary>
 internal static class ListenRunner
 {
+    /// <summary>Not an exit code: <see cref="ConnectAsync"/> succeeded.</summary>
+    private const int _connected = -1;
+
+    private static readonly TimeSpan _maxReconnectDelay = TimeSpan.FromSeconds(60);
+
     public static async Task<int> RunAsync(
         ListenOptions options,
         CliEnvironment environment,
@@ -42,53 +47,54 @@ internal static class ListenRunner
             return ExitCodes.Error;
         }
 
-        await using var client = environment.CreateClient(clientOptions, logger);
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (options.Duration is { } duration)
         {
             run.CancelAfter(duration);
         }
 
+        var packetLog = options.LogPackets ? environment.LoggerFactory.CreateLogger(Logging.PacketCategory) : null;
+        var progress = new Progress();
+        var connectedOnce = false;
+        var delay = environment.ReconnectDelay;
+
         try
         {
-            try
+            while (true)
             {
-                await client.ConnectAsync(run.Token);
-            }
-            catch (OperationCanceledException) when (run.IsCancellationRequested)
-            {
-                return ExitCodes.Success;
-            }
-            catch (LoginRejectedException ex)
-            {
-                await environment.Error.WriteLineAsync(
-                    $"aprscli: login rejected by {options.Endpoint}: {ex.ServerMessage}"
-                );
-                if (options.Callsign == ListenCommand.DefaultCallsign)
+                int code;
+                await using (var client = environment.CreateClient(clientOptions, logger))
                 {
-                    await environment.Error.WriteLineAsync(
-                        $"Some servers refuse the placeholder callsign {ListenCommand.DefaultCallsign}. "
-                            + "Run again (the rotate may pick another server) or pass --callsign."
-                    );
+                    code = await ConnectAsync(client, options, environment, connectedOnce, run.Token);
+                    if (code == _connected)
+                    {
+                        connectedOnce = true;
+                        delay = environment.ReconnectDelay;
+                        code = await StreamAsync(client, options, environment, capture, packetLog, progress, run.Token);
+                    }
                 }
 
-                return ExitCodes.LoginFailed;
-            }
-            catch (LoginException ex)
-            {
-                await environment.Error.WriteLineAsync($"aprscli: login failed on {options.Endpoint}: {ex.Message}");
-                return ExitCodes.LoginFailed;
-            }
-            catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
-            {
-                await environment.Error.WriteLineAsync(
-                    $"aprscli: could not connect to {options.Endpoint}: {ex.Message}"
-                );
-                return ExitCodes.ConnectionFailed;
-            }
+                // Only a dropped or unreachable server is retried, and only after the first login worked, so a
+                // wrong server or callsign still fails fast.
+                if (code != ExitCodes.ConnectionFailed || !options.Reconnect || !connectedOnce)
+                {
+                    return code;
+                }
 
-            var packetLog = options.LogPackets ? environment.LoggerFactory.CreateLogger(Logging.PacketCategory) : null;
-            return await StreamAsync(client, options, environment, capture, packetLog, run.Token);
+                await environment.Error.WriteLineAsync(
+                    $"aprscli: reconnecting to {options.Endpoint} in {delay.TotalSeconds:0.#}s."
+                );
+                try
+                {
+                    await Task.Delay(delay, environment.TimeProvider, run.Token);
+                }
+                catch (OperationCanceledException) when (run.IsCancellationRequested)
+                {
+                    return ExitCodes.Success;
+                }
+
+                delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, _maxReconnectDelay.Ticks));
+            }
         }
         finally
         {
@@ -99,20 +105,82 @@ internal static class ListenRunner
         }
     }
 
+    /// <summary>Connects and logs in. Returns <see cref="_connected"/> on success, otherwise the exit code.</summary>
+    private static async Task<int> ConnectAsync(
+        AprsIsClient client,
+        ListenOptions options,
+        CliEnvironment environment,
+        bool reconnecting,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            return _connected;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return ExitCodes.Success;
+        }
+        catch (LoginRejectedException ex)
+        {
+            await environment.Error.WriteLineAsync(
+                $"aprscli: login rejected by {options.Endpoint}: {ex.ServerMessage}"
+            );
+            if (options.Callsign == ListenCommand.DefaultCallsign)
+            {
+                await environment.Error.WriteLineAsync(
+                    $"Some servers refuse the placeholder callsign {ListenCommand.DefaultCallsign}. "
+                        + "Run again (the rotate may pick another server) or pass --callsign."
+                );
+            }
+
+            return ExitCodes.LoginFailed;
+        }
+        catch (LoginException ex)
+        {
+            await environment.Error.WriteLineAsync($"aprscli: login failed on {options.Endpoint}: {ex.Message}");
+
+            // A login that times out or is cut off after an earlier success is a flaky server, not bad settings.
+            return reconnecting ? ExitCodes.ConnectionFailed : ExitCodes.LoginFailed;
+        }
+        catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
+        {
+            await environment.Error.WriteLineAsync($"aprscli: could not connect to {options.Endpoint}: {ex.Message}");
+            return ExitCodes.ConnectionFailed;
+        }
+    }
+
     private static async Task<int> StreamAsync(
         AprsIsClient client,
         ListenOptions options,
         CliEnvironment environment,
         StreamWriter? capture,
         ILogger? packetLog,
+        Progress progress,
         CancellationToken cancellationToken
     )
     {
-        var received = 0;
+        // Packet watchdog for --max-silence. It is separate from the client's idle timeout because a server can keep
+        // sending '#' keepalives after its own feed has stalled, so the connection looks alive but delivers nothing.
+        using var silence = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var keepalivesAtLastPacket = client.ServerCommentsReceived;
         try
         {
-            await foreach (var line in client.ReadLinesAsync(cancellationToken))
+            if (options.MaxSilence is { } armed)
             {
+                silence.CancelAfter(armed);
+            }
+
+            await foreach (var line in client.ReadLinesAsync(silence.Token))
+            {
+                if (options.MaxSilence is { } maxSilence)
+                {
+                    silence.CancelAfter(maxSilence); // restart the wait for the next packet
+                }
+
+                keepalivesAtLastPacket = client.ServerCommentsReceived;
                 var stamp = LineFormatter.Timestamp(environment.TimeProvider.GetUtcNow());
 
                 capture?.Write($"{stamp} {line}\n");
@@ -134,7 +202,7 @@ internal static class ListenRunner
                     }
                 }
 
-                if (options.Count is { } count && ++received >= count)
+                if (options.Count is { } count && ++progress.Received >= count)
                 {
                     return ExitCodes.Success;
                 }
@@ -144,7 +212,19 @@ internal static class ListenRunner
         {
             return ExitCodes.Success;
         }
-        catch (Exception ex) when (ex is SocketException or IOException)
+        catch (OperationCanceledException) when (silence.IsCancellationRequested)
+        {
+            // Keepalives in the gap tell the two failures apart: some means the server's feed stalled, none means
+            // the link itself died (which the client's idle timeout normally reports first).
+            var keepalives = client.ServerCommentsReceived - keepalivesAtLastPacket;
+            await environment.Error.WriteLineAsync(
+                $"aprscli: no packets from {client.Login?.Server ?? options.Endpoint.ToString()} for "
+                    + $"{DurationParser.Format(options.MaxSilence!.Value)} "
+                    + $"(server keepalives in that time: {keepalives})."
+            );
+            return ExitCodes.ConnectionFailed;
+        }
+        catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
         {
             await environment.Error.WriteLineAsync($"aprscli: connection lost: {ex.Message}");
             return ExitCodes.ConnectionFailed;
@@ -174,6 +254,12 @@ internal static class ListenRunner
         // Latin-1 writes every byte of the raw line back out unchanged. AutoFlush keeps an interrupted capture intact.
         return new StreamWriter(stream, Encoding.Latin1) { AutoFlush = true };
     }
+}
+
+/// <summary>Packets delivered across every connection of one run, so <c>--count</c> spans reconnects.</summary>
+internal sealed class Progress
+{
+    public int Received;
 }
 
 internal static partial class PacketLog
