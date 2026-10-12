@@ -12,6 +12,15 @@ AprsNet.Packets.AprsPacket.Raw.get -> System.ReadOnlyMemory<byte>
 AprsNet.Packets.AprsPacket.Source.get -> AprsNet.Packets.Callsign?
 AprsNet.Packets.AprsPacket.Type.get -> AprsNet.Packets.PacketType
 AprsNet.Packets.AprsPayload
+AprsNet.Packets.AprsSymbol
+AprsNet.Packets.AprsSymbol.AprsSymbol(char table, char code) -> void
+AprsNet.Packets.AprsSymbol.AprsSymbol() -> void
+AprsNet.Packets.AprsSymbol.Code.get -> char
+AprsNet.Packets.AprsSymbol.Equals(AprsNet.Packets.AprsSymbol other) -> bool
+AprsNet.Packets.AprsSymbol.IsPrimary.get -> bool
+AprsNet.Packets.AprsSymbol.Overlay.get -> char?
+AprsNet.Packets.AprsSymbol.Table.get -> char
+AprsNet.Packets.AprsSymbol.WithoutOverlay.get -> AprsNet.Packets.AprsSymbol
 AprsNet.Packets.Callsign
 AprsNet.Packets.Callsign.Base.get -> string!
 AprsNet.Packets.Callsign.<Clone>$() -> AprsNet.Packets.Callsign!
@@ -75,6 +84,9 @@ AprsNet.Packets.PathEntry.PathEntry() -> void
 AprsNet.Packets.PathEntry.Station.get -> AprsNet.Packets.Callsign!
 AprsNet.Packets.PathEntry.Station.init -> void
 override AprsNet.Packets.AprsPacket.ToString() -> string!
+~override AprsNet.Packets.AprsSymbol.Equals(object obj) -> bool
+override AprsNet.Packets.AprsSymbol.GetHashCode() -> int
+override AprsNet.Packets.AprsSymbol.ToString() -> string!
 override AprsNet.Packets.Callsign.Equals(object? obj) -> bool
 override AprsNet.Packets.Callsign.GetHashCode() -> int
 override AprsNet.Packets.Callsign.ToString() -> string!
@@ -86,6 +98,9 @@ override AprsNet.Packets.PathEntry.GetHashCode() -> int
 override AprsNet.Packets.PathEntry.ToString() -> string!
 static AprsNet.Packets.AprsPacket.Parse(string! line) -> AprsNet.Packets.AprsPacket!
 static AprsNet.Packets.AprsPacket.Parse(System.ReadOnlySpan<byte> line) -> AprsNet.Packets.AprsPacket!
+static AprsNet.Packets.AprsSymbol.operator !=(AprsNet.Packets.AprsSymbol left, AprsNet.Packets.AprsSymbol right) -> bool
+static AprsNet.Packets.AprsSymbol.operator ==(AprsNet.Packets.AprsSymbol left, AprsNet.Packets.AprsSymbol right) -> bool
+static AprsNet.Packets.AprsSymbol.TryCreate(char table, char code, out AprsNet.Packets.AprsSymbol symbol) -> bool
 static AprsNet.Packets.Callsign.operator !=(AprsNet.Packets.Callsign? left, AprsNet.Packets.Callsign? right) -> bool
 static AprsNet.Packets.Callsign.operator ==(AprsNet.Packets.Callsign? left, AprsNet.Packets.Callsign? right) -> bool
 static AprsNet.Packets.ParseIssueCodeExtensions.Describe(this AprsNet.Packets.ParseIssueCode code) -> string!

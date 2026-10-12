@@ -24,6 +24,7 @@
     <File Path=".github/workflows/packages.yml" />
     <File Path=".github/workflows/pr-title.yml" />
     <File Path=".github/workflows/release.yml" />
+    <File Path=".github/workflows/symbols.yml" />
   </Folder>
   <Folder Name="/apps/">
     <Project Path="apps/AprsNet.AprsIsCli/AprsNet.AprsIsCli.csproj" />
@@ -35,6 +36,7 @@
   <Folder Name="/src/">
     <Project Path="src/AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
     <Project Path="src/AprsNet.Packets/AprsNet.Packets.csproj" />
+    <Project Path="src/AprsNet.Symbols/AprsNet.Symbols.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AprsNet.AprsIsCli.Tests/AprsNet.AprsIsCli.Tests.csproj" />
@@ -42,5 +44,6 @@
     <Project Path="tests/AprsNet.Packets.CorpusTests/AprsNet.Packets.CorpusTests.csproj" />
     <Project Path="tests/AprsNet.Packets.SpecTests/AprsNet.Packets.SpecTests.csproj" />
     <Project Path="tests/AprsNet.Packets.Tests/AprsNet.Packets.Tests.csproj" />
+    <Project Path="tests/AprsNet.Symbols.Tests/AprsNet.Symbols.Tests.csproj" />
   </Folder>
 </Solution>

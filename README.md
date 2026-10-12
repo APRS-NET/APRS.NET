@@ -22,6 +22,7 @@ Packages are published to nuget.org as pre-releases, so pass `--prerelease`:
 ```sh
 dotnet add package AprsNet.Packets --prerelease
 dotnet add package AprsNet.AprsIsTcpClient --prerelease
+dotnet add package AprsNet.Symbols --prerelease
 ```
 
 The `aprscli` command-line tool is not published as a package yet; run it from source with
@@ -32,12 +33,13 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 
 ## Layout
 
-| Path                          | Contents                                |
-|-------------------------------|-----------------------------------------|
-| `src/AprsNet.Packets`         | Packet models, parser, encoder (no I/O) |
-| `src/AprsNet.AprsIsTcpClient` | APRS-IS client                          |
-| `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool         |
-| `tests/`                      | Unit tests and the packet corpus        |
+| Path                          | Contents                                                                  |
+|-------------------------------|---------------------------------------------------------------------------|
+| `src/AprsNet.Packets`         | Packet models, parser, encoder (no I/O)                                   |
+| `src/AprsNet.AprsIsTcpClient` | APRS-IS client                                                            |
+| `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
+| `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool                                           |
+| `tests/`                      | Unit tests and the packet corpus                                          |
 
 ## Build
 

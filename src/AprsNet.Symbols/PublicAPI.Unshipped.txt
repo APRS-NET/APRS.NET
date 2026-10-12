@@ -1,0 +1,34 @@
+#nullable enable
+AprsNet.Symbols.AprsSymbolCatalog
+AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Aircraft = 2 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Emergency = 4 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Marine = 3 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Markers = 8 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.People = 7 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Places = 6 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Radio = 0 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Vehicles = 1 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolCategory.Weather = 5 -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolImages
+AprsNet.Symbols.AprsSymbolInfo
+AprsNet.Symbols.AprsSymbolInfo.Category.get -> AprsNet.Symbols.AprsSymbolCategory
+AprsNet.Symbols.AprsSymbolInfo.DestinationCode.get -> string!
+AprsNet.Symbols.AprsSymbolInfo.IsOverlayFamily.get -> bool
+AprsNet.Symbols.AprsSymbolInfo.Name.get -> string!
+AprsNet.Symbols.AprsSymbolInfo.OverlayNames.get -> System.Collections.Generic.IReadOnlyDictionary<char, string!>!
+AprsNet.Symbols.AprsSymbolInfo.Status.get -> AprsNet.Symbols.AprsSymbolStatus
+AprsNet.Symbols.AprsSymbolInfo.Symbol.get -> AprsNet.Packets.AprsSymbol
+AprsNet.Symbols.AprsSymbolStatus
+AprsNet.Symbols.AprsSymbolStatus.Assigned = 0 -> AprsNet.Symbols.AprsSymbolStatus
+AprsNet.Symbols.AprsSymbolStatus.Legacy = 1 -> AprsNet.Symbols.AprsSymbolStatus
+AprsNet.Symbols.AprsSymbolStatus.Reserved = 3 -> AprsNet.Symbols.AprsSymbolStatus
+AprsNet.Symbols.AprsSymbolStatus.Unassigned = 2 -> AprsNet.Symbols.AprsSymbolStatus
+AprsNet.Symbols.AprsSymbolStyle
+AprsNet.Symbols.AprsSymbolStyle.Conventional = 0 -> AprsNet.Symbols.AprsSymbolStyle
+AprsNet.Symbols.AprsSymbolStyle.Modern = 1 -> AprsNet.Symbols.AprsSymbolStyle
+override AprsNet.Symbols.AprsSymbolInfo.ToString() -> string!
+static AprsNet.Symbols.AprsSymbolCatalog.All.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Symbols.AprsSymbolInfo!>!
+static AprsNet.Symbols.AprsSymbolCatalog.Get(AprsNet.Packets.AprsSymbol symbol) -> AprsNet.Symbols.AprsSymbolInfo!
+static AprsNet.Symbols.AprsSymbolCatalog.GetName(AprsNet.Packets.AprsSymbol symbol) -> string!
+static AprsNet.Symbols.AprsSymbolImages.GetSvg(AprsNet.Packets.AprsSymbol symbol, AprsNet.Symbols.AprsSymbolStyle style = AprsNet.Symbols.AprsSymbolStyle.Conventional) -> string!
