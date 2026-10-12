@@ -1,0 +1,2 @@
+# Captured packets must stay byte-exact (Latin-1, control bytes, LF line ends): never convert line endings.
+tests/corpus/**/*.log -text
