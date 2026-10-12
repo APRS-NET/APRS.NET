@@ -55,3 +55,6 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Raw APRS-IS captures may contain unsanitized data; curated files go in tests/corpus
+captures/
