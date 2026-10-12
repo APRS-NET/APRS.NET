@@ -1,0 +1,101 @@
+#nullable enable
+AprsNet.AprsIsTcpClient.AprsIsClient
+AprsNet.AprsIsTcpClient.AprsIsClient.AprsIsClient(AprsNet.AprsIsTcpClient.AprsIsClientOptions! options, Microsoft.Extensions.Logging.ILogger? logger = null, AprsNet.AprsIsTcpClient.IAprsTransport? transport = null) -> void
+AprsNet.AprsIsTcpClient.AprsIsClient.ConnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<AprsNet.AprsIsTcpClient.LoginResult!>!
+AprsNet.AprsIsTcpClient.AprsIsClient.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.AprsIsClient.Login.get -> AprsNet.AprsIsTcpClient.LoginResult?
+AprsNet.AprsIsTcpClient.AprsIsClient.PacketsReceived.get -> long
+AprsNet.AprsIsTcpClient.AprsIsClient.ReadLinesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<string!>!
+AprsNet.AprsIsTcpClient.AprsIsClient.ServerCommentsReceived.get -> long
+AprsNet.AprsIsTcpClient.AprsIsClient.SetFilterAsync(string! filter, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.AprsIsClientOptions
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.AprsIsClientOptions() -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Callsign.get -> string!
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Callsign.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ChannelCapacity.get -> int
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ChannelCapacity.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ConnectTimeout.get -> System.TimeSpan
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ConnectTimeout.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Endpoint.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Endpoint.init -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Filter.get -> string?
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Filter.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.IdleTimeout.get -> System.TimeSpan
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.IdleTimeout.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.IsReadOnly.get -> bool
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.LoginTimeout.get -> System.TimeSpan
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.LoginTimeout.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxLineLength.get -> int
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxLineLength.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.OverflowPolicy.get -> AprsNet.AprsIsTcpClient.OverflowPolicy
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.OverflowPolicy.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Passcode.get -> int
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Passcode.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareName.get -> string!
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareName.init -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareVersion.get -> string!
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareVersion.init -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.TimeProvider.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Validate() -> void
+AprsNet.AprsIsTcpClient.AprsIsEndpoint
+AprsNet.AprsIsTcpClient.AprsIsEndpoint.<Clone>$() -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+AprsNet.AprsIsTcpClient.AprsIsEndpoint.AprsIsEndpoint(string! host, int port = 14580) -> void
+AprsNet.AprsIsTcpClient.AprsIsEndpoint.Equals(AprsNet.AprsIsTcpClient.AprsIsEndpoint? other) -> bool
+AprsNet.AprsIsTcpClient.AprsIsEndpoint.Host.get -> string!
+AprsNet.AprsIsTcpClient.AprsIsEndpoint.Port.get -> int
+AprsNet.AprsIsTcpClient.AprsIsEndpoint.WithPort(int port) -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+AprsNet.AprsIsTcpClient.AprsIsPorts
+AprsNet.AprsIsTcpClient.IAprsTransport
+AprsNet.AprsIsTcpClient.IAprsTransport.ConnectAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.IAprsTransport.ReadLineAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+AprsNet.AprsIsTcpClient.IAprsTransport.WriteLineAsync(string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.LoginException
+AprsNet.AprsIsTcpClient.LoginException.LoginException(string! message) -> void
+AprsNet.AprsIsTcpClient.LoginException.LoginException(string! message, System.Exception! innerException) -> void
+AprsNet.AprsIsTcpClient.LoginRejectedException
+AprsNet.AprsIsTcpClient.LoginRejectedException.LoginRejectedException(string! serverMessage) -> void
+AprsNet.AprsIsTcpClient.LoginRejectedException.ServerMessage.get -> string!
+AprsNet.AprsIsTcpClient.LoginResult
+AprsNet.AprsIsTcpClient.LoginResult.<Clone>$() -> AprsNet.AprsIsTcpClient.LoginResult!
+AprsNet.AprsIsTcpClient.LoginResult.Callsign.get -> string!
+AprsNet.AprsIsTcpClient.LoginResult.Callsign.init -> void
+AprsNet.AprsIsTcpClient.LoginResult.Deconstruct(out string! Callsign, out AprsNet.AprsIsTcpClient.LoginStatus Status, out string? Server) -> void
+AprsNet.AprsIsTcpClient.LoginResult.Equals(AprsNet.AprsIsTcpClient.LoginResult? other) -> bool
+AprsNet.AprsIsTcpClient.LoginResult.LoginResult(string! Callsign, AprsNet.AprsIsTcpClient.LoginStatus Status, string? Server) -> void
+AprsNet.AprsIsTcpClient.LoginResult.Server.get -> string?
+AprsNet.AprsIsTcpClient.LoginResult.Server.init -> void
+AprsNet.AprsIsTcpClient.LoginResult.Status.get -> AprsNet.AprsIsTcpClient.LoginStatus
+AprsNet.AprsIsTcpClient.LoginResult.Status.init -> void
+AprsNet.AprsIsTcpClient.LoginStatus
+AprsNet.AprsIsTcpClient.LoginStatus.Unverified = 1 -> AprsNet.AprsIsTcpClient.LoginStatus
+AprsNet.AprsIsTcpClient.LoginStatus.Verified = 0 -> AprsNet.AprsIsTcpClient.LoginStatus
+AprsNet.AprsIsTcpClient.OverflowPolicy
+AprsNet.AprsIsTcpClient.OverflowPolicy.Block = 0 -> AprsNet.AprsIsTcpClient.OverflowPolicy
+AprsNet.AprsIsTcpClient.OverflowPolicy.DropOldest = 1 -> AprsNet.AprsIsTcpClient.OverflowPolicy
+AprsNet.AprsIsTcpClient.TcpAprsTransport
+AprsNet.AprsIsTcpClient.TcpAprsTransport.ConnectAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.TcpAprsTransport.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.TcpAprsTransport.ReadLineAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+AprsNet.AprsIsTcpClient.TcpAprsTransport.TcpAprsTransport(AprsNet.AprsIsTcpClient.AprsIsEndpoint! endpoint, System.TimeSpan connectTimeout, int maxLineLength, Microsoft.Extensions.Logging.ILogger? logger = null) -> void
+AprsNet.AprsIsTcpClient.TcpAprsTransport.WriteLineAsync(string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+const AprsNet.AprsIsTcpClient.AprsIsPorts.FullFeed = 10152 -> int
+const AprsNet.AprsIsTcpClient.AprsIsPorts.StatusPage = 14501 -> int
+const AprsNet.AprsIsTcpClient.AprsIsPorts.UserDefinedFilter = 14580 -> int
+override AprsNet.AprsIsTcpClient.AprsIsEndpoint.Equals(object? obj) -> bool
+override AprsNet.AprsIsTcpClient.AprsIsEndpoint.GetHashCode() -> int
+override AprsNet.AprsIsTcpClient.AprsIsEndpoint.ToString() -> string!
+override AprsNet.AprsIsTcpClient.LoginResult.Equals(object? obj) -> bool
+override AprsNet.AprsIsTcpClient.LoginResult.GetHashCode() -> int
+override AprsNet.AprsIsTcpClient.LoginResult.ToString() -> string!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.Asia.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.Europe.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.NorthAmerica.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.Oceania.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.operator !=(AprsNet.AprsIsTcpClient.AprsIsEndpoint? left, AprsNet.AprsIsTcpClient.AprsIsEndpoint? right) -> bool
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.operator ==(AprsNet.AprsIsTcpClient.AprsIsEndpoint? left, AprsNet.AprsIsTcpClient.AprsIsEndpoint? right) -> bool
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.Rotate.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.SouthAmerica.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.TryParse(string? text, out AprsNet.AprsIsTcpClient.AprsIsEndpoint? endpoint) -> bool
+static AprsNet.AprsIsTcpClient.LoginResult.operator !=(AprsNet.AprsIsTcpClient.LoginResult? left, AprsNet.AprsIsTcpClient.LoginResult? right) -> bool
+static AprsNet.AprsIsTcpClient.LoginResult.operator ==(AprsNet.AprsIsTcpClient.LoginResult? left, AprsNet.AprsIsTcpClient.LoginResult? right) -> bool

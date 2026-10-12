@@ -46,4 +46,12 @@
   <ItemGroup Condition="$(AprsNetProjectArea.StartsWith('src'))">
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.Library.txt" />
   </ItemGroup>
+
+  <!-- Public API tracking (RS0016 and friends) for the libraries: every public API change must be declared in the
+       project's PublicAPI.Unshipped.txt, so nothing becomes public by accident. See docs/public-api.md. -->
+  <ItemGroup Condition="$(AprsNetProjectArea.StartsWith('src'))">
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
 </Project>

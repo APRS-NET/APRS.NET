@@ -34,7 +34,8 @@ Scopes are optional, for example `feat(is): support runtime filter changes`.
   earlier release tag, release-please would otherwise propose 1.0.0 (its `initial-version` setting did not take effect
   here).
 - The library never reaches 1.0 by accident. For the first stable release, remove the three pre-release settings and
-  add a `Release-As: 1.0.0` footer to a commit.
+  add a `Release-As: 1.0.0` footer to a commit. Also move the public API to `PublicAPI.Shipped.txt` (see
+  [public-api.md](public-api.md)) and set `PackageValidationBaselineVersion` to catch breaking changes from then on.
 - The repository setting "Allow GitHub Actions to create and approve pull requests" must be on for release-please.
 - The `pack` job refuses to attach or publish any package whose version has no pre-release suffix.
 - To release manually, push a `vX.Y.Z` tag; MinVer will version a local `dotnet pack` from it.
