@@ -21,5 +21,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <MinVerTagPrefix>v</MinVerTagPrefix>
+    <!-- Checks packages on pack (same API across target frameworks, required files). After 1.0, also set
+         PackageValidationBaselineVersion to flag breaking changes against the last release. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
 </Project>
