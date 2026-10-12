@@ -36,5 +36,24 @@ Scopes are optional, for example `feat(is): support runtime filter changes`.
 - The library never reaches 1.0 by accident. For the first stable release, remove the three pre-release settings and
   add a `Release-As: 1.0.0` footer to a commit.
 - The repository setting "Allow GitHub Actions to create and approve pull requests" must be on for release-please.
-- Publishing to nuget.org is not wired up yet (planned for M5). Until then packages are attached to the GitHub release.
+- The `pack` job refuses to attach or publish any package whose version has no pre-release suffix.
 - To release manually, push a `vX.Y.Z` tag; MinVer will version a local `dotnet pack` from it.
+
+## Publishing to nuget.org
+
+After the `pack` job attaches the packages to the GitHub release, the `publish` job pushes them to nuget.org with
+[trusted publishing](https://learn.microsoft.com/nuget/nuget-org/trusted-publishing): GitHub's OIDC token is exchanged
+for a short-lived API key, so no key is stored in the repository. The job waits for approval on the `nuget`
+environment, because a package pushed to nuget.org cannot be deleted, only unlisted.
+
+One-time setup:
+
+1. **nuget.org trusted publishing policy.** Signed in as the account (or organization) that will own the packages, go
+   to your username → *Trusted Publishing* and add a GitHub Actions policy: owner `APRS-NET`, repository `APRS.NET`,
+   workflow file `release.yml`, environment `nuget`.
+2. **Repository variable** `NUGET_USER` = that nuget.org username (Settings → Secrets and variables → Actions →
+   Variables). It is not a secret. Until it is set the `publish` job is skipped and releases only go to GitHub.
+3. **Environment** `nuget` (Settings → Environments) with yourself as a required reviewer, and *Deployment branches
+   and tags* limited to the `main` branch (the release workflow runs on pushes to `main`, not on the tag).
+
+`--skip-duplicate` makes a re-run safe: versions that are already on nuget.org are skipped.
