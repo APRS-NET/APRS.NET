@@ -1,0 +1,2198 @@
+{
+  "$comment": "APRS symbol catalogue, written from the specification text only: APRS101 Appendix 2, the APRS 1.1 symbol table (symbolsX.txt, 25 Nov 2015) and the APRS 1.2 overlay list (symbols-new.txt, 17 Mar 2021), via docs/spec. Names keep the spec meaning; drawings are designed from these descriptions.",
+  "sources": [
+    "docs/spec/APRS101.PDF#Appendix 2",
+    "docs/spec/aprs11/symbols.md",
+    "docs/spec/aprs12/symbol-overlays.md"
+  ],
+  "symbols": [
+    {
+      "table": "/",
+      "code": "!",
+      "name": "Police or sheriff",
+      "status": "assigned",
+      "gps": "BB"
+    },
+    {
+      "table": "/",
+      "code": "\"",
+      "name": "Reserved (was rain)",
+      "status": "reserved",
+      "gps": "BC"
+    },
+    {
+      "table": "/",
+      "code": "#",
+      "name": "Digipeater (white centre)",
+      "status": "assigned",
+      "gps": "BD"
+    },
+    {
+      "table": "/",
+      "code": "$",
+      "name": "Phone",
+      "status": "assigned",
+      "gps": "BE"
+    },
+    {
+      "table": "/",
+      "code": "%",
+      "name": "DX cluster",
+      "status": "assigned",
+      "gps": "BF"
+    },
+    {
+      "table": "/",
+      "code": "&",
+      "name": "HF gateway",
+      "status": "assigned",
+      "gps": "BG"
+    },
+    {
+      "table": "/",
+      "code": "'",
+      "name": "Small aircraft",
+      "status": "assigned",
+      "gps": "BH",
+      "ssid": 11
+    },
+    {
+      "table": "/",
+      "code": "(",
+      "name": "Mobile satellite station",
+      "status": "assigned",
+      "gps": "BI"
+    },
+    {
+      "table": "/",
+      "code": ")",
+      "name": "Wheelchair (handicapped)",
+      "status": "assigned",
+      "gps": "BJ"
+    },
+    {
+      "table": "/",
+      "code": "*",
+      "name": "Snowmobile",
+      "status": "assigned",
+      "gps": "BK"
+    },
+    {
+      "table": "/",
+      "code": "+",
+      "name": "Red Cross",
+      "status": "assigned",
+      "gps": "BL"
+    },
+    {
+      "table": "/",
+      "code": ",",
+      "name": "Boy Scouts",
+      "status": "assigned",
+      "gps": "BM"
+    },
+    {
+      "table": "/",
+      "code": "-",
+      "name": "House (VHF)",
+      "status": "assigned",
+      "gps": "BN"
+    },
+    {
+      "table": "/",
+      "code": ".",
+      "name": "X",
+      "status": "assigned",
+      "gps": "BO"
+    },
+    {
+      "table": "/",
+      "code": "/",
+      "name": "Red dot",
+      "status": "assigned",
+      "gps": "BP"
+    },
+    {
+      "table": "/",
+      "code": "0",
+      "name": "Numbered circle 0 (obsolete)",
+      "status": "legacy",
+      "gps": "P0"
+    },
+    {
+      "table": "/",
+      "code": "1",
+      "name": "Numbered circle 1 (obsolete)",
+      "status": "legacy",
+      "gps": "P1"
+    },
+    {
+      "table": "/",
+      "code": "2",
+      "name": "Numbered circle 2 (obsolete)",
+      "status": "legacy",
+      "gps": "P2"
+    },
+    {
+      "table": "/",
+      "code": "3",
+      "name": "Numbered circle 3 (obsolete)",
+      "status": "legacy",
+      "gps": "P3"
+    },
+    {
+      "table": "/",
+      "code": "4",
+      "name": "Numbered circle 4 (obsolete)",
+      "status": "legacy",
+      "gps": "P4"
+    },
+    {
+      "table": "/",
+      "code": "5",
+      "name": "Numbered circle 5 (obsolete)",
+      "status": "legacy",
+      "gps": "P5"
+    },
+    {
+      "table": "/",
+      "code": "6",
+      "name": "Numbered circle 6 (obsolete)",
+      "status": "legacy",
+      "gps": "P6"
+    },
+    {
+      "table": "/",
+      "code": "7",
+      "name": "Numbered circle 7 (obsolete)",
+      "status": "legacy",
+      "gps": "P7"
+    },
+    {
+      "table": "/",
+      "code": "8",
+      "name": "Numbered circle 8 (obsolete)",
+      "status": "legacy",
+      "gps": "P8"
+    },
+    {
+      "table": "/",
+      "code": "9",
+      "name": "Numbered circle 9 (obsolete)",
+      "status": "legacy",
+      "gps": "P9"
+    },
+    {
+      "table": "/",
+      "code": ":",
+      "name": "Fire",
+      "status": "assigned",
+      "gps": "MR"
+    },
+    {
+      "table": "/",
+      "code": ";",
+      "name": "Campground (portable operation)",
+      "status": "assigned",
+      "gps": "MS"
+    },
+    {
+      "table": "/",
+      "code": "<",
+      "name": "Motorcycle",
+      "status": "assigned",
+      "gps": "MT",
+      "ssid": 10
+    },
+    {
+      "table": "/",
+      "code": "=",
+      "name": "Railroad engine",
+      "status": "assigned",
+      "gps": "MU"
+    },
+    {
+      "table": "/",
+      "code": ">",
+      "name": "Car",
+      "status": "assigned",
+      "gps": "MV",
+      "ssid": 9
+    },
+    {
+      "table": "/",
+      "code": "?",
+      "name": "File server",
+      "status": "assigned",
+      "gps": "MW"
+    },
+    {
+      "table": "/",
+      "code": "@",
+      "name": "Hurricane future prediction (dot)",
+      "status": "assigned",
+      "gps": "MX"
+    },
+    {
+      "table": "/",
+      "code": "A",
+      "name": "Aid station",
+      "status": "assigned",
+      "gps": "PA"
+    },
+    {
+      "table": "/",
+      "code": "B",
+      "name": "BBS or PBBS",
+      "status": "assigned",
+      "gps": "PB"
+    },
+    {
+      "table": "/",
+      "code": "C",
+      "name": "Canoe",
+      "status": "assigned",
+      "gps": "PC"
+    },
+    {
+      "table": "/",
+      "code": "D",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "PD"
+    },
+    {
+      "table": "/",
+      "code": "E",
+      "name": "Eyeball (events)",
+      "status": "assigned",
+      "gps": "PE"
+    },
+    {
+      "table": "/",
+      "code": "F",
+      "name": "Farm vehicle (tractor)",
+      "status": "assigned",
+      "gps": "PF"
+    },
+    {
+      "table": "/",
+      "code": "G",
+      "name": "Grid square (6 characters)",
+      "status": "assigned",
+      "gps": "PG"
+    },
+    {
+      "table": "/",
+      "code": "H",
+      "name": "Hotel (blue bed)",
+      "status": "assigned",
+      "gps": "PH"
+    },
+    {
+      "table": "/",
+      "code": "I",
+      "name": "TCP/IP on-air network station",
+      "status": "assigned",
+      "gps": "PI"
+    },
+    {
+      "table": "/",
+      "code": "J",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "PJ"
+    },
+    {
+      "table": "/",
+      "code": "K",
+      "name": "School",
+      "status": "assigned",
+      "gps": "PK"
+    },
+    {
+      "table": "/",
+      "code": "L",
+      "name": "PC user",
+      "status": "assigned",
+      "gps": "PL"
+    },
+    {
+      "table": "/",
+      "code": "M",
+      "name": "MacAPRS",
+      "status": "assigned",
+      "gps": "PM"
+    },
+    {
+      "table": "/",
+      "code": "N",
+      "name": "NTS station",
+      "status": "assigned",
+      "gps": "PN"
+    },
+    {
+      "table": "/",
+      "code": "O",
+      "name": "Balloon",
+      "status": "assigned",
+      "gps": "PO",
+      "ssid": 11
+    },
+    {
+      "table": "/",
+      "code": "P",
+      "name": "Police",
+      "status": "assigned",
+      "gps": "PP"
+    },
+    {
+      "table": "/",
+      "code": "Q",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "PQ"
+    },
+    {
+      "table": "/",
+      "code": "R",
+      "name": "Recreational vehicle",
+      "status": "assigned",
+      "gps": "PR",
+      "ssid": 13
+    },
+    {
+      "table": "/",
+      "code": "S",
+      "name": "Space shuttle",
+      "status": "assigned",
+      "gps": "PS"
+    },
+    {
+      "table": "/",
+      "code": "T",
+      "name": "SSTV",
+      "status": "assigned",
+      "gps": "PT"
+    },
+    {
+      "table": "/",
+      "code": "U",
+      "name": "Bus",
+      "status": "assigned",
+      "gps": "PU",
+      "ssid": 2
+    },
+    {
+      "table": "/",
+      "code": "V",
+      "name": "ATV (amateur television)",
+      "status": "assigned",
+      "gps": "PV"
+    },
+    {
+      "table": "/",
+      "code": "W",
+      "name": "National Weather Service site",
+      "status": "assigned",
+      "gps": "PW"
+    },
+    {
+      "table": "/",
+      "code": "X",
+      "name": "Helicopter",
+      "status": "assigned",
+      "gps": "PX",
+      "ssid": 6
+    },
+    {
+      "table": "/",
+      "code": "Y",
+      "name": "Yacht (sailboat)",
+      "status": "assigned",
+      "gps": "PY",
+      "ssid": 5
+    },
+    {
+      "table": "/",
+      "code": "Z",
+      "name": "WinAPRS",
+      "status": "assigned",
+      "gps": "PZ"
+    },
+    {
+      "table": "/",
+      "code": "[",
+      "name": "Human or person",
+      "status": "assigned",
+      "gps": "HS",
+      "ssid": 7
+    },
+    {
+      "table": "/",
+      "code": "\\",
+      "name": "Triangle (DF station)",
+      "status": "assigned",
+      "gps": "HT"
+    },
+    {
+      "table": "/",
+      "code": "]",
+      "name": "Mail or post office (was PBBS)",
+      "status": "assigned",
+      "gps": "HU"
+    },
+    {
+      "table": "/",
+      "code": "^",
+      "name": "Large aircraft",
+      "status": "assigned",
+      "gps": "HV"
+    },
+    {
+      "table": "/",
+      "code": "_",
+      "name": "Weather station (blue)",
+      "status": "assigned",
+      "gps": "HW"
+    },
+    {
+      "table": "/",
+      "code": "`",
+      "name": "Dish antenna",
+      "status": "assigned",
+      "gps": "HX"
+    },
+    {
+      "table": "/",
+      "code": "a",
+      "name": "Ambulance",
+      "status": "assigned",
+      "gps": "LA",
+      "ssid": 1
+    },
+    {
+      "table": "/",
+      "code": "b",
+      "name": "Bicycle",
+      "status": "assigned",
+      "gps": "LB",
+      "ssid": 4
+    },
+    {
+      "table": "/",
+      "code": "c",
+      "name": "Incident command post",
+      "status": "assigned",
+      "gps": "LC"
+    },
+    {
+      "table": "/",
+      "code": "d",
+      "name": "Fire department",
+      "status": "assigned",
+      "gps": "LD"
+    },
+    {
+      "table": "/",
+      "code": "e",
+      "name": "Horse (equestrian)",
+      "status": "assigned",
+      "gps": "LE"
+    },
+    {
+      "table": "/",
+      "code": "f",
+      "name": "Fire truck",
+      "status": "assigned",
+      "gps": "LF",
+      "ssid": 3
+    },
+    {
+      "table": "/",
+      "code": "g",
+      "name": "Glider",
+      "status": "assigned",
+      "gps": "LG"
+    },
+    {
+      "table": "/",
+      "code": "h",
+      "name": "Hospital",
+      "status": "assigned",
+      "gps": "LH"
+    },
+    {
+      "table": "/",
+      "code": "i",
+      "name": "IOTA (Islands On The Air)",
+      "status": "assigned",
+      "gps": "LI"
+    },
+    {
+      "table": "/",
+      "code": "j",
+      "name": "Jeep",
+      "status": "assigned",
+      "gps": "LJ",
+      "ssid": 12
+    },
+    {
+      "table": "/",
+      "code": "k",
+      "name": "Truck",
+      "status": "assigned",
+      "gps": "LK",
+      "ssid": 14
+    },
+    {
+      "table": "/",
+      "code": "l",
+      "name": "Laptop",
+      "status": "assigned",
+      "gps": "LL"
+    },
+    {
+      "table": "/",
+      "code": "m",
+      "name": "Mic-E repeater",
+      "status": "assigned",
+      "gps": "LM"
+    },
+    {
+      "table": "/",
+      "code": "n",
+      "name": "Node (black bullseye)",
+      "status": "assigned",
+      "gps": "LN"
+    },
+    {
+      "table": "/",
+      "code": "o",
+      "name": "Emergency operations centre",
+      "status": "assigned",
+      "gps": "LO"
+    },
+    {
+      "table": "/",
+      "code": "p",
+      "name": "Rover (puppy or dog)",
+      "status": "assigned",
+      "gps": "LP"
+    },
+    {
+      "table": "/",
+      "code": "q",
+      "name": "Grid square shown above 128 m",
+      "status": "assigned",
+      "gps": "LQ"
+    },
+    {
+      "table": "/",
+      "code": "r",
+      "name": "Repeater",
+      "status": "assigned",
+      "gps": "LR"
+    },
+    {
+      "table": "/",
+      "code": "s",
+      "name": "Ship (power boat)",
+      "status": "assigned",
+      "gps": "LS",
+      "ssid": 8
+    },
+    {
+      "table": "/",
+      "code": "t",
+      "name": "Truck stop",
+      "status": "assigned",
+      "gps": "LT"
+    },
+    {
+      "table": "/",
+      "code": "u",
+      "name": "Truck (18-wheeler)",
+      "status": "assigned",
+      "gps": "LU"
+    },
+    {
+      "table": "/",
+      "code": "v",
+      "name": "Van",
+      "status": "assigned",
+      "gps": "LV",
+      "ssid": 15
+    },
+    {
+      "table": "/",
+      "code": "w",
+      "name": "Water station",
+      "status": "assigned",
+      "gps": "LW"
+    },
+    {
+      "table": "/",
+      "code": "x",
+      "name": "X-APRS (Unix)",
+      "status": "assigned",
+      "gps": "LX"
+    },
+    {
+      "table": "/",
+      "code": "y",
+      "name": "Yagi antenna at QTH",
+      "status": "assigned",
+      "gps": "LY"
+    },
+    {
+      "table": "/",
+      "code": "z",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "LZ"
+    },
+    {
+      "table": "/",
+      "code": "{",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "J1"
+    },
+    {
+      "table": "/",
+      "code": "|",
+      "name": "Reserved (TNC stream switch)",
+      "status": "reserved",
+      "gps": "J2"
+    },
+    {
+      "table": "/",
+      "code": "}",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "J3"
+    },
+    {
+      "table": "/",
+      "code": "~",
+      "name": "Reserved (TNC stream switch)",
+      "status": "reserved",
+      "gps": "J4"
+    },
+    {
+      "table": "\\",
+      "code": "!",
+      "name": "Emergency",
+      "status": "assigned",
+      "gps": "OB",
+      "overlays": [
+        {
+          "overlay": "E",
+          "name": "Elt or Epirb (new Aug 2014)"
+        },
+        {
+          "overlay": "V",
+          "name": "Volcanic Eruption or Lava (new Aug 2014)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "\"",
+      "name": "Reserved",
+      "status": "reserved",
+      "gps": "OC"
+    },
+    {
+      "table": "\\",
+      "code": "#",
+      "name": "Digipeater (green star)",
+      "status": "assigned",
+      "gps": "OD",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "1",
+          "name": "Wide1-1 digipeater"
+        },
+        {
+          "overlay": "A",
+          "name": "Alternate input (i.e. 144.990MHz) digipeater"
+        },
+        {
+          "overlay": "E",
+          "name": "Emergency powered (assumed full normal digi)"
+        },
+        {
+          "overlay": "I",
+          "name": "I-gate equipped digipeater"
+        },
+        {
+          "overlay": "L",
+          "name": "WIDEn-N with path length trapping"
+        },
+        {
+          "overlay": "P",
+          "name": "PacComm"
+        },
+        {
+          "overlay": "S",
+          "name": "SSn-N digipeater (includes WIDEn-N)"
+        },
+        {
+          "overlay": "X",
+          "name": "EXperimental digipeater"
+        },
+        {
+          "overlay": "V",
+          "name": "Viscous https://github.com/PhirePhly/aprx/blob/master/ViscousDigipeater.README"
+        },
+        {
+          "overlay": "W",
+          "name": "WIDEn-N, SSn-N and Trapping"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "$",
+      "name": "Bank or ATM (green box)",
+      "status": "assigned",
+      "gps": "OE",
+      "overlays": [
+        {
+          "overlay": "U",
+          "name": "US dollars"
+        },
+        {
+          "overlay": "L",
+          "name": "Brittish Pound"
+        },
+        {
+          "overlay": "Y",
+          "name": "Japanese Yen"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "%",
+      "name": "Power plant",
+      "status": "assigned",
+      "gps": "OF",
+      "overlays": [
+        {
+          "overlay": "C",
+          "name": "Coal"
+        },
+        {
+          "overlay": "E",
+          "name": "Emergency (new Aug 2014)"
+        },
+        {
+          "overlay": "G",
+          "name": "Gas Turbine"
+        },
+        {
+          "overlay": "H",
+          "name": "Hydroelectric"
+        },
+        {
+          "overlay": "N",
+          "name": "Nuclear"
+        },
+        {
+          "overlay": "P",
+          "name": "Portable (new Aug 2014)"
+        },
+        {
+          "overlay": "R",
+          "name": "Renewable (hydrogen etc fuels)"
+        },
+        {
+          "overlay": "S",
+          "name": "Solar"
+        },
+        {
+          "overlay": "T",
+          "name": "Thermal (geo)"
+        },
+        {
+          "overlay": "W",
+          "name": "Wind"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "&",
+      "name": "Gateway (diamond)",
+      "status": "assigned",
+      "gps": "OG",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "I",
+          "name": "Igate Generic (please use more specific overlay)"
+        },
+        {
+          "overlay": "L",
+          "name": "Lora Igate"
+        },
+        {
+          "overlay": "R",
+          "name": "Receive only IGate (do not send msgs back to RF)"
+        },
+        {
+          "overlay": "P",
+          "name": "PSKmail node"
+        },
+        {
+          "overlay": "T",
+          "name": "TX igate with path set to 1 hop only)"
+        },
+        {
+          "overlay": "W",
+          "name": "WIRES-X as opposed to W0 for WiresII"
+        },
+        {
+          "overlay": "2",
+          "name": "TX igate with path set to 2 hops (not generally good idea)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "'",
+      "name": "Crash or incident site",
+      "status": "assigned",
+      "gps": "OH",
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Automobile crash site"
+        },
+        {
+          "overlay": "H",
+          "name": "Hazardous incident"
+        },
+        {
+          "overlay": "M",
+          "name": "Multi-Vehicle crash site"
+        },
+        {
+          "overlay": "P",
+          "name": "Pileup"
+        },
+        {
+          "overlay": "T",
+          "name": "Truck wreck"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "(",
+      "name": "Cloudy",
+      "status": "assigned",
+      "gps": "OI"
+    },
+    {
+      "table": "\\",
+      "code": ")",
+      "name": "Firenet MEO, MODIS Earth observation",
+      "status": "assigned",
+      "gps": "OJ"
+    },
+    {
+      "table": "\\",
+      "code": "*",
+      "name": "Snow (now overlay S on \\`)",
+      "status": "legacy",
+      "gps": "OK"
+    },
+    {
+      "table": "\\",
+      "code": "+",
+      "name": "Church",
+      "status": "assigned",
+      "gps": "OL"
+    },
+    {
+      "table": "\\",
+      "code": ",",
+      "name": "Girl Scouts",
+      "status": "assigned",
+      "gps": "OM"
+    },
+    {
+      "table": "\\",
+      "code": "-",
+      "name": "House (HF)",
+      "status": "assigned",
+      "gps": "ON",
+      "overlays": [
+        {
+          "overlay": "5",
+          "name": "50 Hz if non standard"
+        },
+        {
+          "overlay": "6",
+          "name": "60 Hz if non standard"
+        },
+        {
+          "overlay": "B",
+          "name": "Battery or off grid"
+        },
+        {
+          "overlay": "C",
+          "name": "Combined alternatives"
+        },
+        {
+          "overlay": "E",
+          "name": "Emergency power (grid down)"
+        },
+        {
+          "overlay": "G",
+          "name": "Geothermal"
+        },
+        {
+          "overlay": "H",
+          "name": "Hydro powered"
+        },
+        {
+          "overlay": "O",
+          "name": "Operator Present"
+        },
+        {
+          "overlay": "S",
+          "name": "Solar Power"
+        },
+        {
+          "overlay": "W",
+          "name": "Wind power"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": ".",
+      "name": "Ambiguous position (question mark)",
+      "status": "assigned",
+      "gps": "OO"
+    },
+    {
+      "table": "\\",
+      "code": "/",
+      "name": "Waypoint destination",
+      "status": "assigned",
+      "gps": "OP"
+    },
+    {
+      "table": "\\",
+      "code": "0",
+      "name": "Circle (IRLP, EchoLink, WIRES)",
+      "status": "assigned",
+      "gps": "A0",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Allstar Node (A0)"
+        },
+        {
+          "overlay": "E",
+          "name": "Echolink Node (E0)"
+        },
+        {
+          "overlay": "I",
+          "name": "IRLP repeater (I0)"
+        },
+        {
+          "overlay": "S",
+          "name": "Staging Area (S0)"
+        },
+        {
+          "overlay": "V",
+          "name": "Echolink and IRLP (Voip)"
+        },
+        {
+          "overlay": "W",
+          "name": "WIRES (Yaesu Voip)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "1",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A1"
+    },
+    {
+      "table": "\\",
+      "code": "2",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A2"
+    },
+    {
+      "table": "\\",
+      "code": "3",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A3"
+    },
+    {
+      "table": "\\",
+      "code": "4",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A4"
+    },
+    {
+      "table": "\\",
+      "code": "5",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A5"
+    },
+    {
+      "table": "\\",
+      "code": "6",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A6"
+    },
+    {
+      "table": "\\",
+      "code": "7",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "A7"
+    },
+    {
+      "table": "\\",
+      "code": "8",
+      "name": "802.11 or other network node",
+      "status": "assigned",
+      "gps": "A8",
+      "overlays": [
+        {
+          "overlay": "8",
+          "name": "802.11 network node (88)"
+        },
+        {
+          "overlay": "G",
+          "name": "802.11G (G8)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "9",
+      "name": "Gas station (blue pump)",
+      "status": "assigned",
+      "gps": "A9"
+    },
+    {
+      "table": "\\",
+      "code": ":",
+      "name": "Hail (now overlay H on \\`)",
+      "status": "legacy",
+      "gps": "NR"
+    },
+    {
+      "table": "\\",
+      "code": ";",
+      "name": "Park or picnic area",
+      "status": "assigned",
+      "gps": "NS",
+      "overlays": [
+        {
+          "overlay": "F",
+          "name": "Field Day"
+        },
+        {
+          "overlay": "I",
+          "name": "Islands on the air"
+        },
+        {
+          "overlay": "S",
+          "name": "Summits on the air"
+        },
+        {
+          "overlay": "W",
+          "name": "Wota"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "<",
+      "name": "Advisory (single gale flag)",
+      "status": "assigned",
+      "gps": "NT"
+    },
+    {
+      "table": "\\",
+      "code": "=",
+      "name": "Rail (overlay group)",
+      "status": "assigned",
+      "gps": "NU",
+      "overlays": [
+        {
+          "overlay": "B",
+          "name": "Bus-rail/trolley/streetcar/guiderail"
+        },
+        {
+          "overlay": "C",
+          "name": "Commuter"
+        },
+        {
+          "overlay": "D",
+          "name": "Diesel"
+        },
+        {
+          "overlay": "E",
+          "name": "Electric"
+        },
+        {
+          "overlay": "F",
+          "name": "Freight"
+        },
+        {
+          "overlay": "G",
+          "name": "Gondola"
+        },
+        {
+          "overlay": "H",
+          "name": "High Speed Rail (& Hyperloop?)"
+        },
+        {
+          "overlay": "I",
+          "name": "Inclined Rail"
+        },
+        {
+          "overlay": "L",
+          "name": "ELevated"
+        },
+        {
+          "overlay": "M",
+          "name": "Monorail"
+        },
+        {
+          "overlay": "P",
+          "name": "Passenger"
+        },
+        {
+          "overlay": "S",
+          "name": "Steam"
+        },
+        {
+          "overlay": "T",
+          "name": "Terminal (station)"
+        },
+        {
+          "overlay": "U",
+          "name": "SUbway (& Hyperloop?)"
+        },
+        {
+          "overlay": "X",
+          "name": "EXcursion"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": ">",
+      "name": "Car (top view)",
+      "status": "assigned",
+      "gps": "NV",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "3",
+          "name": "Model 3 (Tesla)"
+        },
+        {
+          "overlay": "B",
+          "name": "Bev - Battery EV(was E for electric)"
+        },
+        {
+          "overlay": "D",
+          "name": "Diy - Do it yourself"
+        },
+        {
+          "overlay": "E",
+          "name": "Ethanol (was electric)"
+        },
+        {
+          "overlay": "F",
+          "name": "Fuelcell or hydrogen"
+        },
+        {
+          "overlay": "H",
+          "name": "Hybrid"
+        },
+        {
+          "overlay": "L",
+          "name": "Leaf"
+        },
+        {
+          "overlay": "P",
+          "name": "Phev - Plugin-hybrid"
+        },
+        {
+          "overlay": "S",
+          "name": "Solar powered"
+        },
+        {
+          "overlay": "T",
+          "name": "Tesla (temporary)"
+        },
+        {
+          "overlay": "V",
+          "name": "Volt (temporary)"
+        },
+        {
+          "overlay": "X",
+          "name": "Model X"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "?",
+      "name": "Information kiosk (blue box with ?)",
+      "status": "assigned",
+      "gps": "NW"
+    },
+    {
+      "table": "\\",
+      "code": "@",
+      "name": "Hurricane or tropical storm",
+      "status": "assigned",
+      "gps": "NX"
+    },
+    {
+      "table": "\\",
+      "code": "A",
+      "name": "Box (DTMF, RFID, XO)",
+      "status": "assigned",
+      "gps": "AA",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "9",
+          "name": "Mobile DTMF user"
+        },
+        {
+          "overlay": "7",
+          "name": "HT DTMF user"
+        },
+        {
+          "overlay": "H",
+          "name": "House DTMF user"
+        },
+        {
+          "overlay": "E",
+          "name": "Echolink DTMF report"
+        },
+        {
+          "overlay": "I",
+          "name": "IRLP DTMF report"
+        },
+        {
+          "overlay": "R",
+          "name": "RFID report"
+        },
+        {
+          "overlay": "A",
+          "name": "AllStar DTMF report"
+        },
+        {
+          "overlay": "D",
+          "name": "D-Star report"
+        },
+        {
+          "overlay": "X",
+          "name": "Olpc Laptop XO"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "B",
+      "name": "Blowing snow (now overlay B on \\E)",
+      "status": "legacy",
+      "gps": "AB"
+    },
+    {
+      "table": "\\",
+      "code": "C",
+      "name": "Coast Guard",
+      "status": "assigned",
+      "gps": "AC"
+    },
+    {
+      "table": "\\",
+      "code": "D",
+      "name": "Depot (was drizzle)",
+      "status": "assigned",
+      "gps": "AD",
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Airport (new Aug 2014)"
+        },
+        {
+          "overlay": "F",
+          "name": "Ferry Landing (new Aug 2014)"
+        },
+        {
+          "overlay": "H",
+          "name": "Heloport (new Aug 2014)"
+        },
+        {
+          "overlay": "R",
+          "name": "Rail Depot (new Aug 2014)"
+        },
+        {
+          "overlay": "B",
+          "name": "Bus Depot (new Aug 2014)"
+        },
+        {
+          "overlay": "L",
+          "name": "LIght Rail or Subway (new Aug 2014)"
+        },
+        {
+          "overlay": "S",
+          "name": "Seaport Depot (new Aug 2014)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "E",
+      "name": "Smoke and other visibility codes",
+      "status": "assigned",
+      "gps": "AE",
+      "overlays": [
+        {
+          "overlay": "H",
+          "name": "(H overlay) Haze"
+        },
+        {
+          "overlay": "S",
+          "name": "(S overlay) Smoke"
+        },
+        {
+          "overlay": "B",
+          "name": "(B overlay) Blowing Snow was \\B"
+        },
+        {
+          "overlay": "D",
+          "name": "(D overlay) blowing Dust or sand was \\b"
+        },
+        {
+          "overlay": "F",
+          "name": "(F overlay) Fog was \\{"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "F",
+      "name": "Freezing rain (now overlay F on \\`)",
+      "status": "legacy",
+      "gps": "AF"
+    },
+    {
+      "table": "\\",
+      "code": "G",
+      "name": "Snow shower (now overlay S on \\I)",
+      "status": "legacy",
+      "gps": "AG"
+    },
+    {
+      "table": "\\",
+      "code": "H",
+      "name": "Haze and hazards",
+      "status": "assigned",
+      "gps": "AH",
+      "overlays": [
+        {
+          "overlay": "M",
+          "name": "Methane Hazard (new Apr 2017)"
+        },
+        {
+          "overlay": "R",
+          "name": "Radiation detector (new mar 2011)"
+        },
+        {
+          "overlay": "W",
+          "name": "Hazardous Waste"
+        },
+        {
+          "overlay": "X",
+          "name": "Skull&Crossbones"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "I",
+      "name": "Rain shower",
+      "status": "assigned",
+      "gps": "AI"
+    },
+    {
+      "table": "\\",
+      "code": "J",
+      "name": "Lightning (now overlay L on \\I)",
+      "status": "legacy",
+      "gps": "AJ"
+    },
+    {
+      "table": "\\",
+      "code": "K",
+      "name": "Kenwood HT",
+      "status": "assigned",
+      "gps": "AK"
+    },
+    {
+      "table": "\\",
+      "code": "L",
+      "name": "Lighthouse",
+      "status": "assigned",
+      "gps": "AL"
+    },
+    {
+      "table": "\\",
+      "code": "M",
+      "name": "MARS (A=Army, N=Navy, F=Air Force)",
+      "status": "assigned",
+      "gps": "AM"
+    },
+    {
+      "table": "\\",
+      "code": "N",
+      "name": "Navigation buoy",
+      "status": "assigned",
+      "gps": "AN"
+    },
+    {
+      "table": "\\",
+      "code": "O",
+      "name": "Rocket (balloon overlay group)",
+      "status": "assigned",
+      "gps": "AO",
+      "overlays": [
+        {
+          "overlay": "B",
+          "name": "Blimp (2015)"
+        },
+        {
+          "overlay": "M",
+          "name": "Manned Balloon (2015)"
+        },
+        {
+          "overlay": "T",
+          "name": "Teathered (2015)"
+        },
+        {
+          "overlay": "C",
+          "name": "Constant Pressure - Long duration (2015)"
+        },
+        {
+          "overlay": "R",
+          "name": "Rocket bearing Balloon (Rockoon) (2015)"
+        },
+        {
+          "overlay": "W",
+          "name": "World-round balloon (2018)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "P",
+      "name": "Parking",
+      "status": "assigned",
+      "gps": "AP"
+    },
+    {
+      "table": "\\",
+      "code": "Q",
+      "name": "Earthquake",
+      "status": "assigned",
+      "gps": "AQ"
+    },
+    {
+      "table": "\\",
+      "code": "R",
+      "name": "Restaurant",
+      "status": "assigned",
+      "gps": "AR",
+      "overlays": [
+        {
+          "overlay": "7",
+          "name": "7/11"
+        },
+        {
+          "overlay": "K",
+          "name": "Kfc"
+        },
+        {
+          "overlay": "M",
+          "name": "McDonalds"
+        },
+        {
+          "overlay": "T",
+          "name": "Taco Bell"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "S",
+      "name": "Satellite or PACSAT",
+      "status": "assigned",
+      "gps": "AS"
+    },
+    {
+      "table": "\\",
+      "code": "T",
+      "name": "Thunderstorm",
+      "status": "assigned",
+      "gps": "AT"
+    },
+    {
+      "table": "\\",
+      "code": "U",
+      "name": "Sunny",
+      "status": "assigned",
+      "gps": "AU"
+    },
+    {
+      "table": "\\",
+      "code": "V",
+      "name": "VORTAC navigation aid",
+      "status": "assigned",
+      "gps": "AV"
+    },
+    {
+      "table": "\\",
+      "code": "W",
+      "name": "NWS site (with overlay)",
+      "status": "assigned",
+      "gps": "AW",
+      "overlayFamily": true
+    },
+    {
+      "table": "\\",
+      "code": "X",
+      "name": "Pharmacy (Rx)",
+      "status": "assigned",
+      "gps": "AX"
+    },
+    {
+      "table": "\\",
+      "code": "Y",
+      "name": "Radios and devices",
+      "status": "assigned",
+      "gps": "AY",
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Alinco"
+        },
+        {
+          "overlay": "B",
+          "name": "Byonics"
+        },
+        {
+          "overlay": "I",
+          "name": "Icom"
+        },
+        {
+          "overlay": "K",
+          "name": "Kenwood * <= Recommend special symbol"
+        },
+        {
+          "overlay": "Y",
+          "name": "Yaesu/Standard* <= Recommend special symbol"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "Z",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "AZ"
+    },
+    {
+      "table": "\\",
+      "code": "[",
+      "name": "Wall cloud (humans with overlay)",
+      "status": "assigned",
+      "gps": "DS",
+      "overlays": [
+        {
+          "overlay": "B",
+          "name": "Baby on board (stroller, pram etc)"
+        },
+        {
+          "overlay": "S",
+          "name": "Skier * <= Recommend Special Symbol"
+        },
+        {
+          "overlay": "R",
+          "name": "Runner"
+        },
+        {
+          "overlay": "H",
+          "name": "Hiker"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "\\",
+      "name": "GPS and navigation devices",
+      "status": "assigned",
+      "gps": "DT",
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Avmap G5 * <= Recommend special symbol"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "]",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "DU"
+    },
+    {
+      "table": "\\",
+      "code": "^",
+      "name": "Aircraft (top view)",
+      "status": "assigned",
+      "gps": "DV",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Autonomous (2015)"
+        },
+        {
+          "overlay": "D",
+          "name": "Drone (new may 2014)"
+        },
+        {
+          "overlay": "E",
+          "name": "Electric aircraft (2015)"
+        },
+        {
+          "overlay": "H",
+          "name": "Hovercraft (new may 2014)"
+        },
+        {
+          "overlay": "J",
+          "name": "Jet (new may 2014)"
+        },
+        {
+          "overlay": "M",
+          "name": "Missle (new may 2014)"
+        },
+        {
+          "overlay": "P",
+          "name": "Prop (new Aug 2014)"
+        },
+        {
+          "overlay": "R",
+          "name": "Remotely Piloted (new 2015)"
+        },
+        {
+          "overlay": "S",
+          "name": "Solar Powered (new 2015)"
+        },
+        {
+          "overlay": "V",
+          "name": "Vertical takeoff (new may 2014)"
+        },
+        {
+          "overlay": "X",
+          "name": "Experimental (new Aug 2014)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "_",
+      "name": "Weather site with digipeater (green)",
+      "status": "assigned",
+      "gps": "DW",
+      "overlayFamily": true
+    },
+    {
+      "table": "\\",
+      "code": "`",
+      "name": "Rain (all precipitation with overlay)",
+      "status": "assigned",
+      "gps": "DX"
+    },
+    {
+      "table": "\\",
+      "code": "a",
+      "name": "ARRL, ARES, Winlink, D-STAR and similar (diamond)",
+      "status": "assigned",
+      "gps": "SA",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "ARES"
+        },
+        {
+          "overlay": "D",
+          "name": "DSTAR (had been ARES Dutch)"
+        },
+        {
+          "overlay": "G",
+          "name": "Rsgb Radio Society of Great Brittan"
+        },
+        {
+          "overlay": "R",
+          "name": "RACES"
+        },
+        {
+          "overlay": "S",
+          "name": "SATERN Salvation Army"
+        },
+        {
+          "overlay": "W",
+          "name": "WinLink"
+        },
+        {
+          "overlay": "Y",
+          "name": "C4FM Yaesu repeaters"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "b",
+      "name": "Blowing dust or sand (now overlay D on \\E)",
+      "status": "legacy",
+      "gps": "SB"
+    },
+    {
+      "table": "\\",
+      "code": "c",
+      "name": "Civil defence (RACES, SATERN; triangle)",
+      "status": "assigned",
+      "gps": "SC",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "D",
+          "name": "Decontamination (new Aug 2014)"
+        },
+        {
+          "overlay": "R",
+          "name": "RACES"
+        },
+        {
+          "overlay": "S",
+          "name": "SATERN mobile canteen"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "d",
+      "name": "DX spot by callsign",
+      "status": "assigned",
+      "gps": "SD"
+    },
+    {
+      "table": "\\",
+      "code": "e",
+      "name": "Sleet (now overlay E on \\`)",
+      "status": "legacy",
+      "gps": "SE"
+    },
+    {
+      "table": "\\",
+      "code": "f",
+      "name": "Funnel cloud",
+      "status": "assigned",
+      "gps": "SF"
+    },
+    {
+      "table": "\\",
+      "code": "g",
+      "name": "Gale flags",
+      "status": "assigned",
+      "gps": "SG"
+    },
+    {
+      "table": "\\",
+      "code": "h",
+      "name": "Store or hamfest",
+      "status": "assigned",
+      "gps": "SH",
+      "overlays": [
+        {
+          "overlay": "C",
+          "name": "Club (ham radio)"
+        },
+        {
+          "overlay": "E",
+          "name": "Electronics Store"
+        },
+        {
+          "overlay": "F",
+          "name": "HamFest (new Aug 2014)"
+        },
+        {
+          "overlay": "H",
+          "name": "Hardware Store etc.."
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "i",
+      "name": "Box or point of interest",
+      "status": "assigned",
+      "gps": "SI",
+      "overlayFamily": true
+    },
+    {
+      "table": "\\",
+      "code": "j",
+      "name": "Work zone (steam shovel)",
+      "status": "assigned",
+      "gps": "SJ"
+    },
+    {
+      "table": "\\",
+      "code": "k",
+      "name": "Special vehicle (SUV, ATV, 4x4)",
+      "status": "assigned",
+      "gps": "SK",
+      "overlays": [
+        {
+          "overlay": "4",
+          "name": "4x4"
+        },
+        {
+          "overlay": "A",
+          "name": "ATV (all terrain vehicle)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "l",
+      "name": "Area (box, circle and other shapes)",
+      "status": "assigned",
+      "gps": "SL"
+    },
+    {
+      "table": "\\",
+      "code": "m",
+      "name": "Value signpost (3-character display)",
+      "status": "assigned",
+      "gps": "SM"
+    },
+    {
+      "table": "\\",
+      "code": "n",
+      "name": "Triangle (with overlay)",
+      "status": "assigned",
+      "gps": "SN",
+      "overlayFamily": true
+    },
+    {
+      "table": "\\",
+      "code": "o",
+      "name": "Small circle",
+      "status": "assigned",
+      "gps": "SO"
+    },
+    {
+      "table": "\\",
+      "code": "p",
+      "name": "Partly cloudy (now overlay P on \\()",
+      "status": "legacy",
+      "gps": "SP"
+    },
+    {
+      "table": "\\",
+      "code": "q",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "SQ"
+    },
+    {
+      "table": "\\",
+      "code": "r",
+      "name": "Restrooms",
+      "status": "assigned",
+      "gps": "SR"
+    },
+    {
+      "table": "\\",
+      "code": "s",
+      "name": "Ship or boat (top view)",
+      "status": "assigned",
+      "gps": "SS",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "6",
+          "name": "Shipwreck (\"deep6\") (new Aug 2014)"
+        },
+        {
+          "overlay": "B",
+          "name": "Pleasure Boat"
+        },
+        {
+          "overlay": "C",
+          "name": "Cargo"
+        },
+        {
+          "overlay": "D",
+          "name": "Diving"
+        },
+        {
+          "overlay": "E",
+          "name": "Emergency or Medical transport"
+        },
+        {
+          "overlay": "F",
+          "name": "Fishing"
+        },
+        {
+          "overlay": "H",
+          "name": "High-speed Craft"
+        },
+        {
+          "overlay": "J",
+          "name": "Jet Ski"
+        },
+        {
+          "overlay": "L",
+          "name": "Law enforcement"
+        },
+        {
+          "overlay": "M",
+          "name": "Miltary"
+        },
+        {
+          "overlay": "O",
+          "name": "Oil Rig"
+        },
+        {
+          "overlay": "P",
+          "name": "Pilot Boat (new Aug 2014)"
+        },
+        {
+          "overlay": "Q",
+          "name": "Torpedo"
+        },
+        {
+          "overlay": "S",
+          "name": "Search and Rescue"
+        },
+        {
+          "overlay": "T",
+          "name": "Tug (new Aug 2014)"
+        },
+        {
+          "overlay": "U",
+          "name": "Underwater ops or submarine"
+        },
+        {
+          "overlay": "W",
+          "name": "Wing-in-Ground effect (or Hovercraft)"
+        },
+        {
+          "overlay": "X",
+          "name": "Passenger (paX)(ferry)"
+        },
+        {
+          "overlay": "Y",
+          "name": "Sailing (large ship)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "t",
+      "name": "Tornado",
+      "status": "assigned",
+      "gps": "ST"
+    },
+    {
+      "table": "\\",
+      "code": "u",
+      "name": "Truck (with overlay)",
+      "status": "assigned",
+      "gps": "SU",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "B",
+          "name": "Buldozer/construction/Backhoe (new Aug 2014)"
+        },
+        {
+          "overlay": "G",
+          "name": "Gas"
+        },
+        {
+          "overlay": "P",
+          "name": "Plow or SnowPlow (new Aug 2014)"
+        },
+        {
+          "overlay": "T",
+          "name": "Tanker"
+        },
+        {
+          "overlay": "C",
+          "name": "Chlorine Tanker"
+        },
+        {
+          "overlay": "H",
+          "name": "Hazardous"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "v",
+      "name": "Van (with overlay)",
+      "status": "assigned",
+      "gps": "SV",
+      "overlayFamily": true
+    },
+    {
+      "table": "\\",
+      "code": "w",
+      "name": "Flooding (avalanche, slides)",
+      "status": "assigned",
+      "gps": "SW",
+      "overlays": [
+        {
+          "overlay": "A",
+          "name": "Avalanche"
+        },
+        {
+          "overlay": "G",
+          "name": "Green Flood Gauge"
+        },
+        {
+          "overlay": "M",
+          "name": "Mud slide"
+        },
+        {
+          "overlay": "N",
+          "name": "Normal flood gauge (blue)"
+        },
+        {
+          "overlay": "R",
+          "name": "Red flood gauge"
+        },
+        {
+          "overlay": "S",
+          "name": "Snow Blockage"
+        },
+        {
+          "overlay": "Y",
+          "name": "Yellow flood gauge"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "x",
+      "name": "Wreck or obstruction",
+      "status": "assigned",
+      "gps": "SX"
+    },
+    {
+      "table": "\\",
+      "code": "y",
+      "name": "Skywarn",
+      "status": "assigned",
+      "gps": "SY"
+    },
+    {
+      "table": "\\",
+      "code": "z",
+      "name": "Shelter (with overlay)",
+      "status": "assigned",
+      "gps": "SZ",
+      "overlayFamily": true,
+      "overlays": [
+        {
+          "overlay": "C",
+          "name": "Clinic (new Aug 2014)"
+        },
+        {
+          "overlay": "E",
+          "name": "Emergency Power"
+        },
+        {
+          "overlay": "G",
+          "name": "Government building (new Aug 2014)"
+        },
+        {
+          "overlay": "M",
+          "name": "Morgue (new Aug 2014)"
+        },
+        {
+          "overlay": "T",
+          "name": "Triage (new Aug 2014)"
+        }
+      ]
+    },
+    {
+      "table": "\\",
+      "code": "{",
+      "name": "Fog (now overlay F on \\E)",
+      "status": "legacy",
+      "gps": "Q1"
+    },
+    {
+      "table": "\\",
+      "code": "|",
+      "name": "Reserved (TNC stream switch)",
+      "status": "reserved",
+      "gps": "Q2"
+    },
+    {
+      "table": "\\",
+      "code": "}",
+      "name": "Unassigned",
+      "status": "unassigned",
+      "gps": "Q3"
+    },
+    {
+      "table": "\\",
+      "code": "~",
+      "name": "Reserved (TNC stream switch)",
+      "status": "reserved",
+      "gps": "Q4"
+    }
+  ]
+}
