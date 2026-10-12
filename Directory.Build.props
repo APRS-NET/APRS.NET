@@ -32,4 +32,18 @@
          PackageValidationBaselineVersion to flag breaking changes against the last release. -->
     <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
+
+  <!-- Banned APIs (RS0030) for shipped code only: src/ and apps/. Tests and tools may use real time and the console. -->
+  <PropertyGroup>
+    <AprsNetProjectArea>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)'))</AprsNetProjectArea>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(AprsNetProjectArea.StartsWith('src')) Or $(AprsNetProjectArea.StartsWith('apps'))">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(AprsNetProjectArea.StartsWith('src'))">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.Library.txt" />
+  </ItemGroup>
 </Project>
