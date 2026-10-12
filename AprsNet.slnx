@@ -33,6 +33,8 @@
   <Folder Name="/tests/">
     <Project Path="tests/AprsNet.AprsIsCli.Tests/AprsNet.AprsIsCli.Tests.csproj" />
     <Project Path="tests/AprsNet.AprsIsTcpClient.Tests/AprsNet.AprsIsTcpClient.Tests.csproj" />
+    <Project Path="tests/AprsNet.Packets.CorpusTests/AprsNet.Packets.CorpusTests.csproj" />
+    <Project Path="tests/AprsNet.Packets.SpecTests/AprsNet.Packets.SpecTests.csproj" />
     <Project Path="tests/AprsNet.Packets.Tests/AprsNet.Packets.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace AprsNet.Packets.Tests;
+namespace AprsNet.Packets.SpecTests;
 
 /// <summary>
 /// Checks the APRS101 test vectors themselves until the parser exists to run them: well-formed files, unique ids, known

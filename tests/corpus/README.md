@@ -3,6 +3,11 @@
 Real APRS traffic for parser development and tests. Raw captures never go in here (`captures/` is git-ignored);
 only files run through the anonymizer below.
 
+Tests built from this traffic live in `tests/AprsNet.Packets.CorpusTests`, separate from the spec-derived vectors in
+`tests/AprsNet.Packets.SpecTests`. `CorpusFileTests` already checks every file here: the line format, timestamps in
+order, the file listed in the table below, and that callsigns and e-mail domains are anonymized (it fails on a raw
+capture).
+
 ## Files
 
 | File | Source | Lines |
