@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-10-12)
+
+
+### Features
+
+* **packets:** parse the TNC2 header of APRS packets ([3e84db9](https://github.com/APRS-NET/APRS.NET/commit/3e84db975932cd072196d63b221fae39e5914dec))
+
 ## [0.1.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-10-12)
 
 
