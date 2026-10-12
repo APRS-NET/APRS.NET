@@ -8,6 +8,7 @@ namespace AprsNet.AprsIsTcpClient.Tests;
 internal sealed class FakeAprsTransport : IAprsTransport
 {
     private readonly Channel<string?> _incoming = Channel.CreateUnbounded<string?>();
+    private int _waitingReads;
 
     public List<string> Written { get; } = [];
 
@@ -24,10 +25,36 @@ internal sealed class FakeAprsTransport : IAprsTransport
 
     public async ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
     {
-        if (!await _incoming.Reader.WaitToReadAsync(cancellationToken))
-            return null;
+        while (true)
+        {
+            if (_incoming.Reader.TryRead(out var line))
+                return line;
 
-        return _incoming.Reader.TryRead(out var line) ? line : null;
+            // Nothing queued: the client is now blocked on the "network", with its read deadline already armed.
+            Interlocked.Increment(ref _waitingReads);
+            try
+            {
+                if (!await _incoming.Reader.WaitToReadAsync(cancellationToken))
+                    return null;
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _waitingReads);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Waits until the client has read everything queued and is blocked waiting for more, so a test can then advance a
+    /// fake clock knowing the client's read deadline is running.
+    /// </summary>
+    public async Task WaitUntilReadingAsync()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        while (Volatile.Read(ref _waitingReads) == 0 || _incoming.Reader.Count > 0)
+        {
+            await Task.Delay(1, timeout.Token);
+        }
     }
 
     public ValueTask WriteLineAsync(string line, CancellationToken cancellationToken)

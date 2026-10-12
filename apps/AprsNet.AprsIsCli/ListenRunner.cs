@@ -28,6 +28,7 @@ internal static class ListenRunner
             Passcode = options.Passcode,
             Filter = options.Filter,
             SoftwareName = "aprscli",
+            TimeProvider = environment.TimeProvider,
         };
 
         StreamWriter? capture = null;

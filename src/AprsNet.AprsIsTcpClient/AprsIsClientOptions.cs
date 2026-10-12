@@ -36,6 +36,9 @@ public sealed class AprsIsClientOptions
     /// </summary>
     public TimeSpan IdleTimeout { get; set; } = TimeSpan.FromSeconds(90);
 
+    /// <summary>Clock for the login and idle timeouts. Tests can pass a fake provider to control time.</summary>
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
     /// <summary>Longest accepted line in bytes, excluding the terminator. Longer lines are discarded.</summary>
     public int MaxLineLength { get; set; } = 2048;
 
@@ -53,6 +56,7 @@ public sealed class AprsIsClientOptions
     public void Validate()
     {
         ArgumentNullException.ThrowIfNull(Endpoint);
+        ArgumentNullException.ThrowIfNull(TimeProvider);
 
         if (!IsValidCallsign(Callsign))
         {

@@ -171,8 +171,8 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     private async Task<LoginResult> ReadLoginResponseAsync(CancellationToken cancellationToken)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(_options.LoginTimeout);
+        using var deadline = new CancellationTokenSource(_options.LoginTimeout, _options.TimeProvider);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
 
         try
         {
@@ -206,7 +206,6 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     private async Task ReceiveLoopAsync(CancellationToken cancellationToken)
     {
-        CancellationTokenSource? idle = null;
         try
         {
             while (true)
@@ -218,18 +217,12 @@ public sealed class AprsIsClient : IAsyncDisposable
                 }
                 else
                 {
-                    // One timer per read. TryReset fails once the timer has fired (for example while a slow
-                    // consumer held up the previous write), so start a fresh source in that case.
-                    if (idle is null || !idle.TryReset())
-                    {
-                        idle?.Dispose();
-                        idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    }
-
-                    idle.CancelAfter(_options.IdleTimeout);
+                    // A fresh deadline per read, on the configured clock, so tests can drive it with a fake TimeProvider.
+                    using var deadline = new CancellationTokenSource(_options.IdleTimeout, _options.TimeProvider);
+                    using var read = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
                     try
                     {
-                        line = await _transport.ReadLineAsync(idle.Token).ConfigureAwait(false);
+                        line = await _transport.ReadLineAsync(read.Token).ConfigureAwait(false);
                     }
                     catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                     {
@@ -278,10 +271,6 @@ public sealed class AprsIsClient : IAsyncDisposable
         {
             _logger.ReceiveFailed(ex);
             _channel.Writer.TryComplete(ex);
-        }
-        finally
-        {
-            idle?.Dispose();
         }
     }
 

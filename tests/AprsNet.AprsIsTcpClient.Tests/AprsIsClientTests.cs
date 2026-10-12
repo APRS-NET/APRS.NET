@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Time.Testing;
+
 namespace AprsNet.AprsIsTcpClient.Tests;
 
 public class AprsIsClientTests
@@ -169,14 +171,31 @@ public class AprsIsClientTests
     [Fact]
     public async Task LoginTimesOut()
     {
+        var time = new FakeTimeProvider();
         var transport = new FakeAprsTransport();
-        await using var client = new AprsIsClient(
-            Options(o => o.LoginTimeout = TimeSpan.FromMilliseconds(100)),
-            transport: transport
-        );
+        await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
 
-        var ex = await Assert.ThrowsAsync<LoginException>(() => client.ConnectAsync());
+        var connect = client.ConnectAsync();
+        await transport.WaitUntilReadingAsync();
+        time.Advance(TimeSpan.FromSeconds(15));
+
+        var ex = await Assert.ThrowsAsync<LoginException>(() => connect);
         Assert.IsType<TimeoutException>(ex.InnerException);
+    }
+
+    [Fact]
+    public async Task LoginWaitsUntilTheTimeout()
+    {
+        var time = new FakeTimeProvider();
+        var transport = new FakeAprsTransport();
+        await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
+
+        var connect = client.ConnectAsync();
+        await transport.WaitUntilReadingAsync();
+        time.Advance(TimeSpan.FromSeconds(14));
+        transport.Server("# logresp NZ0P unverified, server T2TEST");
+
+        Assert.Equal(LoginStatus.Unverified, (await connect).Status);
     }
 
     [Fact]
@@ -283,50 +302,64 @@ public class AprsIsClientTests
     [Fact]
     public async Task ASilentServerEndsTheStreamWithATimeout()
     {
+        var time = new FakeTimeProvider();
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
-        await using var client = new AprsIsClient(
-            Options(o => o.IdleTimeout = TimeSpan.FromMilliseconds(100)),
-            transport: transport
-        );
+        await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
         await client.ConnectAsync();
-
         transport.Server("W1AW>APRS:>before the stall");
+        await using var lines = client.ReadLinesAsync().GetAsyncEnumerator();
+        Assert.True(await lines.MoveNextAsync());
+        Assert.Equal("W1AW>APRS:>before the stall", lines.Current);
 
-        var lines = new List<string>();
-        var ex = await Assert.ThrowsAsync<TimeoutException>(async () =>
-        {
-            using var cts = new CancellationTokenSource(_short);
-            await foreach (var line in client.ReadLinesAsync(cts.Token))
-                lines.Add(line);
-        });
-        Assert.Equal(["W1AW>APRS:>before the stall"], lines);
-        Assert.Contains("No data from the server", ex.Message, StringComparison.Ordinal);
+        await transport.WaitUntilReadingAsync();
+        time.Advance(TimeSpan.FromSeconds(90));
+
+        var ex = await Assert.ThrowsAsync<TimeoutException>(async () => await lines.MoveNextAsync());
+        Assert.Equal("No data from the server for 90s.", ex.Message);
     }
 
     [Fact]
     public async Task ServerKeepalivesHoldOffTheIdleTimeout()
     {
+        var time = new FakeTimeProvider();
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
-        await using var client = new AprsIsClient(
-            Options(o => o.IdleTimeout = TimeSpan.FromSeconds(2)),
-            transport: transport
-        );
+        await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
         await client.ConnectAsync();
 
-        // Keepalives every 100 ms for 1.5x the idle timeout, then a packet. The 20x margin between the gap and the
-        // timeout absorbs scheduler stalls on busy CI runners.
-        for (var i = 0; i < 30; i++)
+        // Ten keepalives 60 s apart: 10 minutes in all, but never 90 s of silence.
+        for (var i = 0; i < 10; i++)
         {
+            await transport.WaitUntilReadingAsync();
+            time.Advance(TimeSpan.FromSeconds(60));
             transport.Server("# aprsc keepalive");
-            await Task.Delay(100);
         }
 
         transport.Server("W1AW>APRS:>still here");
 
         Assert.Equal(["W1AW>APRS:>still here"], await Take(client, 1));
-        Assert.Equal(30, client.ServerCommentsReceived);
+        Assert.Equal(10, client.ServerCommentsReceived);
+    }
+
+    [Fact]
+    public async Task OnlyTheSilenceSinceTheLastLineCounts()
+    {
+        var time = new FakeTimeProvider();
+        var transport = new FakeAprsTransport();
+        transport.Server("# logresp NZ0P unverified, server T2TEST");
+        await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
+        await client.ConnectAsync();
+        await using var lines = client.ReadLinesAsync().GetAsyncEnumerator();
+
+        await transport.WaitUntilReadingAsync();
+        time.Advance(TimeSpan.FromSeconds(89));
+        transport.Server("W1AW>APRS:>just in time");
+        Assert.True(await lines.MoveNextAsync());
+
+        await transport.WaitUntilReadingAsync();
+        time.Advance(TimeSpan.FromSeconds(90));
+        await Assert.ThrowsAsync<TimeoutException>(async () => await lines.MoveNextAsync());
     }
 
     [Fact]
