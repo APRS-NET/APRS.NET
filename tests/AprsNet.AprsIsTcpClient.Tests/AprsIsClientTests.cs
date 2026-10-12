@@ -40,7 +40,7 @@ public class AprsIsClientTests
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(o => o.Filter = "r/35/-97/100"), transport: transport);
 
-        var result = await client.ConnectAsync();
+        var result = await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(new LoginResult("NZ0P", LoginStatus.Unverified, "T2TEST"), result);
         Assert.Equal(result, client.Login);
@@ -54,7 +54,7 @@ public class AprsIsClientTests
         transport.Server("# logresp NZ0P verified, server T2TEST");
         await using var client = new AprsIsClient(Options(o => o.Passcode = 12345), transport: transport);
 
-        var result = await client.ConnectAsync();
+        var result = await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(LoginStatus.Verified, result.Status);
         Assert.Equal(["user NZ0P pass 12345 vers test 1.0"], transport.Written);
@@ -66,7 +66,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         transport.Server("# keepalive");
         transport.Server("");
@@ -84,7 +84,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         transport.Server("W1AW>APRS:>last");
         transport.Close();
@@ -98,7 +98,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         transport.Fail(new IOException("reset"));
 
@@ -113,7 +113,7 @@ public class AprsIsClientTests
         transport.Close();
         await using var client = new AprsIsClient(Options(), transport: transport);
 
-        await Assert.ThrowsAsync<LoginException>(() => client.ConnectAsync());
+        await Assert.ThrowsAsync<LoginException>(() => client.ConnectAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -125,7 +125,9 @@ public class AprsIsClientTests
         transport.Server("# Login by user not allowed");
         await using var client = new AprsIsClient(Options(o => o.Callsign = "N0CALL"), transport: transport);
 
-        var ex = await Assert.ThrowsAsync<LoginRejectedException>(() => client.ConnectAsync());
+        var ex = await Assert.ThrowsAsync<LoginRejectedException>(() =>
+            client.ConnectAsync(TestContext.Current.CancellationToken)
+        );
 
         Assert.Equal("Login by user not allowed", ex.ServerMessage);
         Assert.Null(client.Login);
@@ -142,7 +144,9 @@ public class AprsIsClientTests
         transport.Close();
         await using var client = new AprsIsClient(Options(o => o.Callsign = "N0CALL"), transport: transport);
 
-        await Assert.ThrowsAsync<LoginRejectedException>(() => client.ConnectAsync());
+        await Assert.ThrowsAsync<LoginRejectedException>(() =>
+            client.ConnectAsync(TestContext.Current.CancellationToken)
+        );
     }
 
     [Fact]
@@ -152,10 +156,16 @@ public class AprsIsClientTests
         transport.Server("# Login by user not allowed");
         await using var client = new AprsIsClient(Options(o => o.Callsign = "N0CALL"), transport: transport);
 
-        await Assert.ThrowsAsync<LoginRejectedException>(() => client.ConnectAsync());
+        await Assert.ThrowsAsync<LoginRejectedException>(() =>
+            client.ConnectAsync(TestContext.Current.CancellationToken)
+        );
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => client.ConnectAsync()); // single-use
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await client.SetFilterAsync("t/m"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.ConnectAsync(TestContext.Current.CancellationToken)
+        ); // single-use
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await client.SetFilterAsync("t/m", TestContext.Current.CancellationToken)
+        );
     }
 
     [Fact]
@@ -165,7 +175,7 @@ public class AprsIsClientTests
         transport.Server("# logresp NZ0P maybe");
         await using var client = new AprsIsClient(Options(), transport: transport);
 
-        await Assert.ThrowsAsync<LoginException>(() => client.ConnectAsync());
+        await Assert.ThrowsAsync<LoginException>(() => client.ConnectAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -175,7 +185,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
 
-        var connect = client.ConnectAsync();
+        var connect = client.ConnectAsync(TestContext.Current.CancellationToken);
         await transport.WaitUntilReadingAsync();
         time.Advance(TimeSpan.FromSeconds(15));
 
@@ -190,7 +200,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
 
-        var connect = client.ConnectAsync();
+        var connect = client.ConnectAsync(TestContext.Current.CancellationToken);
         await transport.WaitUntilReadingAsync();
         time.Advance(TimeSpan.FromSeconds(14));
         transport.Server("# logresp NZ0P unverified, server T2TEST");
@@ -214,9 +224,9 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await client.SetFilterAsync("t/m");
+        await client.SetFilterAsync("t/m", TestContext.Current.CancellationToken);
 
         Assert.Equal("#filter t/m", transport.Written[^1]);
     }
@@ -230,9 +240,11 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await Assert.ThrowsAsync<ArgumentException>(async () => await client.SetFilterAsync(filter));
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await client.SetFilterAsync(filter, TestContext.Current.CancellationToken)
+        );
         Assert.Single(transport.Written);
     }
 
@@ -240,7 +252,9 @@ public class AprsIsClientTests
     public async Task SetFilterRequiresAConnection()
     {
         await using var client = new AprsIsClient(Options(), transport: new FakeAprsTransport());
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await client.SetFilterAsync("t/m"));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await client.SetFilterAsync("t/m", TestContext.Current.CancellationToken)
+        );
     }
 
     [Fact]
@@ -249,9 +263,11 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => client.ConnectAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            client.ConnectAsync(TestContext.Current.CancellationToken)
+        );
     }
 
     [Fact]
@@ -260,7 +276,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         var client = new AprsIsClient(Options(), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
         var reading = Take(client, 10);
 
         await client.DisposeAsync();
@@ -283,7 +299,7 @@ public class AprsIsClientTests
             }),
             transport: transport
         );
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         for (var i = 1; i <= 5; i++)
             transport.Server($"A>B:>{i}");
@@ -306,9 +322,11 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
         transport.Server("W1AW>APRS:>before the stall");
-        await using var lines = client.ReadLinesAsync().GetAsyncEnumerator();
+        await using var lines = client
+            .ReadLinesAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
         Assert.True(await lines.MoveNextAsync());
         Assert.Equal("W1AW>APRS:>before the stall", lines.Current);
 
@@ -326,7 +344,7 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
-        await client.ConnectAsync();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
 
         // Ten keepalives 60 s apart: 10 minutes in all, but never 90 s of silence.
         for (var i = 0; i < 10; i++)
@@ -349,8 +367,10 @@ public class AprsIsClientTests
         var transport = new FakeAprsTransport();
         transport.Server("# logresp NZ0P unverified, server T2TEST");
         await using var client = new AprsIsClient(Options(o => o.TimeProvider = time), transport: transport);
-        await client.ConnectAsync();
-        await using var lines = client.ReadLinesAsync().GetAsyncEnumerator();
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
+        await using var lines = client
+            .ReadLinesAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
 
         await transport.WaitUntilReadingAsync();
         time.Advance(TimeSpan.FromSeconds(89));

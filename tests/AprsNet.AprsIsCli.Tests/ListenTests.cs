@@ -27,7 +27,10 @@ public class ListenTests
     {
         var harness = WithPackets(_packets);
 
-        var result = await harness.RunAsync(["listen", "--callsign", "NZ0P", "-n", "2"]);
+        var result = await harness.RunAsync(
+            ["listen", "--callsign", "NZ0P", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
@@ -38,7 +41,10 @@ public class ListenTests
     {
         var harness = WithPackets(_packets);
 
-        await harness.RunAsync(["listen", "-c", "nz0p", "-f", "r/35/-97/200", "-n", "1"]);
+        await harness.RunAsync(
+            ["listen", "-c", "nz0p", "-f", "r/35/-97/200", "-n", "1"],
+            TestContext.Current.CancellationToken
+        );
 
         var login = harness.Transport.Written[0];
         Assert.StartsWith("user NZ0P pass -1 vers aprscli ", login, StringComparison.Ordinal);
@@ -50,7 +56,10 @@ public class ListenTests
     {
         var harness = WithPackets(_packets);
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-t", "-n", "1"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-t", "-n", "1"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal($"2026-10-11T12:00:00.123Z {_packets[0]}{Environment.NewLine}", result.Out);
     }
@@ -62,7 +71,10 @@ public class ListenTests
         using var dir = new TempDirectory();
         var file = Path.Combine(dir.Path, "nested", "cap.log");
 
-        var first = await harness.RunAsync(["listen", "-c", "NZ0P", "--capture", file, "-n", "2"]);
+        var first = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--capture", file, "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
         var second = await new Func<Task<CliResult>>(async () =>
         {
             var again = WithPackets(_packets[2]);
@@ -77,7 +89,7 @@ public class ListenTests
                 $"2026-10-11T12:00:00.123Z {_packets[1]}",
                 $"2026-10-11T12:00:00.123Z {_packets[2]}",
             ],
-            await File.ReadAllLinesAsync(file)
+            await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken)
         );
         Assert.DoesNotContain("2026-", first.Out, StringComparison.Ordinal); // console still untimestamped
     }
@@ -89,11 +101,14 @@ public class ListenTests
         using var dir = new TempDirectory();
         var file = Path.Combine(dir.Path, "cap.log");
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-q", "--capture", file, "-n", "3"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-q", "--capture", file, "-n", "3"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal("", result.Out);
-        Assert.Equal(3, (await File.ReadAllLinesAsync(file)).Length);
+        Assert.Equal(3, (await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken)).Length);
     }
 
     [Fact]
@@ -104,10 +119,13 @@ public class ListenTests
         using var dir = new TempDirectory();
         var file = Path.Combine(dir.Path, "cap.log");
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--capture", file, "-n", "1"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--capture", file, "-n", "1"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal("A>B:>\\x1B[31mred\\x00\\x1Cé" + Environment.NewLine, result.Out);
-        var bytes = await File.ReadAllBytesAsync(file);
+        var bytes = await File.ReadAllBytesAsync(file, TestContext.Current.CancellationToken);
         var expected = Encoding.Latin1.GetBytes("2026-10-11T12:00:00.123Z " + raw + "\n");
         Assert.Equal(expected, bytes);
     }
@@ -117,7 +135,7 @@ public class ListenTests
     {
         var harness = WithPackets("# keepalive", _packets[0], "# another", _packets[1]);
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "2"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "2"], TestContext.Current.CancellationToken);
 
         Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
     }
@@ -127,7 +145,10 @@ public class ListenTests
     {
         var harness = new CliHarness().LoginAccepted();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-d", "0.2s"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-d", "0.2s"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
     }
@@ -149,7 +170,7 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.Transport.Close();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P"], TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("closed the connection", result.Error, StringComparison.Ordinal);
@@ -162,7 +183,7 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.Transport.Fail(new IOException("reset"));
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P"], TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("connection lost", result.Error, StringComparison.Ordinal);
@@ -174,7 +195,7 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.Transport.Fail(new TimeoutException("No data from the server for 90s."));
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P"], TestContext.Current.CancellationToken);
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("connection lost: No data from the server for 90s.", result.Error, StringComparison.Ordinal);
@@ -188,7 +209,10 @@ public class ListenTests
         harness.Transport.Close();
         harness.AddReconnect(_packets[1], _packets[2]);
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-n", "2"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
@@ -206,11 +230,14 @@ public class ListenTests
 
         using var capture = new TempDirectory();
         var file = Path.Combine(capture.Path, "c.log");
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-n", "2", "--capture", file]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "-n", "2", "--capture", file],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("No data from the server", result.Error, StringComparison.Ordinal);
-        var captured = await File.ReadAllLinesAsync(file);
+        var captured = await File.ReadAllLinesAsync(file, TestContext.Current.CancellationToken);
         Assert.Equal(2, captured.Length);
         Assert.EndsWith(_packets[1], captured[1], StringComparison.Ordinal);
     }
@@ -221,7 +248,10 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.Transport.Close();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         Assert.True(harness.ConnectionAttempts >= 3, $"only {harness.ConnectionAttempts} attempts");
@@ -233,7 +263,10 @@ public class ListenTests
     {
         var harness = new CliHarness { ConnectFailure = SocketFailures.Refused() };
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(2, result.ExitCode);
         Assert.Equal(1, harness.ConnectionAttempts);
@@ -248,7 +281,10 @@ public class ListenTests
         second.Server("# Login by user not allowed");
         harness.Reconnects.Enqueue(second);
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "-d", "5s"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "-d", "5s"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(4, result.ExitCode);
         Assert.Equal(2, harness.ConnectionAttempts);
@@ -260,8 +296,11 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.AddReconnect(_packets[1]);
 
-        var run = harness.RunAsync(["listen", "-c", "NZ0P", "--reconnect", "--max-silence", "2s", "-n", "2"]);
-        await Task.Delay(150);
+        var run = harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "--max-silence", "2s", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+        await Task.Delay(150, TestContext.Current.CancellationToken);
         harness.Transport.Server("# aprsc keepalive");
         harness.Transport.Server("# aprsc keepalive");
         var result = await run;
@@ -281,7 +320,10 @@ public class ListenTests
     {
         var harness = new CliHarness().LoginAccepted();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--max-silence", "0.2s"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--max-silence", "0.2s"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("no packets from T2TEST for 0.2s", result.Error, StringComparison.Ordinal);
@@ -292,16 +334,10 @@ public class ListenTests
     {
         var harness = new CliHarness().LoginAccepted();
 
-        var result = await harness.RunAsync([
-            "listen",
-            "-c",
-            "NZ0P",
-            "--reconnect",
-            "--max-silence",
-            "off",
-            "-d",
-            "0.3s",
-        ]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "--max-silence", "off", "-d", "0.3s"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(1, harness.ConnectionAttempts);
@@ -312,7 +348,10 @@ public class ListenTests
     {
         var harness = new CliHarness().LoginAccepted();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--max-silence", "soon"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--max-silence", "soon"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(3, result.ExitCode);
         Assert.Contains("--max-silence 'soon' is not valid", result.Error, StringComparison.Ordinal);
@@ -324,7 +363,10 @@ public class ListenTests
     {
         var harness = new CliHarness { ConnectFailure = SocketFailures.Refused() };
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--server", "127.0.0.1:9"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--server", "127.0.0.1:9"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("could not connect to 127.0.0.1:9", result.Error, StringComparison.Ordinal);
@@ -337,7 +379,7 @@ public class ListenTests
         harness.Transport.Server("# aprsc 2.1.21-gbfc2090");
         harness.Transport.Server("# Login by user not allowed");
 
-        var result = await harness.RunAsync(["listen"]);
+        var result = await harness.RunAsync(["listen"], TestContext.Current.CancellationToken);
 
         Assert.Equal(4, result.ExitCode);
         Assert.Contains("Login by user not allowed", result.Error, StringComparison.Ordinal);
@@ -352,7 +394,7 @@ public class ListenTests
         var harness = new CliHarness();
         harness.Transport.Server("# Login by user not allowed");
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P"], TestContext.Current.CancellationToken);
 
         Assert.Equal(4, result.ExitCode);
         Assert.DoesNotContain("placeholder", result.Error, StringComparison.Ordinal);
@@ -364,7 +406,7 @@ public class ListenTests
         var harness = new CliHarness();
         harness.Transport.Close();
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P"], TestContext.Current.CancellationToken);
 
         Assert.Equal(4, result.ExitCode);
     }
@@ -374,7 +416,7 @@ public class ListenTests
     {
         var harness = new CliHarness().LoginAccepted("N0CALL");
 
-        await harness.RunAsync(["listen", "-d", "0.1s"]);
+        await harness.RunAsync(["listen", "-d", "0.1s"], TestContext.Current.CancellationToken);
 
         Assert.Equal("N0CALL", harness.ClientOptions!.Callsign);
         Assert.Equal(-1, harness.ClientOptions.Passcode);
@@ -394,7 +436,10 @@ public class ListenTests
     {
         var harness = new CliHarness().LoginAccepted();
 
-        await harness.RunAsync(["listen", "-c", "NZ0P", "-d", "0.1s", .. args.Split(' ')]);
+        await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-d", "0.1s", .. args.Split(' ')],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(expected, harness.ClientOptions!.Endpoint.ToString());
     }
@@ -404,12 +449,18 @@ public class ListenTests
     {
         var fromEnvironment = new CliHarness().LoginAccepted();
         fromEnvironment.Environment["APRS_PASSCODE"] = "12345";
-        var envResult = await fromEnvironment.RunAsync(["listen", "-c", "NZ0P", "-d", "0.1s"]);
+        var envResult = await fromEnvironment.RunAsync(
+            ["listen", "-c", "NZ0P", "-d", "0.1s"],
+            TestContext.Current.CancellationToken
+        );
         Assert.Equal(12345, fromEnvironment.ClientOptions!.Passcode);
 
         var optionWins = new CliHarness().LoginAccepted();
         optionWins.Environment["APRS_PASSCODE"] = "12345";
-        var optionResult = await optionWins.RunAsync(["listen", "-c", "NZ0P", "--passcode", "777", "-d", "0.1s"]);
+        var optionResult = await optionWins.RunAsync(
+            ["listen", "-c", "NZ0P", "--passcode", "777", "-d", "0.1s"],
+            TestContext.Current.CancellationToken
+        );
         Assert.Equal(777, optionWins.ClientOptions!.Passcode);
 
         foreach (var text in new[] { envResult.Out, envResult.Error, optionResult.Out, optionResult.Error })
@@ -451,7 +502,7 @@ public class ListenTests
                     .Select(a => a.Replace("\\n", "\n", StringComparison.Ordinal))
                     .ToArray();
 
-        var result = await harness.RunAsync(args);
+        var result = await harness.RunAsync(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, result.ExitCode);
         Assert.Contains(expectedText, result.Error, StringComparison.Ordinal);
@@ -465,7 +516,7 @@ public class ListenTests
         var harness = new CliHarness().LoginAccepted();
         harness.Environment["APRS_PASSCODE"] = "hunter2";
 
-        var result = await harness.RunAsync(["listen"]);
+        var result = await harness.RunAsync(["listen"], TestContext.Current.CancellationToken);
 
         Assert.Equal(3, result.ExitCode);
         Assert.Contains("APRS_PASSCODE must be an integer", result.Error, StringComparison.Ordinal);
@@ -478,7 +529,7 @@ public class ListenTests
         var harness = WithPackets(_packets);
         harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4318";
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "3"]);
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "3"], TestContext.Current.CancellationToken);
 
         Assert.Equal(0, result.ExitCode);
         Assert.DoesNotContain(harness.Logs.Entries, e => e.Category == "aprscli.packets");
@@ -490,7 +541,10 @@ public class ListenTests
         var harness = WithPackets("W1AW>APRS,TCPIP*:>one", "# comment", "K1ABC>APRS:>\u001b[31mtwo");
         harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4318";
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--log-packets", "-n", "2"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--log-packets", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(0, result.ExitCode);
         var logged = harness.Logs.Entries.Where(e => e.Category == "aprscli.packets").ToList();
@@ -510,7 +564,10 @@ public class ListenTests
     {
         var harness = WithPackets(_packets);
 
-        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--log-packets"]);
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--log-packets"],
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(3, result.ExitCode);
         Assert.Contains("OTEL_EXPORTER_OTLP_ENDPOINT", result.Error, StringComparison.Ordinal);
@@ -520,7 +577,7 @@ public class ListenTests
     [Fact]
     public async Task HelpSucceeds()
     {
-        var result = await new CliHarness().RunAsync(["listen", "--help"]);
+        var result = await new CliHarness().RunAsync(["listen", "--help"], TestContext.Current.CancellationToken);
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("--timestamps", result.Out, StringComparison.Ordinal);
