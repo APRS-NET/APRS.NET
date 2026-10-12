@@ -8,7 +8,10 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Deterministic>true</Deterministic>
-    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <!-- Deterministic /_/ source paths for shipped code only: test projects keep real paths so failure annotations
+         (GitHubActionsTestLogger) point at files GitHub can link. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' And !$(MSBuildProjectName.EndsWith('Tests'))"
+      >true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <PropertyGroup>
