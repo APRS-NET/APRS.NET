@@ -124,7 +124,14 @@ internal sealed partial class Anonymizer(Mapping map)
         "FOURTH",
         "FIFTH",
         "SIXTH",
+        "SEVENTH",
+        "EIGHTH",
+        "NINTH",
+        "TENTH",
+        "APRSFI", // aprs.fi's APRS-IS login (APRSFI-I3)
         "WINLINK",
+        "DEMO", // APRS-IS simulators (DEMO-002, MARSQ-052): not people, and their 3-digit SSIDs are worth keeping
+        "MARSQ",
     };
 
     public static (string? Stamp, string Packet) SplitCapture(string line)
@@ -162,16 +169,21 @@ internal sealed partial class Anonymizer(Mapping map)
         }
     }
 
+    private static bool IsTelemetryDefinition(string body) => TelemetryDefinition().IsMatch(body);
+
     /// <summary>The parts of a body that are free text rather than encoded data.</summary>
     private static IEnumerable<string> TextParts(string body)
     {
         var keep = ProtectedPrefix(body);
-        if (body.Length >= 10 && body[0] == ';')
+        if (body.Length >= 10 && body[0] is ';' or ':')
         {
             yield return body[1..10];
         }
 
-        yield return body[keep..];
+        if (!IsTelemetryDefinition(body))
+        {
+            yield return body[keep..];
+        }
     }
 
     public string Rewrite(string packet)
@@ -209,7 +221,7 @@ internal sealed partial class Anonymizer(Mapping map)
             var tocallEnd = header is null ? 0 : IndexOfTocallEnd(header);
             foreach (var original in originals)
             {
-                foreach (Match m in Word(original).Matches(packet))
+                foreach (Match m in LeakPattern(original).Matches(packet))
                 {
                     // Mic-E destinations and other TOCALLs are data, not identities.
                     var gt = packet.IndexOf('>', StringComparison.Ordinal);
@@ -274,6 +286,13 @@ internal sealed partial class Anonymizer(Mapping map)
             return ";" + ReplaceText(body[1..10]) + body[10..keep] + ReplaceText(body[keep..]);
         }
 
+        if (IsTelemetryDefinition(body))
+        {
+            // PARM./UNIT./EQNS./BITS. text is channel names and units ("Rx1h" looks like a callsign); only the
+            // addressee is anonymized.
+            return ":" + ReplaceText(body[1..10]) + body[10..];
+        }
+
         return body[..keep] + ReplaceText(body[keep..]);
     }
 
@@ -316,39 +335,40 @@ internal sealed partial class Anonymizer(Mapping map)
 
     private string MapToken(string token)
     {
-        if (token.Length == 0 || _keep.Contains(token) || IsGeneric(token))
+        var dash = token.IndexOf('-', StringComparison.Ordinal);
+        var call = dash < 0 ? token : token[..dash];
+        var ssid = dash < 0 ? "" : token[dash..];
+        if (token.Length == 0 || _keep.Contains(token) || _keep.Contains(call) || IsGeneric(token))
         {
             return token;
         }
 
-        var dash = token.IndexOf('-', StringComparison.Ordinal);
-        var call = dash < 0 ? token : token[..dash];
-        var ssid = dash < 0 ? "" : token[dash..];
         if (map.Calls.TryGetValue(call.ToUpperInvariant(), out var mappedCall))
         {
             return MatchCase(call, mappedCall) + ssid;
         }
 
-        return map.Names.TryGetValue(token.ToUpperInvariant(), out var mappedName)
-            ? MatchCase(token, mappedName)
+        // Named stations keep their SSID too, so odd ones (DIGI-12, NODE-002) survive anonymization.
+        return map.Names.TryGetValue(call.ToUpperInvariant(), out var mappedName)
+            ? MatchCase(call, mappedName) + ssid
             : token;
     }
 
     private void LearnToken(string token)
     {
-        if (token.Length == 0 || _keep.Contains(token) || IsGeneric(token))
+        var call = token.Split('-')[0];
+        if (token.Length == 0 || _keep.Contains(token) || _keep.Contains(call) || IsGeneric(token))
         {
             return;
         }
 
-        var call = token.Split('-')[0];
         if (CallsignExact().IsMatch(call))
         {
             LearnCall(call);
         }
-        else if (!map.Names.ContainsKey(token.ToUpperInvariant()))
+        else if (!map.Names.ContainsKey(call.ToUpperInvariant()))
         {
-            map.Names[token.ToUpperInvariant()] = NewName(token.Length);
+            map.Names[call.ToUpperInvariant()] = NewName(call.Length);
         }
     }
 
@@ -452,6 +472,13 @@ internal sealed partial class Anonymizer(Mapping map)
             }
         );
 
+    // Stricter than Word for the final check: a digit right before the identifier still counts (glued comments).
+    private static Regex LeakPattern(string text) =>
+        new(
+            $@"(?<![A-Za-z]){Regex.Escape(text)}(?![A-Za-z0-9])",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+        );
+
     private static Regex Word(string text) =>
         new(
             $@"(?<![A-Za-z0-9]){Regex.Escape(text)}(?![A-Za-z0-9])",
@@ -469,7 +496,7 @@ internal sealed partial class Anonymizer(Mapping map)
     private static partial Regex CallsignInText();
 
     [GeneratedRegex(
-        @"^(?:WIDE[1-7](?:-[1-7])?|TRACE[1-7]?(?:-[1-7])?|TEMP[1-7]-[1-7]|qA[A-Za-z]|T2[A-Z0-9]+|[A-Z]{2}[1-7]-[1-7]|AMBCWOP-\d+|WLNK-\d+|CWOP-\d+|CORE-\d+)$"
+        @"^(?:WIDE[1-7](?:-[1-7])?|TRACE[1-7]?(?:-[1-7])?|TEMP[1-7]-[1-7]|qA[A-Za-z]|T2[A-Z0-9]+|[A-Z]{2,5}[1-7]-[1-7]|AMBCWOP-\d+|WLNK-\d+|CWOP-\d+|CORE-\d+)$"
     )]
     private static partial Regex Generic();
 
@@ -477,8 +504,15 @@ internal sealed partial class Anonymizer(Mapping map)
     [GeneratedRegex(@"^(?:[RNSEW][0-9]{2}[MK]|C4FM)$", RegexOptions.IgnoreCase)]
     private static partial Regex NotACallsign();
 
+    [GeneratedRegex(@"^:.{9}:(?:PARM|UNIT|EQNS|BITS)\.")]
+    private static partial Regex TelemetryDefinition();
+
     // !DAO! precision (datum + two bytes) and |base-91 comment telemetry|: encoded data, never text.
-    [GeneratedRegex(@"![\x21-\x7b]{3}!|\|(?:[\x21-\x7b]{2}){2,7}\|")]
+    // Also the fixed-width fields a comment can be glued to without a space ("/A=000040W6XYZ-10", "PHG4540K2XYZ"), so
+    // a callsign right after them is still seen as a separate word.
+    [GeneratedRegex(
+        @"![\x21-\x7b]{3}!|\|(?:[\x21-\x7b]{2}){2,7}\||/A=-?[0-9]{5,6}|PHG[0-9][0-9:;<=>?@A-Z][0-9]{2}|RNG[0-9]{4}|DFS[0-9]{4}"
+    )]
     private static partial Regex EncodedToken();
 
     [GeneratedRegex(@"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")]
