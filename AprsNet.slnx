@@ -8,6 +8,7 @@
     <File Path=".csharpierignore" />
     <File Path=".editorconfig" />
     <File Path="LICENSE" />
+    <File Path="nuget.config" />
     <File Path="README.md" />
     <File Path="release-please-config.json" />
     <File Path=".release-please-manifest.json" />
