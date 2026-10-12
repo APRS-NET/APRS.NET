@@ -42,8 +42,16 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 ## Build
 
 ```sh
+dotnet tool restore
 dotnet build
 dotnet test
+```
+
+Code is formatted with [CSharpier](https://csharpier.com), and CI fails on unformatted files. Enable the pre-commit hook
+once per clone so staged files are formatted when you commit:
+
+```sh
+git config core.hooksPath .githooks
 ```
 
 ## Code coverage
