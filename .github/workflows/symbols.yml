@@ -1,0 +1,80 @@
+name: symbols
+
+# Keeps docs/symbols (the conventional and modern symbol pages and their SVGs) in step with what AprsNet.Symbols draws.
+# Pull requests fail when the pages are out of date, so a reviewer sees the image changes. On main, the pages are
+# regenerated and committed, which covers direct pushes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/AprsNet.Symbols/**
+      - src/AprsNet.Packets/AprsSymbol.cs
+      - tools/symbols/**
+      - docs/symbols/**
+      - .github/workflows/symbols.yml
+  pull_request:
+    paths:
+      - src/AprsNet.Symbols/**
+      - src/AprsNet.Packets/AprsSymbol.cs
+      - tools/symbols/**
+      - docs/symbols/**
+      - .github/workflows/symbols.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet run tools/symbols/Generate.cs
+      - name: Check the symbol pages are up to date
+        run: |
+          if [ -n "$(git status --porcelain -- docs/symbols)" ]; then
+            git status --short -- docs/symbols
+            echo "::error::docs/symbols is out of date. Run 'dotnet run tools/symbols/Generate.cs' and commit the result."
+            exit 1
+          fi
+
+  update:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # only to commit regenerated symbol pages
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet run tools/symbols/Generate.cs
+      - name: Commit regenerated symbol pages
+        run: |
+          if [ -z "$(git status --porcelain -- docs/symbols)" ]; then
+            echo "Symbol pages are up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- docs/symbols
+          git commit -m "docs(symbols): regenerate symbol pages"
+          git push
