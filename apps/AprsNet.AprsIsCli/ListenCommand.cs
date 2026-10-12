@@ -1,0 +1,327 @@
+using System.CommandLine;
+using System.Globalization;
+using AprsNet.AprsIsTcpClient;
+
+namespace AprsNet.AprsIsCli;
+
+/// <summary>The <c>listen</c> command: connect to APRS-IS with a filter and stream raw packet lines.</summary>
+internal sealed class ListenCommand
+{
+    public const string PasscodeVariable = "APRS_PASSCODE";
+    public const string DefaultCallsign = "N0CALL";
+
+    private static readonly string[] Regions = ["noam", "soam", "euro", "asia", "aunz"];
+
+    private readonly Option<string?> _callsign = new("--callsign", "-c")
+    {
+        Description = $"Login callsign, with optional SSID. Default: {DefaultCallsign}.",
+    };
+
+    private readonly Option<int?> _passcode = new("--passcode")
+    {
+        Description =
+            $"APRS-IS passcode. Default: -1 (read-only). Prefer the {PasscodeVariable} environment variable; "
+            + "an option value is visible in the process list and your shell history. Never printed or logged.",
+    };
+
+    private readonly Option<string?> _server = new("--server", "-s")
+    {
+        Description =
+            "Server as host[:port]. Cannot be combined with --region, --port or --full-feed when it includes a port. "
+            + "Default: rotate.aprs2.net:14580.",
+    };
+
+    private readonly Option<string?> _region = new("--region", "-r")
+    {
+        Description = "Regional rotate: noam, soam, euro, asia or aunz. Cannot be combined with --server.",
+    };
+
+    private readonly Option<int?> _port = new("--port")
+    {
+        Description = "TCP port, for --region or a --server without a port. Default: 14580.",
+    };
+
+    private readonly Option<bool> _fullFeed = new("--full-feed")
+    {
+        Description = "Use the full feed port (10152). All traffic, so expect a heavy stream.",
+    };
+
+    private readonly Option<string?> _filter = new("--filter", "-f")
+    {
+        Description = "APRS-IS filter sent with the login, for example \"r/35/-97/200\" or \"t/m\".",
+    };
+
+    private readonly Option<bool> _timestamps = new("--timestamps", "-t")
+    {
+        Description = "Prefix each printed line with a UTC timestamp.",
+    };
+
+    private readonly Option<string?> _capture = new("--capture")
+    {
+        Description =
+            "Append every packet to this file as \"<UTC timestamp> <raw line>\". The directory is created if needed.",
+    };
+
+    private readonly Option<bool> _quiet = new("--quiet", "-q")
+    {
+        Description = "Do not print packets to the console (useful with --capture).",
+    };
+
+    private readonly Option<bool> _logPackets = new("--log-packets")
+    {
+        Description =
+            $"Also log every packet to OpenTelemetry. Needs {Logging.OtlpEndpointVariable}. Never written to the console.",
+    };
+
+    private readonly Option<int?> _count = new("--count", "-n") { Description = "Stop after this many packets." };
+
+    private readonly Option<string?> _duration = new("--duration", "-d")
+    {
+        Description = "Stop after this long, for example 90s, 10m, 2h or 1d.",
+    };
+
+    private readonly Option<string> _format = new("--format")
+    {
+        Description = "Output format. Only raw is available until the parser exists.",
+        DefaultValueFactory = _ => "raw",
+    };
+
+    private readonly CliEnvironment _environment;
+
+    public ListenCommand(CliEnvironment environment)
+    {
+        _environment = environment;
+        _region.AcceptOnlyFromAmong(Regions);
+        _format.AcceptOnlyFromAmong("raw");
+    }
+
+    public Command Build()
+    {
+        var command = new Command("listen", "Connect to APRS-IS and stream raw packet lines.");
+        foreach (
+            var option in new Option[]
+            {
+                _callsign,
+                _passcode,
+                _server,
+                _region,
+                _port,
+                _fullFeed,
+                _filter,
+                _timestamps,
+                _capture,
+                _quiet,
+                _logPackets,
+                _count,
+                _duration,
+                _format,
+            }
+        )
+        {
+            command.Options.Add(option);
+        }
+
+        command.SetAction(
+            async (parseResult, cancellationToken) =>
+            {
+                if (!TryBind(parseResult, out var options, out var error))
+                {
+                    await _environment.Error.WriteLineAsync($"aprscli: {error}");
+                    await _environment.Error.WriteLineAsync("Try 'aprscli listen --help'.");
+                    return ExitCodes.Usage;
+                }
+
+                return await ListenRunner.RunAsync(options, _environment, cancellationToken);
+            }
+        );
+
+        return command;
+    }
+
+    internal bool TryBind(ParseResult parseResult, out ListenOptions options, out string error)
+    {
+        options = null!;
+
+        var callsign = (parseResult.GetValue(_callsign) ?? DefaultCallsign).Trim().ToUpperInvariant();
+
+        var passcode = -1;
+        if (parseResult.GetValue(_passcode) is { } explicitPasscode)
+        {
+            passcode = explicitPasscode;
+        }
+        else if (_environment.GetEnvironmentVariable(PasscodeVariable) is { Length: > 0 } fromEnvironment)
+        {
+            if (
+                !int.TryParse(
+                    fromEnvironment,
+                    NumberStyles.AllowLeadingSign,
+                    CultureInfo.InvariantCulture,
+                    out passcode
+                )
+            )
+            {
+                error = $"{PasscodeVariable} must be an integer.";
+                return false;
+            }
+        }
+
+        if (!TryResolveEndpoint(parseResult, out var endpoint, out error))
+        {
+            return false;
+        }
+
+        int? count = parseResult.GetValue(_count);
+        if (count is < 1)
+        {
+            error = "--count must be at least 1.";
+            return false;
+        }
+
+        TimeSpan? duration = null;
+        if (parseResult.GetValue(_duration) is { } durationText)
+        {
+            if (!DurationParser.TryParse(durationText, out var parsed))
+            {
+                error = $"--duration '{durationText}' is not valid. Use a number and a unit: 90s, 10m, 2h or 1d.";
+                return false;
+            }
+
+            duration = parsed;
+        }
+
+        var capture = parseResult.GetValue(_capture);
+        if (capture is not null && string.IsNullOrWhiteSpace(capture))
+        {
+            error = "--capture needs a file path.";
+            return false;
+        }
+
+        var quiet = parseResult.GetValue(_quiet);
+        if (quiet && capture is null && count is null && duration is null)
+        {
+            error = "--quiet without --capture, --count or --duration would run silently with no result.";
+            return false;
+        }
+
+        var logPackets = parseResult.GetValue(_logPackets);
+        if (logPackets && !Logging.IsOtlpConfigured(_environment.GetEnvironmentVariable))
+        {
+            error =
+                $"--log-packets needs {Logging.OtlpEndpointVariable} to be set; packets are only logged to OpenTelemetry.";
+            return false;
+        }
+
+        var filter = parseResult.GetValue(_filter);
+
+        // Surface the client's own validation (callsign shape, control characters in the filter) as usage errors.
+        try
+        {
+            new AprsIsClientOptions
+            {
+                Endpoint = endpoint,
+                Callsign = callsign,
+                Passcode = passcode,
+                Filter = filter,
+            }.Validate();
+        }
+        catch (ArgumentException ex)
+        {
+            error = ex.Message;
+            return false;
+        }
+
+        options = new ListenOptions
+        {
+            Endpoint = endpoint,
+            Callsign = callsign,
+            Passcode = passcode,
+            Filter = filter,
+            Timestamps = parseResult.GetValue(_timestamps),
+            Capture = capture,
+            Quiet = quiet,
+            LogPackets = logPackets,
+            Count = count,
+            Duration = duration,
+        };
+        error = "";
+        return true;
+    }
+
+    private bool TryResolveEndpoint(ParseResult parseResult, out AprsIsEndpoint endpoint, out string error)
+    {
+        endpoint = null!;
+        error = "";
+
+        var server = parseResult.GetValue(_server);
+        var region = parseResult.GetValue(_region);
+        var port = parseResult.GetValue(_port);
+        var fullFeed = parseResult.GetValue(_fullFeed);
+
+        if (server is not null && region is not null)
+        {
+            error = "--server and --region cannot be used together.";
+            return false;
+        }
+
+        if (port is not null && fullFeed)
+        {
+            error = "--port and --full-feed cannot be used together.";
+            return false;
+        }
+
+        if (port is not (null or (>= 1 and <= 65535)))
+        {
+            error = "--port must be between 1 and 65535.";
+            return false;
+        }
+
+        var chosenPort = port ?? (fullFeed ? AprsIsPorts.FullFeed : AprsIsPorts.UserDefinedFilter);
+        var hasPortOverride = port is not null || fullFeed;
+
+        if (server is not null)
+        {
+            if (!AprsIsEndpoint.TryParse(server, out var parsed))
+            {
+                error = $"--server '{server}' is not valid. Use host or host:port.";
+                return false;
+            }
+
+            if (HasExplicitPort(server))
+            {
+                if (hasPortOverride)
+                {
+                    error = "--server already includes a port; do not combine it with --port or --full-feed.";
+                    return false;
+                }
+
+                endpoint = parsed;
+            }
+            else
+            {
+                endpoint = parsed.WithPort(chosenPort);
+            }
+
+            return true;
+        }
+
+        var rotate = region switch
+        {
+            "noam" => AprsIsEndpoint.NorthAmerica,
+            "soam" => AprsIsEndpoint.SouthAmerica,
+            "euro" => AprsIsEndpoint.Europe,
+            "asia" => AprsIsEndpoint.Asia,
+            "aunz" => AprsIsEndpoint.Oceania,
+            _ => AprsIsEndpoint.Rotate,
+        };
+        endpoint = rotate.WithPort(chosenPort);
+        return true;
+    }
+
+    private static bool HasExplicitPort(string server)
+    {
+        server = server.Trim();
+        return server.StartsWith('[')
+            ? server.Contains("]:", StringComparison.Ordinal)
+            : server.Contains(':', StringComparison.Ordinal);
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "listen NZ0P Overland Park 20km": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps"
+    },
+    "listen NZ0P Overland Park 20km (log packets)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --log-packets"
+    },
+    "listen NZ0P Overland Park 20km (capture)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --capture captures/overland-park.log"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path=".config/dotnet-tools.json" />
+    <File Path=".csharpierrc.yaml" />
+    <File Path=".csharpierignore" />
+    <File Path=".editorconfig" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="release-please-config.json" />
+    <File Path=".release-please-manifest.json" />
+  </Folder>
+  <Folder Name="/.github/">
+    <File Path=".github/dependabot.yml" />
+  </Folder>
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/pr-title.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
+  <Folder Name="/apps/">
+    <Project Path="apps/AprsNet.AprsIsCli/AprsNet.AprsIsCli.csproj" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/versioning.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
+    <Project Path="src/AprsNet.Packets/AprsNet.Packets.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AprsNet.AprsIsCli.Tests/AprsNet.AprsIsCli.Tests.csproj" />
+    <Project Path="tests/AprsNet.AprsIsTcpClient.Tests/AprsNet.AprsIsTcpClient.Tests.csproj" />
+    <Project Path="tests/AprsNet.Packets.Tests/AprsNet.Packets.Tests.csproj" />
+  </Folder>
+</Solution>
