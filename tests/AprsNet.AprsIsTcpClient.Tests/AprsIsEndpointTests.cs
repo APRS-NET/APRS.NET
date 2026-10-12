@@ -9,7 +9,7 @@ public class AprsIsEndpointTests
     [InlineData("127.0.0.1:65535", "127.0.0.1", 65535)]
     [InlineData("[::1]:14580", "::1", 14580)]
     [InlineData("[::1]", "::1", 14580)]
-    public void TryParse_accepts(string text, string host, int port)
+    public void TryParseAccepts(string text, string host, int port)
     {
         Assert.True(AprsIsEndpoint.TryParse(text, out var endpoint));
         Assert.Equal(host, endpoint.Host);
@@ -29,7 +29,7 @@ public class AprsIsEndpointTests
     [InlineData("::1")]
     [InlineData("[::1")]
     [InlineData("[::1]x")]
-    public void TryParse_rejects(string? text)
+    public void TryParseRejects(string? text)
     {
         Assert.False(AprsIsEndpoint.TryParse(text, out var endpoint));
         Assert.Null(endpoint);
@@ -38,17 +38,21 @@ public class AprsIsEndpointTests
     [Theory]
     [InlineData("")]
     [InlineData(" ")]
-    public void Constructor_rejects_blank_host(string host) =>
+    public void ConstructorRejectsBlankHost(string host)
+    {
         Assert.ThrowsAny<ArgumentException>(() => new AprsIsEndpoint(host));
+    }
 
     [Theory]
     [InlineData(0)]
     [InlineData(65536)]
-    public void Constructor_rejects_bad_port(int port) =>
+    public void ConstructorRejectsBadPort(int port)
+    {
         Assert.Throws<ArgumentOutOfRangeException>(() => new AprsIsEndpoint("h", port));
+    }
 
     [Fact]
-    public void Presets_use_the_filter_port()
+    public void PresetsUseTheFilterPort()
     {
         Assert.Equal(AprsIsPorts.UserDefinedFilter, AprsIsEndpoint.Rotate.Port);
         Assert.Equal("noam.aprs2.net:14580", AprsIsEndpoint.NorthAmerica.ToString());
@@ -56,5 +60,8 @@ public class AprsIsEndpointTests
     }
 
     [Fact]
-    public void ToString_brackets_ipv6() => Assert.Equal("[::1]:14580", new AprsIsEndpoint("::1").ToString());
+    public void ToStringBracketsIpv6()
+    {
+        Assert.Equal("[::1]:14580", new AprsIsEndpoint("::1").ToString());
+    }
 }

@@ -9,13 +9,13 @@ public sealed record LoginResult(string Callsign, LoginStatus Status, string? Se
     /// <summary>Parses a <c># logresp CALL verified, server NAME</c> line.</summary>
     internal static LoginResult? TryParse(string line)
     {
-        const string Prefix = "# logresp";
-        if (!line.StartsWith(Prefix, StringComparison.Ordinal))
+        const string prefix = "# logresp";
+        if (!line.StartsWith(prefix, StringComparison.Ordinal))
         {
             return null;
         }
 
-        var parts = line[Prefix.Length..].Split([' ', ','], StringSplitOptions.RemoveEmptyEntries);
+        var parts = line[prefix.Length..].Split([' ', ','], StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 2)
         {
             return null;

@@ -8,7 +8,7 @@ namespace AprsNet.AprsIsTcpClient.Tests;
 public class TcpAprsTransportTests
 {
     [Fact]
-    public async Task Connects_logs_in_and_receives_packets_over_a_real_socket()
+    public async Task ConnectsLogsInAndReceivesPacketsOverARealSocket()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
@@ -17,16 +17,19 @@ public class TcpAprsTransportTests
         var loginLine = new TaskCompletionSource<string>();
         var server = Task.Run(async () =>
         {
-            using var socket = await listener.AcceptTcpClientAsync();
-            var stream = socket.GetStream();
-            await Send(stream, "# aprsc 2.1.19-test\r\n");
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                using var socket = await listener.AcceptTcpClientAsync();
+                var stream = socket.GetStream();
+                await Send(stream, "# aprsc 2.1.19-test\r\n");
 
-            var login = await ReadLine(stream);
-            loginLine.SetResult(login);
-            await Send(stream, "# logresp NZ0P unverified, server T2LOOP\r\n");
-            await Send(stream, "W1AW>APRS,TCPIP*:>sp");
-            await Task.Delay(50); // split mid-line
-            await Send(stream, "lit\r\n# keepalive\r\nK1ABC>APRS:>second\r\n");
+                var login = await ReadLine(stream);
+                loginLine.SetResult(login);
+                await Send(stream, "# logresp NZ0P unverified, server T2LOOP\r\n");
+                await Send(stream, "W1AW>APRS,TCPIP*:>sp");
+                await Task.Delay(50); // split mid-line
+                await Send(stream, "lit\r\n# keepalive\r\nK1ABC>APRS:>second\r\n");
+            }
         });
 
         var options = new AprsIsClientOptions
@@ -35,7 +38,7 @@ public class TcpAprsTransportTests
             Callsign = "NZ0P",
             SoftwareName = "test",
             SoftwareVersion = "1.0",
-            Filter = "t/m",
+            Filter = "t/m"
         };
         await using var client = new AprsIsClient(options);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -45,10 +48,7 @@ public class TcpAprsTransportTests
         await foreach (var line in client.ReadLinesAsync(cts.Token))
         {
             lines.Add(line);
-            if (lines.Count == 2)
-            {
-                break;
-            }
+            if (lines.Count == 2) break;
         }
 
         await server;
@@ -58,7 +58,7 @@ public class TcpAprsTransportTests
     }
 
     [Fact]
-    public async Task N0CALL_is_rejected_over_a_real_socket_even_though_the_server_stays_open()
+    public async Task N0CallIsRejectedOverARealSocketEvenThoughTheServerStaysOpen()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
@@ -67,11 +67,15 @@ public class TcpAprsTransportTests
 
         var server = Task.Run(async () =>
         {
-            using var socket = await listener.AcceptTcpClientAsync();
-            var stream = socket.GetStream();
-            await Send(stream, "# aprsc 2.1.21-gbfc2090\r\n");
-            Assert.Equal("user N0CALL pass -1 vers test 1.0", await ReadLine(stream));
-            await Send(stream, "# Login by user not allowed\r\n");
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                using var socket = await listener.AcceptTcpClientAsync();
+                var stream = socket.GetStream();
+                await Send(stream, "# aprsc 2.1.21-gbfc2090\r\n");
+                Assert.Equal("user N0CALL pass -1 vers test 1.0", await ReadLine(stream));
+                await Send(stream, "# Login by user not allowed\r\n");
+            }
+
             await release.Task; // like the real servers, do not hang up
         });
 
@@ -80,7 +84,7 @@ public class TcpAprsTransportTests
             Endpoint = new AprsIsEndpoint("127.0.0.1", port),
             Callsign = "N0CALL",
             SoftwareName = "test",
-            SoftwareVersion = "1.0",
+            SoftwareVersion = "1.0"
         };
         await using var client = new AprsIsClient(options);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -93,7 +97,7 @@ public class TcpAprsTransportTests
     }
 
     [Fact]
-    public async Task Connect_to_a_closed_port_fails()
+    public async Task ConnectToAClosedPortFails()
     {
         int port;
         using (var probe = new TcpListener(IPAddress.Loopback, 0))
@@ -108,8 +112,10 @@ public class TcpAprsTransportTests
         await Assert.ThrowsAsync<SocketException>(() => client.ConnectAsync());
     }
 
-    private static Task Send(NetworkStream stream, string text) =>
-        stream.WriteAsync(Encoding.ASCII.GetBytes(text)).AsTask();
+    private static Task Send(NetworkStream stream, string text)
+    {
+        return stream.WriteAsync(Encoding.ASCII.GetBytes(text)).AsTask();
+    }
 
     private static async Task<string> ReadLine(NetworkStream stream)
     {
@@ -117,10 +123,7 @@ public class TcpAprsTransportTests
         var one = new byte[1];
         while (await stream.ReadAsync(one) == 1)
         {
-            if (one[0] == '\n')
-            {
-                break;
-            }
+            if (one[0] == '\n') break;
 
             sb.Append((char)one[0]);
         }

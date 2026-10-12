@@ -28,7 +28,3 @@ dotnet_naming_symbols.private_fields.applicable_kinds = field
 dotnet_naming_symbols.private_fields.applicable_accessibilities = private
 dotnet_naming_style.underscore_camel.required_prefix = _
 dotnet_naming_style.underscore_camel.capitalization = camel_case
-
-[tests/**.cs]
-# Descriptive_underscore_test_names are the convention for tests
-dotnet_diagnostic.CA1707.severity = none

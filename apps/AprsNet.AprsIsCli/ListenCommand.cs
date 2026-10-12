@@ -7,10 +7,10 @@ namespace AprsNet.AprsIsCli;
 /// <summary>The <c>listen</c> command: connect to APRS-IS with a filter and stream raw packet lines.</summary>
 internal sealed class ListenCommand
 {
-    public const string PasscodeVariable = "APRS_PASSCODE";
+    private const string _passcodeVariable = "APRS_PASSCODE";
     public const string DefaultCallsign = "N0CALL";
 
-    private static readonly string[] Regions = ["noam", "soam", "euro", "asia", "aunz"];
+    private static readonly string[] _regions = ["noam", "soam", "euro", "asia", "aunz"];
 
     private readonly Option<string?> _callsign = new("--callsign", "-c")
     {
@@ -20,7 +20,7 @@ internal sealed class ListenCommand
     private readonly Option<int?> _passcode = new("--passcode")
     {
         Description =
-            $"APRS-IS passcode. Default: -1 (read-only). Prefer the {PasscodeVariable} environment variable; "
+            $"APRS-IS passcode. Default: -1 (read-only). Prefer the {_passcodeVariable} environment variable; "
             + "an option value is visible in the process list and your shell history. Never printed or logged.",
     };
 
@@ -91,7 +91,7 @@ internal sealed class ListenCommand
     public ListenCommand(CliEnvironment environment)
     {
         _environment = environment;
-        _region.AcceptOnlyFromAmong(Regions);
+        _region.AcceptOnlyFromAmong(_regions);
         _format.AcceptOnlyFromAmong("raw");
     }
 
@@ -138,7 +138,7 @@ internal sealed class ListenCommand
         return command;
     }
 
-    internal bool TryBind(ParseResult parseResult, out ListenOptions options, out string error)
+    private bool TryBind(ParseResult parseResult, out ListenOptions options, out string error)
     {
         options = null!;
 
@@ -149,7 +149,7 @@ internal sealed class ListenCommand
         {
             passcode = explicitPasscode;
         }
-        else if (_environment.GetEnvironmentVariable(PasscodeVariable) is { Length: > 0 } fromEnvironment)
+        else if (_environment.GetEnvironmentVariable(_passcodeVariable) is { Length: > 0 } fromEnvironment)
         {
             if (
                 !int.TryParse(
@@ -160,7 +160,7 @@ internal sealed class ListenCommand
                 )
             )
             {
-                error = $"{PasscodeVariable} must be an integer.";
+                error = $"{_passcodeVariable} must be an integer.";
                 return false;
             }
         }
@@ -170,7 +170,7 @@ internal sealed class ListenCommand
             return false;
         }
 
-        int? count = parseResult.GetValue(_count);
+        var count = parseResult.GetValue(_count);
         if (count is < 1)
         {
             error = "--count must be at least 1.";

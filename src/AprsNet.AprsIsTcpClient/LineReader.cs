@@ -4,26 +4,15 @@ using Microsoft.Extensions.Logging;
 namespace AprsNet.AprsIsTcpClient;
 
 /// <summary>
-/// Splits a byte stream into lines with a hard length limit. Tolerates split reads, LF or CRLF terminators,
-/// and discards over-long lines without buffering them.
+///     Splits a byte stream into lines with a hard length limit. Tolerates split reads, LF or CRLF terminators,
+///     and discards over-long lines without buffering them.
 /// </summary>
-internal sealed class LineReader
+internal sealed class LineReader(Stream stream, int maxLineLength, ILogger logger)
 {
-    private readonly Stream _stream;
-    private readonly int _maxLineLength;
-    private readonly ILogger _logger;
-    private readonly byte[] _buffer;
-    private int _start;
-    private int _end;
+    private readonly byte[] _buffer = new byte[maxLineLength + 2]; // a full line plus CRLF
     private bool _discarding;
-
-    public LineReader(Stream stream, int maxLineLength, ILogger logger)
-    {
-        _stream = stream;
-        _maxLineLength = maxLineLength;
-        _logger = logger;
-        _buffer = new byte[maxLineLength + 2]; // a full line plus CRLF
-    }
+    private int _end;
+    private int _start;
 
     /// <summary>Lines dropped for exceeding the length limit.</summary>
     public long DiscardedLines { get; private set; }
@@ -47,12 +36,9 @@ internal sealed class LineReader
                     continue;
                 }
 
-                if (line.Length > 0 && line[^1] == (byte)'\r')
-                {
-                    line = line[..^1];
-                }
+                if (line.Length > 0 && line[^1] == (byte)'\r') line = line[..^1];
 
-                if (line.Length > _maxLineLength)
+                if (line.Length > maxLineLength)
                 {
                     Discarded(line.Length);
                     continue;
@@ -65,7 +51,7 @@ internal sealed class LineReader
             {
                 _start = _end = 0;
             }
-            else if (pending.Length > _maxLineLength + 1)
+            else if (pending.Length > maxLineLength + 1)
             {
                 Discarded(pending.Length);
                 _discarding = true;
@@ -78,11 +64,8 @@ internal sealed class LineReader
                 _start = 0;
             }
 
-            var read = await _stream.ReadAsync(_buffer.AsMemory(_end), cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-            {
-                return null;
-            }
+            var read = await stream.ReadAsync(_buffer.AsMemory(_end), cancellationToken).ConfigureAwait(false);
+            if (read == 0) return null;
 
             _end += read;
         }
@@ -91,6 +74,6 @@ internal sealed class LineReader
     private void Discarded(int length)
     {
         DiscardedLines++;
-        _logger.OverlongLineDiscarded(_maxLineLength, length);
+        logger.OverlongLineDiscarded(maxLineLength, length);
     }
 }

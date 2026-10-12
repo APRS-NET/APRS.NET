@@ -5,7 +5,7 @@ namespace AprsNet.AprsIsCli;
 /// <summary>Builds the <c>aprscli</c> command tree and runs it.</summary>
 internal static class AprsCli
 {
-    public static RootCommand Build(CliEnvironment environment)
+    private static RootCommand Build(CliEnvironment environment)
     {
         var root = new RootCommand("APRS.NET command-line tool.");
         root.Subcommands.Add(new ListenCommand(environment).Build());

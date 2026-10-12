@@ -1,5 +1,6 @@
 namespace AprsNet.AprsIsTcpClient;
 
+// ReSharper disable once GrammarMistakeInComment
 /// <summary>What the client does when its bounded receive queue is full.</summary>
 public enum OverflowPolicy
 {
@@ -7,5 +8,5 @@ public enum OverflowPolicy
     Block,
 
     /// <summary>Discard the oldest queued line to make room for the newest.</summary>
-    DropOldest,
+    DropOldest
 }

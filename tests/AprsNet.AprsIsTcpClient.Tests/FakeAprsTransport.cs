@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+// ReSharper disable once RedundantUsingDirective
 using AprsNet.AprsIsTcpClient;
 
 namespace AprsNet.AprsIsTcpClient.Tests;
@@ -10,18 +11,10 @@ internal sealed class FakeAprsTransport : IAprsTransport
 
     public List<string> Written { get; } = [];
 
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public bool Connected { get; private set; }
 
     public bool Disposed { get; private set; }
-
-    /// <summary>Queues a line the "server" sends.</summary>
-    public void Server(string line) => _incoming.Writer.TryWrite(line);
-
-    /// <summary>The "server" closes the connection.</summary>
-    public void Close() => _incoming.Writer.TryComplete();
-
-    /// <summary>The "server" connection fails with an error.</summary>
-    public void Fail(Exception exception) => _incoming.Writer.TryComplete(exception);
 
     public ValueTask ConnectAsync(CancellationToken cancellationToken)
     {
@@ -31,10 +24,7 @@ internal sealed class FakeAprsTransport : IAprsTransport
 
     public async ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
     {
-        if (!await _incoming.Reader.WaitToReadAsync(cancellationToken))
-        {
-            return null;
-        }
+        if (!await _incoming.Reader.WaitToReadAsync(cancellationToken)) return null;
 
         return _incoming.Reader.TryRead(out var line) ? line : null;
     }
@@ -53,5 +43,23 @@ internal sealed class FakeAprsTransport : IAprsTransport
     {
         Disposed = true;
         return ValueTask.CompletedTask;
+    }
+
+    /// <summary>Queues a line the "server" sends.</summary>
+    public void Server(string line)
+    {
+        _incoming.Writer.TryWrite(line);
+    }
+
+    /// <summary>The "server" closes the connection.</summary>
+    public void Close()
+    {
+        _incoming.Writer.TryComplete();
+    }
+
+    /// <summary>The "server" connection fails with an error.</summary>
+    public void Fail(Exception exception)
+    {
+        _incoming.Writer.TryComplete(exception);
     }
 }

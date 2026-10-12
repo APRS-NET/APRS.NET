@@ -6,6 +6,7 @@ using var cancellation = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
 {
     e.Cancel = true; // stop cleanly: close the capture file, exit 0
+    // ReSharper disable once AccessToDisposedClosure
     cancellation.Cancel();
 };
 

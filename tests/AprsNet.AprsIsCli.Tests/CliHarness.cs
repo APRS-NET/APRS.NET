@@ -1,5 +1,4 @@
 using System.Net.Sockets;
-using AprsNet.AprsIsCli;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.AprsIsTcpClient.Tests;
 using Microsoft.Extensions.Logging;
@@ -18,13 +17,13 @@ internal sealed class CliHarness
 
     public Dictionary<string, string> Environment { get; } = [];
 
-    public FixedTimeProvider Time { get; } = new(new DateTimeOffset(2026, 10, 11, 12, 0, 0, 123, TimeSpan.Zero));
+    private FixedTimeProvider Time { get; } = new(new DateTimeOffset(2026, 10, 11, 12, 0, 0, 123, TimeSpan.Zero));
 
     /// <summary>The options the CLI built for the client, so tests can check endpoint, callsign and passcode.</summary>
     public AprsIsClientOptions? ClientOptions { get; private set; }
 
-    /// <summary>When set, the client's transport throws this on connect instead of using <see cref="Transport"/>.</summary>
-    public Exception? ConnectFailure { get; set; }
+    /// <summary>When set, the client's transport throws this on connect instead of using <see cref="Transport" />.</summary>
+    public Exception? ConnectFailure { get; init; }
 
     public CliHarness LoginAccepted(string callsign = "NZ0P")
     {
@@ -35,8 +34,8 @@ internal sealed class CliHarness
 
     public async Task<CliResult> RunAsync(string[] args, CancellationToken cancellationToken = default)
     {
-        using var output = new StringWriter();
-        using var error = new StringWriter();
+        await using var output = new StringWriter();
+        await using var error = new StringWriter();
         var environment = new CliEnvironment
         {
             Out = output,
@@ -49,7 +48,7 @@ internal sealed class CliHarness
                 ClientOptions = options;
                 IAprsTransport transport = ConnectFailure is null ? Transport : new FailingTransport(ConnectFailure);
                 return new AprsIsClient(options, logger, transport);
-            },
+            }
         };
 
         var code = await AprsCli.RunAsync(args, environment, cancellationToken);
@@ -58,15 +57,25 @@ internal sealed class CliHarness
 
     private sealed class FailingTransport(Exception failure) : IAprsTransport
     {
-        public ValueTask ConnectAsync(CancellationToken cancellationToken) => throw failure;
+        public ValueTask ConnectAsync(CancellationToken cancellationToken)
+        {
+            throw failure;
+        }
 
-        public ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+        public ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken)
+        {
             throw new InvalidOperationException();
+        }
 
-        public ValueTask WriteLineAsync(string line, CancellationToken cancellationToken) =>
+        public ValueTask WriteLineAsync(string line, CancellationToken cancellationToken)
+        {
             throw new InvalidOperationException();
+        }
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public ValueTask DisposeAsync()
+        {
+            return ValueTask.CompletedTask;
+        }
     }
 }
 
@@ -85,16 +94,28 @@ internal sealed class CapturingLoggerProvider : ILoggerProvider
         }
     }
 
-    public ILogger CreateLogger(string categoryName) => new CapturingLogger(categoryName, _entries);
+    // ReSharper disable once InconsistentlySynchronizedField
+    public ILogger CreateLogger(string categoryName)
+    {
+        return new CapturingLogger(categoryName, _entries);
+    }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+    }
 
     private sealed class CapturingLogger(string category, List<(string, LogLevel, string)> entries) : ILogger
     {
         public IDisposable? BeginScope<TState>(TState state)
-            where TState : notnull => null;
+            where TState : notnull
+        {
+            return null;
+        }
 
-        public bool IsEnabled(LogLevel logLevel) => true;
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
 
         public void Log<TState>(
             LogLevel logLevel,
@@ -114,12 +135,18 @@ internal sealed class CapturingLoggerProvider : ILoggerProvider
 
 internal sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
 {
-    public DateTimeOffset Now { get; set; } = now;
+    private DateTimeOffset Now { get; } = now;
 
-    public override DateTimeOffset GetUtcNow() => Now;
+    public override DateTimeOffset GetUtcNow()
+    {
+        return Now;
+    }
 }
 
 internal static class SocketFailures
 {
-    public static SocketException Refused() => new((int)SocketError.ConnectionRefused);
+    public static SocketException Refused()
+    {
+        return new SocketException((int)SocketError.ConnectionRefused);
+    }
 }

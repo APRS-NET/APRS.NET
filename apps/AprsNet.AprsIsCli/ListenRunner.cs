@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AprsNet.AprsIsCli;
 
+// ReSharper disable once GrammarMistakeInComment
 /// <summary>Runs <c>aprscli listen</c>: connect, stream lines to the console and an optional capture file, stop on count, duration or Ctrl+C.</summary>
 internal static class ListenRunner
 {

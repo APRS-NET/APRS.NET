@@ -5,39 +5,36 @@ namespace AprsNet.AprsIsCli.Tests;
 
 public class ListenTests
 {
-    private static readonly string[] Packets =
+    private static readonly string[] _packets =
     [
         "W1AW>APRS,TCPIP*:>one",
         "K1ABC>APRS,TCPIP*:>two",
-        "N2XYZ>APRS,TCPIP*:>three",
+        "N2XYZ>APRS,TCPIP*:>three"
     ];
 
     private static CliHarness WithPackets(params string[] lines)
     {
         var harness = new CliHarness().LoginAccepted();
-        foreach (var line in lines)
-        {
-            harness.Transport.Server(line);
-        }
+        foreach (var line in lines) harness.Transport.Server(line);
 
         return harness;
     }
 
     [Fact]
-    public async Task Prints_raw_lines_and_stops_at_count()
+    public async Task PrintsRawLinesAndStopsAtCount()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
 
         var result = await harness.RunAsync(["listen", "--callsign", "NZ0P", "-n", "2"]);
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"{Packets[0]}{System.Environment.NewLine}{Packets[1]}{System.Environment.NewLine}", result.Out);
+        Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
     }
 
     [Fact]
-    public async Task Sends_the_callsign_filter_and_software_name_in_the_login()
+    public async Task SendsTheCallsignFilterAndSoftwareNameInTheLogin()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
 
         await harness.RunAsync(["listen", "-c", "nz0p", "-f", "r/35/-97/200", "-n", "1"]);
 
@@ -47,26 +44,26 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Timestamps_flag_prefixes_console_lines()
+    public async Task TimestampsFlagPrefixesConsoleLines()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-t", "-n", "1"]);
 
-        Assert.Equal($"2026-10-11T12:00:00.123Z {Packets[0]}{System.Environment.NewLine}", result.Out);
+        Assert.Equal($"2026-10-11T12:00:00.123Z {_packets[0]}{Environment.NewLine}", result.Out);
     }
 
     [Fact]
-    public async Task Capture_appends_timestamped_lines_even_without_the_timestamps_flag()
+    public async Task CaptureAppendsTimestampedLinesEvenWithoutTheTimestampsFlag()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
         using var dir = new TempDirectory();
         var file = Path.Combine(dir.Path, "nested", "cap.log");
 
         var first = await harness.RunAsync(["listen", "-c", "NZ0P", "--capture", file, "-n", "2"]);
         var second = await new Func<Task<CliResult>>(async () =>
         {
-            var again = WithPackets(Packets[2]);
+            var again = WithPackets(_packets[2]);
             return await again.RunAsync(["listen", "-c", "NZ0P", "--capture", file, "-n", "1"]);
         })();
 
@@ -74,9 +71,9 @@ public class ListenTests
         Assert.Equal(0, second.ExitCode);
         Assert.Equal(
             [
-                $"2026-10-11T12:00:00.123Z {Packets[0]}",
-                $"2026-10-11T12:00:00.123Z {Packets[1]}",
-                $"2026-10-11T12:00:00.123Z {Packets[2]}",
+                $"2026-10-11T12:00:00.123Z {_packets[0]}",
+                $"2026-10-11T12:00:00.123Z {_packets[1]}",
+                $"2026-10-11T12:00:00.123Z {_packets[2]}"
             ],
             await File.ReadAllLinesAsync(file)
         );
@@ -84,9 +81,9 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Quiet_silences_the_console_but_not_the_capture()
+    public async Task QuietSilencesTheConsoleButNotTheCapture()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
         using var dir = new TempDirectory();
         var file = Path.Combine(dir.Path, "cap.log");
 
@@ -98,7 +95,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Console_escapes_control_characters_but_the_capture_keeps_every_byte()
+    public async Task ConsoleEscapesControlCharactersButTheCaptureKeepsEveryByte()
     {
         var raw = "A>B:>\u001b[31mred\u0000\u001cé";
         var harness = WithPackets(raw);
@@ -107,24 +104,24 @@ public class ListenTests
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--capture", file, "-n", "1"]);
 
-        Assert.Equal("A>B:>\\x1B[31mred\\x00\\x1Cé" + System.Environment.NewLine, result.Out);
+        Assert.Equal("A>B:>\\x1B[31mred\\x00\\x1Cé" + Environment.NewLine, result.Out);
         var bytes = await File.ReadAllBytesAsync(file);
         var expected = Encoding.Latin1.GetBytes("2026-10-11T12:00:00.123Z " + raw + "\n");
         Assert.Equal(expected, bytes);
     }
 
     [Fact]
-    public async Task Server_comments_are_not_printed_or_counted()
+    public async Task ServerCommentsAreNotPrintedOrCounted()
     {
-        var harness = WithPackets("# keepalive", Packets[0], "# another", Packets[1]);
+        var harness = WithPackets("# keepalive", _packets[0], "# another", _packets[1]);
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "2"]);
 
-        Assert.Equal($"{Packets[0]}{System.Environment.NewLine}{Packets[1]}{System.Environment.NewLine}", result.Out);
+        Assert.Equal($"{_packets[0]}{Environment.NewLine}{_packets[1]}{Environment.NewLine}", result.Out);
     }
 
     [Fact]
-    public async Task Duration_stops_a_quiet_feed_cleanly()
+    public async Task DurationStopsAQuietFeedCleanly()
     {
         var harness = new CliHarness().LoginAccepted();
 
@@ -134,7 +131,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Ctrl_c_stops_cleanly()
+    public async Task CtrlCStopsCleanly()
     {
         var harness = new CliHarness().LoginAccepted();
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
@@ -145,22 +142,22 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Server_closing_the_connection_is_a_connection_failure()
+    public async Task ServerClosingTheConnectionIsAConnectionFailure()
     {
-        var harness = WithPackets(Packets[0]);
+        var harness = WithPackets(_packets[0]);
         harness.Transport.Close();
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
 
         Assert.Equal(2, result.ExitCode);
         Assert.Contains("closed the connection", result.Error, StringComparison.Ordinal);
-        Assert.Equal($"{Packets[0]}{System.Environment.NewLine}", result.Out);
+        Assert.Equal($"{_packets[0]}{Environment.NewLine}", result.Out);
     }
 
     [Fact]
-    public async Task Connection_error_mid_stream_is_a_connection_failure()
+    public async Task ConnectionErrorMidStreamIsAConnectionFailure()
     {
-        var harness = WithPackets(Packets[0]);
+        var harness = WithPackets(_packets[0]);
         harness.Transport.Fail(new IOException("reset"));
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P"]);
@@ -170,7 +167,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Unreachable_server_is_a_connection_failure()
+    public async Task UnreachableServerIsAConnectionFailure()
     {
         var harness = new CliHarness { ConnectFailure = SocketFailures.Refused() };
 
@@ -181,7 +178,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Rejected_default_callsign_explains_and_exits_4()
+    public async Task RejectedDefaultCallsignExplainsAndExits4()
     {
         var harness = new CliHarness();
         harness.Transport.Server("# aprsc 2.1.21-gbfc2090");
@@ -197,7 +194,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Rejected_custom_callsign_gets_no_placeholder_hint()
+    public async Task RejectedCustomCallsignGetsNoPlaceholderHint()
     {
         var harness = new CliHarness();
         harness.Transport.Server("# Login by user not allowed");
@@ -209,7 +206,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Login_closed_before_any_answer_exits_4()
+    public async Task LoginClosedBeforeAnyAnswerExits4()
     {
         var harness = new CliHarness();
         harness.Transport.Close();
@@ -220,7 +217,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Defaults_are_n0call_read_only_on_the_worldwide_rotate()
+    public async Task DefaultsAreN0callReadOnlyOnTheWorldwideRotate()
     {
         var harness = new CliHarness().LoginAccepted("N0CALL");
 
@@ -240,7 +237,7 @@ public class ListenTests
     [InlineData("--server example.org --full-feed", "example.org:10152")]
     [InlineData("--server example.org --port 99", "example.org:99")]
     [InlineData("--full-feed", "rotate.aprs2.net:10152")]
-    public async Task Resolves_the_endpoint(string args, string expected)
+    public async Task ResolvesTheEndpoint(string args, string expected)
     {
         var harness = new CliHarness().LoginAccepted();
 
@@ -250,7 +247,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Passcode_comes_from_the_environment_and_the_option_wins()
+    public async Task PasscodeComesFromTheEnvironmentAndTheOptionWins()
     {
         var fromEnvironment = new CliHarness().LoginAccepted();
         fromEnvironment.Environment["APRS_PASSCODE"] = "12345";
@@ -290,7 +287,7 @@ public class ListenTests
     [InlineData("listen --bogus", "")]
     [InlineData("nope", "")]
     [InlineData("", "")]
-    public async Task Usage_errors_exit_3_without_connecting(string commandLine, string expectedText)
+    public async Task UsageErrorsExit3WithoutConnecting(string commandLine, string expectedText)
     {
         var harness = new CliHarness().LoginAccepted();
         var args =
@@ -310,7 +307,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task A_non_numeric_passcode_variable_is_a_usage_error_and_is_not_echoed()
+    public async Task ANonNumericPasscodeVariableIsAUsageErrorAndIsNotEchoed()
     {
         var harness = new CliHarness().LoginAccepted();
         harness.Environment["APRS_PASSCODE"] = "hunter2";
@@ -323,9 +320,9 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Packets_are_not_logged_by_default_even_with_an_endpoint()
+    public async Task PacketsAreNotLoggedByDefaultEvenWithAnEndpoint()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
         harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4318";
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "3"]);
@@ -335,7 +332,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Log_packets_logs_each_packet_to_the_packets_category()
+    public async Task LogPacketsLogsEachPacketToThePacketsCategory()
     {
         var harness = WithPackets("W1AW>APRS,TCPIP*:>one", "# comment", "K1ABC>APRS:>\u001b[31mtwo");
         harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4318";
@@ -347,7 +344,7 @@ public class ListenTests
         Assert.Equal(
             [
                 "Packet from W1AW: W1AW>APRS,TCPIP*:>one",
-                "Packet from K1ABC: K1ABC>APRS:>\\x1B[31mtwo", // control characters escaped for the backend
+                "Packet from K1ABC: K1ABC>APRS:>\\x1B[31mtwo" // control characters escaped for the backend
             ],
             logged.Select(e => e.Message)
         );
@@ -356,9 +353,9 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Log_packets_without_an_otlp_endpoint_is_a_usage_error()
+    public async Task LogPacketsWithoutAnOtlpEndpointIsAUsageError()
     {
-        var harness = WithPackets(Packets);
+        var harness = WithPackets(_packets);
 
         var result = await harness.RunAsync(["listen", "-c", "NZ0P", "--log-packets"]);
 
@@ -368,7 +365,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task Help_succeeds()
+    public async Task HelpSucceeds()
     {
         var result = await new CliHarness().RunAsync(["listen", "--help"]);
 
@@ -378,11 +375,17 @@ public class ListenTests
 
     private sealed class TempDirectory : IDisposable
     {
+        public TempDirectory()
+        {
+            Directory.CreateDirectory(Path);
+        }
+
         public string Path { get; } =
             System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aprscli-tests-" + Guid.NewGuid().ToString("N"));
 
-        public TempDirectory() => Directory.CreateDirectory(Path);
-
-        public void Dispose() => Directory.Delete(Path, recursive: true);
+        public void Dispose()
+        {
+            Directory.Delete(Path, true);
+        }
     }
 }

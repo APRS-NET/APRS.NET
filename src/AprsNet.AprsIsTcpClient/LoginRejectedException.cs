@@ -6,7 +6,7 @@ namespace AprsNet.AprsIsTcpClient;
 /// </summary>
 public sealed class LoginRejectedException : LoginException
 {
-    private const string NotAllowed = "# Login by user not allowed";
+    private const string _notAllowed = "# Login by user not allowed";
 
     /// <summary>Creates the exception from the server's message, without the leading <c>#</c>.</summary>
     public LoginRejectedException(string serverMessage)
@@ -19,7 +19,7 @@ public sealed class LoginRejectedException : LoginException
     public string ServerMessage { get; }
 
     /// <summary>True for a server comment that refuses the login.</summary>
-    internal static bool IsRejection(string line) => line.StartsWith(NotAllowed, StringComparison.OrdinalIgnoreCase);
+    internal static bool IsRejection(string line) => line.StartsWith(_notAllowed, StringComparison.OrdinalIgnoreCase);
 
     internal static LoginRejectedException FromLine(string line) => new(line.TrimStart('#', ' '));
 }

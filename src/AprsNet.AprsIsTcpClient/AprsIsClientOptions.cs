@@ -6,7 +6,7 @@ namespace AprsNet.AprsIsTcpClient;
 public sealed class AprsIsClientOptions
 {
     /// <summary>Server to connect to. Defaults to the worldwide Tier 2 rotate on port 14580.</summary>
-    public AprsIsEndpoint Endpoint { get; set; } = AprsIsEndpoint.Rotate;
+    public AprsIsEndpoint Endpoint { get; init; } = AprsIsEndpoint.Rotate;
 
     /// <summary>Login callsign, with optional SSID (for example <c>N0CALL-10</c>). Required.</summary>
     public string Callsign { get; set; } = "";
@@ -18,10 +18,10 @@ public sealed class AprsIsClientOptions
     public string? Filter { get; set; }
 
     /// <summary>Software name reported to the server. No whitespace.</summary>
-    public string SoftwareName { get; set; } = "AprsNet";
+    public string SoftwareName { get; init; } = "AprsNet";
 
     /// <summary>Software version reported to the server. No whitespace.</summary>
-    public string SoftwareVersion { get; set; } = DefaultVersion();
+    public string SoftwareVersion { get; init; } = DefaultVersion();
 
     /// <summary>How long to wait for the TCP connection.</summary>
     public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(10);
@@ -32,6 +32,7 @@ public sealed class AprsIsClientOptions
     /// <summary>Longest accepted line in bytes, excluding the terminator. Longer lines are discarded.</summary>
     public int MaxLineLength { get; set; } = 2048;
 
+    // ReSharper disable once GrammarMistakeInComment
     /// <summary>Capacity of the bounded receive queue, in lines.</summary>
     public int ChannelCapacity { get; set; } = 1024;
 
