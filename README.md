@@ -3,6 +3,7 @@
 [![CI](https://github.com/APRS-NET/APRS.NET/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APRS-NET/APRS.NET/actions/workflows/ci.yml)
 [![Packages](https://github.com/APRS-NET/APRS.NET/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/APRS-NET/APRS.NET/actions/workflows/packages.yml)
 [![Line coverage](https://raw.githubusercontent.com/APRS-NET/APRS.NET/badges/badge_linecoverage.svg)](#code-coverage)
+[![AI-DECLARATION: pair](https://img.shields.io/badge/䷼%20AI--DECLARATION-pair-ffedd5?labelColor=ffedd5)](https://ai-declaration.md)
 
 An async-first, dependency-light .NET library family for APRS: parse and build packets, connect to APRS-IS, and later
 bridge radios and clients through KISS, TCP and WebSocket services.
@@ -47,8 +48,8 @@ dotnet test
 
 The CI `coverage` job fails if the merged line or branch coverage of the libraries and `aprscli` drops below
 `MIN_LINE` / `MIN_BRANCH` in `.github/workflows/ci.yml` (currently 85% line, 80% branch), and posts the coverage
-table on the run's summary page. On `main` it also updates the badges on the `badges` branch
-(`badge_linecoverage.svg`, `badge_branchcoverage.svg`). To see the same numbers locally:
+table on the run's summary page. On `main` it also updates the badges on the `badges` branch (`badge_linecoverage.svg`,
+`badge_branchcoverage.svg`). To see the same numbers locally:
 
 ```sh
 dotnet tool restore
