@@ -13,6 +13,7 @@ capture).
 | File | Source | Lines |
 | --- | --- | --- |
 | `aprs-is/2026-10-12-r20km.log` | APRS-IS, read-only login, filter `r/38.98/-94.67/20` (20 km radius), three captures on 2026-10-12 UTC totalling about 2 h 10 min | 1,113 |
+| `aprs-is/2026-10-12-sf-r30km.log` | APRS-IS, read-only login, filter `r/37.77/-122.42/30` (30 km around San Francisco), 1 h on 2026-10-12 UTC. Simulated stations (`DEMO-*`, `MARSQ-*`) are sampled to their first 10 packets each (1,040 dropped) | 392 |
 
 Format: one packet per line, `<UTC receive timestamp> <raw APRS-IS line>`, Latin-1 so every byte round-trips (Mic-E
 data is not valid UTF-8). The timestamp is the moment `aprscli` read the line.
@@ -23,6 +24,10 @@ Positions (`=`, `!`, `@`), objects (`;`, including frequency objects, a radioson
 high-altitude data, Winlink and DAPNET objects), Mic-E from Kenwood and Yaesu radios, complete-format weather (CWOP,
 Davis, UI-View), status, telemetry, an IGate capability packet, messages (telemetry `UNIT.` and a `rej`), D-Star
 and MMDVM gateways.
+
+The San Francisco capture adds telemetry definitions (`PARM.`, `UNIT.`, `EQNS.`, `BITS.`) and `T#` reports, IGate
+capability packets with many fields, LoRa and OpenWebRX IGates, a regional `NCA2-1` path alias, a beacon with no APRS
+data type (`UIDIGI 1.9`), and APRS-IS simulators whose SSIDs (`-002`, `-052`) are outside the AX.25 range of 0–15.
 
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
@@ -35,7 +40,8 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
 - **Callsigns** (source, path, IGate, object names, message addressees and mentions in text) became same-length
   pseudonyms starting with `Q`, keeping the call-area digit and SSID. Q is not an ITU national prefix, so no
   pseudonym can be a real station. The mapping is consistent across the file.
-- **Named stations** (digis, hospitals and other tactical names) became same-length `X…` names.
+- **Named stations** (digis, hospitals and other tactical names) became same-length `X…` names, keeping any SSID.
+  APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
 - **E-mail addresses** are masked (`x` for letters, `0` for digits), and a personal name in one comment was replaced.
 - **Kept byte for byte:** positions (they are broadcast publicly and archived anyway), timestamps, Mic-E destination
   and data bytes, `!DAO!` and base-91 telemetry tokens, device TOCALLs, generic path aliases (`WIDEn-N`, `TCPIP*`,
