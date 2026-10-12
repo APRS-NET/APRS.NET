@@ -22,6 +22,8 @@ Scopes are optional, for example `feat(is): support runtime filter changes`.
 
 ## Notes
 
+- The first release is 0.1.0 (`initial-version` in `release-please-config.json`). Without it, release-please
+  treats the first release as 1.0.0 because there is no earlier tag to bump from.
 - Before 1.0, breaking changes bump the minor version and `feat` also bumps the minor version, so the library never jumps to 1.0 by accident. To release 1.0.0 deliberately, add a `Release-As: 1.0.0` footer to a commit.
 - The repository setting "Allow GitHub Actions to create and approve pull requests" must be on for release-please.
 - Publishing to nuget.org is not wired up yet (planned for M5). Until then packages are attached to the GitHub release.
