@@ -8,6 +8,10 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Deterministic>true</Deterministic>
+    <!-- Audit transitive packages too (newer SDKs default to this; set it so every SDK behaves the same). With
+         TreatWarningsAsErrors, a known-vulnerable package fails the build. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
     <!-- Deterministic /_/ source paths for shipped code only: test projects keep real paths so failure annotations
          (GitHubActionsTestLogger) point at files GitHub can link. -->
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' And !$(MSBuildProjectName.EndsWith('Tests'))"
