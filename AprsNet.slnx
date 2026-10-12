@@ -17,6 +17,7 @@
   </Folder>
   <Folder Name="/.github/workflows/">
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/packages.yml" />
     <File Path=".github/workflows/pr-title.yml" />
     <File Path=".github/workflows/release.yml" />
   </Folder>

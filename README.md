@@ -1,6 +1,7 @@
 # APRS.NET
 
 [![CI](https://github.com/APRS-NET/APRS.NET/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APRS-NET/APRS.NET/actions/workflows/ci.yml)
+[![Packages](https://github.com/APRS-NET/APRS.NET/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/APRS-NET/APRS.NET/actions/workflows/packages.yml)
 [![Line coverage](https://raw.githubusercontent.com/APRS-NET/APRS.NET/badges/badge_linecoverage.svg)](#code-coverage)
 
 An async-first, dependency-light .NET library family for APRS: parse and build packets, connect to APRS-IS, and later
@@ -40,5 +41,19 @@ dotnet reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:
 
 Then open `coverage/report/index.html`. Raise the thresholds when coverage improves; do not lower them to get a
 change through.
+
+## Package checks
+
+The `packages` workflow (`.github/workflows/packages.yml`) runs on every push to `main`, on pull requests and every
+Monday. It lists vulnerable NuGet packages (direct and transitive) and available updates for direct packages, posts
+the report to the run summary, keeps a single report comment up to date on pull requests from this repository, and
+fails if any package has a known vulnerability. To run the same check locally:
+
+```sh
+dotnet restore -p:NuGetAudit=false
+dotnet list AprsNet.slnx package --vulnerable --include-transitive --format json > vulnerable.json
+dotnet list AprsNet.slnx package --outdated --format json > outdated.json
+dotnet run tools/ci/PackageReport.cs -- --vulnerable vulnerable.json --outdated outdated.json --out package-report.md
+```
 
 Licensed under the [MIT License](LICENSE).
