@@ -1,1 +1,95 @@
 #nullable enable
+AprsNet.Packets.AprsPacket
+AprsNet.Packets.AprsPacket.Destination.get -> AprsNet.Packets.Callsign?
+AprsNet.Packets.AprsPacket.GetBytes() -> byte[]!
+AprsNet.Packets.AprsPacket.HasHeader.get -> bool
+AprsNet.Packets.AprsPacket.Information.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.AprsPacket.Issues.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.ParseIssue>!
+AprsNet.Packets.AprsPacket.Outcome.get -> AprsNet.Packets.ParseOutcome
+AprsNet.Packets.AprsPacket.Path.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>?
+AprsNet.Packets.AprsPacket.Payload.get -> AprsNet.Packets.AprsPayload?
+AprsNet.Packets.AprsPacket.Raw.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.AprsPacket.Source.get -> AprsNet.Packets.Callsign?
+AprsNet.Packets.AprsPacket.Type.get -> AprsNet.Packets.PacketType
+AprsNet.Packets.AprsPayload
+AprsNet.Packets.Callsign
+AprsNet.Packets.Callsign.Base.get -> string!
+AprsNet.Packets.Callsign.<Clone>$() -> AprsNet.Packets.Callsign!
+AprsNet.Packets.Callsign.Equals(AprsNet.Packets.Callsign? other) -> bool
+AprsNet.Packets.Callsign.IsAx25.get -> bool
+AprsNet.Packets.Callsign.Ssid.get -> string!
+AprsNet.Packets.Callsign.Value.get -> string!
+AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Item = 4 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Message = 5 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.MicE = 2 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Object = 3 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Position = 1 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Status = 6 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Telemetry = 8 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.ThirdParty = 9 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Unknown = 0 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.Weather = 7 -> AprsNet.Packets.PacketType
+AprsNet.Packets.ParseIssue
+AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.EmptyDestination = 2 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.EmptyInformation = 6 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.EmptyPathEntry = 3 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.EmptySource = 1 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCodeExtensions
+AprsNet.Packets.ParseIssue.Code.get -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InformationTooLong = 7 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssue.Code.init -> void
+AprsNet.Packets.ParseIssueCode.InvalidCallsign = 5 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.MissingHeader = 0 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.TooManyPathEntries = 4 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssue.Deconstruct(out AprsNet.Packets.ParseIssueCode Code, out AprsNet.Packets.ParseIssueSeverity Severity, out int Offset) -> void
+AprsNet.Packets.ParseIssue.Equals(AprsNet.Packets.ParseIssue other) -> bool
+AprsNet.Packets.ParseIssue.Offset.get -> int
+AprsNet.Packets.ParseIssue.Offset.init -> void
+AprsNet.Packets.ParseIssue.ParseIssue(AprsNet.Packets.ParseIssueCode Code, AprsNet.Packets.ParseIssueSeverity Severity, int Offset) -> void
+AprsNet.Packets.ParseIssue.ParseIssue() -> void
+AprsNet.Packets.ParseIssueSeverity
+AprsNet.Packets.ParseIssueSeverity.Error = 1 -> AprsNet.Packets.ParseIssueSeverity
+AprsNet.Packets.ParseIssue.Severity.get -> AprsNet.Packets.ParseIssueSeverity
+AprsNet.Packets.ParseIssue.Severity.init -> void
+AprsNet.Packets.ParseIssueSeverity.Warning = 0 -> AprsNet.Packets.ParseIssueSeverity
+AprsNet.Packets.ParseOutcome
+AprsNet.Packets.ParseOutcome.Malformed = 2 -> AprsNet.Packets.ParseOutcome
+AprsNet.Packets.ParseOutcome.Parsed = 0 -> AprsNet.Packets.ParseOutcome
+AprsNet.Packets.ParseOutcome.Unsupported = 1 -> AprsNet.Packets.ParseOutcome
+AprsNet.Packets.PathEntry
+AprsNet.Packets.PathEntry.Deconstruct(out AprsNet.Packets.Callsign! Station, out bool HasBeenRepeated, out AprsNet.Packets.PathEntryKind Kind) -> void
+AprsNet.Packets.PathEntry.Equals(AprsNet.Packets.PathEntry other) -> bool
+AprsNet.Packets.PathEntry.HasBeenRepeated.get -> bool
+AprsNet.Packets.PathEntry.HasBeenRepeated.init -> void
+AprsNet.Packets.PathEntryKind
+AprsNet.Packets.PathEntryKind.Alias = 1 -> AprsNet.Packets.PathEntryKind
+AprsNet.Packets.PathEntry.Kind.get -> AprsNet.Packets.PathEntryKind
+AprsNet.Packets.PathEntry.Kind.init -> void
+AprsNet.Packets.PathEntryKind.QConstruct = 2 -> AprsNet.Packets.PathEntryKind
+AprsNet.Packets.PathEntryKind.Server = 3 -> AprsNet.Packets.PathEntryKind
+AprsNet.Packets.PathEntryKind.Station = 0 -> AprsNet.Packets.PathEntryKind
+AprsNet.Packets.PathEntry.PathEntry(AprsNet.Packets.Callsign! Station, bool HasBeenRepeated, AprsNet.Packets.PathEntryKind Kind) -> void
+AprsNet.Packets.PathEntry.PathEntry() -> void
+AprsNet.Packets.PathEntry.Station.get -> AprsNet.Packets.Callsign!
+AprsNet.Packets.PathEntry.Station.init -> void
+override AprsNet.Packets.AprsPacket.ToString() -> string!
+override AprsNet.Packets.Callsign.Equals(object? obj) -> bool
+override AprsNet.Packets.Callsign.GetHashCode() -> int
+override AprsNet.Packets.Callsign.ToString() -> string!
+~override AprsNet.Packets.ParseIssue.Equals(object obj) -> bool
+override AprsNet.Packets.ParseIssue.GetHashCode() -> int
+~override AprsNet.Packets.ParseIssue.ToString() -> string
+~override AprsNet.Packets.PathEntry.Equals(object obj) -> bool
+override AprsNet.Packets.PathEntry.GetHashCode() -> int
+override AprsNet.Packets.PathEntry.ToString() -> string!
+static AprsNet.Packets.AprsPacket.Parse(string! line) -> AprsNet.Packets.AprsPacket!
+static AprsNet.Packets.AprsPacket.Parse(System.ReadOnlySpan<byte> line) -> AprsNet.Packets.AprsPacket!
+static AprsNet.Packets.Callsign.operator !=(AprsNet.Packets.Callsign? left, AprsNet.Packets.Callsign? right) -> bool
+static AprsNet.Packets.Callsign.operator ==(AprsNet.Packets.Callsign? left, AprsNet.Packets.Callsign? right) -> bool
+static AprsNet.Packets.ParseIssueCodeExtensions.Describe(this AprsNet.Packets.ParseIssueCode code) -> string!
+static AprsNet.Packets.ParseIssue.operator !=(AprsNet.Packets.ParseIssue left, AprsNet.Packets.ParseIssue right) -> bool
+static AprsNet.Packets.ParseIssue.operator ==(AprsNet.Packets.ParseIssue left, AprsNet.Packets.ParseIssue right) -> bool
+static AprsNet.Packets.PathEntry.operator !=(AprsNet.Packets.PathEntry left, AprsNet.Packets.PathEntry right) -> bool
+static AprsNet.Packets.PathEntry.operator ==(AprsNet.Packets.PathEntry left, AprsNet.Packets.PathEntry right) -> bool

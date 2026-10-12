@@ -1,6 +1,6 @@
 # Packet API design
 
-Status: **agreed, not yet implemented** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
+Status: **agreed; the header parser is implemented, payloads are not** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
 and bytes get into it. Packet payload types (positions, Mic-E, messages…) build on it and get their own notes as they
 land.
 
@@ -104,7 +104,7 @@ A station identifier as it appeared in the header, which is not always a valid A
 `T2PERTH`, `FIRST`, `DEMO-002`, `QA0AW-DS` and lower-case calls.
 
 ```csharp
-public readonly record struct Callsign
+public sealed record Callsign
 {
     public string Value { get; }        // as received: "N0CALL-10", "EL-N0CALL", "qAR"
     public string Base { get; }         // before the first '-': "N0CALL"
@@ -115,6 +115,13 @@ public readonly record struct Callsign
 
 `Value` is kept as received, never normalized, so a packet can be written back unchanged. Comparing callsigns is
 case-sensitive by default (`qAR` and `QAR` are different things); a case-insensitive comparer can come later.
+
+It is a class rather than a struct so that `Source` and `Destination` can be nullable references that
+`[MemberNotNullWhen]` understands. A nullable struct would be `Nullable<Callsign>`, and callers would write
+`packet.Source.Value.Value`. Callers never construct one; the constructor is internal.
+
+A header entry with a space, a control byte or a byte above 0x7E gets an `InvalidCallsign` warning. Non-AX.25
+identifiers do not: they are normal on APRS-IS, and `IsAx25` reports them.
 
 ### `PathEntry`
 
@@ -167,10 +174,10 @@ public enum ParseIssueSeverity { Warning, Error }
   "strict versus lenient mode" item in the plan.
 - **`Offset`** is the byte position in `Raw` where the problem was found, so tools can point at it.
 - **`ParseIssueCode`** is an enum with one member per distinct problem (`MissingHeader`, `EmptySource`,
-  `InvalidPathEntry`, `LeadingSpaceBeforeDataType`, `InvalidLatitude`, …). It grows with each payload type. Messages
+  `EmptyPathEntry`, `InvalidCallsign`, …). It grows with each payload type. Messages
   for humans come from a `Describe()` extension, not from strings stored on every issue.
-- **Warnings** keep `Outcome` as `Parsed` (a lower-case callsign, an SSID outside 0–15, a trailing space).
-  **Errors** make it `Malformed` (no header, a position with an invalid latitude).
+- **Warnings** do not change `Outcome` (a space or control byte in a callsign, an overlong information field).
+  **Errors** make it `Malformed` (no header, an empty path entry, later a position with an invalid latitude).
 - The metrics `reason` tag is the code of the first error.
 
 This also replaces `ParseResult` and `UnknownPacket` from the plan: every result is an `AprsPacket`, and "unknown"
@@ -205,7 +212,7 @@ the source. The rendering step is cheap next to radio data rates, and it keeps o
 
 All input is hostile. `Parse` rejects nothing for being long, but:
 
-- decoding stops at 512 bytes of information (`LineTooLong` warning); `Raw` still holds the whole line;
+- decoding stops at 512 bytes of information (`InformationTooLong` warning); `Raw` still holds the whole line;
 - path entries are capped (`TooManyPathEntries` error past 10; AX.25 allows 8 digipeaters, and APRS-IS adds q-construct
   entries);
 - nothing allocates in proportion to an attacker-controlled count other than the single copy of the input.

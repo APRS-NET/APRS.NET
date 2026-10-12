@@ -4,8 +4,9 @@ using System.Text.RegularExpressions;
 namespace AprsNet.Packets.SpecTests;
 
 /// <summary>
-/// Checks the APRS101 test vectors themselves until the parser exists to run them: well-formed files, unique ids, known
-/// features, and every vector matching the feature patterns it claims (with the .NET regex engine the coverage tool uses).
+/// Checks the APRS101 test vectors themselves: well-formed files, unique ids, known features, and every vector matching
+/// the feature patterns it claims (with the .NET regex engine the coverage tool uses). <see cref="VectorParsingTests"/>
+/// runs them through the parser.
 /// </summary>
 public class VectorFileTests
 {
@@ -25,6 +26,8 @@ public class VectorFileTests
 
         return data;
     }
+
+    internal static JsonElement Vector(string id) => _vectors.Value.Single(v => v.GetProperty("id").GetString() == id);
 
     private static readonly Lazy<List<JsonElement>> _vectors = new(() =>
         Directory
@@ -77,7 +80,7 @@ public class VectorFileTests
     [MemberData(nameof(VectorIds))]
     public void VectorIsWellFormedAndMatchesItsFeatures(string id)
     {
-        var vector = _vectors.Value.Single(v => v.GetProperty("id").GetString() == id);
+        var vector = Vector(id);
 
         Assert.Contains(vector.GetProperty("status").GetString(), _statuses);
         Assert.Equal("APRS101", vector.GetProperty("spec").GetProperty("document").GetString());
