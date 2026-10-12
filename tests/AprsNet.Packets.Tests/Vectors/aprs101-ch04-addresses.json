@@ -1,0 +1,258 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch04.dest-generic-beacon",
+      "title": "Generic BEACON destination",
+      "spec": {
+        "document": "APRS101",
+        "page": 13,
+        "section": "Generic APRS Destination Addresses"
+      },
+      "status": "derived",
+      "features": [
+        "dest.generic",
+        "status"
+      ],
+      "packet": "N0CALL>BEACON:>Hello",
+      "expect": {
+        "type": "status",
+        "destination": {
+          "kind": "generic"
+        },
+        "text": "Hello"
+      }
+    },
+    {
+      "id": "ch04.dest-software-version",
+      "title": "Software version destination APM326",
+      "spec": {
+        "document": "APRS101",
+        "page": 14,
+        "section": "APRS Software Version Number"
+      },
+      "status": "normative",
+      "features": [
+        "dest.software",
+        "status"
+      ],
+      "packet": "N0CALL>APM326:>Net Control",
+      "expect": {
+        "type": "status",
+        "destination": {
+          "kind": "software",
+          "id": "APM326"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-gpsxyz",
+      "title": "Symbol from GPSxyz destination (GPSMV = car)",
+      "spec": {
+        "document": "APRS101",
+        "page": 92,
+        "section": "Symbols in the AX.25 Destination Address"
+      },
+      "status": "normative",
+      "features": [
+        "dest.symbol.gpsxyz",
+        "nmea.rmc"
+      ],
+      "packet": "N0CALL>GPSMV:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "symbol": {
+          "table": "/",
+          "code": ">",
+          "source": "destination"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-gpsxyz-overlay",
+      "title": "Symbol with overlay from GPSxyz destination (GPSNV3 = car #3)",
+      "spec": {
+        "document": "APRS101",
+        "page": 92,
+        "section": "Overlays with Symbols in the AX.25 Destination Address"
+      },
+      "status": "normative",
+      "features": [
+        "dest.symbol.gpsxyz",
+        "nmea.rmc"
+      ],
+      "packet": "N0CALL>GPSNV3:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "symbol": {
+          "table": "\\",
+          "code": ">",
+          "overlay": "3",
+          "source": "destination"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-gpscnn",
+      "title": "Symbol from GPSCnn destination (GPSC12 = Boy Scouts /,)",
+      "spec": {
+        "document": "APRS101",
+        "page": 92,
+        "section": "Symbols in the AX.25 Destination Address"
+      },
+      "status": "normative",
+      "features": [
+        "dest.symbol.gpscnn",
+        "nmea.rmc"
+      ],
+      "packet": "N0CALL>GPSC12:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "symbol": {
+          "table": "/",
+          "code": ",",
+          "source": "destination"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-gpsenn",
+      "title": "Symbol from GPSEnn destination (GPSE12 = Girl Scouts \\,)",
+      "spec": {
+        "document": "APRS101",
+        "page": 92,
+        "section": "Symbols in the AX.25 Destination Address"
+      },
+      "status": "normative",
+      "features": [
+        "dest.symbol.gpscnn",
+        "nmea.rmc"
+      ],
+      "packet": "N0CALL>GPSE12:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "symbol": {
+          "table": "\\",
+          "code": ",",
+          "source": "destination"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-ssid-generic-path",
+      "title": "Destination SSID -2 selects generic path WIDE2-2",
+      "spec": {
+        "document": "APRS101",
+        "page": 16,
+        "section": "Generic APRS Digipeater Path"
+      },
+      "status": "normative",
+      "features": [
+        "dest.ssid.path",
+        "status"
+      ],
+      "packet": "N0CALL>APRS-2:>Hello",
+      "expect": {
+        "type": "status",
+        "destination": {
+          "kind": "software",
+          "id": "APRS",
+          "ssid": 2,
+          "genericPath": "WIDE2-2"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-ssid-directional",
+      "title": "Destination SSID -12 selects 'North path + WIDE'",
+      "spec": {
+        "document": "APRS101",
+        "page": 16,
+        "section": "Generic APRS Digipeater Path"
+      },
+      "status": "derived",
+      "features": [
+        "dest.ssid.path",
+        "status"
+      ],
+      "packet": "N0CALL>APRS-12:>Hello",
+      "expect": {
+        "type": "status",
+        "destination": {
+          "ssid": 12,
+          "genericPath": "North path + WIDE"
+        }
+      }
+    },
+    {
+      "id": "ch04.dest-grid",
+      "title": "Maidenhead locator in destination (obsolete)",
+      "spec": {
+        "document": "APRS101",
+        "page": 15,
+        "section": "Maidenhead Grid Locator in Destination Address"
+      },
+      "status": "derived",
+      "features": [
+        "dest.grid",
+        "status"
+      ],
+      "packet": "N0CALL>IO91SX:>Meteor scatter",
+      "expect": {
+        "type": "status",
+        "destination": {
+          "kind": "grid",
+          "grid": "IO91SX"
+        }
+      },
+      "notes": "Obsolete format; decoders should still recognise the destination as a locator, not a callsign."
+    },
+    {
+      "id": "ch04.dest-altnet",
+      "title": "ALTNET destination is not normal APRS traffic",
+      "spec": {
+        "document": "APRS101",
+        "page": 15,
+        "section": "Alternate Nets"
+      },
+      "status": "derived",
+      "features": [
+        "dest.altnet",
+        "status"
+      ],
+      "packet": "N0CALL>SATERN:>Salvation Army net",
+      "expect": {
+        "type": "status",
+        "destination": {
+          "kind": "altnet",
+          "id": "SATERN"
+        }
+      },
+      "notes": "Only stations using the same ALTNET should display it (APRS 1.1 tocalls ALTNET list registers SATERN)."
+    },
+    {
+      "id": "ch04.src-ssid-symbol",
+      "title": "Symbol from source SSID -9 (car) when no other symbol",
+      "spec": {
+        "document": "APRS101",
+        "page": 93,
+        "section": "Symbol in the Source Address SSID"
+      },
+      "status": "superseded",
+      "features": [
+        "src.ssid.symbol",
+        "nmea.rmc"
+      ],
+      "packet": "N0CALL-9>GPS:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "symbol": {
+          "table": "/",
+          "code": ">",
+          "source": "sourceSsid"
+        }
+      },
+      "notes": "APRS 1.1 (SSIDs.txt) says SSID-to-symbol is obsolete; SSIDs are now informal station-type hints. Keep for legacy trackers."
+    }
+  ]
+}

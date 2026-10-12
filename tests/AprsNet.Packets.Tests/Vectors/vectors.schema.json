@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "APRS.NET packet test vectors",
+  "type": "object",
+  "required": ["vectors"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "vectors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "spec", "status", "features", "packet", "expect"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^ch[0-9]{2}\\.[a-z0-9-]+$" },
+          "title": { "type": "string" },
+          "spec": {
+            "type": "object",
+            "required": ["document", "page", "section"],
+            "properties": {
+              "document": { "enum": ["APRS101"] },
+              "page": { "type": "integer" },
+              "section": { "type": "string" }
+            }
+          },
+          "status": { "enum": ["normative", "derived", "erratum-corrected", "superseded"] },
+          "features": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "packet": { "type": "string", "description": "TNC-2 monitor line: SOURCE>DEST[,PATH]:INFO" },
+          "expect": { "type": "object" },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

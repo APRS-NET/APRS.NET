@@ -1,0 +1,202 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch09.comp-no-cs",
+      "title": "Compressed position, no course/speed (c = space), comment",
+      "spec": {
+        "document": "APRS101",
+        "page": 41,
+        "section": "Compressed Report Formats"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.nocs"
+      ],
+      "packet": "N0CALL>APRS:=/5L!!<*e7> sTComment",
+      "expect": {
+        "type": "position",
+        "messaging": true,
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "symbol": {
+          "table": "/",
+          "code": ">"
+        },
+        "comment": "Comment"
+      }
+    },
+    {
+      "id": "ch09.comp-csespd",
+      "title": "Compressed position with course/speed (RMC, current fix, software)",
+      "spec": {
+        "document": "APRS101",
+        "page": 41,
+        "section": "Compressed Report Formats"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.csespd"
+      ],
+      "packet": "N0CALL>APRS:=/5L!!<*e7>7P[",
+      "expect": {
+        "type": "position",
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "symbol": {
+          "table": "/",
+          "code": ">"
+        },
+        "course": 88,
+        "speed": 36.2,
+        "compressionType": {
+          "gpsFix": "current",
+          "nmeaSource": "RMC",
+          "origin": "Software"
+        }
+      },
+      "notes": "Longitude decodes to -72.750004: the spec's encoding example truncates 20427156.75 to 20427156."
+    },
+    {
+      "id": "ch09.comp-range",
+      "title": "Compressed position with radio range",
+      "spec": {
+        "document": "APRS101",
+        "page": 41,
+        "section": "Compressed Report Formats"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.range"
+      ],
+      "packet": "N0CALL>APRS:=/5L!!<*e7>{?!",
+      "expect": {
+        "type": "position",
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "symbol": {
+          "table": "/",
+          "code": ">"
+        },
+        "rangeMiles": 20.13,
+        "compressionType": {
+          "gpsFix": "old",
+          "nmeaSource": "other",
+          "origin": "Compressed"
+        }
+      },
+      "notes": "2 x 1.08^30 = 20.13 miles (spec text: ~20)."
+    },
+    {
+      "id": "ch09.comp-altitude",
+      "title": "Compressed position with altitude (GGA)",
+      "spec": {
+        "document": "APRS101",
+        "page": 41,
+        "section": "Compressed Report Formats"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.altitude"
+      ],
+      "packet": "N0CALL>APRS:=/5L!!<*e7OS]S",
+      "expect": {
+        "type": "position",
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "symbol": {
+          "table": "/",
+          "code": "O"
+        },
+        "altitudeFeet": 10004.5,
+        "compressionType": {
+          "gpsFix": "current",
+          "nmeaSource": "GGA",
+          "origin": "Software"
+        }
+      },
+      "notes": "1.002^4610 = 10004.88 ft; the spec text truncates to 10004. Compare with a 0.5 ft tolerance."
+    },
+    {
+      "id": "ch09.comp-ts-range",
+      "title": "Compressed position with timestamp and radio range",
+      "spec": {
+        "document": "APRS101",
+        "page": 41,
+        "section": "Compressed Report Formats"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "pos.compressed",
+        "comp.range"
+      ],
+      "packet": "N0CALL>APRS:@092345z/5L!!<*e7>{?!",
+      "expect": {
+        "type": "position",
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "zulu"
+        },
+        "rangeMiles": 20.13
+      }
+    },
+    {
+      "id": "ch09.comp-type-byte-gll-kpc3",
+      "title": "Compression type byte: old fix, GLL source, KPC3 origin",
+      "spec": {
+        "document": "APRS101",
+        "page": 39,
+        "section": "The Compression Type (T) Byte"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.csespd"
+      ],
+      "packet": "N0CALL>APRS:=/5L!!<*e7>7P-",
+      "expect": {
+        "type": "position",
+        "compressionType": {
+          "gpsFix": "old",
+          "nmeaSource": "GLL",
+          "origin": "KPC3"
+        }
+      }
+    },
+    {
+      "id": "ch09.comp-south-east",
+      "title": "Compressed position in the southern and eastern hemispheres",
+      "spec": {
+        "document": "APRS101",
+        "page": 38,
+        "section": "Lat/Long Encoding"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.compressed",
+        "comp.nocs",
+        "comp.southeast"
+      ],
+      "packet": "N0CALL>APRS:!/_H!!tbe7- sT",
+      "expect": {
+        "type": "position",
+        "latitude": -33.5,
+        "longitude": 151.249996
+      }
+    }
+  ]
+}

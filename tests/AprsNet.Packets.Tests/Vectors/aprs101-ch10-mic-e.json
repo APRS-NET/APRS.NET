@@ -1,0 +1,480 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch10.mice-ambiguity-example",
+      "title": "Mic-E spec example: destination T4SQZZ with info (_fn\"Oj/ (ambiguity 2)",
+      "spec": {
+        "document": "APRS101",
+        "page": 53,
+        "section": "Example of Decoding the Information Field Data / Mic-E Position Ambiguity"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.current",
+        "mice.ambiguity",
+        "mice.lon.offset100"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/",
+      "expect": {
+        "type": "mice",
+        "current": true,
+        "latitude": 44.516667,
+        "longitude": -112.116667,
+        "ambiguity": 2,
+        "speed": 20,
+        "course": 251,
+        "symbol": {
+          "table": "/",
+          "code": "j"
+        },
+        "messageCode": "M2",
+        "messageName": "In Service"
+      },
+      "notes": "Spec decodes the longitude as 112°07.74'W; with destination ambiguity 2 the hundredths are dropped (112°07'W)."
+    },
+    {
+      "id": "ch10.mice-returning",
+      "title": "Mic-E S32U6T (33°25.64'N, M3 Returning, +0 offset, West)",
+      "spec": {
+        "document": "APRS101",
+        "page": 44,
+        "section": "Destination Address Field Encoding"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.current",
+        "mice.msg.standard",
+        "mice.lon.10-99"
+      ],
+      "packet": "N0CALL>S32U6T:`dYgoXt>/",
+      "expect": {
+        "type": "mice",
+        "latitude": 33.427333,
+        "longitude": -72.029167,
+        "ambiguity": 0,
+        "speed": 36,
+        "course": 88,
+        "symbol": {
+          "table": "/",
+          "code": ">"
+        },
+        "messageCode": "M3",
+        "messageName": "Returning"
+      },
+      "notes": "Destination from the spec example; information field built from the spec tables (072°01.75'W, 36 kn, course 88)."
+    },
+    {
+      "id": "ch10.mice-custom",
+      "title": "Mic-E custom message C2 (destination F2D…)",
+      "spec": {
+        "document": "APRS101",
+        "page": 46,
+        "section": "Mic-E Messages"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.msg.custom"
+      ],
+      "packet": "N0CALL>F2DUQP:`(_fn\"Oj/",
+      "expect": {
+        "type": "mice",
+        "messageCode": "C2",
+        "messageName": "Custom-2",
+        "latitude": 52.585,
+        "longitude": -112.129
+      }
+    },
+    {
+      "id": "ch10.mice-emergency",
+      "title": "Mic-E emergency (message bits 000)",
+      "spec": {
+        "document": "APRS101",
+        "page": 46,
+        "section": "Mic-E Messages"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.msg.emergency"
+      ],
+      "packet": "N0CALL>234PPP:`(_fn\"Oj/",
+      "expect": {
+        "type": "mice",
+        "messageCode": "Emergency",
+        "latitude": 23.666667,
+        "longitude": -112.129
+      }
+    },
+    {
+      "id": "ch10.mice-unknown-message",
+      "title": "Mic-E mixed standard and custom bits = unknown message",
+      "spec": {
+        "document": "APRS101",
+        "page": 45,
+        "section": "Mic-E Messages"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.msg.unknown"
+      ],
+      "packet": "N0CALL>PB0UPP:`(_fn\"Oj/",
+      "expect": {
+        "type": "mice",
+        "messageCode": "Unknown"
+      }
+    },
+    {
+      "id": "ch10.mice-dest-ssid-path",
+      "title": "Mic-E destination SSID selects generic path",
+      "spec": {
+        "document": "APRS101",
+        "page": 46,
+        "section": "Destination Address SSID Field"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "dest.ssid.path"
+      ],
+      "packet": "N0CALL>T4SQZZ-2:`(_fn\"Oj/",
+      "expect": {
+        "type": "mice",
+        "destination": {
+          "ssid": 2,
+          "genericPath": "WIDE2-2"
+        }
+      }
+    },
+    {
+      "id": "ch10.mice-lon-0-9",
+      "title": "Mic-E longitude 5° (offset +100, d+28 = '{')",
+      "spec": {
+        "document": "APRS101",
+        "page": 47,
+        "section": "Longitude Degrees Encoding"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.lon.0-9"
+      ],
+      "packet": "N0CALL>S32UPT:`{]Nn\"O>/",
+      "expect": {
+        "type": "mice",
+        "longitude": -5.091667,
+        "speed": 20,
+        "course": 251
+      },
+      "notes": "Minutes byte ']' = 5 (0-9 minute encoding, 93-28-60), hundredths 'N' = 50."
+    },
+    {
+      "id": "ch10.mice-lon-10-99",
+      "title": "Mic-E longitude 72° (offset +0)",
+      "spec": {
+        "document": "APRS101",
+        "page": 47,
+        "section": "Longitude Degrees Encoding"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.lon.10-99"
+      ],
+      "packet": "N0CALL>S32U6T:`d]Nn\"O>/",
+      "expect": {
+        "type": "mice",
+        "longitude": -72.091667,
+        "speed": 20,
+        "course": 251
+      },
+      "notes": "Minutes byte ']' = 5 (0-9 minute encoding, 93-28-60), hundredths 'N' = 50."
+    },
+    {
+      "id": "ch10.mice-lon-100-109",
+      "title": "Mic-E longitude 105° (offset +100, d+28 = 'q')",
+      "spec": {
+        "document": "APRS101",
+        "page": 47,
+        "section": "Longitude Degrees Encoding"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.lon.100-109"
+      ],
+      "packet": "N0CALL>S32UPT:`q]Nn\"O>/",
+      "expect": {
+        "type": "mice",
+        "longitude": -105.091667,
+        "speed": 20,
+        "course": 251
+      },
+      "notes": "Minutes byte ']' = 5 (0-9 minute encoding, 93-28-60), hundredths 'N' = 50."
+    },
+    {
+      "id": "ch10.mice-lon-110-179",
+      "title": "Mic-E longitude 179° (offset +100, d+28 = 'k')",
+      "spec": {
+        "document": "APRS101",
+        "page": 47,
+        "section": "Longitude Degrees Encoding"
+      },
+      "status": "derived",
+      "features": [
+        "mice",
+        "mice.lon.110-179"
+      ],
+      "packet": "N0CALL>S32UPT:`k]Nn\"O>/",
+      "expect": {
+        "type": "mice",
+        "longitude": -179.091667,
+        "speed": 20,
+        "course": 251
+      },
+      "notes": "Minutes byte ']' = 5 (0-9 minute encoding, 93-28-60), hundredths 'N' = 50."
+    },
+    {
+      "id": "ch10.mice-speed-encoding-a",
+      "title": "Mic-E speed/course alternate encoding 's@z' = 73 kn, 294°",
+      "spec": {
+        "document": "APRS101",
+        "page": 50,
+        "section": "Speed and Course Encoding"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.sp.high",
+        "mice.dc.offset4"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fs@z>/",
+      "expect": {
+        "type": "mice",
+        "speed": 73,
+        "course": 294
+      },
+      "notes": "The spec defines two encodings for 0–199 kn and DC+28; both must decode identically."
+    },
+    {
+      "id": "ch10.mice-speed-encoding-b",
+      "title": "Mic-E speed/course alternate encoding '#<z' = 73 kn, 294°",
+      "spec": {
+        "document": "APRS101",
+        "page": 50,
+        "section": "Speed and Course Encoding"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.sp.low",
+        "mice.dc.plain"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_f#<z>/",
+      "expect": {
+        "type": "mice",
+        "speed": 73,
+        "course": 294
+      },
+      "notes": "The spec defines two encodings for 0–199 kn and DC+28; both must decode identically."
+    },
+    {
+      "id": "ch10.mice-kenwood-d700-old-dti",
+      "title": "Mic-E with ' DTI and ] type code = TM-D700 current data",
+      "spec": {
+        "document": "APRS101",
+        "page": 55,
+        "section": "Mic-E Status Text"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.old",
+        "mice.status.d700"
+      ],
+      "packet": "N0CALL>T4SQZZ:'(_fn\"Oj/]Hello",
+      "expect": {
+        "type": "mice",
+        "current": true,
+        "device": "TM-D700",
+        "statusText": "Hello"
+      },
+      "notes": "TM-D700 uses ' for current data; detect by ' at position 1 and ] at position 10."
+    },
+    {
+      "id": "ch10.mice-kenwood-d7",
+      "title": "Mic-E with > type code = TH-D7",
+      "spec": {
+        "document": "APRS101",
+        "page": 55,
+        "section": "Mic-E Status Text"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.current",
+        "mice.status.d7"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/>Hello",
+      "expect": {
+        "type": "mice",
+        "device": "TH-D7",
+        "statusText": "Hello"
+      }
+    },
+    {
+      "id": "ch10.mice-altitude",
+      "title": "Mic-E altitude \"4T} = 61 m",
+      "spec": {
+        "document": "APRS101",
+        "page": 55,
+        "section": "Altitude in the Mic-E Status Text Field"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.altitude"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/\"4T}",
+      "expect": {
+        "type": "mice",
+        "altitudeMeters": 61
+      }
+    },
+    {
+      "id": "ch10.mice-altitude-d700",
+      "title": "Mic-E altitude after ] type code",
+      "spec": {
+        "document": "APRS101",
+        "page": 56,
+        "section": "Altitude in the Mic-E Status Text Field"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.altitude",
+        "mice.status.d700"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/]\"4T}",
+      "expect": {
+        "type": "mice",
+        "device": "TM-D700",
+        "altitudeMeters": 61
+      }
+    },
+    {
+      "id": "ch10.mice-grid",
+      "title": "Mic-E Maidenhead locator in status text",
+      "spec": {
+        "document": "APRS101",
+        "page": 55,
+        "section": "Maidenhead Locator in the Mic-E Status Text Field"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.grid"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/IO91SX/G Hello world",
+      "expect": {
+        "type": "mice",
+        "grid": "IO91SX",
+        "statusText": "IO91SX/G Hello world"
+      },
+      "notes": "Status text kept raw; the locator is also reported separately."
+    },
+    {
+      "id": "ch10.mice-telemetry-5",
+      "title": "Mic-E telemetry, 5 hex channels ('7200007100)",
+      "spec": {
+        "document": "APRS101",
+        "page": 54,
+        "section": "Mic-E Telemetry Data"
+      },
+      "status": "superseded",
+      "features": [
+        "mice",
+        "mice.telemetry.legacy"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/'7200007100",
+      "expect": {
+        "type": "mice",
+        "telemetry": [
+          114,
+          0,
+          0,
+          113,
+          0
+        ]
+      },
+      "notes": "APRS 1.2 reuses ' and ` as Mic-E type codes and deprecates Mic-E telemetry (A12-MICE-04)."
+    },
+    {
+      "id": "ch10.mice-telemetry-2",
+      "title": "Mic-E telemetry, 2 hex channels (`72FE = ch1, ch3)",
+      "spec": {
+        "document": "APRS101",
+        "page": 54,
+        "section": "Mic-E Telemetry Data"
+      },
+      "status": "superseded",
+      "features": [
+        "mice",
+        "mice.telemetry.legacy"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn\"Oj/`72FE",
+      "expect": {
+        "type": "mice",
+        "telemetry": [
+          114,
+          null,
+          254,
+          null,
+          null
+        ]
+      },
+      "notes": "Superseded by APRS 1.2 Mic-E type codes; channels 1 and 3 only."
+    },
+    {
+      "id": "ch10.mice-truncated",
+      "title": "Mic-E information field shorter than 9 bytes must be ignored",
+      "spec": {
+        "document": "APRS101",
+        "page": 47,
+        "section": "Mic-E Information Field"
+      },
+      "status": "normative",
+      "features": [
+        "mice",
+        "mice.truncated"
+      ],
+      "packet": "N0CALL>T4SQZZ:`(_fn",
+      "expect": {
+        "reject": true,
+        "reason": "Mic-E information field shorter than 9 bytes"
+      }
+    },
+    {
+      "id": "ch10.mice-rev0-current",
+      "title": "Mic-E Rev 0 beta current data DTI 0x1c",
+      "spec": {
+        "document": "APRS101",
+        "page": 46,
+        "section": "Information Field Data"
+      },
+      "status": "normative",
+      "features": [
+        "mice.rev0"
+      ],
+      "packet": "N0CALL>T4SQZZ:\u001c(_fn\"Oj/",
+      "expect": {
+        "type": "mice",
+        "current": true
+      }
+    }
+  ]
+}

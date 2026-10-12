@@ -1,0 +1,534 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch08.pos-nots-nomsg-comment",
+      "title": "Position, no timestamp, no messaging, comment",
+      "spec": {
+        "document": "APRS101",
+        "page": 32,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.uncompressed"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W-Test 001234",
+      "expect": {
+        "type": "position",
+        "messaging": false,
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": "-"
+        },
+        "comment": "Test 001234"
+      }
+    },
+    {
+      "id": "ch08.pos-nots-altitude",
+      "title": "Position with altitude in comment",
+      "spec": {
+        "document": "APRS101",
+        "page": 32,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.altitude"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W-Test /A=001234",
+      "expect": {
+        "type": "position",
+        "messaging": false,
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "altitudeFeet": 1234,
+        "comment": "Test /A=001234"
+      }
+    },
+    {
+      "id": "ch08.pos-ambiguity-degree",
+      "title": "Position to nearest degree (lat and lon spaced)",
+      "spec": {
+        "document": "APRS101",
+        "page": 32,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.ambiguity"
+      ],
+      "packet": "N0CALL>APRS:!49  .  N/072  .  W-",
+      "expect": {
+        "type": "position",
+        "latitude": 49.0,
+        "longitude": -72.0,
+        "ambiguity": 4,
+        "symbol": {
+          "table": "/",
+          "code": "-"
+        }
+      }
+    },
+    {
+      "id": "ch08.pos-x1j-header",
+      "title": "Position with X1J node header before '!'",
+      "spec": {
+        "document": "APRS101",
+        "page": 32,
+        "section": "Position Reports"
+      },
+      "status": "superseded",
+      "features": [
+        "dti.x1j"
+      ],
+      "packet": "N0CALL>APRS:TheNet X-1J4  (BFLD)!4903.50N/07201.75Wn",
+      "expect": {
+        "type": "position",
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": "n"
+        }
+      },
+      "notes": "APRS 1.1 errata (A11-ERR-01): the X1J exception was deprecated in 2012; '!' is only a DTI at offset 0. A strict 1.1 decoder treats this as a non-APRS beacon."
+    },
+    {
+      "id": "ch08.pos-ts-zulu",
+      "title": "Position with DHM zulu timestamp, no messaging",
+      "spec": {
+        "document": "APRS101",
+        "page": 32,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.nomsg",
+        "time.dhm.zulu"
+      ],
+      "packet": "N0CALL>APRS:/092345z4903.50N/07201.75W>Test1234",
+      "expect": {
+        "type": "position",
+        "messaging": false,
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "zulu"
+        },
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": ">"
+        },
+        "comment": "Test1234"
+      }
+    },
+    {
+      "id": "ch08.pos-ts-local",
+      "title": "Position with DHM local timestamp, messaging",
+      "spec": {
+        "document": "APRS101",
+        "page": 32,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "time.dhm.local"
+      ],
+      "packet": "N0CALL>APRS:@092345/4903.50N/07201.75W>Test1234",
+      "expect": {
+        "type": "position",
+        "messaging": true,
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "local"
+        },
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "comment": "Test1234"
+      }
+    },
+    {
+      "id": "ch08.pos-phg",
+      "title": "Position with PHG",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.phg"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W#PHG5132",
+      "expect": {
+        "type": "position",
+        "messaging": true,
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": "#"
+        },
+        "phg": {
+          "powerWatts": 25,
+          "heightFeet": 20,
+          "gainDb": 3,
+          "directivity": 90,
+          "rangeMiles": 7.9
+        }
+      }
+    },
+    {
+      "id": "ch08.pos-ts-csespd",
+      "title": "Position with timestamp and course/speed",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "ext.csespd"
+      ],
+      "packet": "N0CALL>APRS:@092345/4903.50N/07201.75W>088/036",
+      "expect": {
+        "type": "position",
+        "messaging": true,
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "course": 88,
+        "speed": 36
+      }
+    },
+    {
+      "id": "ch08.pos-ts-hms-phg",
+      "title": "Position with HMS timestamp and PHG",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "time.hms",
+        "ext.phg"
+      ],
+      "packet": "N0CALL>APRS:@234517h4903.50N/07201.75W>PHG5132",
+      "expect": {
+        "type": "position",
+        "timestamp": {
+          "format": "HMS",
+          "hour": 23,
+          "minute": 45,
+          "second": 17
+        },
+        "phg": {
+          "powerWatts": 25,
+          "heightFeet": 20,
+          "gainDb": 3,
+          "directivity": 90,
+          "rangeMiles": 7.9
+        }
+      }
+    },
+    {
+      "id": "ch08.pos-ts-rng",
+      "title": "Position with radio range",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "ext.rng"
+      ],
+      "packet": "N0CALL>APRS:@092345z4903.50N/07201.75W>RNG0050",
+      "expect": {
+        "type": "position",
+        "rangeMiles": 50
+      }
+    },
+    {
+      "id": "ch08.pos-ts-dfs",
+      "title": "Position with DF signal strength",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Position Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.nomsg",
+        "time.hms",
+        "ext.dfs"
+      ],
+      "packet": "N0CALL>APRS:/234517h4903.50N/07201.75W>DFS2360",
+      "expect": {
+        "type": "position",
+        "messaging": false,
+        "dfs": {
+          "strength": 2,
+          "heightFeet": 80,
+          "gainDb": 6,
+          "directivity": null
+        }
+      }
+    },
+    {
+      "id": "ch08.grid-beacon-6",
+      "title": "Maidenhead locator beacon, 6 characters, comment",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Maidenhead Locator Beacon"
+      },
+      "status": "normative",
+      "features": [
+        "grid.beacon"
+      ],
+      "packet": "N0CALL>APRS:[IO91SX] 35 miles NNW of London",
+      "expect": {
+        "type": "grid",
+        "grid": "IO91SX",
+        "comment": " 35 miles NNW of London"
+      },
+      "notes": "Obsolete format. Comment is the raw text after ']' (leading space kept)."
+    },
+    {
+      "id": "ch08.grid-beacon-4",
+      "title": "Maidenhead locator beacon, 4 characters",
+      "spec": {
+        "document": "APRS101",
+        "page": 33,
+        "section": "Maidenhead Locator Beacon"
+      },
+      "status": "normative",
+      "features": [
+        "grid.beacon"
+      ],
+      "packet": "N0CALL>APRS:[IO91]",
+      "expect": {
+        "type": "grid",
+        "grid": "IO91"
+      }
+    },
+    {
+      "id": "ch08.nmea-gga",
+      "title": "Raw NMEA GGA sentence",
+      "spec": {
+        "document": "APRS101",
+        "page": 34,
+        "section": "Raw NMEA Position Report"
+      },
+      "status": "normative",
+      "features": [
+        "nmea.gga"
+      ],
+      "packet": "N0CALL>APRS:$GPGGA,102705,5157.9762,N,00029.3256,W,1,04,2.0,75.7,M,47.6,M,,*62",
+      "expect": {
+        "type": "nmea",
+        "sentence": "GGA",
+        "latitude": 51.96627,
+        "longitude": -0.48876,
+        "altitudeMeters": 75.7,
+        "checksumValid": true
+      }
+    },
+    {
+      "id": "ch08.nmea-gll",
+      "title": "Raw NMEA GLL sentence",
+      "spec": {
+        "document": "APRS101",
+        "page": 34,
+        "section": "Raw NMEA Position Report"
+      },
+      "status": "normative",
+      "features": [
+        "nmea.gll"
+      ],
+      "packet": "N0CALL>APRS:$GPGLL,2554.459,N,08020.187,W,154027.281,A",
+      "expect": {
+        "type": "nmea",
+        "sentence": "GLL",
+        "latitude": 25.90765,
+        "longitude": -80.33645
+      }
+    },
+    {
+      "id": "ch08.nmea-rmc",
+      "title": "Raw NMEA RMC sentence",
+      "spec": {
+        "document": "APRS101",
+        "page": 34,
+        "section": "Raw NMEA Position Report"
+      },
+      "status": "normative",
+      "features": [
+        "nmea.rmc"
+      ],
+      "packet": "N0CALL>APRS:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "sentence": "RMC",
+        "latitude": 33.823837,
+        "longitude": -117.006202,
+        "speed": 43.022,
+        "course": 89.3,
+        "checksumValid": true
+      }
+    },
+    {
+      "id": "ch08.nmea-vtg",
+      "title": "Raw NMEA VTG sentence",
+      "spec": {
+        "document": "APRS101",
+        "page": 34,
+        "section": "Raw NMEA Position Report"
+      },
+      "status": "normative",
+      "features": [
+        "nmea.vtg"
+      ],
+      "packet": "N0CALL>APRS:$GPVTG,318.7,T,,M,35.1,N,65.0,K*69",
+      "expect": {
+        "type": "nmea",
+        "sentence": "VTG",
+        "course": 318.7,
+        "speed": 35.1,
+        "checksumValid": true
+      }
+    },
+    {
+      "id": "ch08.df-moving",
+      "title": "DF report, moving station (course non-zero)",
+      "spec": {
+        "document": "APRS101",
+        "page": 34,
+        "section": "DF Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.df.brgnrq"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W\\088/036/270/729",
+      "expect": {
+        "type": "position",
+        "symbol": {
+          "table": "/",
+          "code": "\\"
+        },
+        "course": 88,
+        "speed": 36,
+        "df": {
+          "bearing": 270,
+          "hits": 7,
+          "rangeMiles": 4,
+          "quality": 9,
+          "fixedStation": false
+        }
+      }
+    },
+    {
+      "id": "ch08.df-fixed",
+      "title": "DF report, fixed station (course 000)",
+      "spec": {
+        "document": "APRS101",
+        "page": 34,
+        "section": "DF Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.df.brgnrq"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W\\000/036/270/729",
+      "expect": {
+        "type": "position",
+        "course": 0,
+        "df": {
+          "bearing": 270,
+          "hits": 7,
+          "rangeMiles": 4,
+          "quality": 9,
+          "fixedStation": true
+        }
+      }
+    },
+    {
+      "id": "ch08.df-ts",
+      "title": "DF report with timestamp",
+      "spec": {
+        "document": "APRS101",
+        "page": 35,
+        "section": "DF Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "ext.df.brgnrq"
+      ],
+      "packet": "N0CALL>APRS:@092345z4903.50N/07201.75W\\088/036/270/729",
+      "expect": {
+        "type": "position",
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "zulu"
+        },
+        "df": {
+          "bearing": 270,
+          "quality": 9
+        }
+      }
+    },
+    {
+      "id": "ch08.df-ts-no-csespd",
+      "title": "DF report with timestamp, no course/speed",
+      "spec": {
+        "document": "APRS101",
+        "page": 35,
+        "section": "DF Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.nomsg",
+        "ext.df.brgnrq"
+      ],
+      "packet": "N0CALL>APRS:/092345z4903.50N/07201.75W\\000/000/270/729",
+      "expect": {
+        "type": "position",
+        "messaging": false,
+        "course": 0,
+        "speed": 0,
+        "df": {
+          "bearing": 270,
+          "hits": 7,
+          "rangeMiles": 4,
+          "quality": 9
+        }
+      }
+    }
+  ]
+}

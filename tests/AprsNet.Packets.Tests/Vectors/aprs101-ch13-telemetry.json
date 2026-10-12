@@ -1,0 +1,212 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch13.telemetry",
+      "title": "Telemetry report with numeric sequence",
+      "spec": {
+        "document": "APRS101",
+        "page": 68,
+        "section": "Telemetry Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "tlm.report"
+      ],
+      "packet": "N0CALL>APRS:T#005,199,000,255,073,123,01101001",
+      "expect": {
+        "type": "telemetry",
+        "sequence": "005",
+        "analog": [
+          199,
+          0,
+          255,
+          73,
+          123
+        ],
+        "digital": "01101001"
+      }
+    },
+    {
+      "id": "ch13.telemetry-mic",
+      "title": "Telemetry report with MIC sequence, no comma",
+      "spec": {
+        "document": "APRS101",
+        "page": 68,
+        "section": "Telemetry Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "tlm.report",
+        "tlm.mic"
+      ],
+      "packet": "N0CALL>APRS:T#MIC199,000,255,073,123,01101001",
+      "expect": {
+        "type": "telemetry",
+        "sequence": "MIC",
+        "analog": [
+          199,
+          0,
+          255,
+          73,
+          123
+        ],
+        "digital": "01101001"
+      }
+    },
+    {
+      "id": "ch13.telemetry-mic-comma",
+      "title": "Telemetry report with MIC sequence and comma",
+      "spec": {
+        "document": "APRS101",
+        "page": 68,
+        "section": "Telemetry Report Format"
+      },
+      "status": "derived",
+      "features": [
+        "tlm.report",
+        "tlm.mic"
+      ],
+      "packet": "N0CALL>APRS:T#MIC,199,000,255,073,123,01101001",
+      "expect": {
+        "type": "telemetry",
+        "sequence": "MIC",
+        "analog": [
+          199,
+          0,
+          255,
+          73,
+          123
+        ]
+      }
+    },
+    {
+      "id": "ch13.telemetry-parm",
+      "title": "Telemetry parameter names",
+      "spec": {
+        "document": "APRS101",
+        "page": 69,
+        "section": "Parameter Name Message"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "tlm.parm"
+      ],
+      "packet": "N0QBF-11>APRS::N0QBF-11 :PARM.Battery,Btemp,ATemp,Pres,Alt,Camra,Chut,Sun,10m,ATV",
+      "expect": {
+        "type": "telemetryParameters",
+        "addressee": "N0QBF-11",
+        "names": [
+          "Battery",
+          "Btemp",
+          "ATemp",
+          "Pres",
+          "Alt",
+          "Camra",
+          "Chut",
+          "Sun",
+          "10m",
+          "ATV"
+        ]
+      }
+    },
+    {
+      "id": "ch13.telemetry-unit",
+      "title": "Telemetry units and labels",
+      "spec": {
+        "document": "APRS101",
+        "page": 69,
+        "section": "Unit/Label Message"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "tlm.unit"
+      ],
+      "packet": "N0QBF-11>APRS::N0QBF-11 :UNIT.v/100,deg.F,deg.F,Mbar,Kft,Click,OPEN,on,on,hi",
+      "expect": {
+        "type": "telemetryUnits",
+        "units": [
+          "v/100",
+          "deg.F",
+          "deg.F",
+          "Mbar",
+          "Kft",
+          "Click",
+          "OPEN",
+          "on",
+          "on",
+          "hi"
+        ]
+      }
+    },
+    {
+      "id": "ch13.telemetry-eqns",
+      "title": "Telemetry equation coefficients",
+      "spec": {
+        "document": "APRS101",
+        "page": 70,
+        "section": "Equation Coefficients Message"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "tlm.eqns"
+      ],
+      "packet": "N0QBF-11>APRS::N0QBF-11 :EQNS.0,5.2,0,0,.53,-32,3,4.39,49,-32,3,18,1,2,3",
+      "expect": {
+        "type": "telemetryEquations",
+        "coefficients": [
+          [
+            0,
+            5.2,
+            0
+          ],
+          [
+            0,
+            0.53,
+            -32
+          ],
+          [
+            3,
+            4.39,
+            49
+          ],
+          [
+            -32,
+            3,
+            18
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ]
+      },
+      "notes": "Value = a·v² + b·v + c. With v = 199, channel 1 = 1034.8 (hundredths of a volt)."
+    },
+    {
+      "id": "ch13.telemetry-bits",
+      "title": "Telemetry bit sense and project name",
+      "spec": {
+        "document": "APRS101",
+        "page": 70,
+        "section": "Bit Sense/Project Name Message"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "tlm.bits"
+      ],
+      "packet": "N0QBF-11>APRS::N0QBF-11 :BITS.10110000,N0QBF's Big Balloon",
+      "expect": {
+        "type": "telemetryBits",
+        "bits": "10110000",
+        "project": "N0QBF's Big Balloon"
+      },
+      "notes": "The spec prints a typographic apostrophe; an ASCII ' is used here."
+    }
+  ]
+}

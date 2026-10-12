@@ -1,0 +1,210 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch14.message",
+      "title": "Message without identifier",
+      "spec": {
+        "document": "APRS101",
+        "page": 71,
+        "section": "Messages"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "msg.plain"
+      ],
+      "packet": "N0CALL>APRS::WU2Z     :Testing",
+      "expect": {
+        "type": "message",
+        "addressee": "WU2Z",
+        "text": "Testing",
+        "messageId": null
+      }
+    },
+    {
+      "id": "ch14.message-id",
+      "title": "Message with identifier",
+      "spec": {
+        "document": "APRS101",
+        "page": 71,
+        "section": "Messages"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "msg.id"
+      ],
+      "packet": "N0CALL>APRS::WU2Z     :Testing{003",
+      "expect": {
+        "type": "message",
+        "addressee": "WU2Z",
+        "text": "Testing",
+        "messageId": "003"
+      }
+    },
+    {
+      "id": "ch14.message-email",
+      "title": "E-mail style message",
+      "spec": {
+        "document": "APRS101",
+        "page": 71,
+        "section": "Messages"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "msg.email"
+      ],
+      "packet": "N0CALL>APRS::EMAIL    :msproul@ap.org Test email",
+      "expect": {
+        "type": "message",
+        "addressee": "EMAIL",
+        "text": "msproul@ap.org Test email"
+      }
+    },
+    {
+      "id": "ch14.ack",
+      "title": "Message acknowledgement",
+      "spec": {
+        "document": "APRS101",
+        "page": 72,
+        "section": "Message Acknowledgement"
+      },
+      "status": "normative",
+      "features": [
+        "msg.ack"
+      ],
+      "packet": "N0CALL>APRS::KB2ICI-14:ack003",
+      "expect": {
+        "type": "ack",
+        "addressee": "KB2ICI-14",
+        "messageId": "003"
+      }
+    },
+    {
+      "id": "ch14.rej",
+      "title": "Message rejection",
+      "spec": {
+        "document": "APRS101",
+        "page": 72,
+        "section": "Message Rejection"
+      },
+      "status": "normative",
+      "features": [
+        "msg.rej"
+      ],
+      "packet": "N0CALL>APRS::KB2ICI-14:rej003",
+      "expect": {
+        "type": "rej",
+        "addressee": "KB2ICI-14",
+        "messageId": "003"
+      }
+    },
+    {
+      "id": "ch14.bulletin",
+      "title": "General bulletin",
+      "spec": {
+        "document": "APRS101",
+        "page": 73,
+        "section": "General Bulletins"
+      },
+      "status": "normative",
+      "features": [
+        "bulletin"
+      ],
+      "packet": "N0CALL>APRS::BLN3     :Snow expected in Tampa RSN",
+      "expect": {
+        "type": "bulletin",
+        "bulletinId": "3",
+        "text": "Snow expected in Tampa RSN"
+      }
+    },
+    {
+      "id": "ch14.announcement",
+      "title": "Announcement",
+      "spec": {
+        "document": "APRS101",
+        "page": 73,
+        "section": "Announcements"
+      },
+      "status": "normative",
+      "features": [
+        "announcement"
+      ],
+      "packet": "N0CALL>APRS::BLNQ     :Mt St Helen digi will be QRT this weekend",
+      "expect": {
+        "type": "announcement",
+        "bulletinId": "Q",
+        "text": "Mt St Helen digi will be QRT this weekend"
+      }
+    },
+    {
+      "id": "ch14.group-bulletin",
+      "title": "Group bulletin",
+      "spec": {
+        "document": "APRS101",
+        "page": 74,
+        "section": "Group Bulletins"
+      },
+      "status": "normative",
+      "features": [
+        "bulletin.group"
+      ],
+      "packet": "N0CALL>APRS::BLN4WX   :Stand by your snowplows",
+      "expect": {
+        "type": "groupBulletin",
+        "bulletinId": "4",
+        "group": "WX",
+        "text": "Stand by your snowplows"
+      }
+    },
+    {
+      "id": "ch14.nws",
+      "title": "NWS bulletin (reference id is not acked)",
+      "spec": {
+        "document": "APRS101",
+        "page": 74,
+        "section": "National Weather Service Bulletins"
+      },
+      "status": "normative",
+      "features": [
+        "nws"
+      ],
+      "packet": "N0CALL>APRS::NWS-WARN :092010z,THUNDER_STORM,AR_ASHLEY,{S9JbA",
+      "expect": {
+        "type": "nwsBulletin",
+        "addressee": "NWS-WARN",
+        "text": "092010z,THUNDER_STORM,AR_ASHLEY,",
+        "messageId": "S9JbA",
+        "ackRequired": false
+      }
+    },
+    {
+      "id": "ch14.nts",
+      "title": "NTS radiogram text line",
+      "spec": {
+        "document": "APRS101",
+        "page": 75,
+        "section": "NTS Radiograms"
+      },
+      "status": "derived",
+      "features": [
+        "msg",
+        "msg.id",
+        "nts"
+      ],
+      "packet": "N0CALL>APRS::G3NRW    :N1\\Please call home{002",
+      "expect": {
+        "type": "message",
+        "addressee": "G3NRW",
+        "text": "N1\\Please call home",
+        "messageId": "002",
+        "nts": {
+          "field": "N1",
+          "value": "Please call home"
+        }
+      }
+    }
+  ]
+}

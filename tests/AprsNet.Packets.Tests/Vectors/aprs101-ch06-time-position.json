@@ -1,0 +1,118 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch06.ambiguity-1",
+      "title": "Position ambiguity level 1 applied to longitude too",
+      "spec": {
+        "document": "APRS101",
+        "page": 24,
+        "section": "Position Ambiguity"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.ambiguity"
+      ],
+      "packet": "N0CALL>APRS:!4903.5 N/07201.75W-",
+      "expect": {
+        "type": "position",
+        "latitude": 49.058333,
+        "longitude": -72.028333,
+        "ambiguity": 1
+      },
+      "notes": "Expected coordinates truncate the ambiguous digits (south-east corner of the box for N/W). Implementations that report the box centre must document it and adjust these values."
+    },
+    {
+      "id": "ch06.ambiguity-2",
+      "title": "Position ambiguity level 2 applied to longitude too",
+      "spec": {
+        "document": "APRS101",
+        "page": 24,
+        "section": "Position Ambiguity"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.ambiguity"
+      ],
+      "packet": "N0CALL>APRS:!4903.  N/07201.75W-",
+      "expect": {
+        "type": "position",
+        "latitude": 49.05,
+        "longitude": -72.016667,
+        "ambiguity": 2
+      },
+      "notes": "Expected coordinates truncate the ambiguous digits (south-east corner of the box for N/W). Implementations that report the box centre must document it and adjust these values."
+    },
+    {
+      "id": "ch06.ambiguity-3",
+      "title": "Position ambiguity level 3 applied to longitude too",
+      "spec": {
+        "document": "APRS101",
+        "page": 24,
+        "section": "Position Ambiguity"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.ambiguity"
+      ],
+      "packet": "N0CALL>APRS:!490 .  N/07201.75W-",
+      "expect": {
+        "type": "position",
+        "latitude": 49.0,
+        "longitude": -72.0,
+        "ambiguity": 3
+      },
+      "notes": "Expected coordinates truncate the ambiguous digits (south-east corner of the box for N/W). Implementations that report the box centre must document it and adjust these values."
+    },
+    {
+      "id": "ch06.ambiguity-4",
+      "title": "Position ambiguity level 4 applied to longitude too",
+      "spec": {
+        "document": "APRS101",
+        "page": 24,
+        "section": "Position Ambiguity"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.ambiguity"
+      ],
+      "packet": "N0CALL>APRS:!49  .  N/07201.75W-",
+      "expect": {
+        "type": "position",
+        "latitude": 49.0,
+        "longitude": -72.0,
+        "ambiguity": 4
+      },
+      "notes": "Expected coordinates truncate the ambiguous digits (south-east corner of the box for N/W). Implementations that report the box centre must document it and adjust these values."
+    },
+    {
+      "id": "ch06.null-position",
+      "title": "Default null position with \\. symbol",
+      "spec": {
+        "document": "APRS101",
+        "page": 25,
+        "section": "Default Null Position"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "pos.null"
+      ],
+      "packet": "N0CALL>APRS:!0000.00N\\00000.00W.",
+      "expect": {
+        "type": "position",
+        "latitude": 0.0,
+        "longitude": 0.0,
+        "symbol": {
+          "table": "\\",
+          "code": "."
+        },
+        "positionUnknown": true
+      }
+    }
+  ]
+}

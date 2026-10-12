@@ -1,0 +1,78 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch17.thirdparty-tnc2",
+      "title": "Third-party message, TNC-2 header",
+      "spec": {
+        "document": "APRS101",
+        "page": 86,
+        "section": "An Example of Sending a Message through the Internet"
+      },
+      "status": "normative",
+      "features": [
+        "thirdparty",
+        "thirdparty.tnc2"
+      ],
+      "packet": "G9RXG>APRS:}WB4APR-14>APRS,RELAY,TCPIP,G9RXG*::G3NRW    :Hi Ian{001",
+      "expect": {
+        "type": "thirdParty",
+        "header": {
+          "source": "WB4APR-14",
+          "destination": "APRS",
+          "path": [
+            "RELAY",
+            "TCPIP",
+            "G9RXG*"
+          ]
+        },
+        "network": "TCPIP",
+        "gateway": "G9RXG",
+        "inner": {
+          "type": "message",
+          "source": "WB4APR-14",
+          "addressee": "G3NRW",
+          "text": "Hi Ian",
+          "messageId": "001"
+        }
+      }
+    },
+    {
+      "id": "ch17.thirdparty-aea",
+      "title": "Third-party message, AEA header",
+      "spec": {
+        "document": "APRS101",
+        "page": 85,
+        "section": "Third-Party Header"
+      },
+      "status": "normative",
+      "features": [
+        "thirdparty",
+        "thirdparty.aea"
+      ],
+      "packet": "G9RXG>APRS:}WB4APR-14>RELAY>TCPIP>G9RXG*>APRS::G3NRW    :Hi Ian{001",
+      "expect": {
+        "type": "thirdParty",
+        "header": {
+          "source": "WB4APR-14",
+          "destination": "APRS",
+          "path": [
+            "RELAY",
+            "TCPIP",
+            "G9RXG*"
+          ]
+        },
+        "network": "TCPIP",
+        "gateway": "G9RXG",
+        "inner": {
+          "type": "message",
+          "source": "WB4APR-14",
+          "addressee": "G3NRW",
+          "text": "Hi Ian",
+          "messageId": "001"
+        }
+      },
+      "notes": "AEA format: source>digis>destination. The APRS Working Group recommends TNC-2 format."
+    }
+  ]
+}

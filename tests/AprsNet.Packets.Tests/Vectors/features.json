@@ -1,0 +1,907 @@
+{
+  "features": [
+    {
+      "id": "ext.csespd.unknown",
+      "title": "Course/speed unknown (.../... or spaces)",
+      "page": 27,
+      "target": "info",
+      "match": "(?:^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]|^[;)].*?[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW])[^_](?:\\.{3}| {3})/(?:\\.{3}| {3})"
+    },
+    {
+      "id": "ext.csespd.zero",
+      "title": "Course/speed 000/000",
+      "page": 27,
+      "target": "info",
+      "match": "(?:^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]|^[;)].*?[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW])[^_]000/000"
+    },
+    {
+      "id": "ext.phg.directional",
+      "title": "PHG with a directional antenna (d = 1–8)",
+      "page": 28,
+      "target": "info",
+      "match": "PHG[0-9][0-9:;<=>?@A-Z][0-9][1-8]"
+    },
+    {
+      "id": "dti.unused",
+      "title": "Unused data type identifier (\" ( - \\ ] ^)",
+      "page": 17,
+      "target": "info",
+      "match": "^[\"(\\-\\\\\\]^]"
+    },
+    {
+      "id": "wx.luminosity.low",
+      "title": "Weather luminosity L (0–999 W/m²)",
+      "page": 64,
+      "target": "info",
+      "match": "_.*L[0-9]{3}"
+    },
+    {
+      "id": "wx.luminosity.high",
+      "title": "Weather luminosity l (1000+ W/m²)",
+      "page": 64,
+      "target": "info",
+      "match": "_.*l[0-9]{3}"
+    },
+    {
+      "id": "wx.humidity.100",
+      "title": "Weather humidity h00 (100%)",
+      "page": 64,
+      "target": "info",
+      "match": "_.*h00(?![0-9])"
+    },
+    {
+      "id": "wx.missing.pressure",
+      "title": "Weather pressure missing (b..... or spaces)",
+      "page": 64,
+      "target": "info",
+      "match": "_.*b(?:\\.{5}| {5})"
+    },
+    {
+      "id": "msg.plain",
+      "title": "Plain message: no identifier, not telemetry/ack/rej/query",
+      "page": 71,
+      "target": "info",
+      "match": "^:(?!BLN|NWS)[^:]{9}:(?!ack|rej|\\?|PARM\\.|UNIT\\.|EQNS\\.|BITS\\.)[^{]*$"
+    },
+    {
+      "id": "msg.email",
+      "title": "Message to EMAIL",
+      "page": 71,
+      "target": "info",
+      "match": "^:EMAIL {4}:"
+    },
+    {
+      "id": "msg.heard",
+      "title": "?APRSH response (CALL HEARD: …)",
+      "page": 79,
+      "target": "info",
+      "match": "^:[^:]{9}:[A-Z0-9-]+ HEARD:"
+    },
+    {
+      "id": "msg.trace",
+      "title": "?APRST/PING? response (route trace)",
+      "page": 79,
+      "target": "info",
+      "match": "^:[^:]{9}:[A-Z0-9-]+>[^:]+:$"
+    },
+    {
+      "id": "mice.msg.unknown",
+      "title": "Mic-E with mixed standard and custom bits (unknown message)",
+      "page": 45,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])(?=.{0,2}[P-Z])(?=.{0,2}[A-K])[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.lon.0-9",
+      "title": "Mic-E longitude 0–9° (offset +100, d+28 = v..DEL)",
+      "page": 47,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])[0-9A-LP-Z]{3}[0-9LP-Z][P-Z][0-9LP-Z](?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d][v-\\x7f]"
+    },
+    {
+      "id": "mice.lon.10-99",
+      "title": "Mic-E longitude 10–99° (offset +0)",
+      "page": 47,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])[0-9A-LP-Z]{3}[0-9LP-Z][0-9L][0-9LP-Z](?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.lon.100-109",
+      "title": "Mic-E longitude 100–109° (offset +100, d+28 = l..u)",
+      "page": 47,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])[0-9A-LP-Z]{3}[0-9LP-Z][P-Z][0-9LP-Z](?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d][l-u]"
+    },
+    {
+      "id": "mice.lon.110-179",
+      "title": "Mic-E longitude 110–179° (offset +100, d+28 = & .. k)",
+      "page": 47,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])[0-9A-LP-Z]{3}[0-9LP-Z][P-Z][0-9LP-Z](?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d][&-k]"
+    },
+    {
+      "id": "mice.sp.low",
+      "title": "Mic-E SP+28 byte in the 0x1c–0x2f encoding",
+      "page": 50,
+      "target": "info",
+      "match": "^[`'\\x1c\\x1d].{3}[\\x1c-\\x2f]"
+    },
+    {
+      "id": "mice.sp.high",
+      "title": "Mic-E SP+28 byte in the l–DEL encoding",
+      "page": 50,
+      "target": "info",
+      "match": "^[`'\\x1c\\x1d].{3}[l-\\x7f]"
+    },
+    {
+      "id": "mice.dc.plain",
+      "title": "Mic-E DC+28 byte, course hundreds 0–3",
+      "page": 51,
+      "target": "info",
+      "match": "^[`'\\x1c\\x1d].{4}[\\x1c\\x1d\\x1e\\x1f\\x26\\x27\\x28\\x29\\x30\\x31\\x32\\x33\\x3a\\x3b\\x3c\\x3d\\x44\\x45\\x46\\x47\\x4e\\x4f\\x50\\x51\\x58\\x59\\x5a\\x5b\\x62\\x63\\x64\\x65\\x6c\\x6d\\x6e\\x6f\\x76\\x77\\x78\\x79]"
+    },
+    {
+      "id": "mice.dc.offset4",
+      "title": "Mic-E DC+28 byte, alternate encoding (course hundreds + 4)",
+      "page": 51,
+      "target": "info",
+      "match": "^[`'\\x1c\\x1d].{4}[\\x20\\x21\\x22\\x23\\x2a\\x2b\\x2c\\x2d\\x34\\x35\\x36\\x37\\x3e\\x3f\\x40\\x41\\x48\\x49\\x4a\\x4b\\x52\\x53\\x54\\x55\\x5c\\x5d\\x5e\\x5f\\x66\\x67\\x68\\x69\\x70\\x71\\x72\\x73\\x7a\\x7b\\x7c\\x7d]"
+    },
+    {
+      "id": "comp.southeast",
+      "title": "Compressed position south of the equator and east of Greenwich",
+      "page": 38,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][O-{][!-{]{3}[O-{][!-{]{3}"
+    },
+    {
+      "id": "dest.generic",
+      "title": "Generic APRS destination (BEACON, CQ, QST, ID, WX…)",
+      "page": 13,
+      "target": "dest",
+      "match": "^(?:AIR|ALL|BEACON|CQ|GPS|DF|DGPS|DRILL|DX|ID|JAVA|MAIL|MICE|QST|QTH|RTCM|SKY|SPACE|SPC|SYM|TEL|TEST|TLM|WX|ZIP)[A-Z0-9]{0,4}$"
+    },
+    {
+      "id": "dest.software",
+      "title": "Software version destination (APxxxx)",
+      "page": 14,
+      "target": "dest",
+      "match": "^AP[A-Z0-9]{1,4}$"
+    },
+    {
+      "id": "dest.symbol.gpsxyz",
+      "title": "Symbol in destination: GPSxyz / SPCxyz / SYMxyz",
+      "page": 14,
+      "target": "dest",
+      "match": "^(?:GPS|SPC|SYM)[A-Z0-9][!-~][0-9A-Z]?$"
+    },
+    {
+      "id": "dest.symbol.gpscnn",
+      "title": "Symbol in destination: GPSCnn / GPSEnn",
+      "page": 92,
+      "target": "dest",
+      "match": "^GPS[CE][0-9]{2}$"
+    },
+    {
+      "id": "dest.grid",
+      "title": "Maidenhead locator in destination (obsolete)",
+      "page": 15,
+      "target": "dest",
+      "match": "^[A-R]{2}[0-9]{2}[A-X]{2}$"
+    },
+    {
+      "id": "dest.ssid.path",
+      "title": "Generic digipeater path in destination SSID",
+      "page": 15,
+      "target": "line",
+      "match": "^[^>]+>[^,:]+-(?:[1-9]|1[0-5])[,:]"
+    },
+    {
+      "id": "dest.altnet",
+      "title": "Alternate net (ALTNET) destination",
+      "page": 15,
+      "target": "dest",
+      "match": "^(?!AP|BEACON|CQ|QST|ID|GPS|WX|TEST|ALL|SPC|SYM|TEL|TLM|DX|MAIL|SKY|DF|AIR|ZIP|DGPS|RTCM|DRILL|JAVA|MICE|QTH|SPACE)[A-Z]{4,6}$"
+    },
+    {
+      "id": "src.ssid.symbol",
+      "title": "Source SSID 1–15 with no symbol elsewhere (SSID icon)",
+      "page": 93,
+      "target": "line",
+      "match": "^[A-Z0-9]+-(?:[1-9]|1[0-5])>(?!AP)[^:]*:\\$"
+    },
+    {
+      "id": "dti.pos.nots.nomsg",
+      "title": "Position, no timestamp, no messaging (!)",
+      "page": 32,
+      "target": "info",
+      "match": "^!(?:[0-9 ]{4}\\.[0-9 ]{2}[NS]|[/\\\\A-Za-j][!-{]{8})"
+    },
+    {
+      "id": "dti.pos.nots.msg",
+      "title": "Position, no timestamp, with messaging (=)",
+      "page": 32,
+      "target": "info",
+      "match": "^=(?:[0-9 ]{4}\\.[0-9 ]{2}[NS]|[/\\\\A-Za-j][!-{]{8})"
+    },
+    {
+      "id": "dti.pos.ts.nomsg",
+      "title": "Position with timestamp, no messaging (/)",
+      "page": 32,
+      "target": "info",
+      "match": "^/[0-9]{6}[zh/]"
+    },
+    {
+      "id": "dti.pos.ts.msg",
+      "title": "Position with timestamp, with messaging (@)",
+      "page": 32,
+      "target": "info",
+      "match": "^@[0-9]{6}[zh/]"
+    },
+    {
+      "id": "dti.x1j",
+      "title": "Position DTI '!' not at start (X1J header) — deprecated by APRS 1.1",
+      "page": 18,
+      "target": "info",
+      "match": "^[^!]{1,39}![0-9 ]{4}\\.[0-9 ]{2}[NS]"
+    },
+    {
+      "id": "time.dhm.zulu",
+      "title": "Timestamp DHM zulu (ddhhmmz)",
+      "page": 22,
+      "target": "info",
+      "match": "^(?:[/@>]|;.{9}[*_])[0-9]{6}z"
+    },
+    {
+      "id": "time.dhm.local",
+      "title": "Timestamp DHM local (ddhhmm/)",
+      "page": 22,
+      "target": "info",
+      "match": "^(?:[/@]|;.{9}[*_])[0-9]{6}/"
+    },
+    {
+      "id": "time.hms",
+      "title": "Timestamp HMS (hhmmssh)",
+      "page": 22,
+      "target": "info",
+      "match": "^(?:[/@]|;.{9}[*_])[0-9]{6}h"
+    },
+    {
+      "id": "time.mdhm",
+      "title": "Timestamp MDHM (positionless weather)",
+      "page": 22,
+      "target": "info",
+      "match": "^_[0-9]{8}"
+    },
+    {
+      "id": "pos.uncompressed",
+      "title": "Uncompressed lat/long",
+      "page": 23,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]"
+    },
+    {
+      "id": "pos.ambiguity",
+      "title": "Position ambiguity (spaces in latitude)",
+      "page": 24,
+      "target": "info",
+      "match": "(?:^(?:[!=]|[/@][0-9]{6}[zh/])|^;.{9}[*_][0-9]{6}[zh/]|^\\)[^!_]{3,9}[!_])[0-9]{2}(?:[0-9]{2}\\.[0-9] |[0-9]{2}\\.  |[0-9] \\.  |  \\.  )[NS]"
+    },
+    {
+      "id": "pos.null",
+      "title": "Default null position 0000.00N\\00000.00W.",
+      "page": 25,
+      "target": "info",
+      "match": "0000\\.00N\\\\00000\\.00W\\."
+    },
+    {
+      "id": "pos.altitude",
+      "title": "Altitude in comment (/A=aaaaaa)",
+      "page": 26,
+      "target": "info",
+      "match": "/A=-?[0-9]{5,6}"
+    },
+    {
+      "id": "nmea.gga",
+      "title": "Raw NMEA GGA",
+      "page": 34,
+      "target": "info",
+      "match": "^\\$G[PN]GGA,"
+    },
+    {
+      "id": "nmea.gll",
+      "title": "Raw NMEA GLL",
+      "page": 34,
+      "target": "info",
+      "match": "^\\$G[PN]GLL,"
+    },
+    {
+      "id": "nmea.rmc",
+      "title": "Raw NMEA RMC",
+      "page": 34,
+      "target": "info",
+      "match": "^\\$G[PN]RMC,"
+    },
+    {
+      "id": "nmea.vtg",
+      "title": "Raw NMEA VTG",
+      "page": 34,
+      "target": "info",
+      "match": "^\\$G[PN]VTG,"
+    },
+    {
+      "id": "grid.beacon",
+      "title": "Maidenhead locator beacon [IO91SX] (obsolete)",
+      "page": 33,
+      "target": "info",
+      "match": "^\\[[A-Ra-r]{2}[0-9]{2}(?:[A-Xa-x]{2})?\\]"
+    },
+    {
+      "id": "ext.csespd",
+      "title": "Course/speed data extension",
+      "page": 27,
+      "target": "info",
+      "match": "(?:^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]|^[;)].*?[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW])[^_](?:[0-9]{3}|\\.{3}| {3})/(?:[0-9]{3}|\\.{3}| {3})"
+    },
+    {
+      "id": "ext.phg",
+      "title": "PHG data extension",
+      "page": 28,
+      "target": "info",
+      "match": "PHG[0-9][0-9:;<=>?@A-Z][0-9]{2}"
+    },
+    {
+      "id": "ext.phg.highalt",
+      "title": "PHG height code above 9 (balloons/aircraft)",
+      "page": 28,
+      "target": "info",
+      "match": "PHG[0-9][:;<=>?@A-Z][0-9]{2}"
+    },
+    {
+      "id": "ext.rng",
+      "title": "Pre-calculated radio range RNGrrrr",
+      "page": 29,
+      "target": "info",
+      "match": "RNG[0-9]{4}"
+    },
+    {
+      "id": "ext.dfs",
+      "title": "Omni-DF signal strength DFSshgd",
+      "page": 29,
+      "target": "info",
+      "match": "DFS[0-9]{4}"
+    },
+    {
+      "id": "ext.df.brgnrq",
+      "title": "DF report /BRG/NRQ (symbol /\\)",
+      "page": 34,
+      "target": "info",
+      "match": "/[0-9 ]{5}\\.[0-9 ]{2}[EW]\\\\(?:[0-9]{3}|\\.{3})/(?:[0-9]{3}|\\.{3})/[0-9]{3}/[0-9]{3}"
+    },
+    {
+      "id": "ext.area",
+      "title": "Area object descriptor Tyy/Cxx (symbol \\l)",
+      "page": 60,
+      "target": "info",
+      "match": "\\\\[0-9 ]{5}\\.[0-9 ]{2}[EW]l[0-9]{3}[/1][0-9]{3}"
+    },
+    {
+      "id": "area.corridor",
+      "title": "Area line corridor width {nnn}",
+      "page": 61,
+      "target": "info",
+      "match": "l[0-9]{3}[/1][0-9]{3}\\{[0-9]+\\}"
+    },
+    {
+      "id": "pos.compressed",
+      "title": "Compressed lat/long",
+      "page": 37,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][!-{]{8}"
+    },
+    {
+      "id": "comp.csespd",
+      "title": "Compressed course/speed (c = ! .. z)",
+      "page": 38,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][!-{]{8}.[!-z][!-{][!-{]"
+    },
+    {
+      "id": "comp.range",
+      "title": "Compressed radio range (c = {)",
+      "page": 39,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][!-{]{8}.\\{[!-{][!-{]"
+    },
+    {
+      "id": "comp.nocs",
+      "title": "Compressed, no course/speed/range/altitude (c = space)",
+      "page": 38,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][!-{]{8}. "
+    },
+    {
+      "id": "comp.altitude",
+      "title": "Compressed altitude (T byte NMEA source = GGA)",
+      "page": 40,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][!-{]{8}.[!-{]{2}[1-8Q-X]"
+    },
+    {
+      "id": "comp.overlay.letter",
+      "title": "Compressed position with overlay (a-j or A-Z table id)",
+      "page": 91,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[A-Za-j][!-{]{8}"
+    },
+    {
+      "id": "mice",
+      "title": "Mic-E packet",
+      "page": 42,
+      "target": "line",
+      "match": "^[^>]+>[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.current",
+      "title": "Mic-E current GPS data (` DTI)",
+      "page": 46,
+      "target": "line",
+      "match": "^[^>]+>[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:`"
+    },
+    {
+      "id": "mice.old",
+      "title": "Mic-E old GPS data (' DTI, also current for TM-D700)",
+      "page": 46,
+      "target": "line",
+      "match": "^[^>]+>[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:'"
+    },
+    {
+      "id": "mice.rev0",
+      "title": "Mic-E Rev 0 beta DTI (0x1c / 0x1d)",
+      "page": 46,
+      "target": "info",
+      "match": "^[\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.msg.standard",
+      "title": "Mic-E standard message code (M0–M6)",
+      "page": 45,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])(?=[0-9LP-Z]{3})(?=.{0,2}[P-Z])[0-9LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.msg.custom",
+      "title": "Mic-E custom message code (C0–C6)",
+      "page": 45,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])(?=[0-9A-L]{3})(?=.{0,2}[A-K])[0-9A-L]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.msg.emergency",
+      "title": "Mic-E emergency (message bits 000)",
+      "page": 45,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])[0-9L]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.ambiguity",
+      "title": "Mic-E position ambiguity (K/L/Z in destination)",
+      "page": 53,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])(?=[0-9A-Z]{0,5}[KLZ])[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.lon.offset100",
+      "title": "Mic-E longitude offset +100 (destination byte 5 = P–Z)",
+      "page": 43,
+      "target": "line",
+      "match": "^[^>]+>(?=[0-9A-LP-Z]{3}[0-9LP-Z]{3}(?:-[0-9]{1,2})?[,:])[0-9A-LP-Z]{3}[0-9LP-Z][P-Z][0-9LP-Z](?:-[0-9]{1,2})?(?:,[^:]*)?:[`'\\x1c\\x1d]"
+    },
+    {
+      "id": "mice.status.d7",
+      "title": "Mic-E status with TH-D7 type code (>)",
+      "page": 55,
+      "target": "info",
+      "match": "^[`'].{8}>"
+    },
+    {
+      "id": "mice.status.d700",
+      "title": "Mic-E status with TM-D700 type code (])",
+      "page": 55,
+      "target": "info",
+      "match": "^[`'].{8}\\]"
+    },
+    {
+      "id": "mice.altitude",
+      "title": "Mic-E altitude xxx} in status text",
+      "page": 55,
+      "target": "info",
+      "match": "^[`'].{8}[>\\]`' ]?[!-{]{3}\\}"
+    },
+    {
+      "id": "mice.grid",
+      "title": "Mic-E Maidenhead locator in status text",
+      "page": 55,
+      "target": "info",
+      "match": "^[`'].{8}[>\\]]?[A-R]{2}[0-9]{2}(?:[A-X]{2})?/G"
+    },
+    {
+      "id": "mice.telemetry.legacy",
+      "title": "Mic-E telemetry ('/` + hex) — superseded by type codes",
+      "page": 54,
+      "target": "info",
+      "match": "^[`'].{8}(?:`[0-9A-F]{4}|'[0-9A-F]{10})$"
+    },
+    {
+      "id": "mice.truncated",
+      "title": "Mic-E information field shorter than 9 bytes",
+      "page": 47,
+      "target": "info",
+      "match": "^[`'].{0,7}$"
+    },
+    {
+      "id": "object.live",
+      "title": "Object, live (*)",
+      "page": 58,
+      "target": "info",
+      "match": "^;.{9}\\*"
+    },
+    {
+      "id": "object.killed",
+      "title": "Object, killed (_)",
+      "page": 58,
+      "target": "info",
+      "match": "^;.{9}_"
+    },
+    {
+      "id": "object.compressed",
+      "title": "Object with compressed position",
+      "page": 58,
+      "target": "info",
+      "match": "^;.{9}[*_][0-9]{6}[zh/][/\\\\A-Za-j][!-{]{8}"
+    },
+    {
+      "id": "item.live",
+      "title": "Item, live (!)",
+      "page": 59,
+      "target": "info",
+      "match": "^\\)[^!_]{3,9}!"
+    },
+    {
+      "id": "item.killed",
+      "title": "Item, killed (_)",
+      "page": 59,
+      "target": "info",
+      "match": "^\\)[^!_]{3,9}_"
+    },
+    {
+      "id": "item.compressed",
+      "title": "Item with compressed position",
+      "page": 59,
+      "target": "info",
+      "match": "^\\)[^!_]{3,9}[!_][/\\\\A-Za-j][!-{]{8}"
+    },
+    {
+      "id": "signpost",
+      "title": "Signpost \\m with {xxx} overlay",
+      "page": 61,
+      "target": "info",
+      "match": "\\\\[0-9 ]{5}\\.[0-9 ]{2}[EW]m.*\\{[^}]{1,3}\\}"
+    },
+    {
+      "id": "wx.raw.ultimeter",
+      "title": "Raw Ultimeter 2000 weather (!! or $ULTW)",
+      "page": 62,
+      "target": "info",
+      "match": "^(?:!!|\\$ULTW)"
+    },
+    {
+      "id": "wx.raw.peet",
+      "title": "Raw Peet Bros U-II weather (# or *)",
+      "page": 62,
+      "target": "info",
+      "match": "^[#*][0-9A-F]{10,}"
+    },
+    {
+      "id": "wx.positionless",
+      "title": "Positionless weather report (_MDHM)",
+      "page": 63,
+      "target": "info",
+      "match": "^_[0-9]{8}c"
+    },
+    {
+      "id": "wx.complete",
+      "title": "Complete weather report (position + _ symbol)",
+      "page": 65,
+      "target": "info",
+      "match": "(?:^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]|^(?:[!=]|[/@][0-9]{6}[zh/])[/\\\\A-Za-j][!-{]{8}|^;.{9}[*_][0-9]{6}[zh/](?:[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]|[/\\\\A-Za-j][!-{]{8}))_"
+    },
+    {
+      "id": "wx.temp.negative",
+      "title": "Weather temperature below zero (t-nn)",
+      "page": 64,
+      "target": "info",
+      "match": "t-[0-9]{2}"
+    },
+    {
+      "id": "wx.missing",
+      "title": "Weather field with no data (dots or spaces)",
+      "page": 64,
+      "target": "info",
+      "match": "(?:[cstgrpPhb]\\.{2,}|_\\.{3}/\\.{3})"
+    },
+    {
+      "id": "wx.rain",
+      "title": "Weather rain fields r/p/P",
+      "page": 64,
+      "target": "info",
+      "match": "[rpP][0-9]{3}"
+    },
+    {
+      "id": "wx.humidity",
+      "title": "Weather humidity hnn",
+      "page": 64,
+      "target": "info",
+      "match": "_.*h[0-9]{2}"
+    },
+    {
+      "id": "wx.pressure",
+      "title": "Weather barometric pressure bnnnnn",
+      "page": 64,
+      "target": "info",
+      "match": "_.*b[0-9]{5}"
+    },
+    {
+      "id": "wx.luminosity",
+      "title": "Weather luminosity L/l",
+      "page": 64,
+      "target": "info",
+      "match": "_.*[Ll][0-9]{3}"
+    },
+    {
+      "id": "wx.object",
+      "title": "Weather data in an object",
+      "page": 65,
+      "target": "info",
+      "match": "^;.{9}\\*[0-9]{6}[zh/](?:[0-9 ]{4}\\.[0-9 ]{2}[NS][/\\\\0-9A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]|[/\\\\A-Za-j][!-{]{8})_"
+    },
+    {
+      "id": "storm",
+      "title": "Storm data /TS|HC|TD/www^GGG/pppp>RRR&rrr%ggg",
+      "page": 67,
+      "target": "info",
+      "match": "/(?:TS|HC|TD)/[0-9]{3}\\^[0-9]{3}/[0-9]{4}>[0-9]{3}&[0-9]{3}"
+    },
+    {
+      "id": "tlm.report",
+      "title": "Telemetry report T#sss,…",
+      "page": 68,
+      "target": "info",
+      "match": "^T#(?:[0-9]{3}|MIC),?[0-9]{1,3}(?:,[0-9.]*){4}"
+    },
+    {
+      "id": "tlm.mic",
+      "title": "Telemetry report with MIC sequence",
+      "page": 68,
+      "target": "info",
+      "match": "^T#MIC"
+    },
+    {
+      "id": "tlm.parm",
+      "title": "Telemetry PARM. message",
+      "page": 69,
+      "target": "info",
+      "match": "^:.{9}:PARM\\."
+    },
+    {
+      "id": "tlm.unit",
+      "title": "Telemetry UNIT. message",
+      "page": 69,
+      "target": "info",
+      "match": "^:.{9}:UNIT\\."
+    },
+    {
+      "id": "tlm.eqns",
+      "title": "Telemetry EQNS. message",
+      "page": 70,
+      "target": "info",
+      "match": "^:.{9}:EQNS\\."
+    },
+    {
+      "id": "tlm.bits",
+      "title": "Telemetry BITS. message",
+      "page": 70,
+      "target": "info",
+      "match": "^:.{9}:BITS\\."
+    },
+    {
+      "id": "msg",
+      "title": "Message (addressee + text)",
+      "page": 71,
+      "target": "info",
+      "match": "^:(?!BLN|NWS)[^:]{9}:(?!ack|rej|\\?)"
+    },
+    {
+      "id": "msg.id",
+      "title": "Message with message identifier {xxxxx",
+      "page": 71,
+      "target": "info",
+      "match": "^:(?!BLN|NWS)[^:]{9}:(?!ack|rej).*\\{[A-Za-z0-9]{1,5}$"
+    },
+    {
+      "id": "msg.ack",
+      "title": "Message acknowledgement",
+      "page": 72,
+      "target": "info",
+      "match": "^:[^:]{9}:ack[A-Za-z0-9}]{1,7}"
+    },
+    {
+      "id": "msg.rej",
+      "title": "Message rejection",
+      "page": 72,
+      "target": "info",
+      "match": "^:[^:]{9}:rej[A-Za-z0-9}]{1,7}"
+    },
+    {
+      "id": "bulletin",
+      "title": "General bulletin BLNn",
+      "page": 73,
+      "target": "info",
+      "match": "^:BLN[0-9] {5}:"
+    },
+    {
+      "id": "announcement",
+      "title": "Announcement BLNx",
+      "page": 73,
+      "target": "info",
+      "match": "^:BLN[A-Z] {5}:"
+    },
+    {
+      "id": "bulletin.group",
+      "title": "Group bulletin BLNnNAME",
+      "page": 74,
+      "target": "info",
+      "match": "^:BLN[0-9](?! {5})[A-Za-z0-9 ]{5}:"
+    },
+    {
+      "id": "nws",
+      "title": "NWS bulletin NWS-xxxxx",
+      "page": 74,
+      "target": "info",
+      "match": "^:NWS[-_][A-Z ]{5}:"
+    },
+    {
+      "id": "nts",
+      "title": "NTS radiogram line (Nx\\)",
+      "page": 75,
+      "target": "info",
+      "match": "^:[^:]{9}:N[#APSR1-6]\\\\"
+    },
+    {
+      "id": "capabilities",
+      "title": "Station capabilities (<)",
+      "page": 77,
+      "target": "info",
+      "match": "^<"
+    },
+    {
+      "id": "query.general",
+      "title": "General query ?TYPE?",
+      "page": 78,
+      "target": "info",
+      "match": "^\\?[A-Z]+\\?"
+    },
+    {
+      "id": "query.footprint",
+      "title": "General query with target footprint",
+      "page": 78,
+      "target": "info",
+      "match": "^\\?[A-Z]+\\? ?-?[0-9.]+,-?[0-9.]+,[0-9]{4}"
+    },
+    {
+      "id": "query.directed",
+      "title": "Directed station query (message ?APRSx)",
+      "page": 79,
+      "target": "info",
+      "match": "^:[^:]{9}:\\?(?:APRS[DHMOPST]|PING\\?)"
+    },
+    {
+      "id": "status",
+      "title": "Status report (>)",
+      "page": 80,
+      "target": "info",
+      "match": "^>"
+    },
+    {
+      "id": "status.timestamp",
+      "title": "Status with DHM zulu timestamp",
+      "page": 80,
+      "target": "info",
+      "match": "^>[0-9]{6}z"
+    },
+    {
+      "id": "status.grid",
+      "title": "Status with Maidenhead locator and symbol",
+      "page": 81,
+      "target": "info",
+      "match": "^>[A-Ra-r]{2}[0-9]{2}(?:[A-Xa-x]{2})?[/\\\\A-Z0-9][!-~](?: |$)"
+    },
+    {
+      "id": "status.beam",
+      "title": "Status with beam heading/power ^HP",
+      "page": 81,
+      "target": "info",
+      "match": "^>.*\\^[0-9A-Z][1-9:;<=>?@A-K]$"
+    },
+    {
+      "id": "thirdparty",
+      "title": "Third-party packet (})",
+      "page": 85,
+      "target": "info",
+      "match": "^\\}"
+    },
+    {
+      "id": "thirdparty.tnc2",
+      "title": "Third-party header in TNC-2 format",
+      "page": 85,
+      "target": "info",
+      "match": "^\\}[^>:]+>[^>:,]+(?:,[^>:,]+)*:"
+    },
+    {
+      "id": "thirdparty.aea",
+      "title": "Third-party header in AEA format",
+      "page": 85,
+      "target": "info",
+      "match": "^\\}[^>:,]+(?:>[^>:,]+){2,}:"
+    },
+    {
+      "id": "userdefined",
+      "title": "User-defined data ({UX)",
+      "page": 87,
+      "target": "info",
+      "match": "^\\{[^{]"
+    },
+    {
+      "id": "userdefined.experimental",
+      "title": "Experimental user-defined data ({{)",
+      "page": 87,
+      "target": "info",
+      "match": "^\\{\\{"
+    },
+    {
+      "id": "invalid",
+      "title": "Invalid or test data (,)",
+      "page": 89,
+      "target": "info",
+      "match": "^,"
+    },
+    {
+      "id": "nonaprs",
+      "title": "Non-APRS beacon (no recognised data type)",
+      "page": 89,
+      "target": "info",
+      "match": "^[^!-~]|^[\\\"(\\-\\\\\\]\\^0-9A-SU-Za-z|~]"
+    },
+    {
+      "id": "symbol.overlay.numeric",
+      "title": "Uncompressed position with numeric overlay (0-9)",
+      "page": 91,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][0-9][0-9 ]{5}\\.[0-9 ]{2}[EW]"
+    },
+    {
+      "id": "symbol.overlay.alpha",
+      "title": "Uncompressed position with letter overlay (A-Z)",
+      "page": 91,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])[0-9 ]{4}\\.[0-9 ]{2}[NS][A-Z][0-9 ]{5}\\.[0-9 ]{2}[EW]"
+    },
+    {
+      "id": "symbol.alternate",
+      "title": "Alternate symbol table without overlay (\\)",
+      "page": 91,
+      "target": "info",
+      "match": "^(?:[!=]|[/@][0-9]{6}[zh/])(?:[0-9 ]{4}\\.[0-9 ]{2}[NS]\\\\[0-9 ]{5}\\.[0-9 ]{2}[EW]|\\\\[!-{]{8})"
+    }
+  ]
+}

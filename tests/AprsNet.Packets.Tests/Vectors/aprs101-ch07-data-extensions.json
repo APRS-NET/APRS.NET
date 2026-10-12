@@ -1,0 +1,100 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch07.csespd-unknown-dots",
+      "title": "Course/speed unknown (.../...)",
+      "spec": {
+        "document": "APRS101",
+        "page": 27,
+        "section": "Course and Speed"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.csespd",
+        "ext.csespd.unknown"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W>.../...",
+      "expect": {
+        "type": "position",
+        "course": null,
+        "speed": null
+      }
+    },
+    {
+      "id": "ch07.csespd-unknown-zero",
+      "title": "Course/speed 000/000",
+      "spec": {
+        "document": "APRS101",
+        "page": 27,
+        "section": "Course and Speed"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.csespd",
+        "ext.csespd.zero"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W>000/000",
+      "expect": {
+        "type": "position",
+        "course": 0,
+        "speed": 0
+      },
+      "notes": "The spec allows 000/000 to mean unknown; decoders may report course 0 as 'unknown'. Here the raw values are expected."
+    },
+    {
+      "id": "ch07.phg-height-code-colon",
+      "title": "PHG height code ':' = 10240 ft",
+      "spec": {
+        "document": "APRS101",
+        "page": 28,
+        "section": "Power, Effective Antenna Height/Gain/Directivity"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.phg",
+        "ext.phg.highalt"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W#PHG5:30",
+      "expect": {
+        "type": "position",
+        "phg": {
+          "powerWatts": 25,
+          "heightFeet": 10240,
+          "gainDb": 3,
+          "directivity": null,
+          "rangeMiles": 179.8
+        }
+      }
+    },
+    {
+      "id": "ch07.phg-directional",
+      "title": "PHG directivity code 4 = 180° (south)",
+      "spec": {
+        "document": "APRS101",
+        "page": 28,
+        "section": "Power, Effective Antenna Height/Gain/Directivity"
+      },
+      "status": "derived",
+      "features": [
+        "dti.pos.nots.msg",
+        "ext.phg",
+        "ext.phg.directional"
+      ],
+      "packet": "N0CALL>APRS:=4903.50N/07201.75W#PHG7334",
+      "expect": {
+        "type": "position",
+        "phg": {
+          "powerWatts": 49,
+          "heightFeet": 80,
+          "gainDb": 3,
+          "directivity": 180,
+          "rangeMiles": 18.8
+        }
+      }
+    }
+  ]
+}

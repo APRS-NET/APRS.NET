@@ -1,0 +1,162 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch16.status",
+      "title": "Status without timestamp",
+      "spec": {
+        "document": "APRS101",
+        "page": 80,
+        "section": "Status Reports"
+      },
+      "status": "normative",
+      "features": [
+        "status"
+      ],
+      "packet": "N0CALL>APRS:>Net Control Center",
+      "expect": {
+        "type": "status",
+        "text": "Net Control Center"
+      }
+    },
+    {
+      "id": "ch16.status-timestamp",
+      "title": "Status with DHM zulu timestamp",
+      "spec": {
+        "document": "APRS101",
+        "page": 80,
+        "section": "Status Reports"
+      },
+      "status": "normative",
+      "features": [
+        "status",
+        "status.timestamp"
+      ],
+      "packet": "N0CALL>APRS:>092345zNet Control Center",
+      "expect": {
+        "type": "status",
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "zulu"
+        },
+        "text": "Net Control Center"
+      }
+    },
+    {
+      "id": "ch16.status-grid-6",
+      "title": "Status with 6-character locator and symbol",
+      "spec": {
+        "document": "APRS101",
+        "page": 82,
+        "section": "Status Report with Maidenhead Grid Locator"
+      },
+      "status": "normative",
+      "features": [
+        "status",
+        "status.grid"
+      ],
+      "packet": "N0CALL>APRS:>IO91SX/G",
+      "expect": {
+        "type": "status",
+        "grid": "IO91SX",
+        "symbol": {
+          "table": "/",
+          "code": "G"
+        }
+      }
+    },
+    {
+      "id": "ch16.status-grid-4",
+      "title": "Status with 4-character locator and symbol",
+      "spec": {
+        "document": "APRS101",
+        "page": 82,
+        "section": "Status Report with Maidenhead Grid Locator"
+      },
+      "status": "normative",
+      "features": [
+        "status",
+        "status.grid"
+      ],
+      "packet": "N0CALL>APRS:>IO91/G",
+      "expect": {
+        "type": "status",
+        "grid": "IO91",
+        "symbol": {
+          "table": "/",
+          "code": "G"
+        }
+      }
+    },
+    {
+      "id": "ch16.status-grid-text",
+      "title": "Status with locator, symbol and text",
+      "spec": {
+        "document": "APRS101",
+        "page": 82,
+        "section": "Status Report with Maidenhead Grid Locator"
+      },
+      "status": "normative",
+      "features": [
+        "status",
+        "status.grid"
+      ],
+      "packet": "N0CALL>APRS:>IO91SX/- My house",
+      "expect": {
+        "type": "status",
+        "grid": "IO91SX",
+        "symbol": {
+          "table": "/",
+          "code": "-"
+        },
+        "text": " My house"
+      },
+      "notes": "Text kept raw including the required leading space."
+    },
+    {
+      "id": "ch16.status-grid-beam",
+      "title": "Status with locator and beam heading/ERP ^B7",
+      "spec": {
+        "document": "APRS101",
+        "page": 82,
+        "section": "Status Report with Beam Heading and Effective Radiated Power"
+      },
+      "status": "normative",
+      "features": [
+        "status",
+        "status.grid",
+        "status.beam"
+      ],
+      "packet": "N0CALL>APRS:>IO91SX/- ^B7",
+      "expect": {
+        "type": "status",
+        "grid": "IO91SX",
+        "beamHeading": 110,
+        "erpWatts": 490
+      }
+    },
+    {
+      "id": "ch16.status-grid-lowercase",
+      "title": "Status locator received in lower case",
+      "spec": {
+        "document": "APRS101",
+        "page": 81,
+        "section": "Status Report with Maidenhead Grid Locator"
+      },
+      "status": "derived",
+      "features": [
+        "status",
+        "status.grid"
+      ],
+      "packet": "N0CALL>APRS:>io91sx/G",
+      "expect": {
+        "type": "status",
+        "grid": "IO91SX"
+      },
+      "notes": "Locator letters must be sent upper case but may be received in either case."
+    }
+  ]
+}

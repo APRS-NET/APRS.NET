@@ -1,0 +1,145 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch20.overlay-numeric",
+      "title": "Uncompressed position with numeric overlay 3 on the car",
+      "spec": {
+        "document": "APRS101",
+        "page": 91,
+        "section": "Overlays with Symbols in the AX.25 Information Field"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "symbol.overlay.numeric"
+      ],
+      "packet": "N0CALL>APRS:@092345z4903.50N307201.75W>",
+      "expect": {
+        "type": "position",
+        "symbol": {
+          "table": "\\",
+          "code": ">",
+          "overlay": "3"
+        }
+      }
+    },
+    {
+      "id": "ch20.overlay-letter-compressed",
+      "title": "Compressed position with letter overlay B",
+      "spec": {
+        "document": "APRS101",
+        "page": 91,
+        "section": "Overlays with Symbols in the AX.25 Information Field"
+      },
+      "status": "erratum-corrected",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.overlay.letter"
+      ],
+      "packet": "N0CALL>APRS:=B5L!!<*e7>7P[",
+      "expect": {
+        "type": "position",
+        "symbol": {
+          "table": "\\",
+          "code": ">",
+          "overlay": "B"
+        }
+      },
+      "notes": "The spec prints =BL!!<*e7>7P[, dropping the '5' of the compressed latitude."
+    },
+    {
+      "id": "ch20.overlay-numeric-compressed",
+      "title": "Compressed position with a-j overlay (d = 3)",
+      "spec": {
+        "document": "APRS101",
+        "page": 92,
+        "section": "Overlays with Symbols in the AX.25 Information Field"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "comp.overlay.letter"
+      ],
+      "packet": "N0CALL>APRS:=d5L!!<*e7>7P[",
+      "expect": {
+        "type": "position",
+        "symbol": {
+          "table": "\\",
+          "code": ">",
+          "overlay": "3"
+        }
+      }
+    },
+    {
+      "id": "ch20.alternate-no-overlay",
+      "title": "Alternate table symbol without overlay",
+      "spec": {
+        "document": "APRS101",
+        "page": 92,
+        "section": "Overlays with Symbols in the AX.25 Information Field"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "symbol.alternate"
+      ],
+      "packet": "N0CALL>APRS:@092345z4903.50N\\07201.75W>",
+      "expect": {
+        "type": "position",
+        "symbol": {
+          "table": "\\",
+          "code": ">"
+        }
+      }
+    },
+    {
+      "id": "ch20.precedence-info",
+      "title": "Symbol precedence: information field wins",
+      "spec": {
+        "document": "APRS101",
+        "page": 93,
+        "section": "Symbol Precedence"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "dest.symbol.gpsxyz"
+      ],
+      "packet": "G3NRW-7>GPSMV:!0123.45N/01234.56Wj",
+      "expect": {
+        "type": "position",
+        "symbol": {
+          "table": "/",
+          "code": "j",
+          "source": "information"
+        }
+      }
+    },
+    {
+      "id": "ch20.precedence-destination",
+      "title": "Symbol precedence: destination beats source SSID",
+      "spec": {
+        "document": "APRS101",
+        "page": 93,
+        "section": "Symbol Precedence"
+      },
+      "status": "derived",
+      "features": [
+        "dest.symbol.gpsxyz",
+        "nmea.rmc"
+      ],
+      "packet": "G3NRW-7>GPSMV:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+      "expect": {
+        "type": "nmea",
+        "symbol": {
+          "table": "/",
+          "code": ">",
+          "source": "destination"
+        }
+      }
+    }
+  ]
+}

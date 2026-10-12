@@ -1,0 +1,285 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch11.object-live",
+      "title": "Live object with course/speed",
+      "spec": {
+        "document": "APRS101",
+        "page": 58,
+        "section": "Object Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "object.live",
+        "time.dhm.zulu",
+        "ext.csespd"
+      ],
+      "packet": "N0CALL>APRS:;LEADER   *092345z4903.50N/07201.75W>088/036",
+      "expect": {
+        "type": "object",
+        "name": "LEADER",
+        "alive": true,
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "zulu"
+        },
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": ">"
+        },
+        "course": 88,
+        "speed": 36
+      },
+      "notes": "Object names are 9 characters; trailing pad spaces are not part of the name (APRS 1.1 names-and-spaces)."
+    },
+    {
+      "id": "ch11.object-killed",
+      "title": "Killed object",
+      "spec": {
+        "document": "APRS101",
+        "page": 58,
+        "section": "Object Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "object.killed"
+      ],
+      "packet": "N0CALL>APRS:;LEADER   _092345z4903.50N/07201.75W>088/036",
+      "expect": {
+        "type": "object",
+        "name": "LEADER",
+        "alive": false
+      }
+    },
+    {
+      "id": "ch11.object-compressed",
+      "title": "Object with compressed position",
+      "spec": {
+        "document": "APRS101",
+        "page": 58,
+        "section": "Object Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "object.live",
+        "object.compressed"
+      ],
+      "packet": "N0CALL>APRS:;LEADER   *092345z/5L!!<*e7>7P[",
+      "expect": {
+        "type": "object",
+        "name": "LEADER",
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "course": 88,
+        "speed": 36.2
+      }
+    },
+    {
+      "id": "ch11.item-live",
+      "title": "Live item (name with space)",
+      "spec": {
+        "document": "APRS101",
+        "page": 59,
+        "section": "Item Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "item.live"
+      ],
+      "packet": "N0CALL>APRS:)AID #2!4903.50N/07201.75WA",
+      "expect": {
+        "type": "item",
+        "name": "AID #2",
+        "alive": true,
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": "A"
+        }
+      }
+    },
+    {
+      "id": "ch11.item-ambiguity",
+      "title": "Item with ambiguous position and alternate symbol (DX spot)",
+      "spec": {
+        "document": "APRS101",
+        "page": 59,
+        "section": "Item Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "item.live",
+        "pos.ambiguity"
+      ],
+      "packet": "N0CALL>APRS:)G/WB4APR!53  .  N\\002  .  Wd",
+      "expect": {
+        "type": "item",
+        "name": "G/WB4APR",
+        "latitude": 53.0,
+        "longitude": -2.0,
+        "ambiguity": 4,
+        "symbol": {
+          "table": "\\",
+          "code": "d"
+        }
+      }
+    },
+    {
+      "id": "ch11.item-killed",
+      "title": "Killed item",
+      "spec": {
+        "document": "APRS101",
+        "page": 59,
+        "section": "Item Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "item.killed"
+      ],
+      "packet": "N0CALL>APRS:)AID #2_4903.50N/07201.75WA",
+      "expect": {
+        "type": "item",
+        "name": "AID #2",
+        "alive": false
+      }
+    },
+    {
+      "id": "ch11.item-compressed",
+      "title": "Item with compressed position (gas station \\9)",
+      "spec": {
+        "document": "APRS101",
+        "page": 59,
+        "section": "Item Report Format"
+      },
+      "status": "normative",
+      "features": [
+        "item.live",
+        "item.compressed"
+      ],
+      "packet": "N0CALL>APRS:)MOBIL!\\5L!!<*e79 sT",
+      "expect": {
+        "type": "item",
+        "name": "MOBIL",
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "symbol": {
+          "table": "\\",
+          "code": "9"
+        }
+      }
+    },
+    {
+      "id": "ch11.area-ellipse",
+      "title": "Area object: high-intensity cyan filled ellipse",
+      "spec": {
+        "document": "APRS101",
+        "page": 61,
+        "section": "Area Objects"
+      },
+      "status": "normative",
+      "features": [
+        "object.live",
+        "ext.area"
+      ],
+      "packet": "N0CALL>APRS:;SEARCH   *092345z4903.50N\\07201.75Wl710/310",
+      "expect": {
+        "type": "object",
+        "name": "SEARCH",
+        "symbol": {
+          "table": "\\",
+          "code": "l"
+        },
+        "area": {
+          "type": 7,
+          "color": 3,
+          "yy": 10,
+          "xx": 10
+        }
+      },
+      "notes": "APRS 1.1 areaobjects.txt corrects the size formula (offset = n^2/1500) and the reference corner; only raw yy/xx are asserted."
+    },
+    {
+      "id": "ch11.area-triangle",
+      "title": "Area object: low-intensity violet filled triangle (color 13)",
+      "spec": {
+        "document": "APRS101",
+        "page": 61,
+        "section": "Area Objects"
+      },
+      "status": "normative",
+      "features": [
+        "object.live",
+        "ext.area"
+      ],
+      "packet": "N0CALL>APRS:;SEARCH   *092345z4903.50N\\07201.75Wl8101310",
+      "expect": {
+        "type": "object",
+        "area": {
+          "type": 8,
+          "color": 13,
+          "yy": 10,
+          "xx": 10
+        }
+      }
+    },
+    {
+      "id": "ch11.area-line-corridor",
+      "title": "Area object: line with 100-mile corridor",
+      "spec": {
+        "document": "APRS101",
+        "page": 61,
+        "section": "Area Objects"
+      },
+      "status": "erratum-corrected",
+      "features": [
+        "object.live",
+        "ext.area",
+        "area.corridor"
+      ],
+      "packet": "N0CALL>APRS:;FLIGHTPTH*092345z4903.50N\\07201.75Wl610/310{100}",
+      "expect": {
+        "type": "object",
+        "name": "FLIGHTPTH",
+        "area": {
+          "type": 6,
+          "color": 3,
+          "yy": 10,
+          "xx": 10,
+          "corridorMiles": 100
+        }
+      },
+      "notes": "The spec example omits the object timestamp, which objects require (p.58). Timestamp added."
+    },
+    {
+      "id": "ch11.signpost",
+      "title": "Signpost item with {55}",
+      "spec": {
+        "document": "APRS101",
+        "page": 61,
+        "section": "Signpost Objects/Items"
+      },
+      "status": "normative",
+      "features": [
+        "item.live",
+        "signpost"
+      ],
+      "packet": "N0CALL>APRS:)I91 3N!4903.50N\\07201.75Wm{55}",
+      "expect": {
+        "type": "item",
+        "name": "I91 3N",
+        "symbol": {
+          "table": "\\",
+          "code": "m"
+        },
+        "signpost": "55"
+      }
+    }
+  ]
+}

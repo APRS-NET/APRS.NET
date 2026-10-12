@@ -1,0 +1,46 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch18.user-defined",
+      "title": "User-defined packet {Q1",
+      "spec": {
+        "document": "APRS101",
+        "page": 87,
+        "section": "User-Defined Data Format"
+      },
+      "status": "normative",
+      "features": [
+        "userdefined"
+      ],
+      "packet": "N0CALL>APRS:{Q1qwerty",
+      "expect": {
+        "type": "userDefined",
+        "userId": "Q",
+        "packetType": "1",
+        "data": "qwerty"
+      }
+    },
+    {
+      "id": "ch18.user-defined-experimental",
+      "title": "Experimental user-defined packet {{",
+      "spec": {
+        "document": "APRS101",
+        "page": 87,
+        "section": "User-Defined Data Format"
+      },
+      "status": "normative",
+      "features": [
+        "userdefined.experimental"
+      ],
+      "packet": "N0CALL>APRS:{{zasdfg",
+      "expect": {
+        "type": "userDefined",
+        "userId": "{",
+        "packetType": "z",
+        "data": "asdfg",
+        "experimental": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,306 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch15.capabilities-igate",
+      "title": "IGate capabilities",
+      "spec": {
+        "document": "APRS101",
+        "page": 77,
+        "section": "Station Capabilities"
+      },
+      "status": "normative",
+      "features": [
+        "capabilities"
+      ],
+      "packet": "N0CALL>APRS:<IGATE,MSG_CNT=43,LOC_CNT=14",
+      "expect": {
+        "type": "capabilities",
+        "capabilities": {
+          "IGATE": null,
+          "MSG_CNT": "43",
+          "LOC_CNT": "14"
+        }
+      }
+    },
+    {
+      "id": "ch15.query-aprs",
+      "title": "General ?APRS? query",
+      "spec": {
+        "document": "APRS101",
+        "page": 78,
+        "section": "General Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.general"
+      ],
+      "packet": "N0CALL>APRS:?APRS?",
+      "expect": {
+        "type": "query",
+        "queryType": "APRS"
+      }
+    },
+    {
+      "id": "ch15.query-footprint",
+      "title": "General query with target footprint",
+      "spec": {
+        "document": "APRS101",
+        "page": 78,
+        "section": "General Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.general",
+        "query.footprint"
+      ],
+      "packet": "N0CALL>APRS:?APRS? 34.02,-117.15,0200",
+      "expect": {
+        "type": "query",
+        "queryType": "APRS",
+        "footprint": {
+          "latitude": 34.02,
+          "longitude": -117.15,
+          "radiusMiles": 200
+        }
+      }
+    },
+    {
+      "id": "ch15.query-igate",
+      "title": "General ?IGATE? query",
+      "spec": {
+        "document": "APRS101",
+        "page": 78,
+        "section": "General Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.general"
+      ],
+      "packet": "N0CALL>APRS:?IGATE?",
+      "expect": {
+        "type": "query",
+        "queryType": "IGATE"
+      }
+    },
+    {
+      "id": "ch15.query-wx",
+      "title": "General ?WX? query",
+      "spec": {
+        "document": "APRS101",
+        "page": 78,
+        "section": "General Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.general"
+      ],
+      "packet": "N0CALL>APRS:?WX?",
+      "expect": {
+        "type": "query",
+        "queryType": "WX"
+      }
+    },
+    {
+      "id": "ch15.directed-aprsd",
+      "title": "Directed query ?APRSD",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRSD",
+      "expect": {
+        "type": "query",
+        "queryType": "APRSD",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-aprsm",
+      "title": "Directed query ?APRSM",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRSM",
+      "expect": {
+        "type": "query",
+        "queryType": "APRSM",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-aprso",
+      "title": "Directed query ?APRSO",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRSO",
+      "expect": {
+        "type": "query",
+        "queryType": "APRSO",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-aprsp",
+      "title": "Directed query ?APRSP",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRSP",
+      "expect": {
+        "type": "query",
+        "queryType": "APRSP",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-aprss",
+      "title": "Directed query ?APRSS",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRSS",
+      "expect": {
+        "type": "query",
+        "queryType": "APRSS",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-aprst",
+      "title": "Directed query ?APRST",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRST",
+      "expect": {
+        "type": "query",
+        "queryType": "APRST",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-ping",
+      "title": "Directed query ?PING?",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?PING?",
+      "expect": {
+        "type": "query",
+        "queryType": "PING",
+        "addressee": "KH2Z",
+        "directed": true
+      }
+    },
+    {
+      "id": "ch15.directed-aprsh",
+      "title": "Directed query ?APRSH with heard callsign",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "query.directed"
+      ],
+      "packet": "N0CALL>APRS::KH2Z     :?APRSH N0QBF    ",
+      "expect": {
+        "type": "query",
+        "queryType": "APRSH",
+        "addressee": "KH2Z",
+        "directed": true,
+        "callsign": "N0QBF"
+      }
+    },
+    {
+      "id": "ch15.response-heard",
+      "title": "Response to ?APRSH (heard statistics)",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "msg.heard"
+      ],
+      "packet": "N0CALL>APRS::N8UR     :N0QBF HEARD: 1 3 2 . . 4 5 6",
+      "expect": {
+        "type": "message",
+        "addressee": "N8UR",
+        "text": "N0QBF HEARD: 1 3 2 . . 4 5 6"
+      }
+    },
+    {
+      "id": "ch15.response-trace",
+      "title": "Response to ?APRST (route trace)",
+      "spec": {
+        "document": "APRS101",
+        "page": 79,
+        "section": "Directed Station Queries"
+      },
+      "status": "normative",
+      "features": [
+        "msg",
+        "msg.trace"
+      ],
+      "packet": "N0CALL>APRS::N8UR     :KH2Z>APRS,DIGI1,WIDE*:",
+      "expect": {
+        "type": "message",
+        "addressee": "N8UR",
+        "text": "KH2Z>APRS,DIGI1,WIDE*:"
+      }
+    }
+  ]
+}

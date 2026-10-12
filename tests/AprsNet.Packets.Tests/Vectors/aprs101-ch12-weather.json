@@ -1,0 +1,475 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch12.raw-ultimeter-bang",
+      "title": "Raw weather (Ultimeter 2000)",
+      "spec": {
+        "document": "APRS101",
+        "page": 62,
+        "section": "Raw Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "wx.raw.ultimeter"
+      ],
+      "packet": "N0CALL>APRS:!!006B005803500000----03E9--------002105140000005D",
+      "expect": {
+        "type": "rawWeather",
+        "station": "Ultimeter 2000"
+      },
+      "notes": "APRS101 does not define the raw field layout; only the type is asserted. APRS 1.1 discourages raw formats on RF."
+    },
+    {
+      "id": "ch12.raw-peet-hash",
+      "title": "Raw weather (Peet Bros U-II)",
+      "spec": {
+        "document": "APRS101",
+        "page": 62,
+        "section": "Raw Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "wx.raw.peet"
+      ],
+      "packet": "N0CALL>APRS:#50B7500820082",
+      "expect": {
+        "type": "rawWeather",
+        "station": "Peet Bros U-II"
+      },
+      "notes": "APRS101 does not define the raw field layout; only the type is asserted. APRS 1.1 discourages raw formats on RF."
+    },
+    {
+      "id": "ch12.raw-ultimeter-ultw",
+      "title": "Raw weather (Ultimeter 2000)",
+      "spec": {
+        "document": "APRS101",
+        "page": 62,
+        "section": "Raw Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "wx.raw.ultimeter"
+      ],
+      "packet": "N0CALL>APRS:$ULTW0031003702CE0069----000086A00001----011901CC00000005",
+      "expect": {
+        "type": "rawWeather",
+        "station": "Ultimeter 2000"
+      },
+      "notes": "APRS101 does not define the raw field layout; only the type is asserted. APRS 1.1 discourages raw formats on RF."
+    },
+    {
+      "id": "ch12.raw-peet-star",
+      "title": "Raw weather (Peet Bros U-II)",
+      "spec": {
+        "document": "APRS101",
+        "page": 62,
+        "section": "Raw Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "wx.raw.peet"
+      ],
+      "packet": "N0CALL>APRS:*7007600000000",
+      "expect": {
+        "type": "rawWeather",
+        "station": "Peet Bros U-II"
+      },
+      "notes": "APRS101 does not define the raw field layout; only the type is asserted. APRS 1.1 discourages raw formats on RF."
+    },
+    {
+      "id": "ch12.positionless",
+      "title": "Positionless weather report",
+      "spec": {
+        "document": "APRS101",
+        "page": 63,
+        "section": "Positionless Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "wx.positionless",
+        "time.mdhm"
+      ],
+      "packet": "N0CALL>APRS:_10090556c220s004g005t077r000p000P000h50b09900wRSW",
+      "expect": {
+        "type": "weather",
+        "timestamp": {
+          "format": "MDHM",
+          "month": 10,
+          "day": 9,
+          "hour": 5,
+          "minute": 56
+        },
+        "weather": {
+          "windDirection": 220,
+          "windSpeed": 4,
+          "windGust": 5,
+          "temperatureF": 77,
+          "rain1h": 0,
+          "rain24h": 0,
+          "rainMidnight": 0,
+          "humidity": 50,
+          "pressureMb": 990.0,
+          "software": "w",
+          "unit": "RSW"
+        }
+      },
+      "notes": "Positionless wind speed is mph (p.64). 'w' is not in the software-type list; it is still the S byte."
+    },
+    {
+      "id": "ch12.positionless-missing",
+      "title": "Positionless weather with missing sensors (dots)",
+      "spec": {
+        "document": "APRS101",
+        "page": 64,
+        "section": "Positionless Weather Data"
+      },
+      "status": "normative",
+      "features": [
+        "wx.positionless",
+        "wx.missing"
+      ],
+      "packet": "N0CALL>APRS:_10090556c...s...g...t...P012Jim",
+      "expect": {
+        "type": "weather",
+        "weather": {
+          "windDirection": null,
+          "windSpeed": null,
+          "windGust": null,
+          "temperatureF": null,
+          "rainMidnight": 12
+        }
+      },
+      "notes": "'Jim' is free text after the fields; the spec does not say whether it is S+uuuu."
+    },
+    {
+      "id": "ch12.complete",
+      "title": "Complete weather report, no timestamp",
+      "spec": {
+        "document": "APRS101",
+        "page": 65,
+        "section": "Complete Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.nots.nomsg",
+        "wx.complete",
+        "wx.rain",
+        "wx.humidity",
+        "wx.pressure"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W_220/004g005t077r000p000P000h50b09900wRSW",
+      "expect": {
+        "type": "weather",
+        "latitude": 49.058333,
+        "longitude": -72.029167,
+        "symbol": {
+          "table": "/",
+          "code": "_"
+        },
+        "weather": {
+          "windDirection": 220,
+          "windSpeed": 4,
+          "windGust": 5,
+          "temperatureF": 77,
+          "rain1h": 0,
+          "rain24h": 0,
+          "rainMidnight": 0,
+          "humidity": 50,
+          "pressureMb": 990.0,
+          "software": "w",
+          "unit": "RSW"
+        }
+      },
+      "notes": "Wind speed in DIR/SPD: p.27 says knots, p.64 (positionless) says mph. Real stations send mph. Raw value asserted."
+    },
+    {
+      "id": "ch12.complete-missing-pressure",
+      "title": "Complete weather report with missing pressure (b.....)",
+      "spec": {
+        "document": "APRS101",
+        "page": 65,
+        "section": "Complete Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "wx.complete",
+        "wx.missing",
+        "wx.missing.pressure"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W_220/004g005t077r000p000P000h50b.....wRSW",
+      "expect": {
+        "type": "weather",
+        "weather": {
+          "windDirection": 220,
+          "windSpeed": 4,
+          "windGust": 5,
+          "temperatureF": 77,
+          "rain1h": 0,
+          "rain24h": 0,
+          "rainMidnight": 0,
+          "humidity": 50,
+          "pressureMb": null
+        }
+      }
+    },
+    {
+      "id": "ch12.complete-negative-temp",
+      "title": "Complete weather report with timestamp and negative temperature",
+      "spec": {
+        "document": "APRS101",
+        "page": 66,
+        "section": "Complete Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "wx.complete",
+        "wx.temp.negative"
+      ],
+      "packet": "N0CALL>APRS:@092345z4903.50N/07201.75W_220/004g005t-07r000p000P000h50b09900wRSW",
+      "expect": {
+        "type": "weather",
+        "timestamp": {
+          "format": "DHM",
+          "day": 9,
+          "hour": 23,
+          "minute": 45,
+          "zone": "zulu"
+        },
+        "weather": {
+          "windDirection": 220,
+          "windSpeed": 4,
+          "windGust": 5,
+          "temperatureF": -7,
+          "rain1h": 0,
+          "rain24h": 0,
+          "rainMidnight": 0,
+          "humidity": 50,
+          "pressureMb": 990.0
+        }
+      }
+    },
+    {
+      "id": "ch12.complete-compressed-ts",
+      "title": "Complete weather report, compressed position with timestamp",
+      "spec": {
+        "document": "APRS101",
+        "page": 66,
+        "section": "Complete Weather Reports"
+      },
+      "status": "normative",
+      "features": [
+        "dti.pos.ts.msg",
+        "pos.compressed",
+        "wx.complete"
+      ],
+      "packet": "N0CALL>APRS:@092345z/5L!!<*e7_7P[g005t077r000p000P000h50b09900wRSW",
+      "expect": {
+        "type": "weather",
+        "latitude": 49.5,
+        "longitude": -72.750004,
+        "weather": {
+          "windDirection": 88,
+          "windSpeed": 36.2,
+          "windGust": 5,
+          "temperatureF": 77,
+          "humidity": 50,
+          "pressureMb": 990.0
+        }
+      },
+      "notes": "Wind direction/speed come from the compressed cs bytes (course 88, 36.2)."
+    },
+    {
+      "id": "ch12.complete-compressed",
+      "title": "Complete weather report, compressed position, no timestamp",
+      "spec": {
+        "document": "APRS101",
+        "page": 66,
+        "section": "Complete Weather Reports"
+      },
+      "status": "erratum-corrected",
+      "features": [
+        "dti.pos.nots.msg",
+        "pos.compressed",
+        "wx.complete"
+      ],
+      "packet": "N0CALL>APRS:=/5L!!<*e7_7P[g005t077r000p000P000h50b09900wRSW",
+      "expect": {
+        "type": "weather",
+        "weather": {
+          "windDirection": 88,
+          "windSpeed": 36.2,
+          "windGust": 5,
+          "temperatureF": 77
+        }
+      },
+      "notes": "The spec example has an extra '>' before the '_' symbol (=/5L!!<*e7>_7P[…), making it 14 bytes."
+    },
+    {
+      "id": "ch12.object-weather",
+      "title": "Weather in an object",
+      "spec": {
+        "document": "APRS101",
+        "page": 66,
+        "section": "Complete Weather Reports"
+      },
+      "status": "erratum-corrected",
+      "features": [
+        "object.live",
+        "wx.object",
+        "wx.complete"
+      ],
+      "packet": "N0CALL>APRS:;BRENDA   *092345z4903.50N/07201.75W_220/004g005t077r000p000P000h50b09900wRSW",
+      "expect": {
+        "type": "object",
+        "name": "BRENDA",
+        "weather": {
+          "windDirection": 220,
+          "windSpeed": 4,
+          "windGust": 5,
+          "temperatureF": 77,
+          "rain1h": 0,
+          "rain24h": 0,
+          "rainMidnight": 0,
+          "humidity": 50,
+          "pressureMb": 990.0
+        }
+      },
+      "notes": "The spec's first example omits the object timestamp; its second example has a 4-digit pressure (b0990). Both corrected."
+    },
+    {
+      "id": "ch12.storm-current",
+      "title": "Hurricane object (current position, \\@)",
+      "spec": {
+        "document": "APRS101",
+        "page": 67,
+        "section": "Storm Data"
+      },
+      "status": "normative",
+      "features": [
+        "object.live",
+        "storm",
+        "ext.csespd"
+      ],
+      "packet": "N0CALL>APRS:;BRENDA   *092345z4903.50N\\07202.75W@088/036/HC/150^200/0980>090&030%040",
+      "expect": {
+        "type": "object",
+        "name": "BRENDA",
+        "symbol": {
+          "table": "\\",
+          "code": "@"
+        },
+        "course": 88,
+        "speed": 36,
+        "storm": {
+          "type": "HC",
+          "sustainedKnots": 150,
+          "gustKnots": 200,
+          "pressureMb": 980,
+          "radiusHurricaneNm": 90,
+          "radiusTropicalStormNm": 30,
+          "radiusGaleNm": 40
+        }
+      }
+    },
+    {
+      "id": "ch12.storm-predicted",
+      "title": "Hurricane object (predicted position, /@)",
+      "spec": {
+        "document": "APRS101",
+        "page": 67,
+        "section": "Storm Data"
+      },
+      "status": "normative",
+      "features": [
+        "object.live",
+        "storm"
+      ],
+      "packet": "N0CALL>APRS:;BRENDA   *100045z4905.50N/07201.75W@101/047/HC/104^123/0980>065&020%040",
+      "expect": {
+        "type": "object",
+        "symbol": {
+          "table": "/",
+          "code": "@"
+        },
+        "storm": {
+          "type": "HC",
+          "sustainedKnots": 104,
+          "gustKnots": 123,
+          "pressureMb": 980,
+          "radiusHurricaneNm": 65,
+          "radiusTropicalStormNm": 20,
+          "radiusGaleNm": 40
+        }
+      }
+    },
+    {
+      "id": "ch12.luminosity",
+      "title": "Weather luminosity L (0–999 W/m²)",
+      "spec": {
+        "document": "APRS101",
+        "page": 64,
+        "section": "Positionless Weather Data"
+      },
+      "status": "derived",
+      "features": [
+        "wx.complete",
+        "wx.luminosity",
+        "wx.luminosity.low"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W_220/004g005t077L850h50b09900",
+      "expect": {
+        "type": "weather",
+        "weather": {
+          "luminosity": 850
+        }
+      }
+    },
+    {
+      "id": "ch12.luminosity-high",
+      "title": "Weather luminosity l = 1000 + nnn W/m²",
+      "spec": {
+        "document": "APRS101",
+        "page": 64,
+        "section": "Positionless Weather Data"
+      },
+      "status": "derived",
+      "features": [
+        "wx.complete",
+        "wx.luminosity",
+        "wx.luminosity.high"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W_220/004g005t077l123h50b09900",
+      "expect": {
+        "type": "weather",
+        "weather": {
+          "luminosity": 1123
+        }
+      },
+      "notes": "APRS101 only says 'l = 1000 and above'; the value rule (l123 = 1123) is from APRS 1.1 spec-wx.txt."
+    },
+    {
+      "id": "ch12.humidity-100",
+      "title": "Weather humidity h00 = 100%",
+      "spec": {
+        "document": "APRS101",
+        "page": 64,
+        "section": "Positionless Weather Data"
+      },
+      "status": "derived",
+      "features": [
+        "wx.complete",
+        "wx.humidity",
+        "wx.humidity.100"
+      ],
+      "packet": "N0CALL>APRS:!4903.50N/07201.75W_220/004g005t077h00b09900",
+      "expect": {
+        "type": "weather",
+        "weather": {
+          "humidity": 100
+        }
+      }
+    }
+  ]
+}

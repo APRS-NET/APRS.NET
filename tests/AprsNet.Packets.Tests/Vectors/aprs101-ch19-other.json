@@ -1,0 +1,60 @@
+{
+  "$schema": "./vectors.schema.json",
+  "vectors": [
+    {
+      "id": "ch19.invalid",
+      "title": "Invalid/test data (,)",
+      "spec": {
+        "document": "APRS101",
+        "page": 89,
+        "section": "Invalid Data or Test Data Packets"
+      },
+      "status": "normative",
+      "features": [
+        "invalid"
+      ],
+      "packet": "N0CALL>APRS:,191146,V,4214.2466,N,07303.5181,W,417.238,114.5,091099,14.7,W/GPS FIX",
+      "expect": {
+        "type": "invalid",
+        "data": "191146,V,4214.2466,N,07303.5181,W,417.238,114.5,091099,14.7,W/GPS FIX"
+      }
+    },
+    {
+      "id": "ch19.non-aprs-beacon",
+      "title": "Non-APRS beacon (TNC ID) handled without error",
+      "spec": {
+        "document": "APRS101",
+        "page": 89,
+        "section": "All Other Packets"
+      },
+      "status": "normative",
+      "features": [
+        "nonaprs"
+      ],
+      "packet": "N0CALL>ID:N0CALL/R RELAY/D",
+      "expect": {
+        "type": "unknown",
+        "text": "N0CALL/R RELAY/D"
+      },
+      "notes": "Programs may treat such packets as status, but must not let them overwrite a real status report from the same station."
+    },
+    {
+      "id": "ch19.unused-dti",
+      "title": "Unused data type identifier (\")",
+      "spec": {
+        "document": "APRS101",
+        "page": 17,
+        "section": "APRS Data Type Identifier"
+      },
+      "status": "derived",
+      "features": [
+        "nonaprs",
+        "dti.unused"
+      ],
+      "packet": "N0CALL>APRS:\"hello",
+      "expect": {
+        "type": "unknown"
+      }
+    }
+  ]
+}
