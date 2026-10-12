@@ -2,6 +2,10 @@
 
 Versions follow [Semantic Versioning](https://semver.org). All packages share one version and are tagged `vX.Y.Z`.
 
+**Until 1.0.0 every release is an alpha pre-release**, versioned `0.x.y-alpha.N` (for example `0.1.0-alpha.1`). The
+suffix makes nuget.org list the packages as pre-release, and release-please marks each GitHub release as a
+pre-release.
+
 ## How it works
 
 1. Commits to `main` use [Conventional Commits](https://www.conventionalcommits.org). With squash merges the **PR title** is the commit message, so the `pr-title` workflow checks it.
@@ -11,20 +15,26 @@ Versions follow [Semantic Versioning](https://semver.org). All packages share on
 
 ## Commit types
 
-| Prefix | Changelog | Bump (before 1.0) | Bump (1.0 and later) |
+| Prefix | Changelog | Bump during the alpha (`0.x.y-alpha.N`) | Bump (1.0 and later) |
 | --- | --- | --- | --- |
-| `feat:` | Features | minor | minor |
-| `fix:`, `perf:` | Bug fixes, Performance | patch | patch |
-| `feat!:`, `fix!:` or a `BREAKING CHANGE:` footer | Breaking changes | minor | major |
+| `feat:` | Features | alpha number (`0.1.0-alpha.1` → `0.1.0-alpha.2`) | minor |
+| `fix:`, `perf:` | Bug fixes, Performance | alpha number | patch |
+| `feat!:`, `fix!:` or a `BREAKING CHANGE:` footer | Breaking changes | alpha number | major |
 | `docs:`, `test:`, `chore:`, `ci:`, `build:`, `refactor:` | hidden | none | none |
+
+During the alpha, release-please only increments the alpha number. To start a new milestone, add a footer such as
+`Release-As: 0.2.0-alpha.1` to a commit.
 
 Scopes are optional, for example `feat(is): support runtime filter changes`.
 
 ## Notes
 
-- The first release is 0.1.0 (`initial-version` in `release-please-config.json`). Without it, release-please
-  treats the first release as 1.0.0 because there is no earlier tag to bump from.
-- Before 1.0, breaking changes bump the minor version and `feat` also bumps the minor version, so the library never jumps to 1.0 by accident. To release 1.0.0 deliberately, add a `Release-As: 1.0.0` footer to a commit.
+- The alpha versioning comes from `release-please-config.json`: `"versioning": "prerelease"`, `"prerelease": true`
+  and `"prerelease-type": "alpha"`. The first release was set to `0.1.0-alpha.1` with a `Release-As` footer: with no
+  earlier release tag, release-please would otherwise propose 1.0.0 (its `initial-version` setting did not take effect
+  here).
+- The library never reaches 1.0 by accident. For the first stable release, remove the three pre-release settings and
+  add a `Release-As: 1.0.0` footer to a commit.
 - The repository setting "Allow GitHub Actions to create and approve pull requests" must be on for release-please.
 - Publishing to nuget.org is not wired up yet (planned for M5). Until then packages are attached to the GitHub release.
 - To release manually, push a `vX.Y.Z` tag; MinVer will version a local `dotnet pack` from it.

@@ -4,10 +4,12 @@
   "include-component-in-tag": false,
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
+  "versioning": "prerelease",
+  "prerelease": true,
+  "prerelease-type": "alpha",
   "packages": {
     ".": {
       "package-name": "APRS.NET",
-      "initial-version": "0.1.0",
       "changelog-path": "CHANGELOG.md"
     }
   }
