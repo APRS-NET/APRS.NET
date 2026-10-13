@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-10-13)
+
+
+### Features
+
+* **packets:** decode messages and telemetry definitions ([21cd0b4](https://github.com/APRS-NET/APRS.NET/commit/21cd0b40a9fc675684bb41f1ae130fbadc987022))
+* **packets:** decode objects and items ([eb75824](https://github.com/APRS-NET/APRS.NET/commit/eb75824995db8b5b961365d64dbb0a41d31f0652))
+* **packets:** decode position reports ([de94860](https://github.com/APRS-NET/APRS.NET/commit/de94860b75d2af6225f2a57ea87b83a02b7a8fc9))
+* **packets:** decode status reports ([33206c0](https://github.com/APRS-NET/APRS.NET/commit/33206c048ffc81396e6761878b6da81f79fb0736))
+
+
+### Bug Fixes
+
+* **aprs-is:** count discarded over-long lines as dropped packets ([a68ccf8](https://github.com/APRS-NET/APRS.NET/commit/a68ccf877038915dfa54ab2b604246365842c422))
+
 ## [0.1.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-10-12)
 
 
