@@ -99,9 +99,16 @@ internal sealed class ListenCommand
     private readonly Option<string> _format = new("--format")
     {
         Description =
-            "Console output: raw (the line as received), decoded (one readable line of decoded fields) or json (one "
-            + "JSON object per line). Capture files are always raw.",
+            "Console output: raw (the line as received), decoded (one readable line of decoded fields), json (one "
+            + "JSON object per line) or pretty (a labelled block per packet). Capture files are always raw.",
         DefaultValueFactory = _ => "raw",
+    };
+
+    private readonly Option<string> _color = new("--color")
+    {
+        Description =
+            "Colour for --format pretty: auto (only on a terminal, and not when NO_COLOR is set), always or never.",
+        DefaultValueFactory = _ => "auto",
     };
 
     private readonly CliEnvironment _environment;
@@ -110,7 +117,8 @@ internal sealed class ListenCommand
     {
         _environment = environment;
         _region.AcceptOnlyFromAmong(_regions);
-        _format.AcceptOnlyFromAmong("raw", "decoded", "json");
+        _format.AcceptOnlyFromAmong("raw", "decoded", "json", "pretty");
+        _color.AcceptOnlyFromAmong("auto", "always", "never");
     }
 
     public Command Build()
@@ -135,6 +143,7 @@ internal sealed class ListenCommand
                 _reconnect,
                 _maxSilence,
                 _format,
+                _color,
             }
         )
         {
@@ -272,6 +281,14 @@ internal sealed class ListenCommand
             Filter = filter,
             Timestamps = parseResult.GetValue(_timestamps),
             Format = Enum.Parse<OutputFormat>(parseResult.GetValue(_format)!, ignoreCase: true),
+            Color = parseResult.GetValue(_color) switch
+            {
+                "always" => true,
+                "never" => false,
+                _ => _environment.OutIsTerminal
+                    && string.IsNullOrEmpty(_environment.GetEnvironmentVariable("NO_COLOR"))
+                    && _environment.GetEnvironmentVariable("TERM") != "dumb",
+            },
             Capture = capture,
             Quiet = quiet,
             LogPackets = logPackets,

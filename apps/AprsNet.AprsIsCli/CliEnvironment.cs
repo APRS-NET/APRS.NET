@@ -16,6 +16,9 @@ internal sealed class CliEnvironment
 
     public TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 
+    /// <summary>Whether <see cref="Out"/> is an interactive terminal (not a pipe or file), for <c>--color auto</c>.</summary>
+    public bool OutIsTerminal { get; init; }
+
     /// <summary>First wait before <c>--reconnect</c> tries again; it doubles up to a minute.</summary>
     public TimeSpan ReconnectDelay { get; init; } = TimeSpan.FromSeconds(5);
 

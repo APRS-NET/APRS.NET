@@ -202,12 +202,19 @@ internal static class ListenRunner
                                 PacketFormatter.Decoded(AprsPacket.Parse(line))
                             ),
                             OutputFormat.Json => PacketFormatter.Json(AprsPacket.Parse(line), received),
+                            OutputFormat.Pretty => PrettyFormatter.Format(
+                                AprsPacket.Parse(line),
+                                received,
+                                options.Color
+                            ) + Environment.NewLine,
                             _ => LineFormatter.EscapeForConsole(line),
                         };
 
-                        // JSON carries its own "received" time, so --timestamps only prefixes the text formats.
+                        // JSON and pretty carry their own received time, so --timestamps only prefixes raw and decoded.
                         await environment.Out.WriteLineAsync(
-                            options.Timestamps && options.Format != OutputFormat.Json ? $"{stamp} {text}" : text
+                            options.Timestamps && options.Format is OutputFormat.Raw or OutputFormat.Decoded
+                                ? $"{stamp} {text}"
+                                : text
                         );
                     }
                     catch (IOException)

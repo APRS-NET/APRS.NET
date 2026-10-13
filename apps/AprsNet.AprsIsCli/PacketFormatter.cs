@@ -18,6 +18,9 @@ internal enum OutputFormat
 
     /// <summary>One JSON object per line.</summary>
     Json,
+
+    /// <summary>A block per packet: a header line and labelled, aligned fields, coloured on a terminal.</summary>
+    Pretty,
 }
 
 /// <summary>Turns parsed packets into the <c>decoded</c> and <c>json</c> output formats.</summary>

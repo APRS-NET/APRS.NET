@@ -25,6 +25,9 @@ internal sealed class CliHarness
     /// <summary>When set, the client's transport throws this on connect instead of using <see cref="Transport" />.</summary>
     public Exception? ConnectFailure { get; init; }
 
+    /// <summary>Pretend stdout is a terminal, for <c>--color auto</c>.</summary>
+    public bool OutIsTerminal { get; set; }
+
     /// <summary>
     /// Transports for the second and later connections, in order. Once used up, further connections are refused.
     /// </summary>
@@ -59,6 +62,7 @@ internal sealed class CliHarness
         var environment = new CliEnvironment
         {
             Out = output,
+            OutIsTerminal = OutIsTerminal,
             Error = error,
             LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddProvider(Logs)),
             TimeProvider = Time,

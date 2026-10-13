@@ -16,6 +16,7 @@ await using var stdout = OpenStandardOutput();
 var environment = new CliEnvironment
 {
     Out = stdout,
+    OutIsTerminal = !Console.IsOutputRedirected,
     Error = Console.Error,
     LoggerFactory = loggerFactory,
 };

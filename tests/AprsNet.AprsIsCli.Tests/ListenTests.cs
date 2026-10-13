@@ -204,6 +204,127 @@ public class ListenTests
     }
 
     [Fact]
+    public async Task PrettyFormatPrintsALabelledBlockPerPacket()
+    {
+        var harness = WithPackets(
+            "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10:@092345z4903.5 N/07201.75W>088/036/A=001234 Hi",
+            "N0CALL>APRS:>IO91SX/- ^B7",
+            "N0CALL>APRS:;LEADER   *092345z4903.50N/07201.75W>",
+            "N0CALL>APRS:!3907.62n/09447.19w#PHG5132",
+            "no header here"
+        );
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--format", "pretty", "-t", "-n", "5"],
+            TestContext.Current.CancellationToken
+        );
+
+        var blocks = result.Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(5, blocks.Length);
+        Assert.Equal(
+            string.Join(
+                Environment.NewLine,
+                "12:00:00  N0CALL-9 → APRS  via WIDE1-1*,qAR,N1CALL-10",
+                "          position  49.05833  -72.02833  (ambiguous to 0.1 minute)",
+                "          symbol    />  Car",
+                "          time      9 Oct 23:45 UTC  (092345z)",
+                "          course    088° at 36 kn (66.7 km/h)",
+                "          altitude  1,234 ft (376 m)",
+                "          messaging yes",
+                "          comment   \"/A=001234 Hi\""
+            ),
+            blocks[0]
+        );
+        Assert.Contains("status    \"^B7\"", blocks[1], StringComparison.Ordinal);
+        Assert.Contains("locator   IO91SX", blocks[1], StringComparison.Ordinal);
+        Assert.Contains("beam      110°, 490 W ERP", blocks[1], StringComparison.Ordinal);
+        Assert.Contains("object    not decoded yet", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("data      ;LEADER   *092345z", blocks[2], StringComparison.Ordinal);
+        Assert.Contains(
+            "station   25 W, antenna 20 ft, 3 dBi toward 090°, range 7.9 mi",
+            blocks[3],
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "warning   A position uses a lower-case hemisphere letter. (byte 20)",
+            blocks[3],
+            StringComparison.Ordinal
+        );
+        Assert.Contains("not a packet", blocks[4], StringComparison.Ordinal);
+        Assert.Contains("error     No SOURCE>DESTINATION header", blocks[4], StringComparison.Ordinal);
+        Assert.DoesNotContain("\u001b", result.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PrettyFormatShowsEveryPositionField()
+    {
+        var harness = WithPackets(
+            "N0CALL>APRS:=/5L!!<*e7>7P[",
+            "N0CALL>APRS:=4903.50N/07201.75W\\000/036/270/729",
+            "N0CALL>APRS:/234517h4903.50N/07201.75W>DFS2360",
+            "N0CALL>APRS:=/5L!!<*e7>{?!",
+            "N0CALL>APRS:!0000.00N\\00000.00W.",
+            "N0CALL>APRS:@092345/4903.50N/07201.75W_220/004g005!w0x!",
+            "N0CALL>APRS:!4903.50N/07201.75W-\u001b[31mred",
+            "N0CALL>APRS:!4903.50N/07201.75W-!N12!",
+            "N0CALL>APRS:=4903.50N/07201.75W>.../036"
+        );
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--format", "pretty", "-n", "9"],
+            TestContext.Current.CancellationToken
+        );
+
+        var blocks = result.Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("GPS       current fix, RMC, software", blocks[0], StringComparison.Ordinal);
+        Assert.Contains("bearing   270°, quality 9, 7 hits, 4 mi, fixed station", blocks[1], StringComparison.Ordinal);
+        Assert.Contains("DF        signal S2, antenna 80 ft, 6 dBi omni", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("range     20.1 mi", blocks[3], StringComparison.Ordinal);
+        Assert.Contains("position  unknown", blocks[4], StringComparison.Ordinal);
+        Assert.Contains("time      092345/ (sender's local time)", blocks[5], StringComparison.Ordinal);
+        Assert.Contains("wind      220° at 4 kn", blocks[5], StringComparison.Ordinal);
+        Assert.Contains("datum     WGS84 (extra precision)", blocks[5], StringComparison.Ordinal);
+        Assert.Contains("comment   \"\\x1B[31mred\"", blocks[6], StringComparison.Ordinal);
+        Assert.Contains("datum     N (extra precision)", blocks[7], StringComparison.Ordinal);
+        Assert.Contains("course    course unknown at 36 kn", blocks[8], StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("always", false, null, null, true)]
+    [InlineData("never", true, null, null, false)]
+    [InlineData("auto", true, null, null, true)]
+    [InlineData("auto", false, null, null, false)]
+    [InlineData("auto", true, "1", null, false)]
+    [InlineData("auto", true, null, "dumb", false)]
+    public async Task ColourFollowsTheColorOption(
+        string color,
+        bool terminal,
+        string? noColor,
+        string? term,
+        bool coloured
+    )
+    {
+        var harness = WithPackets("N0CALL>APRS:!4903.50N/07201.75W-");
+        harness.OutIsTerminal = terminal;
+        if (noColor is not null)
+        {
+            harness.Environment["NO_COLOR"] = noColor;
+        }
+
+        if (term is not null)
+        {
+            harness.Environment["TERM"] = term;
+        }
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--format", "pretty", "--color", color, "-n", "1"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(coloured, result.Out.Contains('\u001b', StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task CaptureStaysRawWhateverTheFormat()
     {
         var capture = Path.Combine(Path.GetTempPath(), $"aprscli-{Guid.NewGuid():N}.log");
@@ -664,6 +785,7 @@ public class ListenTests
     [InlineData("listen --callsign N0CALL --filter \"a\\nb\"", "")]
     [InlineData("listen --region mars", "")]
     [InlineData("listen -c NZ0P --format yaml", "")]
+    [InlineData("listen -c NZ0P --color sometimes", "")]
     [InlineData("listen --bogus", "")]
     [InlineData("nope", "")]
     [InlineData("", "")]

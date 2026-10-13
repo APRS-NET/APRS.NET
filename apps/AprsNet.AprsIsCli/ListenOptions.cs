@@ -18,6 +18,9 @@ internal sealed record ListenOptions
 
     public OutputFormat Format { get; init; }
 
+    /// <summary>Colour the pretty format with ANSI escape codes.</summary>
+    public bool Color { get; init; }
+
     public string? Capture { get; init; }
 
     public bool Quiet { get; init; }
