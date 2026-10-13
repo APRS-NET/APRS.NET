@@ -42,6 +42,18 @@ internal static class PrettyFormatter
             case StatusReport status:
                 Status(fields, status, received, style);
                 break;
+            case MessagePayload message:
+                Message(fields, message, style);
+                break;
+            case TelemetryDefinition definition:
+                fields.Add(("telemetry", $"{PacketFormatter.Words(definition.Kind)} for {Safe(definition.Addressee)}"));
+                fields.Add(
+                    (
+                        definition.Kind == TelemetryDefinitionKind.Equations ? "equations" : "values",
+                        Safe(PacketFormatter.Values(definition))
+                    )
+                );
+                break;
             default:
                 fields.Add(
                     (
@@ -228,6 +240,45 @@ internal static class PrettyFormatter
                     )
                 )
             );
+        }
+    }
+
+    private static void Message(List<(string Label, string Value)> fields, MessagePayload message, Style style)
+    {
+        var group = message.BulletinGroup is { } g ? $" to group {g}" : "";
+        fields.Add(
+            message.Kind switch
+            {
+                MessageKind.Acknowledgement => ("ack", $"{message.MessageId} to {message.Addressee}"),
+                MessageKind.Rejection => ("reject", $"{message.MessageId} to {message.Addressee}"),
+                MessageKind.Bulletin => ("bulletin", $"{message.BulletinId}{group}"),
+                MessageKind.Announcement => ("announce", $"{message.BulletinId}{group}"),
+                MessageKind.NwsBulletin => ("NWS", message.Addressee),
+                MessageKind.Query => ("query", $"{message.QueryType} to {message.Addressee}"),
+                _ => ("to", message.Addressee),
+            }
+        );
+        fields[^1] = (fields[^1].Label, style.Bold(Safe(fields[^1].Value)));
+        if (message.Kind == MessageKind.Query)
+        {
+            if (message.QueryArgument is { } argument)
+            {
+                fields.Add(("about", Safe(argument)));
+            }
+        }
+        else if (message.Kind is not (MessageKind.Acknowledgement or MessageKind.Rejection))
+        {
+            fields.Add(("text", style.Green($"\"{Safe(message.Text)}\"")));
+        }
+
+        if (message.Kind is not (MessageKind.Acknowledgement or MessageKind.Rejection) && message.MessageId is { } id)
+        {
+            fields.Add(("id", $"{Safe(id)}{(message.IsAckRequired ? " (ack expected)" : "")}"));
+        }
+
+        if (message.ReplyAck is { } replyAck)
+        {
+            fields.Add(("reply-ack", replyAck.Length > 0 ? $"also acknowledges {Safe(replyAck)}" : "supported"));
         }
     }
 

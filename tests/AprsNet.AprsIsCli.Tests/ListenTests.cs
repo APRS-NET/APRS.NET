@@ -325,6 +325,91 @@ public class ListenTests
     }
 
     [Fact]
+    public async Task MessagesPrintInEveryFormat()
+    {
+        string[] packets =
+        [
+            "N0CALL>APRS::WU2Z     :Testing{003}AB",
+            "N0CALL>APRS::KB2ICI-14:ack003",
+            "N0CALL>APRS::KB2ICI-14:rej004",
+            "N0CALL>APRS::BLN4WX   :Stand by",
+            "N0CALL>APRS::BLNQ     :QRT",
+            "N0CALL>APRS::NWS-WARN :Storm{S9JbA",
+            "N0CALL>APRS::KH2Z     :?APRSH N0QBF",
+            "N0QBF>APRS::N0QBF-11 :EQNS.0,5.2,0,0,.53,-32",
+            "N0QBF>APRS::N0QBF-11 :BITS.10110000,Balloon",
+            "N0QBF>APRS::N0QBF-11 :PARM.Battery,Btemp",
+        ];
+
+        var decoded = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "10"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal("N0CALL>APRS  message to WU2Z  #003  reply-ack AB  \"Testing\"", decoded[0]);
+        Assert.Equal("N0CALL>APRS  ack to KB2ICI-14 for 003", decoded[1]);
+        Assert.Equal("N0CALL>APRS  reject to KB2ICI-14 for 004", decoded[2]);
+        Assert.Equal("N0CALL>APRS  bulletin 4 to group WX  \"Stand by\"", decoded[3]);
+        Assert.Equal("N0CALL>APRS  announcement Q  \"QRT\"", decoded[4]);
+        Assert.Equal("N0CALL>APRS  NWS bulletin NWS-WARN  #S9JbA  \"Storm\"", decoded[5]);
+        Assert.Equal("N0CALL>APRS  query APRSH to KH2Z  N0QBF", decoded[6]);
+        Assert.Equal(
+            "N0QBF>APRS  telemetry equations for N0QBF-11  0·v² + 5.2·v + 0 | 0·v² + 0.53·v + -32",
+            decoded[7]
+        );
+        Assert.Equal("N0QBF>APRS  telemetry bit sense for N0QBF-11  10110000 \"Balloon\"", decoded[8]);
+        Assert.Equal("N0QBF>APRS  telemetry names for N0QBF-11  Battery, Btemp", decoded[9]);
+
+        var json = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "json", "-n", "10"],
+                    TestContext.Current.CancellationToken
+                )
+        )
+            .Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement)
+            .ToList();
+        var message = json[0].GetProperty("message");
+        Assert.Equal("WU2Z", message.GetProperty("addressee").GetString());
+        Assert.Equal("message", message.GetProperty("kind").GetString());
+        Assert.Equal("003", message.GetProperty("messageId").GetString());
+        Assert.Equal("AB", message.GetProperty("replyAck").GetString());
+        Assert.True(message.GetProperty("ackRequired").GetBoolean());
+        Assert.Equal("acknowledgement", json[1].GetProperty("message").GetProperty("kind").GetString());
+        Assert.Equal("WX", json[3].GetProperty("message").GetProperty("bulletinGroup").GetString());
+        Assert.Equal("N0QBF", json[6].GetProperty("message").GetProperty("queryArgument").GetString());
+        var equations = json[7].GetProperty("telemetryDefinition");
+        Assert.Equal("equations", equations.GetProperty("kind").GetString());
+        Assert.Equal(-32, equations.GetProperty("equations")[1].GetProperty("c").GetDouble());
+        Assert.Equal("Balloon", json[8].GetProperty("telemetryDefinition").GetProperty("projectName").GetString());
+        Assert.Equal("Btemp", json[9].GetProperty("telemetryDefinition").GetProperty("labels")[1].GetString());
+
+        var pretty = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "pretty", "-n", "10"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("to        WU2Z", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("id        003 (ack expected)", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("reply-ack also acknowledges AB", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("ack       003 to KB2ICI-14", pretty[1], StringComparison.Ordinal);
+        Assert.Contains("reject    004 to KB2ICI-14", pretty[2], StringComparison.Ordinal);
+        Assert.Contains("bulletin  4 to group WX", pretty[3], StringComparison.Ordinal);
+        Assert.Contains("announce  Q", pretty[4], StringComparison.Ordinal);
+        Assert.Contains("NWS       NWS-WARN", pretty[5], StringComparison.Ordinal);
+        Assert.Contains("query     APRSH to KH2Z", pretty[6], StringComparison.Ordinal);
+        Assert.Contains("about     N0QBF", pretty[6], StringComparison.Ordinal);
+        Assert.Contains("telemetry equations for N0QBF-11", pretty[7], StringComparison.Ordinal);
+        Assert.Contains("equations 0·v² + 5.2·v + 0", pretty[7], StringComparison.Ordinal);
+        Assert.Contains("values    10110000 \"Balloon\"", pretty[8], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task CaptureStaysRawWhateverTheFormat()
     {
         var capture = Path.Combine(Path.GetTempPath(), $"aprscli-{Guid.NewGuid():N}.log");

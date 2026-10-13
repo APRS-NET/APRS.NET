@@ -57,6 +57,12 @@ internal static class PacketFormatter
             case StatusReport status:
                 Status(line, status);
                 break;
+            case MessagePayload message:
+                Message(line, message);
+                break;
+            case TelemetryDefinition definition:
+                Telemetry(line, definition);
+                break;
             default:
                 line.Append(Name(packet.Type))
                     .Append(packet.Outcome == ParseOutcome.Malformed ? " (malformed)" : " (not decoded yet)");
@@ -125,12 +131,152 @@ internal static class PacketFormatter
                     json.WritePropertyName("status");
                     Status(json, status, received);
                     break;
+                case MessagePayload message:
+                    json.WritePropertyName("message");
+                    Message(json, message);
+                    break;
+                case TelemetryDefinition definition:
+                    json.WritePropertyName("telemetryDefinition");
+                    Telemetry(json, definition);
+                    break;
             }
 
             json.WriteEndObject();
         }
 
         return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
+    }
+
+    private static void Message(StringBuilder line, MessagePayload message)
+    {
+        line.Append(Describe(message));
+        if (message.Kind is not (MessageKind.Acknowledgement or MessageKind.Rejection) && message.MessageId is { } id)
+        {
+            line.Append("  #").Append(id);
+        }
+
+        if (message.ReplyAck is { Length: > 0 } replyAck)
+        {
+            line.Append("  reply-ack ").Append(replyAck);
+        }
+
+        if (message is { Kind: MessageKind.Query, QueryArgument: { } argument })
+        {
+            line.Append("  ").Append(argument);
+        }
+        else if (message.Text.Length > 0 && message.Kind != MessageKind.Query)
+        {
+            line.Append("  \"").Append(message.Text).Append('"');
+        }
+    }
+
+    /// <summary>What a message is, in a few words: <c>message to WU2Z</c>, <c>ack to N0CALL for 003</c>.</summary>
+    private static string Describe(MessagePayload message) =>
+        message.Kind switch
+        {
+            MessageKind.Acknowledgement => $"ack to {message.Addressee} for {message.MessageId}",
+            MessageKind.Rejection => $"reject to {message.Addressee} for {message.MessageId}",
+            MessageKind.Bulletin when message.BulletinGroup is { } group =>
+                $"bulletin {message.BulletinId} to group {group}",
+            MessageKind.Bulletin => $"bulletin {message.BulletinId}",
+            MessageKind.Announcement when message.BulletinGroup is { } group =>
+                $"announcement {message.BulletinId} to group {group}",
+            MessageKind.Announcement => $"announcement {message.BulletinId}",
+            MessageKind.NwsBulletin => $"NWS bulletin {message.Addressee}",
+            MessageKind.Query => $"query {message.QueryType} to {message.Addressee}",
+            _ => $"message to {message.Addressee}",
+        };
+
+    private static void Telemetry(StringBuilder line, TelemetryDefinition definition)
+    {
+        line.Append("telemetry ")
+            .Append(Words(definition.Kind))
+            .Append(" for ")
+            .Append(definition.Addressee)
+            .Append("  ");
+        line.Append(Values(definition));
+    }
+
+    /// <summary>A definition kind in words: <c>names</c>, <c>units</c>, <c>equations</c>, <c>bit sense</c>.</summary>
+    internal static string Words(TelemetryDefinitionKind kind) =>
+        kind switch
+        {
+            TelemetryDefinitionKind.ParameterNames => "names",
+            TelemetryDefinitionKind.Units => "units",
+            TelemetryDefinitionKind.Equations => "equations",
+            _ => "bit sense",
+        };
+
+    /// <summary>A definition's values on one line: labels, equations, or bit sense and project.</summary>
+    internal static string Values(TelemetryDefinition definition) =>
+        definition.Kind switch
+        {
+            TelemetryDefinitionKind.Equations => string.Join(
+                " | ",
+                definition.Equations.Select(e =>
+                    string.Create(CultureInfo.InvariantCulture, $"{e.A}·v² + {e.B}·v + {e.C}")
+                )
+            ),
+            TelemetryDefinitionKind.BitSense => definition.ProjectName is { } project
+                ? $"{definition.BitSense} \"{project}\""
+                : definition.BitSense ?? "",
+            _ => string.Join(", ", definition.Labels),
+        };
+
+    private static void Message(Utf8JsonWriter json, MessagePayload message)
+    {
+        json.WriteStartObject();
+        json.WriteString("addressee", message.Addressee);
+        json.WriteString("kind", Name(message.Kind));
+        json.WriteString("text", message.Text);
+        WriteString(json, "messageId", message.MessageId);
+        WriteString(json, "replyAck", message.ReplyAck);
+        json.WriteBoolean("ackRequired", message.IsAckRequired);
+        WriteString(json, "bulletinId", message.BulletinId);
+        WriteString(json, "bulletinGroup", message.BulletinGroup);
+        WriteString(json, "queryType", message.QueryType);
+        WriteString(json, "queryArgument", message.QueryArgument);
+        json.WriteEndObject();
+    }
+
+    private static void Telemetry(Utf8JsonWriter json, TelemetryDefinition definition)
+    {
+        json.WriteStartObject();
+        json.WriteString("addressee", definition.Addressee);
+        json.WriteString("kind", Name(definition.Kind));
+        json.WriteStartArray("labels");
+        foreach (var label in definition.Labels)
+        {
+            json.WriteStringValue(label);
+        }
+
+        json.WriteEndArray();
+        json.WriteStartArray("equations");
+        foreach (var equation in definition.Equations)
+        {
+            json.WriteStartObject();
+            json.WriteNumber("a", equation.A);
+            json.WriteNumber("b", equation.B);
+            json.WriteNumber("c", equation.C);
+            json.WriteEndObject();
+        }
+
+        json.WriteEndArray();
+        WriteString(json, "bitSense", definition.BitSense);
+        WriteString(json, "projectName", definition.ProjectName);
+        json.WriteEndObject();
+    }
+
+    private static void WriteString(Utf8JsonWriter json, string name, string? value)
+    {
+        if (value is null)
+        {
+            json.WriteNull(name);
+        }
+        else
+        {
+            json.WriteString(name, value);
+        }
     }
 
     private static void Status(StringBuilder line, StatusReport status)
