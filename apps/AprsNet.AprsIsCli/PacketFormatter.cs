@@ -1,0 +1,307 @@
+using System.Globalization;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using AprsNet.Packets;
+using AprsNet.Symbols;
+
+namespace AprsNet.AprsIsCli;
+
+/// <summary>How <c>aprscli</c> prints packets.</summary>
+internal enum OutputFormat
+{
+    /// <summary>The packet line as received (control characters escaped).</summary>
+    Raw,
+
+    /// <summary>One readable line per packet: the header, then the decoded fields.</summary>
+    Decoded,
+
+    /// <summary>One JSON object per line.</summary>
+    Json,
+}
+
+/// <summary>Turns parsed packets into the <c>decoded</c> and <c>json</c> output formats.</summary>
+internal static class PacketFormatter
+{
+    private static readonly JsonWriterOptions _json = new()
+    {
+        // Comments are mostly text people read; keep °, é and friends readable instead of °.
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    /// <summary>
+    /// The header as sent, then the packet type and its decoded fields, for example
+    /// <c>N0CALL-9&gt;APRS,WIDE1-1  position 49.05833 -72.02917  /&gt; Car  088° 36 kn  "Test"</c>.
+    /// </summary>
+    public static string Decoded(AprsPacket packet)
+    {
+        var line = new StringBuilder();
+        if (packet.HasHeader)
+        {
+            line.Append(packet.Source.Value).Append('>').Append(packet.Destination.Value);
+            foreach (var entry in packet.Path)
+            {
+                line.Append(',').Append(entry);
+            }
+        }
+
+        line.Append("  ");
+        switch (packet.Payload)
+        {
+            case PositionReport report:
+                Position(line, report);
+                break;
+            default:
+                line.Append(Name(packet.Type))
+                    .Append(packet.Outcome == ParseOutcome.Malformed ? " (malformed)" : " (not decoded yet)");
+                if (packet.HasHeader)
+                {
+                    line.Append("  ").Append(Encoding.Latin1.GetString(packet.Information.Span));
+                }
+                else
+                {
+                    line.Append("  ").Append(packet);
+                }
+
+                break;
+        }
+
+        foreach (var issue in packet.Issues)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  [{Name(issue.Severity)} {issue.Code} at {issue.Offset}]");
+        }
+
+        return line.ToString();
+    }
+
+    /// <summary>One JSON object: when it was received, the raw line, the header, outcome, issues and decoded fields.</summary>
+    public static string Json(AprsPacket packet, DateTimeOffset received)
+    {
+        using var buffer = new MemoryStream();
+        using (var json = new Utf8JsonWriter(buffer, _json))
+        {
+            json.WriteStartObject();
+            json.WriteString("received", LineFormatter.Timestamp(received));
+            json.WriteString("raw", packet.ToString());
+            if (packet.HasHeader)
+            {
+                json.WriteString("source", packet.Source.Value);
+                json.WriteString("destination", packet.Destination.Value);
+                json.WriteStartArray("path");
+                foreach (var entry in packet.Path)
+                {
+                    json.WriteStringValue(entry.ToString());
+                }
+
+                json.WriteEndArray();
+            }
+
+            json.WriteString("type", Name(packet.Type));
+            json.WriteString("outcome", Name(packet.Outcome));
+            json.WriteStartArray("issues");
+            foreach (var issue in packet.Issues)
+            {
+                json.WriteStartObject();
+                json.WriteString("code", JsonNamingPolicy.CamelCase.ConvertName(issue.Code.ToString()));
+                json.WriteString("severity", Name(issue.Severity));
+                json.WriteNumber("offset", issue.Offset);
+                json.WriteEndObject();
+            }
+
+            json.WriteEndArray();
+            if (packet.Payload is PositionReport report)
+            {
+                json.WritePropertyName("position");
+                Position(json, report, received);
+            }
+
+            json.WriteEndObject();
+        }
+
+        return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
+    }
+
+    private static void Position(StringBuilder line, PositionReport report)
+    {
+        line.Append("position ");
+        if (report.IsPositionUnknown)
+        {
+            line.Append("unknown");
+        }
+        else
+        {
+            line.Append(
+                CultureInfo.InvariantCulture,
+                $"{report.Position.Latitude:0.00000} {report.Position.Longitude:0.00000}"
+            );
+            if (report.Position.Ambiguity > 0)
+            {
+                line.Append(CultureInfo.InvariantCulture, $" (ambiguity {report.Position.Ambiguity})");
+            }
+        }
+
+        line.Append("  ").Append(report.Symbol).Append(' ').Append(SymbolName(report.Symbol));
+        if (report.Timestamp is { } timestamp)
+        {
+            line.Append("  at ").Append(timestamp);
+        }
+
+        if (report.Course is not null || report.SpeedKnots is not null)
+        {
+            line.Append("  ");
+            line.Append(
+                report.Course is { } course ? course.ToString("000", CultureInfo.InvariantCulture) + "°" : "---"
+            );
+            if (report.SpeedKnots is { } speed)
+            {
+                line.Append(CultureInfo.InvariantCulture, $" {speed:0.#} kn");
+            }
+        }
+
+        if (report.AltitudeFeet is { } altitude)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  {altitude:0} ft");
+        }
+
+        if (report.PowerHeightGain is { } phg)
+        {
+            line.Append(
+                CultureInfo.InvariantCulture,
+                $"  PHG {phg.PowerWatts} W {phg.HeightFeet} ft {phg.GainDbi} dBi {Direction(phg.Directivity)} ({phg.RangeMiles:0.#} mi)"
+            );
+        }
+
+        if (report.RangeMiles is { } range)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  range {range:0.#} mi");
+        }
+
+        if (report.DirectionFindingStrength is { } dfs)
+        {
+            line.Append(
+                CultureInfo.InvariantCulture,
+                $"  DFS S{dfs.Strength} {dfs.HeightFeet} ft {dfs.GainDbi} dBi {Direction(dfs.Directivity)}"
+            );
+        }
+
+        if (report.DirectionFinding is { } df)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  DF bearing {df.Bearing:000}° quality {df.Quality}");
+        }
+
+        if (report.IsMessagingCapable)
+        {
+            line.Append("  messaging");
+        }
+
+        if (report.Comment.Length > 0)
+        {
+            line.Append("  \"").Append(report.Comment.Trim()).Append('"');
+        }
+    }
+
+    private static void Position(Utf8JsonWriter json, PositionReport report, DateTimeOffset received)
+    {
+        json.WriteStartObject();
+        json.WriteNumber("latitude", Math.Round(report.Position.Latitude, 6));
+        json.WriteNumber("longitude", Math.Round(report.Position.Longitude, 6));
+        json.WriteNumber("ambiguity", report.Position.Ambiguity);
+        json.WriteBoolean("unknown", report.IsPositionUnknown);
+        json.WriteStartObject("symbol");
+        json.WriteString("table", report.Symbol.WithoutOverlay.Table.ToString());
+        json.WriteString("code", report.Symbol.Code.ToString());
+        if (report.Symbol.Overlay is { } overlay)
+        {
+            json.WriteString("overlay", overlay.ToString());
+        }
+
+        json.WriteString("name", SymbolName(report.Symbol));
+        json.WriteEndObject();
+        if (report.Timestamp is { } timestamp)
+        {
+            json.WriteStartObject("timestamp");
+            json.WriteString("sent", timestamp.ToString());
+            if (timestamp.ToDateTimeOffset(received) is { } time)
+            {
+                json.WriteString("utc", LineFormatter.Timestamp(time));
+            }
+
+            json.WriteEndObject();
+        }
+
+        json.WriteBoolean("messaging", report.IsMessagingCapable);
+        json.WriteBoolean("compressed", report.IsCompressed);
+        WriteNumber(json, "course", report.Course);
+        WriteNumber(json, "speedKnots", report.SpeedKnots);
+        WriteNumber(json, "altitudeFeet", report.AltitudeFeet);
+        WriteNumber(json, "rangeMiles", report.RangeMiles);
+        if (report.PowerHeightGain is { } phg)
+        {
+            json.WriteStartObject("phg");
+            json.WriteNumber("powerWatts", phg.PowerWatts);
+            json.WriteNumber("heightFeet", phg.HeightFeet);
+            json.WriteNumber("gainDbi", phg.GainDbi);
+            WriteNumber(json, "directivity", phg.Directivity);
+            json.WriteNumber("rangeMiles", Math.Round(phg.RangeMiles, 1));
+            json.WriteEndObject();
+        }
+
+        if (report.DirectionFindingStrength is { } dfs)
+        {
+            json.WriteStartObject("dfs");
+            json.WriteNumber("strength", dfs.Strength);
+            json.WriteNumber("heightFeet", dfs.HeightFeet);
+            json.WriteNumber("gainDbi", dfs.GainDbi);
+            WriteNumber(json, "directivity", dfs.Directivity);
+            json.WriteEndObject();
+        }
+
+        if (report.DirectionFinding is { } df)
+        {
+            json.WriteStartObject("df");
+            json.WriteNumber("bearing", df.Bearing);
+            json.WriteNumber("hits", df.Hits);
+            json.WriteNumber("rangeMiles", df.RangeMiles);
+            json.WriteNumber("quality", df.Quality);
+            json.WriteBoolean("fixedStation", df.IsFixedStation);
+            json.WriteEndObject();
+        }
+
+        if (report.CompressionType is { } type)
+        {
+            json.WriteStartObject("compressionType");
+            json.WriteString("gpsFix", JsonNamingPolicy.CamelCase.ConvertName(type.GpsFix.ToString()));
+            json.WriteString("nmeaSource", JsonNamingPolicy.CamelCase.ConvertName(type.NmeaSource.ToString()));
+            json.WriteString("origin", JsonNamingPolicy.CamelCase.ConvertName(type.Origin.ToString()));
+            json.WriteEndObject();
+        }
+
+        if (report.Datum is { } datum)
+        {
+            json.WriteString("datum", datum.ToString());
+        }
+
+        json.WriteString("comment", report.Comment);
+        json.WriteEndObject();
+    }
+
+    private static void WriteNumber(Utf8JsonWriter json, string name, double? value)
+    {
+        if (value is { } number)
+        {
+            json.WriteNumber(name, Math.Round(number, 2));
+        }
+        else
+        {
+            json.WriteNull(name);
+        }
+    }
+
+    private static string SymbolName(AprsSymbol symbol) => AprsSymbolCatalog.GetName(symbol);
+
+    private static string Direction(int? degrees) =>
+        degrees is { } d ? d.ToString("000", CultureInfo.InvariantCulture) + "°" : "omni";
+
+    private static string Name<T>(T value)
+        where T : struct, Enum => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
+}

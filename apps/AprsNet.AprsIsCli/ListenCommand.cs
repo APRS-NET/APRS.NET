@@ -98,7 +98,9 @@ internal sealed class ListenCommand
 
     private readonly Option<string> _format = new("--format")
     {
-        Description = "Output format. Only raw is available until the parser exists.",
+        Description =
+            "Console output: raw (the line as received), decoded (one readable line of decoded fields) or json (one "
+            + "JSON object per line). Capture files are always raw.",
         DefaultValueFactory = _ => "raw",
     };
 
@@ -108,7 +110,7 @@ internal sealed class ListenCommand
     {
         _environment = environment;
         _region.AcceptOnlyFromAmong(_regions);
-        _format.AcceptOnlyFromAmong("raw");
+        _format.AcceptOnlyFromAmong("raw", "decoded", "json");
     }
 
     public Command Build()
@@ -269,6 +271,7 @@ internal sealed class ListenCommand
             Passcode = passcode,
             Filter = filter,
             Timestamps = parseResult.GetValue(_timestamps),
+            Format = Enum.Parse<OutputFormat>(parseResult.GetValue(_format)!, ignoreCase: true),
             Capture = capture,
             Quiet = quiet,
             LogPackets = logPackets,

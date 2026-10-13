@@ -52,6 +52,144 @@ public class ListenTests
     }
 
     [Fact]
+    public async Task DecodedFormatPrintsReadableFields()
+    {
+        var harness = WithPackets(
+            "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10:=4903.50N/07201.75W>088/036/A=001234 Hi",
+            "N0CALL>APRS,TCPIP*:>status text",
+            "N0CALL>APRS,TCPIP*:!9903.50N/07201.75W-"
+        );
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "3"],
+            TestContext.Current.CancellationToken
+        );
+
+        var lines = result.Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(
+            "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10  position 49.05833 -72.02917  /> Car  088° 36 kn  1234 ft  messaging  \"/A=001234 Hi\"",
+            lines[0]
+        );
+        Assert.Equal("N0CALL>APRS,TCPIP*  status (not decoded yet)  >status text", lines[1]);
+        Assert.Equal(
+            "N0CALL>APRS,TCPIP*  position (malformed)  !9903.50N/07201.75W-  [error InvalidLatitude at 20]",
+            lines[2]
+        );
+    }
+
+    [Fact]
+    public async Task DecodedFormatShowsPositionExtensions()
+    {
+        var harness = WithPackets(
+            "N0CALL>APRS:@092345z4903.5 N/07201.75W#PHG5132",
+            "N0CALL>APRS:=4903.50N/07201.75W\\000/036/270/729",
+            "N0CALL>APRS:/234517h4903.50N/07201.75W>DFS2360",
+            "N0CALL>APRS:=/5L!!<*e7>{?!",
+            "N0CALL>APRS:!0000.00N\\00000.00W.",
+            "no header here"
+        );
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "6"],
+            TestContext.Current.CancellationToken
+        );
+
+        var lines = result.Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("(ambiguity 1)", lines[0], StringComparison.Ordinal);
+        Assert.Contains("at 092345z", lines[0], StringComparison.Ordinal);
+        Assert.Contains("PHG 25 W 20 ft 3 dBi 090° (7.9 mi)", lines[0], StringComparison.Ordinal);
+        Assert.Contains("000° 36 kn", lines[1], StringComparison.Ordinal);
+        Assert.Contains("DF bearing 270° quality 9", lines[1], StringComparison.Ordinal);
+        Assert.Contains("DFS S2 80 ft 6 dBi omni", lines[2], StringComparison.Ordinal);
+        Assert.Contains("range 20.1 mi", lines[3], StringComparison.Ordinal);
+        Assert.Contains("position unknown", lines[4], StringComparison.Ordinal);
+        Assert.Equal("  unknown (malformed)  no header here  [error MissingHeader at 0]", lines[5]);
+    }
+
+    [Fact]
+    public async Task JsonFormatPrintsOneObjectPerLine()
+    {
+        var harness = WithPackets(
+            "N0CALL-9>APRS,WIDE1-1*:@092345z4903.50N/07201.75W>088/036PHG5132 21.8°C!W23!",
+            "N0CALL>APRS:=/5L!!<*e7>7P[",
+            "N0CALL>APRS:=4903.50N/07201.75W\\000/036/270/729",
+            "N0CALL>APRS:/234517h4903.50N/07201.75W>DFS2360",
+            "no header here"
+        );
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--format", "json", "-t", "-n", "5"],
+            TestContext.Current.CancellationToken
+        );
+
+        var lines = result.Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(5, lines.Length);
+        using var first = System.Text.Json.JsonDocument.Parse(lines[0]);
+        var root = first.RootElement;
+        Assert.Equal("2026-10-11T12:00:00.123Z", root.GetProperty("received").GetString());
+        Assert.Equal("N0CALL-9", root.GetProperty("source").GetString());
+        Assert.Equal("WIDE1-1*", root.GetProperty("path")[0].GetString());
+        Assert.Equal("position", root.GetProperty("type").GetString());
+        Assert.Equal("parsed", root.GetProperty("outcome").GetString());
+        var position = root.GetProperty("position");
+        Assert.Equal(49.058367, position.GetProperty("latitude").GetDouble());
+        Assert.Equal("Car", position.GetProperty("symbol").GetProperty("name").GetString());
+        Assert.Equal("092345z", position.GetProperty("timestamp").GetProperty("sent").GetString());
+        Assert.Equal("2026-10-09T23:45:00.000Z", position.GetProperty("timestamp").GetProperty("utc").GetString());
+        Assert.Equal(88, position.GetProperty("course").GetInt32());
+        Assert.False(position.TryGetProperty("phg", out _)); // one data extension per position: PHG stays in the comment
+        Assert.Equal("W", position.GetProperty("datum").GetString());
+        Assert.Equal("PHG5132 21.8°C", position.GetProperty("comment").GetString());
+        Assert.Contains("21.8°C", lines[0], StringComparison.Ordinal);
+
+        using var compressed = System.Text.Json.JsonDocument.Parse(lines[1]);
+        var type = compressed.RootElement.GetProperty("position").GetProperty("compressionType");
+        Assert.Equal("current", type.GetProperty("gpsFix").GetString());
+        Assert.Equal("rmc", type.GetProperty("nmeaSource").GetString());
+        Assert.Equal(
+            System.Text.Json.JsonValueKind.Null,
+            compressed.RootElement.GetProperty("position").GetProperty("altitudeFeet").ValueKind
+        );
+
+        using var df = System.Text.Json.JsonDocument.Parse(lines[2]);
+        Assert.True(df.RootElement.GetProperty("position").GetProperty("df").GetProperty("fixedStation").GetBoolean());
+        using var dfs = System.Text.Json.JsonDocument.Parse(lines[3]);
+        Assert.Equal(
+            System.Text.Json.JsonValueKind.Null,
+            dfs.RootElement.GetProperty("position").GetProperty("dfs").GetProperty("directivity").ValueKind
+        );
+
+        using var bad = System.Text.Json.JsonDocument.Parse(lines[4]);
+        Assert.Equal("malformed", bad.RootElement.GetProperty("outcome").GetString());
+        Assert.Equal("missingHeader", bad.RootElement.GetProperty("issues")[0].GetProperty("code").GetString());
+        Assert.False(bad.RootElement.TryGetProperty("source", out _));
+    }
+
+    [Fact]
+    public async Task CaptureStaysRawWhateverTheFormat()
+    {
+        var capture = Path.Combine(Path.GetTempPath(), $"aprscli-{Guid.NewGuid():N}.log");
+        try
+        {
+            var harness = WithPackets("N0CALL>APRS:!4903.50N/07201.75W-");
+
+            await harness.RunAsync(
+                ["listen", "-c", "NZ0P", "--format", "json", "--capture", capture, "-n", "1"],
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.Equal(
+                "2026-10-11T12:00:00.123Z N0CALL>APRS:!4903.50N/07201.75W-\n",
+                await File.ReadAllTextAsync(capture, TestContext.Current.CancellationToken)
+            );
+        }
+        finally
+        {
+            File.Delete(capture);
+        }
+    }
+
+    [Fact]
     public async Task TimestampsFlagPrefixesConsoleLines()
     {
         var harness = WithPackets(_packets);
@@ -487,7 +625,7 @@ public class ListenTests
     [InlineData("listen --callsign TOOLONGCALL1", "Callsign")]
     [InlineData("listen --callsign N0CALL --filter \"a\\nb\"", "")]
     [InlineData("listen --region mars", "")]
-    [InlineData("listen --format json", "")]
+    [InlineData("listen -c NZ0P --format yaml", "")]
     [InlineData("listen --bogus", "")]
     [InlineData("nope", "")]
     [InlineData("", "")]

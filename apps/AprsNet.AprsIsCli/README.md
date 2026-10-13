@@ -15,12 +15,14 @@ The examples below use `aprscli` for short.
 
 ## listen
 
-Connect to APRS-IS and stream raw packet lines to stdout.
+Connect to APRS-IS and stream packets to stdout: raw lines by default, or decoded.
 
 ```sh
 aprscli listen --region noam --filter "r/35/-97/200" -t
 aprscli listen -c N0CALL --capture captures/noam.log -q -d 10m --reconnect
 aprscli listen --full-feed -n 1000 > sample.txt
+aprscli listen --filter "r/35/-97/200" --format decoded
+aprscli listen --filter "r/35/-97/200" --format json | jq .position
 ```
 
 | Option | Meaning |
@@ -31,8 +33,9 @@ aprscli listen --full-feed -n 1000 > sample.txt
 | `-r`, `--region` | `noam`, `soam`, `euro`, `asia` or `aunz` rotate. |
 | `--port`, `--full-feed` | Port override, or the full feed port 10152. |
 | `-f`, `--filter` | APRS-IS filter sent with the login. |
-| `-t`, `--timestamps` | Prefix printed lines with a UTC timestamp. |
-| `--capture <file>` | Append `<UTC timestamp> <raw line>` for every packet. |
+| `-t`, `--timestamps` | Prefix printed lines with a UTC timestamp (not `json`, which always has a `received` field). |
+| `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields. Only position reports are decoded so far; other types print as not decoded yet. |
+| `--capture <file>` | Append `<UTC timestamp> <raw line>` for every packet, whatever `--format` says. |
 | `-q`, `--quiet` | No packet output on the console. |
 | `--log-packets` | Also log every packet to OpenTelemetry (never the console). Needs `OTEL_EXPORTER_OTLP_ENDPOINT`. |
 | `-n`, `--count` / `-d`, `--duration` | Stop after N packets / after `90s`, `10m`, `2h`, `1d`. Ctrl+C also stops cleanly. |

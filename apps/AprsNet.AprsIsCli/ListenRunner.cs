@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Text;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 
 namespace AprsNet.AprsIsCli;
@@ -182,7 +183,8 @@ internal static class ListenRunner
                 }
 
                 keepalivesAtLastPacket = client.ServerCommentsReceived;
-                var stamp = LineFormatter.Timestamp(environment.TimeProvider.GetUtcNow());
+                var received = environment.TimeProvider.GetUtcNow();
+                var stamp = LineFormatter.Timestamp(received);
 
                 capture?.Write($"{stamp} {line}\n");
                 if (packetLog is not null && packetLog.IsEnabled(LogLevel.Information))
@@ -194,8 +196,19 @@ internal static class ListenRunner
                 {
                     try
                     {
-                        var text = LineFormatter.EscapeForConsole(line);
-                        await environment.Out.WriteLineAsync(options.Timestamps ? $"{stamp} {text}" : text);
+                        var text = options.Format switch
+                        {
+                            OutputFormat.Decoded => LineFormatter.EscapeForConsole(
+                                PacketFormatter.Decoded(AprsPacket.Parse(line))
+                            ),
+                            OutputFormat.Json => PacketFormatter.Json(AprsPacket.Parse(line), received),
+                            _ => LineFormatter.EscapeForConsole(line),
+                        };
+
+                        // JSON carries its own "received" time, so --timestamps only prefixes the text formats.
+                        await environment.Out.WriteLineAsync(
+                            options.Timestamps && options.Format != OutputFormat.Json ? $"{stamp} {text}" : text
+                        );
                     }
                     catch (IOException)
                     {

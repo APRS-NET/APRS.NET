@@ -16,6 +16,8 @@ internal sealed record ListenOptions
 
     public bool Timestamps { get; init; }
 
+    public OutputFormat Format { get; init; }
+
     public string? Capture { get; init; }
 
     public bool Quiet { get; init; }
