@@ -34,7 +34,7 @@ aprscli listen --filter "r/35/-97/200" --format json | jq .position
 | `--port`, `--full-feed` | Port override, or the full feed port 10152. |
 | `-f`, `--filter` | APRS-IS filter sent with the login. |
 | `-t`, `--timestamps` | Prefix printed lines with a UTC timestamp (not `json`, which always has a `received` field). |
-| `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields. Only position reports are decoded so far; other types print as not decoded yet. |
+| `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields. Position and status reports are decoded so far; other types print as not decoded yet. |
 | `--capture <file>` | Append `<UTC timestamp> <raw line>` for every packet, whatever `--format` says. |
 | `-q`, `--quiet` | No packet output on the console. |
 | `--log-packets` | Also log every packet to OpenTelemetry (never the console). Needs `OTEL_EXPORTER_OTLP_ENDPOINT`. |

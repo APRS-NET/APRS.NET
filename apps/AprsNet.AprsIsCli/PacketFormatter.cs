@@ -51,6 +51,9 @@ internal static class PacketFormatter
             case PositionReport report:
                 Position(line, report);
                 break;
+            case StatusReport status:
+                Status(line, status);
+                break;
             default:
                 line.Append(Name(packet.Type))
                     .Append(packet.Outcome == ParseOutcome.Malformed ? " (malformed)" : " (not decoded yet)");
@@ -109,16 +112,104 @@ internal static class PacketFormatter
             }
 
             json.WriteEndArray();
-            if (packet.Payload is PositionReport report)
+            switch (packet.Payload)
             {
-                json.WritePropertyName("position");
-                Position(json, report, received);
+                case PositionReport report:
+                    json.WritePropertyName("position");
+                    Position(json, report, received);
+                    break;
+                case StatusReport status:
+                    json.WritePropertyName("status");
+                    Status(json, status, received);
+                    break;
             }
 
             json.WriteEndObject();
         }
 
         return Encoding.UTF8.GetString(buffer.GetBuffer(), 0, (int)buffer.Length);
+    }
+
+    private static void Status(StringBuilder line, StatusReport status)
+    {
+        line.Append("status");
+        if (status.Timestamp is { } timestamp)
+        {
+            line.Append("  at ").Append(timestamp);
+        }
+
+        if (status.MaidenheadLocator is { } locator)
+        {
+            line.Append("  locator ").Append(locator);
+            if (status.Symbol is { } symbol)
+            {
+                line.Append("  ").Append(symbol).Append(' ').Append(SymbolName(symbol));
+            }
+        }
+
+        if (status.BeamHeading is { } heading)
+        {
+            line.Append(
+                CultureInfo.InvariantCulture,
+                $"  beam {heading:000}° {status.EffectiveRadiatedPowerWatts} W ERP"
+            );
+        }
+
+        if (status.Text.Trim().Length > 0)
+        {
+            line.Append("  \"").Append(status.Text.Trim()).Append('"');
+        }
+    }
+
+    private static void Status(Utf8JsonWriter json, StatusReport status, DateTimeOffset received)
+    {
+        json.WriteStartObject();
+        Timestamp(json, status.Timestamp, received);
+        if (status.MaidenheadLocator is { } locator)
+        {
+            json.WriteString("locator", locator);
+        }
+
+        if (status.Symbol is { } symbol)
+        {
+            Symbol(json, symbol);
+        }
+
+        WriteNumber(json, "beamHeading", status.BeamHeading);
+        WriteNumber(json, "erpWatts", status.EffectiveRadiatedPowerWatts);
+        json.WriteString("text", status.Text);
+        json.WriteEndObject();
+    }
+
+    private static void Timestamp(Utf8JsonWriter json, AprsTimestamp? timestamp, DateTimeOffset received)
+    {
+        if (timestamp is not { } sent)
+        {
+            return;
+        }
+
+        json.WriteStartObject("timestamp");
+        json.WriteString("sent", sent.ToString());
+        if (sent.ToDateTimeOffset(received) is { } time)
+        {
+            json.WriteString("utc", LineFormatter.Timestamp(time));
+        }
+
+        json.WriteEndObject();
+    }
+
+    private static void Symbol(Utf8JsonWriter json, AprsSymbol symbol)
+    {
+        json.WriteStartObject("symbol");
+        json.WriteString("table", symbol.WithoutOverlay.Table.ToString());
+        json.WriteString("code", symbol.Code.ToString());
+        if (symbol.Overlay is { } overlay)
+        {
+            json.WriteString("overlay", overlay.ToString());
+        }
+
+        json.WriteString("name", SymbolName(symbol));
+        json.WriteEndObject();
     }
 
     private static void Position(StringBuilder line, PositionReport report)
@@ -207,27 +298,8 @@ internal static class PacketFormatter
         json.WriteNumber("longitude", Math.Round(report.Position.Longitude, 6));
         json.WriteNumber("ambiguity", report.Position.Ambiguity);
         json.WriteBoolean("unknown", report.IsPositionUnknown);
-        json.WriteStartObject("symbol");
-        json.WriteString("table", report.Symbol.WithoutOverlay.Table.ToString());
-        json.WriteString("code", report.Symbol.Code.ToString());
-        if (report.Symbol.Overlay is { } overlay)
-        {
-            json.WriteString("overlay", overlay.ToString());
-        }
-
-        json.WriteString("name", SymbolName(report.Symbol));
-        json.WriteEndObject();
-        if (report.Timestamp is { } timestamp)
-        {
-            json.WriteStartObject("timestamp");
-            json.WriteString("sent", timestamp.ToString());
-            if (timestamp.ToDateTimeOffset(received) is { } time)
-            {
-                json.WriteString("utc", LineFormatter.Timestamp(time));
-            }
-
-            json.WriteEndObject();
-        }
+        Symbol(json, report.Symbol);
+        Timestamp(json, report.Timestamp, received);
 
         json.WriteBoolean("messaging", report.IsMessagingCapable);
         json.WriteBoolean("compressed", report.IsCompressed);

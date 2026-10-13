@@ -70,7 +70,7 @@ public class ListenTests
             "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10  position 49.05833 -72.02917  /> Car  088° 36 kn  1234 ft  messaging  \"/A=001234 Hi\"",
             lines[0]
         );
-        Assert.Equal("N0CALL>APRS,TCPIP*  status (not decoded yet)  >status text", lines[1]);
+        Assert.Equal("N0CALL>APRS,TCPIP*  status  \"status text\"", lines[1]);
         Assert.Equal(
             "N0CALL>APRS,TCPIP*  position (malformed)  !9903.50N/07201.75W-  [error InvalidLatitude at 20]",
             lines[2]
@@ -163,6 +163,44 @@ public class ListenTests
         Assert.Equal("malformed", bad.RootElement.GetProperty("outcome").GetString());
         Assert.Equal("missingHeader", bad.RootElement.GetProperty("issues")[0].GetProperty("code").GetString());
         Assert.False(bad.RootElement.TryGetProperty("source", out _));
+    }
+
+    [Fact]
+    public async Task StatusReportsPrintDecodedAndAsJson()
+    {
+        string[] packets =
+        [
+            "N0CALL>APRS:>092345zNet Control",
+            "N0CALL>APRS:>IO91SX/- ^B7",
+            // The client hands over one character per byte, so UTF-8 text arrives as Latin-1 characters.
+            "N0CALL>APRS:>" + Encoding.Latin1.GetString(Encoding.UTF8.GetBytes("Ciallo ☆")),
+        ];
+
+        var decoded = await WithPackets(packets)
+            .RunAsync(
+                ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "3"],
+                TestContext.Current.CancellationToken
+            );
+        var json = await WithPackets(packets)
+            .RunAsync(["listen", "-c", "NZ0P", "--format", "json", "-n", "3"], TestContext.Current.CancellationToken);
+
+        var lines = decoded.Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal("N0CALL>APRS  status  at 092345z  \"Net Control\"", lines[0]);
+        Assert.Equal("N0CALL>APRS  status  locator IO91SX  /- House (VHF)  beam 110° 490 W ERP  \"^B7\"", lines[1]);
+        Assert.Equal("N0CALL>APRS  status  \"Ciallo ☆\"", lines[2]);
+
+        var objects = json
+            .Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement.GetProperty("status"))
+            .ToList();
+        Assert.Equal("Net Control", objects[0].GetProperty("text").GetString());
+        Assert.Equal("2026-10-09T23:45:00.000Z", objects[0].GetProperty("timestamp").GetProperty("utc").GetString());
+        Assert.Equal("IO91SX", objects[1].GetProperty("locator").GetString());
+        Assert.Equal("House (VHF)", objects[1].GetProperty("symbol").GetProperty("name").GetString());
+        Assert.Equal(110, objects[1].GetProperty("beamHeading").GetInt32());
+        Assert.Equal(490, objects[1].GetProperty("erpWatts").GetInt32());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, objects[2].GetProperty("beamHeading").ValueKind);
+        Assert.False(objects[2].TryGetProperty("timestamp", out _));
     }
 
     [Fact]
