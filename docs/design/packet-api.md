@@ -1,6 +1,6 @@
 # Packet API design
 
-Status: **agreed; milestone 1 is implemented: the header, position reports, status reports and messages** (`AprsNet.Packets`). This is the shape of `AprsPacket` and how text
+Status: **agreed; milestone 1 is implemented (the header, position reports, status reports and messages), plus objects and items** (`AprsNet.Packets`). This is the shape of `AprsPacket` and how text
 and bytes get into it. Packet payload types (positions, Mic-E, messages…) build on it and get their own notes as they
 land.
 
@@ -247,6 +247,20 @@ The message format (`:ADDRESSEE:`, APRS101 ch. 13–15) carries two payloads:
 A missing or unpadded addressee is the only error (`InvalidAddressee`). Real traffic uses longer announcement
 names than the spec (`BLNALUX`, `BLNA-WEB`); these read as announcement `A` with the rest as the group. NTS
 radiogram routing inside the text (`N1\…`) is not decoded yet.
+
+### Objects and items
+
+`ObjectReport` (`;`) and `ItemReport` (`)`) carry the same position body as a position report, so the three share
+an abstract base, `PositionedPayload`, with every position field; a map can `switch` on `PositionedPayload` once.
+`PositionReport` adds only `IsMessagingCapable`. Objects add a 9-character name (padding removed), live or killed,
+and a required timestamp (broken ones are a warning when the position is good, as for position reports); items add
+a 3–9 character name and live or killed, and have no timestamp.
+
+Two extensions apply to any positioned payload: an area symbol (`\l`) reads its `Tyy/Cxx` extension as an
+`AreaShape` (shape, fill, colour, and size codes turned into degrees as code² / 1500, the APRS 1.1 correction), with
+a line's corridor width from `{nnn}` in the comment; a signpost symbol (`\m`) reads its 1–3 character text from
+`{…}`. Both stay in the comment. Weather in an object's comment and storm data on `\@` wait for the weather
+decoder.
 
 ## AX.25 and KISS (phase 2)
 

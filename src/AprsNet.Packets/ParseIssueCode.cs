@@ -56,4 +56,10 @@ public enum ParseIssueCode
 
     /// <summary>A telemetry definition (<c>EQNS.</c> or <c>BITS.</c>) has values that cannot be read; it is kept without them.</summary>
     InvalidTelemetryDefinition,
+
+    /// <summary>An object has no 9-character name followed by <c>*</c> (live) or <c>_</c> (killed) and a timestamp.</summary>
+    InvalidObject,
+
+    /// <summary>An item has no 3–9 character name followed by <c>!</c> (live) or <c>_</c> (killed).</summary>
+    InvalidItem,
 }

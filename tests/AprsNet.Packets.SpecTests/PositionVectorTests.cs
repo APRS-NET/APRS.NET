@@ -33,79 +33,96 @@ public class PositionVectorTests
         var report = Assert.IsType<PositionReport>(packet.Payload);
         foreach (var field in vector.GetProperty("expect").EnumerateObject())
         {
-            var e = field.Value;
             switch (field.Name)
             {
                 case "type":
                     break;
-                case "latitude":
-                    Near(e.GetDouble(), report.Position.Latitude, 0.000001, id, field.Name);
-                    break;
-                case "longitude":
-                    Near(e.GetDouble(), report.Position.Longitude, 0.000001, id, field.Name);
-                    break;
-                case "ambiguity":
-                    Assert.Equal(e.GetInt32(), report.Position.Ambiguity);
-                    break;
                 case "messaging":
-                    Assert.Equal(e.GetBoolean(), report.IsMessagingCapable);
-                    break;
-                case "positionUnknown":
-                    Assert.Equal(e.GetBoolean(), report.IsPositionUnknown);
-                    break;
-                case "comment":
-                    Assert.Equal(e.GetString(), report.Comment);
-                    break;
-                case "course":
-                    Assert.Equal(IntOrNull(e), report.Course);
-                    break;
-                case "speed":
-                    NearOrNull(e, report.SpeedKnots, 0.05, id, field.Name);
-                    break;
-                case "rangeMiles":
-                    NearOrNull(e, report.RangeMiles, 0.01, id, field.Name);
-                    break;
-                case "altitudeFeet":
-                    NearOrNull(e, report.AltitudeFeet, 0.5, id, field.Name);
-                    break;
-                case "symbol":
-                    Symbol(e, report.Symbol);
-                    break;
-                case "timestamp":
-                    Timestamp(e, Assert.NotNull(report.Timestamp));
-                    break;
-                case "phg":
-                    Assert.NotNull(report.PowerHeightGain);
-                    var phg = report.PowerHeightGain;
-                    Assert.Equal(e.GetProperty("powerWatts").GetInt32(), phg.PowerWatts);
-                    Assert.Equal(e.GetProperty("heightFeet").GetInt32(), phg.HeightFeet);
-                    Assert.Equal(e.GetProperty("gainDb").GetInt32(), phg.GainDbi);
-                    Assert.Equal(IntOrNull(e.GetProperty("directivity")), phg.Directivity);
-                    Near(e.GetProperty("rangeMiles").GetDouble(), phg.RangeMiles, 0.06, id, "phg.rangeMiles");
-                    break;
-                case "dfs":
-                    Assert.NotNull(report.DirectionFindingStrength);
-                    var dfs = report.DirectionFindingStrength;
-                    Assert.Equal(e.GetProperty("strength").GetInt32(), dfs.Strength);
-                    Assert.Equal(e.GetProperty("heightFeet").GetInt32(), dfs.HeightFeet);
-                    Assert.Equal(e.GetProperty("gainDb").GetInt32(), dfs.GainDbi);
-                    Assert.Equal(IntOrNull(e.GetProperty("directivity")), dfs.Directivity);
-                    break;
-                case "df":
-                    Assert.NotNull(report.DirectionFinding);
-                    DirectionFinding(e, report.DirectionFinding);
-                    break;
-                case "compressionType":
-                    var type = Assert.NotNull(report.CompressionType);
-                    Assert.Equal(Name(e, "gpsFix"), type.GpsFix.ToString().ToUpperInvariant());
-                    Assert.Equal(Name(e, "nmeaSource"), type.NmeaSource.ToString().ToUpperInvariant());
-                    Assert.Equal(Name(e, "origin"), type.Origin.ToString().ToUpperInvariant());
+                    Assert.Equal(field.Value.GetBoolean(), report.IsMessagingCapable);
                     break;
                 default:
-                    Assert.Fail($"{id}: the test does not check expected field '{field.Name}' yet");
+                    Assert.True(
+                        CheckPositionField(id, field.Name, field.Value, report),
+                        $"{id}: the test does not check expected field '{field.Name}' yet"
+                    );
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Checks one expected field shared by position reports, objects and items. Returns false for a field it does
+    /// not know, so the caller can check its own fields or fail.
+    /// </summary>
+    internal static bool CheckPositionField(string id, string name, JsonElement e, PositionedPayload report)
+    {
+        switch (name)
+        {
+            case "latitude":
+                Near(e.GetDouble(), report.Position.Latitude, 0.000001, id, name);
+                break;
+            case "longitude":
+                Near(e.GetDouble(), report.Position.Longitude, 0.000001, id, name);
+                break;
+            case "ambiguity":
+                Assert.Equal(e.GetInt32(), report.Position.Ambiguity);
+                break;
+            case "positionUnknown":
+                Assert.Equal(e.GetBoolean(), report.IsPositionUnknown);
+                break;
+            case "comment":
+                Assert.Equal(e.GetString(), report.Comment);
+                break;
+            case "course":
+                Assert.Equal(IntOrNull(e), report.Course);
+                break;
+            case "speed":
+                NearOrNull(e, report.SpeedKnots, 0.05, id, name);
+                break;
+            case "rangeMiles":
+                NearOrNull(e, report.RangeMiles, 0.01, id, name);
+                break;
+            case "altitudeFeet":
+                NearOrNull(e, report.AltitudeFeet, 0.5, id, name);
+                break;
+            case "symbol":
+                Symbol(e, report.Symbol);
+                break;
+            case "timestamp":
+                Timestamp(e, Assert.NotNull(report.Timestamp));
+                break;
+            case "phg":
+                Assert.NotNull(report.PowerHeightGain);
+                var phg = report.PowerHeightGain;
+                Assert.Equal(e.GetProperty("powerWatts").GetInt32(), phg.PowerWatts);
+                Assert.Equal(e.GetProperty("heightFeet").GetInt32(), phg.HeightFeet);
+                Assert.Equal(e.GetProperty("gainDb").GetInt32(), phg.GainDbi);
+                Assert.Equal(IntOrNull(e.GetProperty("directivity")), phg.Directivity);
+                Near(e.GetProperty("rangeMiles").GetDouble(), phg.RangeMiles, 0.06, id, "phg.rangeMiles");
+                break;
+            case "dfs":
+                Assert.NotNull(report.DirectionFindingStrength);
+                var dfs = report.DirectionFindingStrength;
+                Assert.Equal(e.GetProperty("strength").GetInt32(), dfs.Strength);
+                Assert.Equal(e.GetProperty("heightFeet").GetInt32(), dfs.HeightFeet);
+                Assert.Equal(e.GetProperty("gainDb").GetInt32(), dfs.GainDbi);
+                Assert.Equal(IntOrNull(e.GetProperty("directivity")), dfs.Directivity);
+                break;
+            case "df":
+                Assert.NotNull(report.DirectionFinding);
+                DirectionFinding(e, report.DirectionFinding);
+                break;
+            case "compressionType":
+                var type = Assert.NotNull(report.CompressionType);
+                Assert.Equal(Name(e, "gpsFix"), type.GpsFix.ToString().ToUpperInvariant());
+                Assert.Equal(Name(e, "nmeaSource"), type.NmeaSource.ToString().ToUpperInvariant());
+                Assert.Equal(Name(e, "origin"), type.Origin.ToString().ToUpperInvariant());
+                break;
+            default:
+                return false;
+        }
+
+        return true;
     }
 
     private static void Symbol(JsonElement e, AprsSymbol symbol)

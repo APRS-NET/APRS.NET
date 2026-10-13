@@ -15,56 +15,76 @@ internal static class PositionDecoder
     {
         var info = information.Span;
         var at = 1;
-        AprsTimestamp? timestamp = null;
+        var report = new PositionReport { IsMessagingCapable = info[0] is (byte)'=' or (byte)'@' };
         var badTimestamp = false;
         if (info[0] is (byte)'/' or (byte)'@')
         {
             badTimestamp = !AprsTimestamp.TryParse(info[1..], out var parsed);
-            timestamp = badTimestamp ? null : parsed;
+            report.Timestamp = badTimestamp ? null : parsed;
             at = 8;
         }
 
-        var messaging = info[0] is (byte)'=' or (byte)'@';
-        var report =
-            info.Length > at && (char.IsAsciiDigit((char)info[at]) || info[at] == ' ')
-                ? DecodeUncompressed(information, at, offset, timestamp, messaging, issues)
-                : DecodeCompressed(information, at, offset, timestamp, messaging, issues);
+        var decoded = TryDecodePosition(information, at, offset, issues, report);
         if (badTimestamp)
         {
             // A broken timestamp in front of a good position (seen from some firmware) only loses the time.
-            var severity = report is null ? ParseIssueSeverity.Error : ParseIssueSeverity.Warning;
+            var severity = decoded ? ParseIssueSeverity.Warning : ParseIssueSeverity.Error;
             issues.Insert(0, new ParseIssue(ParseIssueCode.InvalidTimestamp, severity, offset + 1));
         }
 
-        return report;
+        return decoded ? report : null;
     }
 
-    private static PositionReport? DecodeUncompressed(
+    /// <summary>
+    /// Decodes the position, symbol, data extension and comment that start at <paramref name="at"/> into
+    /// <paramref name="target"/>. Returns <see langword="false"/>, with an error issue, when there is no valid position.
+    /// </summary>
+    internal static bool TryDecodePosition(
         ReadOnlyMemory<byte> information,
         int at,
         int offset,
-        AprsTimestamp? timestamp,
-        bool messaging,
-        List<ParseIssue> issues
+        List<ParseIssue> issues,
+        PositionedPayload target
+    )
+    {
+        var info = information.Span;
+        var decoded =
+            info.Length > at && (char.IsAsciiDigit((char)info[at]) || info[at] == ' ')
+                ? DecodeUncompressed(information, at, offset, issues, target)
+                : DecodeCompressed(information, at, offset, issues, target);
+        if (decoded && target.Symbol.WithoutOverlay == new AprsSymbol('\\', 'm'))
+        {
+            target.Signpost = Braces(target.CommentBytes.Span, digitsOnly: false);
+        }
+
+        return decoded;
+    }
+
+    private static bool DecodeUncompressed(
+        ReadOnlyMemory<byte> information,
+        int at,
+        int offset,
+        List<ParseIssue> issues,
+        PositionedPayload target
     )
     {
         var info = information.Span;
         if (info.Length < at + 19)
         {
             issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
-            return null;
+            return false;
         }
 
         if (!TryLatitude(info.Slice(at, 8), out var latitude, out var ambiguity, out var lowerLatitude))
         {
             issues.Add(Error(ParseIssueCode.InvalidLatitude, offset + at));
-            return null;
+            return false;
         }
 
         if (!TryLongitude(info.Slice(at + 9, 9), ambiguity, out var longitude, out var lowerLongitude))
         {
             issues.Add(Error(ParseIssueCode.InvalidLongitude, offset + at + 9));
-            return null;
+            return false;
         }
 
         if (lowerLatitude || lowerLongitude)
@@ -80,7 +100,7 @@ internal static class PositionDecoder
 
         if (!TrySymbol(info[at + 8], info[at + 18], offset + at + 8, issues, out var symbol))
         {
-            return null;
+            return false;
         }
 
         // Data extension: course/speed (with a DF bearing report on the DF symbol), PHG, RNG or DFS.
@@ -90,8 +110,14 @@ internal static class PositionDecoder
         double? range = null;
         DirectionFindingStrength? dfs = null;
         DirectionFindingReport? df = null;
+        AreaShape? area = null;
+        int? course = null;
         var used = 0;
-        if (TryCourseSpeed(rest, out var course, out var speedKnots))
+        if (symbol.WithoutOverlay == new AprsSymbol('\\', 'l') && TryArea(rest, out area))
+        {
+            used = 7;
+        }
+        else if (TryCourseSpeed(rest, out course, out var speedKnots))
         {
             speed = speedKnots;
             used = 7;
@@ -119,57 +145,62 @@ internal static class PositionDecoder
         var commentStart = at + 19 + used;
         var comment = information[commentStart..];
         var (position, datum, text) = ApplyDao(new AprsPosition(latitude, longitude, ambiguity), comment.Span);
-        return new PositionReport
+        if (
+            area is not null
+            && area.Kind == AreaShapeKind.Line
+            && Braces(comment.Span, digitsOnly: true) is { } corridor
+        )
         {
-            Position = position,
-            Symbol = symbol,
-            Timestamp = timestamp,
-            IsMessagingCapable = messaging,
-            Course = course,
-            SpeedKnots = speed,
-            AltitudeFeet = CommentAltitude(comment.Span),
-            PowerHeightGain = phg,
-            RangeMiles = range,
-            DirectionFindingStrength = dfs,
-            DirectionFinding = df,
-            Datum = datum,
-            CommentBytes = comment,
-            Comment = text,
-        };
+            area = area with { CorridorMiles = int.Parse(corridor, System.Globalization.CultureInfo.InvariantCulture) };
+        }
+
+        target.Position = position;
+        target.Symbol = symbol;
+        target.Course = course;
+        target.SpeedKnots = speed;
+        target.AltitudeFeet = CommentAltitude(comment.Span);
+        target.PowerHeightGain = phg;
+        target.RangeMiles = range;
+        target.DirectionFindingStrength = dfs;
+        target.DirectionFinding = df;
+        target.Area = area;
+        target.Datum = datum;
+        target.CommentBytes = comment;
+        target.Comment = text;
+        return true;
     }
 
-    private static PositionReport? DecodeCompressed(
+    private static bool DecodeCompressed(
         ReadOnlyMemory<byte> information,
         int at,
         int offset,
-        AprsTimestamp? timestamp,
-        bool messaging,
-        List<ParseIssue> issues
+        List<ParseIssue> issues,
+        PositionedPayload target
     )
     {
         var info = information.Span;
         if (info.Length < at + 13)
         {
             issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
-            return null;
+            return false;
         }
 
         var table = info[at] is >= (byte)'a' and <= (byte)'j' ? (byte)('0' + info[at] - 'a') : info[at];
         if (!TryBase91(info.Slice(at + 1, 4), out var y) || y > 380926 * 180)
         {
             issues.Add(Error(ParseIssueCode.InvalidLatitude, offset + at + 1));
-            return null;
+            return false;
         }
 
         if (!TryBase91(info.Slice(at + 5, 4), out var x) || x > 190463 * 360)
         {
             issues.Add(Error(ParseIssueCode.InvalidLongitude, offset + at + 5));
-            return null;
+            return false;
         }
 
         if (!TrySymbol(table, info[at + 9], offset + at, issues, out var symbol))
         {
-            return null;
+            return false;
         }
 
         int? course = null;
@@ -202,21 +233,17 @@ internal static class PositionDecoder
         }
 
         var comment = information[(at + 13)..];
-        return new PositionReport
-        {
-            Position = new AprsPosition(90 - (y / 380926.0), -180 + (x / 190463.0)),
-            Symbol = symbol,
-            Timestamp = timestamp,
-            IsMessagingCapable = messaging,
-            IsCompressed = true,
-            Course = course,
-            SpeedKnots = speed,
-            RangeMiles = range,
-            AltitudeFeet = altitude ?? CommentAltitude(comment.Span),
-            CompressionType = type,
-            CommentBytes = comment,
-            Comment = Text(comment.Span),
-        };
+        target.Position = new AprsPosition(90 - (y / 380926.0), -180 + (x / 190463.0));
+        target.Symbol = symbol;
+        target.IsCompressed = true;
+        target.Course = course;
+        target.SpeedKnots = speed;
+        target.RangeMiles = range;
+        target.AltitudeFeet = altitude ?? CommentAltitude(comment.Span);
+        target.CompressionType = type;
+        target.CommentBytes = comment;
+        target.Comment = Text(comment.Span);
+        return true;
     }
 
     /// <summary>Latitude <c>DDMM.hhN</c>, where trailing digits may be spaces for ambiguity.</summary>
@@ -340,6 +367,54 @@ internal static class PositionDecoder
             value = number;
             return ok;
         }
+    }
+
+    /// <summary>
+    /// An area extension <c>Tyy/Cxx</c>: type digit, two-digit latitude code, <c>/</c> (or <c>1</c> when the colour is
+    /// 10–15), colour digit, two-digit longitude code (APRS101 ch. 11).
+    /// </summary>
+    private static bool TryArea(ReadOnlySpan<byte> rest, out AreaShape? area)
+    {
+        area = null;
+        if (
+            rest.Length < 7
+            || !char.IsAsciiDigit((char)rest[0])
+            || !TryDigits(rest.Slice(1, 2), out var yy)
+            || rest[3] is not ((byte)'/' or (byte)'1')
+            || !char.IsAsciiDigit((char)rest[4])
+            || !TryDigits(rest.Slice(5, 2), out var xx)
+        )
+        {
+            return false;
+        }
+
+        var color = (rest[3] == '1' ? 10 : 0) + (rest[4] - '0');
+        if (color > 15)
+        {
+            return false;
+        }
+
+        area = new AreaShape(rest[0] - '0', color, yy, xx, null);
+        return true;
+    }
+
+    /// <summary>The 1–3 characters in the first <c>{…}</c> of a comment (a signpost or a corridor width).</summary>
+    private static string? Braces(ReadOnlySpan<byte> comment, bool digitsOnly)
+    {
+        var open = comment.IndexOf((byte)'{');
+        if (open < 0)
+        {
+            return null;
+        }
+
+        var close = comment[(open + 1)..].IndexOf((byte)'}');
+        if (close is < 1 or > 3)
+        {
+            return null;
+        }
+
+        var inside = comment.Slice(open + 1, close);
+        return digitsOnly && !TryDigits(inside, out _) ? null : AprsText.Decode(inside);
     }
 
     /// <summary>A DF bearing report <c>/BRG/NRQ</c> after course and speed.</summary>

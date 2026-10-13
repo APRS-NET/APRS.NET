@@ -80,6 +80,21 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void EveryObjectAndItemDecodes()
+    {
+        var packets = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Type is PacketType.Object or PacketType.Item)
+            .ToList();
+
+        Assert.True(packets.Count > 900, $"only {packets.Count} objects and items in the corpus");
+        Assert.All(packets, p => Assert.IsAssignableFrom<PositionedPayload>(p.Payload));
+        Assert.Contains(packets, p => p.Payload is ObjectReport { IsLive: false });
+        Assert.Contains(packets, p => p.Payload is ItemReport);
+    }
+
+    [Fact]
     public void AnIGateThatInsertsUiMarkersLeavesThePacketTypeUnknown()
     {
         // One IGate in the Kansas City capture inserts " <UI>:" before the data type identifier. The packet is kept

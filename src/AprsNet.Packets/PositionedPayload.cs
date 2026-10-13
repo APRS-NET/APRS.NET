@@ -1,0 +1,71 @@
+namespace AprsNet.Packets;
+
+/// <summary>
+/// A payload that places something on the map: a <see cref="PositionReport"/>, an <see cref="ObjectReport"/> or an
+/// <see cref="ItemReport"/>. All three carry the same position, symbol, data extensions and comment (APRS101 ch. 7–9
+/// and 11), so a map can handle them with one <c>case PositionedPayload</c>.
+/// </summary>
+public abstract class PositionedPayload : AprsPayload
+{
+    private protected PositionedPayload() { }
+
+    /// <summary>The position. With a <c>!DAO!</c> token the extra precision is already applied.</summary>
+    public AprsPosition Position { get; internal set; }
+
+    /// <summary>The symbol.</summary>
+    public AprsSymbol Symbol { get; internal set; }
+
+    /// <summary>When the position was valid: optional on position reports, required on objects, absent on items.</summary>
+    public AprsTimestamp? Timestamp { get; internal set; }
+
+    /// <summary>Whether the position was sent in the compressed format (APRS101 ch. 9).</summary>
+    public bool IsCompressed { get; internal set; }
+
+    /// <summary>Whether the sender marked the position as unknown: <c>\.</c> at 0° N 0° W (APRS101 ch. 6).</summary>
+    public bool IsPositionUnknown => Symbol == new AprsSymbol('\\', '.') && Position is { Latitude: 0, Longitude: 0 };
+
+    /// <summary>
+    /// Course over the ground in degrees as sent, 0 to 360, or <see langword="null"/> when not sent. APRS allows
+    /// <c>000</c> to mean unknown, so 0 may not be north. For the weather station symbol this is the wind direction.
+    /// </summary>
+    public int? Course { get; internal set; }
+
+    /// <summary>Speed in knots, or <see langword="null"/> when not sent. For the weather station symbol this is wind speed.</summary>
+    public double? SpeedKnots { get; internal set; }
+
+    /// <summary>Altitude in feet, from a compressed position or a <c>/A=</c> comment field.</summary>
+    public double? AltitudeFeet { get; internal set; }
+
+    /// <summary>Power, height, gain and directivity (<c>PHG</c>).</summary>
+    public PowerHeightGain? PowerHeightGain { get; internal set; }
+
+    /// <summary>Radio range in miles (<c>RNG</c>, or the range form of a compressed position).</summary>
+    public double? RangeMiles { get; internal set; }
+
+    /// <summary>Direction-finding signal strength (<c>DFS</c>).</summary>
+    public DirectionFindingStrength? DirectionFindingStrength { get; internal set; }
+
+    /// <summary>A direction-finding bearing report (<c>/BRG/NRQ</c> after course and speed).</summary>
+    public DirectionFindingReport? DirectionFinding { get; internal set; }
+
+    /// <summary>The compression type byte of a compressed position that carries course, speed, range or altitude.</summary>
+    public CompressionType? CompressionType { get; internal set; }
+
+    /// <summary>The shape an area symbol (<c>\l</c>) draws, from its <c>Tyy/Cxx</c> extension (APRS101 ch. 11).</summary>
+    public AreaShape? Area { get; internal set; }
+
+    /// <summary>The 1–3 character text a signpost symbol (<c>\m</c>) shows, from <c>{55}</c> in the comment.</summary>
+    public string? Signpost { get; internal set; }
+
+    /// <summary>The datum named by a <c>!DAO!</c> token (APRS 1.2), for example <c>W</c> for WGS84.</summary>
+    public char? Datum { get; internal set; }
+
+    /// <summary>The comment exactly as sent: every byte after the position and data extension.</summary>
+    public ReadOnlyMemory<byte> CommentBytes { get; internal set; }
+
+    /// <summary>
+    /// The comment as text, without a <c>!DAO!</c> token: decoded as UTF-8 when the bytes are valid UTF-8, otherwise
+    /// one character per byte (Latin-1). APRS has no text encoding, so this is a best guess.
+    /// </summary>
+    public string Comment { get; internal set; } = "";
+}

@@ -106,3 +106,46 @@ public readonly record struct CompressionType(
     CompressedNmeaSource NmeaSource,
     CompressedOrigin Origin
 );
+
+/// <summary>The shapes an area object can draw (APRS101 ch. 11, corrected by APRS 1.1).</summary>
+public enum AreaShapeKind
+{
+    /// <summary>A circle.</summary>
+    Circle,
+
+    /// <summary>A line, drawn down and to the right from the position (type 1), or down and to the left (type 6).</summary>
+    Line,
+
+    /// <summary>An ellipse.</summary>
+    Ellipse,
+
+    /// <summary>A triangle.</summary>
+    Triangle,
+
+    /// <summary>A box.</summary>
+    Box,
+}
+
+/// <summary>
+/// The <c>Tyy/Cxx</c> extension of an area symbol (<c>\l</c>, APRS101 ch. 11): a shape, a colour, and two size codes
+/// that APRS 1.1 turns into degrees as code² / 1500 (A11-AREA-01).
+/// </summary>
+/// <param name="Type">The type digit as sent, 0 to 9: the shape is <c>Type % 5</c>, and 5 and up are colour-filled.</param>
+/// <param name="Color">The colour, 0 to 15.</param>
+/// <param name="LatitudeCode">The latitude size code (<c>yy</c>).</param>
+/// <param name="LongitudeCode">The longitude size code (<c>xx</c>).</param>
+/// <param name="CorridorMiles">For a line, the corridor width in miles from <c>{nnn}</c> in the comment.</param>
+public sealed record AreaShape(int Type, int Color, int LatitudeCode, int LongitudeCode, int? CorridorMiles)
+{
+    /// <summary>The shape drawn.</summary>
+    public AreaShapeKind Kind => Type == 6 ? AreaShapeKind.Line : (AreaShapeKind)(Type % 5);
+
+    /// <summary>Whether the shape is filled with its colour (types 5 to 9, except the type-6 line).</summary>
+    public bool IsFilled => Type >= 5 && Type != 6;
+
+    /// <summary>The latitude extent in degrees: <see cref="LatitudeCode"/>² / 1500.</summary>
+    public double LatitudeOffsetDegrees => LatitudeCode * LatitudeCode / 1500.0;
+
+    /// <summary>The longitude extent in degrees: <see cref="LongitudeCode"/>² / 1500.</summary>
+    public double LongitudeOffsetDegrees => LongitudeCode * LongitudeCode / 1500.0;
+}

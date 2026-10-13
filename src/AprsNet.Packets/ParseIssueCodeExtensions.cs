@@ -25,6 +25,8 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.LowercaseHemisphere => "A position uses a lower-case hemisphere letter.",
             ParseIssueCode.InvalidAddressee => "The message has no 9-character addressee followed by ':'.",
             ParseIssueCode.InvalidTelemetryDefinition => "The telemetry definition's values cannot be read.",
+            ParseIssueCode.InvalidObject => "The object has no 9-character name followed by * or _ and a timestamp.",
+            ParseIssueCode.InvalidItem => "The item has no 3 to 9 character name followed by ! or _.",
             _ => code.ToString(),
         };
 }
