@@ -129,6 +129,7 @@ internal static class PacketFormatter
                         {
                             ObjectReport => "object",
                             ItemReport => "item",
+                            MicEReport => "micE",
                             _ => "position",
                         }
                     );
@@ -375,6 +376,7 @@ internal static class PacketFormatter
             {
                 ObjectReport o => $"object {o.Name}{(o.IsLive ? "" : " (killed)")}  position ",
                 ItemReport i => $"item {i.Name}{(i.IsLive ? "" : " (killed)")}  position ",
+                MicEReport => "Mic-E position ",
                 _ => "position ",
             }
         );
@@ -453,7 +455,16 @@ internal static class PacketFormatter
             line.Append("  signpost ").Append(signpost);
         }
 
-        if (report is PositionReport { IsMessagingCapable: true })
+        if (report is MicEReport mice)
+        {
+            line.Append("  ").Append(MicEMessageName(mice.Message));
+            if (mice.Device is { } device)
+            {
+                line.Append("  ").Append(device);
+            }
+        }
+
+        if (report is PositionReport { IsMessagingCapable: true } or MicEReport { IsMessagingCapable: true })
         {
             line.Append("  messaging");
         }
@@ -463,6 +474,21 @@ internal static class PacketFormatter
             line.Append("  \"").Append(report.Comment.Trim()).Append('"');
         }
     }
+
+    /// <summary>A Mic-E message as the radios show it: <c>In Service</c>, <c>Custom-2</c>, <c>Emergency</c>.</summary>
+    internal static string MicEMessageName(MicEMessage message) =>
+        message switch
+        {
+            MicEMessage.OffDuty => "Off Duty",
+            MicEMessage.EnRoute => "En Route",
+            MicEMessage.InService => "In Service",
+            MicEMessage.Returning => "Returning",
+            MicEMessage.Committed => "Committed",
+            MicEMessage.Special => "Special",
+            MicEMessage.Priority => "Priority",
+            >= MicEMessage.Custom0 and <= MicEMessage.Custom6 => $"Custom-{message - MicEMessage.Custom0}",
+            _ => message.ToString(),
+        };
 
     /// <summary>An area shape in words: <c>filled box, colour 3, 0.067° × 0.067°</c>.</summary>
     internal static string AreaText(AreaShape area) =>
@@ -493,9 +519,18 @@ internal static class PacketFormatter
         Symbol(json, report.Symbol);
         Timestamp(json, report.Timestamp, received);
 
-        if (report is PositionReport position)
+        switch (report)
         {
-            json.WriteBoolean("messaging", position.IsMessagingCapable);
+            case PositionReport position:
+                json.WriteBoolean("messaging", position.IsMessagingCapable);
+                break;
+            case MicEReport mice:
+                json.WriteBoolean("messaging", mice.IsMessagingCapable);
+                json.WriteString("message", Name(mice.Message));
+                json.WriteBoolean("currentFix", mice.IsCurrentFix);
+                WriteString(json, "device", mice.Device);
+                WriteString(json, "locator", mice.MaidenheadLocator);
+                break;
         }
 
         json.WriteBoolean("compressed", report.IsCompressed);

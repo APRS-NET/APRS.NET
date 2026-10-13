@@ -219,9 +219,23 @@ internal static class PrettyFormatter
             fields.Add(("signpost", style.Bold(Safe(signpost))));
         }
 
-        if (report is PositionReport position)
+        switch (report)
         {
-            fields.Add(("messaging", position.IsMessagingCapable ? "yes" : "no"));
+            case PositionReport position:
+                fields.Add(("messaging", position.IsMessagingCapable ? "yes" : "no"));
+                break;
+            case MicEReport mice:
+                var message = PacketFormatter.MicEMessageName(mice.Message);
+                fields.Add(("Mic-E", mice.Message == MicEMessage.Emergency ? style.Red(message) : message));
+                fields.Add(("device", mice.Device ?? "not identified"));
+                fields.Add(("fix", mice.IsCurrentFix ? "current" : "old"));
+                fields.Add(("messaging", mice.IsMessagingCapable ? "yes" : "no"));
+                if (mice.MaidenheadLocator is { } locator)
+                {
+                    fields.Add(("locator", locator));
+                }
+
+                break;
         }
         if (report.Comment.Trim().Length > 0)
         {

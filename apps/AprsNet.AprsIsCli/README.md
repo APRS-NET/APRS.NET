@@ -35,7 +35,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 | `--port`, `--full-feed` | Port override, or the full feed port 10152. |
 | `-f`, `--filter` | APRS-IS filter sent with the login. |
 | `-t`, `--timestamps` | Prefix printed lines with a UTC timestamp (`raw` and `decoded`; `json` and `pretty` always show the received time). |
-| `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields (pipe it to `jq` to read it indented). `pretty`: a block per packet with the received time, the header and labelled fields in plain units, plus any parse issues. Position reports, objects, items, status reports and messages (including telemetry definitions) are decoded so far; other types print as not decoded yet. |
+| `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields (pipe it to `jq` to read it indented). `pretty`: a block per packet with the received time, the header and labelled fields in plain units, plus any parse issues. Position reports, Mic-E reports, objects, items, status reports and messages (including telemetry definitions) are decoded so far; other types print as not decoded yet. |
 | `--color` | Colour for `--format pretty`: `auto` (default; only on a terminal, and not when `NO_COLOR` is set or `TERM=dumb`), `always` (for IDE consoles that show ANSI colours) or `never`. |
 | `--capture <file>` | Append `<UTC timestamp> <raw line>` for every packet, whatever `--format` says. |
 | `-q`, `--quiet` | No packet output on the console. |
