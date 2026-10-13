@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.7...v0.1.0-alpha.8) (2026-10-13)
+
+
+### Features
+
+* **packets:** decode weather reports ([0df3271](https://github.com/APRS-NET/APRS.NET/commit/0df32710b0e1e44e43dc4edcea6c157ecd849679))
+
 ## [0.1.0-alpha.7](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-10-13)
 
 
