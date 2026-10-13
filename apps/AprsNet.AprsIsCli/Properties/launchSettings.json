@@ -5,6 +5,14 @@
       "commandName": "Project",
       "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps"
     },
+    "listen NZ0P Overland Park 20km (decoded)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --format decoded"
+    },
+    "listen NZ0P Overland Park 20km (json)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --format json"
+    },
     "listen NZ0P Overland Park 20km (log packets)": {
       "commandName": "Project",
       "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --log-packets"
@@ -12,6 +20,26 @@
     "listen NZ0P Overland Park 20km (capture)": {
       "commandName": "Project",
       "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --capture captures/overland-park.log --reconnect"
+    },
+    "listen NZ0P Overland Park 20km (decoded, capture raw)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --format decoded --capture captures/overland-park.log --reconnect"
+    },
+    "listen NZ0P Denver 50km (decoded)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/39.74/-104.99/50 --timestamps --format decoded"
+    },
+    "listen NZ0P Denver 50km (json)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/39.74/-104.99/50 --format json"
+    },
+    "listen NZ0P Denver 50km positions and status (decoded)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter \"r/39.74/-104.99/50 -t/oimqtunw\" --timestamps --format decoded"
+    },
+    "listen NZ0P North America 100 packets (decoded)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --region noam --filter r/39.74/-104.99/500 --format decoded --count 100"
     }
   }
 }
