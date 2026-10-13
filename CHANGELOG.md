@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.7](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-10-13)
+
+
+### Features
+
+* **packets:** decode telemetry reports ([acab24d](https://github.com/APRS-NET/APRS.NET/commit/acab24d1285f9cc46b687a91576076d16c1458fd))
+
 ## [0.1.0-alpha.6](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-10-13)
 
 
