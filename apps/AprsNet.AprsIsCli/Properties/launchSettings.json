@@ -13,6 +13,10 @@
       "commandName": "Project",
       "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --format json"
     },
+    "listen NZ0P Overland Park 20km (pretty)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --format pretty --color always"
+    },
     "listen NZ0P Overland Park 20km (log packets)": {
       "commandName": "Project",
       "commandLineArgs": "listen --callsign NZ0P --filter r/38.98/-94.67/20 --timestamps --log-packets"
@@ -32,6 +36,19 @@
     "listen NZ0P Denver 50km (json)": {
       "commandName": "Project",
       "commandLineArgs": "listen --callsign NZ0P --filter r/39.74/-104.99/50 --format json"
+    },
+    "listen NZ0P Denver 50km (pretty)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter r/39.74/-104.99/50 --format pretty --color always"
+    },
+    "listen NZ0P Denver 50km (json | jq)": {
+      "commandName": "Executable",
+      "executablePath": "bash",
+      "commandLineArgs": "-c \"cd \\\"`git rev-parse --show-toplevel`\\\" && dotnet run --no-build --no-launch-profile --project apps/AprsNet.AprsIsCli -- listen --callsign NZ0P --filter r/39.74/-104.99/50 --format json | jq -C --unbuffered .\""
+    },
+    "listen NZ0P Denver 50km positions and status (pretty)": {
+      "commandName": "Project",
+      "commandLineArgs": "listen --callsign NZ0P --filter \"r/39.74/-104.99/50 -t/oimqtunw\" --format pretty --color always"
     },
     "listen NZ0P Denver 50km positions and status (decoded)": {
       "commandName": "Project",
