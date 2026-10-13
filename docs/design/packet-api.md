@@ -1,6 +1,6 @@
 # Packet API design
 
-Status: **agreed; the header and position reports are implemented** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
+Status: **agreed; the header, position reports and status reports are implemented** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
 and bytes get into it. Packet payload types (positions, Mic-E, messages…) build on it and get their own notes as they
 land.
 
@@ -222,6 +222,14 @@ Decisions:
   broken position is an error.
 - **Weather on the weather-station symbol** (`_`): course and speed are the wind until the weather decoder (M3)
   reads the rest of the comment.
+
+### Status reports
+
+`StatusReport` (`>`, APRS101 ch. 16) never fails: a status is text. It reads a zulu `DDHHMMz` timestamp (the only
+form the spec allows; other forms stay text, and an impossible zulu timestamp stays text with an `InvalidTimestamp`
+warning), or a 4- or 6-character Maidenhead locator and symbol at the start (upper-cased whatever case it arrived in),
+and a trailing `^HP` meteor-scatter beam heading and ERP. `Text` keeps everything after the timestamp or locator,
+including the leading space after a locator and any `^HP` code, so it round-trips.
 
 ## AX.25 and KISS (phase 2)
 

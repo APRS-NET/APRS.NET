@@ -50,6 +50,20 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void EveryStatusDecodes()
+    {
+        var statuses = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Type == PacketType.Status)
+            .ToList();
+
+        Assert.True(statuses.Count > 400, $"only {statuses.Count} status reports in the corpus");
+        Assert.All(statuses, p => Assert.IsType<StatusReport>(p.Payload));
+        Assert.Contains(statuses, p => ((StatusReport)p.Payload!).Timestamp is not null);
+    }
+
+    [Fact]
     public void AnIGateThatInsertsUiMarkersLeavesThePacketTypeUnknown()
     {
         // One IGate in the Kansas City capture inserts " <UI>:" before the data type identifier. The packet is kept

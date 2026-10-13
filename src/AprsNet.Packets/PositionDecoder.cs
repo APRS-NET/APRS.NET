@@ -1,6 +1,3 @@
-using System.Text;
-using System.Text.Unicode;
-
 namespace AprsNet.Packets;
 
 /// <summary>
@@ -473,9 +470,7 @@ internal static class PositionDecoder
             : null;
     }
 
-    /// <summary>Comment text: UTF-8 when the bytes are valid UTF-8, otherwise one character per byte.</summary>
-    internal static string Text(ReadOnlySpan<byte> bytes) =>
-        Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
+    private static string Text(ReadOnlySpan<byte> bytes) => AprsText.Decode(bytes);
 
     private static bool TryBase91(ReadOnlySpan<byte> bytes, out int value)
     {

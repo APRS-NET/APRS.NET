@@ -207,7 +207,6 @@ public sealed partial class AprsPacket
         return new AprsPacket(raw, source, destination, path, information, type, payload, issues);
     }
 
-#pragma warning disable CA1859 // one payload decoder so far; status, messages and the rest join this switch
     private static AprsPayload? Decode(
         PacketType type,
         ReadOnlyMemory<byte> information,
@@ -217,9 +216,9 @@ public sealed partial class AprsPacket
         type switch
         {
             PacketType.Position => PositionDecoder.Decode(information, offset, issues),
+            PacketType.Status => StatusDecoder.Decode(information, offset, issues),
             _ => null,
         };
-#pragma warning restore CA1859
 
     private static ParseIssue Error(ParseIssueCode code, int offset) => new(code, ParseIssueSeverity.Error, offset);
 

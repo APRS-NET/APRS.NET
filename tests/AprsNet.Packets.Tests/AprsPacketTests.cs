@@ -187,7 +187,7 @@ public class AprsPacketTests
             packet.Issues
         );
         Assert.Equal("N0 CALL", packet.Source!.Value);
-        Assert.Equal(ParseOutcome.Unsupported, packet.Outcome);
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
     }
 
     [Fact]
@@ -202,7 +202,7 @@ public class AprsPacketTests
             packet.Issues
         );
         Assert.Equal(601, packet.Information.Length);
-        Assert.Equal(ParseOutcome.Unsupported, packet.Outcome);
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
     }
 
     [Theory]

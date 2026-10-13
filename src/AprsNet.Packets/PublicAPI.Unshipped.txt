@@ -202,6 +202,14 @@ AprsNet.Packets.PowerHeightGain.PowerHeightGain(int PowerWatts, int HeightFeet, 
 AprsNet.Packets.PowerHeightGain.PowerWatts.get -> int
 AprsNet.Packets.PowerHeightGain.PowerWatts.init -> void
 AprsNet.Packets.PowerHeightGain.RangeMiles.get -> double
+AprsNet.Packets.StatusReport
+AprsNet.Packets.StatusReport.BeamHeading.get -> int?
+AprsNet.Packets.StatusReport.EffectiveRadiatedPowerWatts.get -> int?
+AprsNet.Packets.StatusReport.MaidenheadLocator.get -> string?
+AprsNet.Packets.StatusReport.Symbol.get -> AprsNet.Packets.AprsSymbol?
+AprsNet.Packets.StatusReport.TextBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.StatusReport.Text.get -> string!
+AprsNet.Packets.StatusReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp?
 override AprsNet.Packets.AprsPacket.ToString() -> string!
 ~override AprsNet.Packets.AprsPosition.Equals(object obj) -> bool
 override AprsNet.Packets.AprsPosition.GetHashCode() -> int

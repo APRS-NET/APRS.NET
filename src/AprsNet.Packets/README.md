@@ -27,8 +27,9 @@ Mic-E data is not valid UTF-8. `Parse(string)` throws `ArgumentException` for a 
 a string has already lost bytes.
 
 Position reports are decoded: plain and compressed positions, ambiguity, timestamps, symbols, course and speed,
-altitude, PHG, RNG, DFS, DF bearings and `!DAO!` precision. Other packet types (Mic-E, messages, objects…) come back
-with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+altitude, PHG, RNG, DFS, DF bearings and `!DAO!` precision. Status reports are decoded too: text, zulu timestamp,
+Maidenhead locator and symbol, and meteor-scatter beam heading and power. Other packet types (Mic-E, messages,
+objects…) come back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
 
 ```csharp
 if (packet.Payload is PositionReport report)
