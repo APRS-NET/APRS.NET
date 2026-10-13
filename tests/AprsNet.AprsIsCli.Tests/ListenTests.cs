@@ -209,7 +209,7 @@ public class ListenTests
         var harness = WithPackets(
             "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10:@092345z4903.5 N/07201.75W>088/036/A=001234 Hi",
             "N0CALL>APRS:>IO91SX/- ^B7",
-            "N0CALL>APRS:_10090556c220s004g005t077",
+            "N0CALL>APRS:!!006B005803500000----03E9--------002105140000005D",
             "N0CALL>APRS:!3907.62n/09447.19w#PHG5132",
             "no header here"
         );
@@ -239,7 +239,7 @@ public class ListenTests
         Assert.Contains("locator   IO91SX", blocks[1], StringComparison.Ordinal);
         Assert.Contains("beam      110°, 490 W ERP", blocks[1], StringComparison.Ordinal);
         Assert.Contains("weather   not decoded yet", blocks[2], StringComparison.Ordinal);
-        Assert.Contains("data      _10090556c220", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("data      !!006B", blocks[2], StringComparison.Ordinal);
         Assert.Contains(
             "station   25 W, antenna 20 ft, 3 dBi toward 090°, range 7.9 mi",
             blocks[3],
@@ -282,7 +282,7 @@ public class ListenTests
         Assert.Contains("range     20.1 mi", blocks[3], StringComparison.Ordinal);
         Assert.Contains("position  unknown", blocks[4], StringComparison.Ordinal);
         Assert.Contains("time      092345/ (sender's local time)", blocks[5], StringComparison.Ordinal);
-        Assert.Contains("wind      220° at 4 kn", blocks[5], StringComparison.Ordinal);
+        Assert.Contains("wind      220° 4 mph, gusts 5 mph", blocks[5], StringComparison.Ordinal);
         Assert.Contains("datum     WGS84 (extra precision)", blocks[5], StringComparison.Ordinal);
         Assert.Contains("comment   \"\\x1B[31mred\"", blocks[6], StringComparison.Ordinal);
         Assert.Contains("datum     N (extra precision)", blocks[7], StringComparison.Ordinal);
@@ -570,6 +570,68 @@ public class ListenTests
         Assert.Contains("digital   01101001", pretty[0], StringComparison.Ordinal);
         Assert.Contains("comment   \"Solar\"", pretty[0], StringComparison.Ordinal);
         Assert.DoesNotContain("digital", pretty[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WeatherReportsPrintInEveryFormat()
+    {
+        string[] packets =
+        [
+            "N0CALL>APRS:_10090556c220s004g005t077r001p002P003h50b09900wRSW",
+            "N0CALL>APRS:!4903.50N/07201.75W_.../...t-07h100b.....L850AmbientCWOP.com",
+        ];
+
+        var decoded = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "2"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(
+            [
+                "N0CALL>APRS  weather at 10090556  wind 220° 4 mph, gusts 5 mph  temp 77°F (25.0°C)  "
+                    + "rain 0.01 in last hour, 0.02 in 24 h, 0.03 in since midnight  humidity 50%  pressure 990.0 mb  \"wRSW\"",
+                "N0CALL>APRS  position 49.05833 -72.02917  /_ Weather station (blue)  temp -7°F (-21.7°C)  humidity 100%  "
+                    + "sunlight 850 W/m²  \"AmbientCWOP.com\"",
+            ],
+            decoded
+        );
+
+        var json = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "json", "-n", "2"],
+                    TestContext.Current.CancellationToken
+                )
+        )
+            .Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement)
+            .ToList();
+        var positionless = json[0].GetProperty("weather");
+        Assert.Equal("10090556", positionless.GetProperty("timestamp").GetProperty("sent").GetString());
+        Assert.Equal(220, positionless.GetProperty("windDirection").GetInt32());
+        Assert.Equal(0.03, positionless.GetProperty("rainSinceMidnightInches").GetDouble());
+        Assert.Equal("wRSW", positionless.GetProperty("comment").GetString());
+        var station = json[1].GetProperty("position").GetProperty("weather");
+        Assert.Equal(-7, station.GetProperty("temperatureF").GetInt32());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, station.GetProperty("pressureMillibars").ValueKind);
+        Assert.Equal("AmbientCWOP.com", json[1].GetProperty("position").GetProperty("comment").GetString());
+
+        var pretty = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "pretty", "-n", "2"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("weather   9 Oct 05:56 UTC  (10090556)", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("wind      220° 4 mph, gusts 5 mph", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("pressure  990.0 mb", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("comment   \"wRSW\"", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("temp      -7°F (-21.7°C)", pretty[1], StringComparison.Ordinal);
+        Assert.Contains("sunlight  850 W/m²", pretty[1], StringComparison.Ordinal);
+        Assert.DoesNotContain("wind", pretty[1], StringComparison.Ordinal);
     }
 
     [Fact]

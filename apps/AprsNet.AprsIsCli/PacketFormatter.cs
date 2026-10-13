@@ -66,6 +66,15 @@ internal static class PacketFormatter
             case TelemetryReport telemetry:
                 Telemetry(line, telemetry);
                 break;
+            case WeatherReport weather:
+                line.Append("weather at ").Append(weather.Timestamp);
+                Weather(line, weather.Weather);
+                if (weather.Comment.Trim().Length > 0)
+                {
+                    line.Append("  \"").Append(weather.Comment.Trim()).Append('"');
+                }
+
+                break;
             default:
                 line.Append(Name(packet.Type))
                     .Append(packet.Outcome == ParseOutcome.Malformed ? " (malformed)" : " (not decoded yet)");
@@ -153,6 +162,13 @@ internal static class PacketFormatter
                 case TelemetryReport telemetry:
                     json.WritePropertyName("telemetry");
                     Telemetry(json, telemetry);
+                    break;
+                case WeatherReport weather:
+                    json.WriteStartObject("weather");
+                    Timestamp(json, weather.Timestamp, received);
+                    WeatherReadings(json, weather.Weather);
+                    json.WriteString("comment", weather.Comment);
+                    json.WriteEndObject();
                     break;
             }
 
@@ -465,7 +481,11 @@ internal static class PacketFormatter
             line.Append("  at ").Append(timestamp);
         }
 
-        if (report.Course is not null || report.SpeedKnots is not null)
+        if (report.Weather is { } weather)
+        {
+            Weather(line, weather);
+        }
+        else if (report.Course is not null || report.SpeedKnots is not null)
         {
             line.Append("  ");
             line.Append(
@@ -665,8 +685,118 @@ internal static class PacketFormatter
             json.WriteString("datum", datum.ToString());
         }
 
+        if (report.Weather is { } weather)
+        {
+            json.WriteStartObject("weather");
+            WeatherReadings(json, weather);
+            json.WriteEndObject();
+        }
+
         json.WriteString("comment", report.Comment);
         json.WriteEndObject();
+    }
+
+    private static void Weather(StringBuilder line, WeatherData weather)
+    {
+        foreach (var (label, value) in WeatherFields(weather))
+        {
+            line.Append("  ").Append(label).Append(' ').Append(value);
+        }
+    }
+
+    /// <summary>The readings that were sent, labelled, in plain units: <c>("wind", "220° 4 mph, gusts 5 mph")</c>.</summary>
+    internal static List<(string Label, string Value)> WeatherFields(WeatherData w)
+    {
+        var fields = new List<(string Label, string Value)>();
+        var wind = new List<string>();
+        if (w.WindDirection is not null || w.WindSpeedMph is not null)
+        {
+            wind.Add(
+                string.Join(
+                    ' ',
+                    new[]
+                    {
+                        w.WindDirection is { } d ? d.ToString("000", CultureInfo.InvariantCulture) + "°" : null,
+                        w.WindSpeedMph is { } s ? string.Create(CultureInfo.InvariantCulture, $"{s:0.#} mph") : null,
+                    }.OfType<string>()
+                )
+            );
+        }
+
+        if (w.WindGustMph is { } gust)
+        {
+            wind.Add(string.Create(CultureInfo.InvariantCulture, $"gusts {gust} mph"));
+        }
+
+        if (wind.Count > 0)
+        {
+            fields.Add(("wind", string.Join(", ", wind)));
+        }
+
+        if (w.TemperatureF is { } f)
+        {
+            fields.Add(("temp", string.Create(CultureInfo.InvariantCulture, $"{f}°F ({(f - 32) / 1.8:0.0}°C)")));
+        }
+
+        var rain = new List<string>();
+        Add(rain, w.RainLastHourInches, "last hour");
+        Add(rain, w.RainLast24HoursInches, "24 h");
+        Add(rain, w.RainSinceMidnightInches, "since midnight");
+        if (rain.Count > 0)
+        {
+            fields.Add(("rain", string.Join(", ", rain)));
+        }
+
+        if (w.HumidityPercent is { } humidity)
+        {
+            fields.Add(("humidity", string.Create(CultureInfo.InvariantCulture, $"{humidity}%")));
+        }
+
+        if (w.PressureMillibars is { } pressure)
+        {
+            fields.Add(("pressure", string.Create(CultureInfo.InvariantCulture, $"{pressure:0.0} mb")));
+        }
+
+        if (w.LuminosityWattsPerSquareMeter is { } light)
+        {
+            fields.Add(("sunlight", string.Create(CultureInfo.InvariantCulture, $"{light} W/m²")));
+        }
+
+        if (w.SnowLast24HoursInches is { } snow)
+        {
+            fields.Add(("snow", string.Create(CultureInfo.InvariantCulture, $"{snow:0.#} in in 24 h")));
+        }
+
+        if (w.RainCounter is { } counter)
+        {
+            fields.Add(("rain raw", counter.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        return fields;
+
+        static void Add(List<string> parts, double? inches, string period)
+        {
+            if (inches is { } value)
+            {
+                parts.Add(string.Create(CultureInfo.InvariantCulture, $"{value:0.00} in {period}"));
+            }
+        }
+    }
+
+    private static void WeatherReadings(Utf8JsonWriter json, WeatherData w)
+    {
+        WriteNumber(json, "windDirection", w.WindDirection);
+        WriteNumber(json, "windSpeedMph", w.WindSpeedMph);
+        WriteNumber(json, "windGustMph", w.WindGustMph);
+        WriteNumber(json, "temperatureF", w.TemperatureF);
+        WriteNumber(json, "rainLastHourInches", w.RainLastHourInches);
+        WriteNumber(json, "rainLast24HoursInches", w.RainLast24HoursInches);
+        WriteNumber(json, "rainSinceMidnightInches", w.RainSinceMidnightInches);
+        WriteNumber(json, "humidityPercent", w.HumidityPercent);
+        WriteNumber(json, "pressureMillibars", w.PressureMillibars);
+        WriteNumber(json, "luminosityWattsPerSquareMeter", w.LuminosityWattsPerSquareMeter);
+        WriteNumber(json, "snowLast24HoursInches", w.SnowLast24HoursInches);
+        WriteNumber(json, "rainCounter", w.RainCounter);
     }
 
     private static void WriteNumber(Utf8JsonWriter json, string name, double? value)

@@ -54,6 +54,15 @@ internal static class PrettyFormatter
                     )
                 );
                 break;
+            case WeatherReport weather:
+                fields.Add(("weather", Time(weather.Timestamp, received)));
+                fields.AddRange(PacketFormatter.WeatherFields(weather.Weather));
+                if (weather.Comment.Trim().Length > 0)
+                {
+                    fields.Add(("comment", style.Green($"\"{Safe(weather.Comment.Trim())}\"")));
+                }
+
+                break;
             case TelemetryReport telemetry:
                 fields.Add(("telemetry", style.Bold($"#{Safe(telemetry.Sequence)}")));
                 fields.Add(("analog", PacketFormatter.Analog(telemetry)));
@@ -143,7 +152,11 @@ internal static class PrettyFormatter
             fields.Add(("time", Time(timestamp, received)));
         }
 
-        if (report.Course is not null || report.SpeedKnots is not null)
+        if (report.Weather is { } weather)
+        {
+            fields.AddRange(PacketFormatter.WeatherFields(weather));
+        }
+        else if (report.Course is not null || report.SpeedKnots is not null)
         {
             var course = report.Course is { } c
                 ? c.ToString("000", CultureInfo.InvariantCulture) + "°"
@@ -151,7 +164,7 @@ internal static class PrettyFormatter
             var speed = report.SpeedKnots is { } s
                 ? string.Create(CultureInfo.InvariantCulture, $" at {s:0.#} kn ({s * 1.852:0.#} km/h)")
                 : "";
-            fields.Add((report.Symbol.Code == '_' ? "wind" : "course", course + speed));
+            fields.Add(("course", course + speed));
         }
 
         if (report.AltitudeFeet is { } altitude)
