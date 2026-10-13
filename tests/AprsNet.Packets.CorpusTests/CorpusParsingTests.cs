@@ -64,6 +64,22 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void EveryMessageDecodes()
+    {
+        var messages = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Type == PacketType.Message)
+            .ToList();
+
+        Assert.True(messages.Count > 300, $"only {messages.Count} messages in the corpus");
+        Assert.All(messages, p => Assert.Equal(ParseOutcome.Parsed, p.Outcome));
+        Assert.Contains(messages, p => p.Payload is TelemetryDefinition { Kind: TelemetryDefinitionKind.Equations });
+        Assert.Contains(messages, p => p.Payload is MessagePayload { Kind: MessageKind.Acknowledgement });
+        Assert.DoesNotContain(messages, p => p.Issues.Count > 0);
+    }
+
+    [Fact]
     public void AnIGateThatInsertsUiMarkersLeavesThePacketTypeUnknown()
     {
         // One IGate in the Kansas City capture inserts " <UI>:" before the data type identifier. The packet is kept

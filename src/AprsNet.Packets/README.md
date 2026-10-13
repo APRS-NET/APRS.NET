@@ -28,8 +28,10 @@ a string has already lost bytes.
 
 Position reports are decoded: plain and compressed positions, ambiguity, timestamps, symbols, course and speed,
 altitude, PHG, RNG, DFS, DF bearings and `!DAO!` precision. Status reports are decoded too: text, zulu timestamp,
-Maidenhead locator and symbol, and meteor-scatter beam heading and power. Other packet types (Mic-E, messages,
-objects…) come back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+Maidenhead locator and symbol, and meteor-scatter beam heading and power. Messages are decoded as `MessagePayload`
+(text messages with IDs and APRS 1.1 reply-acks, acks, rejects, bulletins, announcements, NWS bulletins and directed
+queries) or `TelemetryDefinition` (`PARM.`, `UNIT.`, `EQNS.`, `BITS.`). Other packet types (Mic-E, objects…) come
+back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
 
 ```csharp
 if (packet.Payload is PositionReport report)

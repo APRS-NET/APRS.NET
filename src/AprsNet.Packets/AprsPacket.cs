@@ -217,6 +217,7 @@ public sealed partial class AprsPacket
         {
             PacketType.Position => PositionDecoder.Decode(information, offset, issues),
             PacketType.Status => StatusDecoder.Decode(information, offset, issues),
+            PacketType.Message => MessageDecoder.Decode(information, offset, issues),
             _ => null,
         };
 

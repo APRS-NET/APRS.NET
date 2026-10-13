@@ -108,6 +108,27 @@ AprsNet.Packets.DirectionFindingStrength.HeightFeet.get -> int
 AprsNet.Packets.DirectionFindingStrength.HeightFeet.init -> void
 AprsNet.Packets.DirectionFindingStrength.Strength.get -> int
 AprsNet.Packets.DirectionFindingStrength.Strength.init -> void
+AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.Acknowledgement = 1 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.Announcement = 4 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.Bulletin = 3 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.Message = 0 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.NwsBulletin = 5 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.Query = 6 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessageKind.Rejection = 2 -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessagePayload
+AprsNet.Packets.MessagePayload.Addressee.get -> string!
+AprsNet.Packets.MessagePayload.BulletinGroup.get -> string?
+AprsNet.Packets.MessagePayload.BulletinId.get -> string?
+AprsNet.Packets.MessagePayload.IsAckRequired.get -> bool
+AprsNet.Packets.MessagePayload.IsReplyAckCapable.get -> bool
+AprsNet.Packets.MessagePayload.Kind.get -> AprsNet.Packets.MessageKind
+AprsNet.Packets.MessagePayload.MessageId.get -> string?
+AprsNet.Packets.MessagePayload.QueryArgument.get -> string?
+AprsNet.Packets.MessagePayload.QueryType.get -> string?
+AprsNet.Packets.MessagePayload.ReplyAck.get -> string?
+AprsNet.Packets.MessagePayload.TextBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.MessagePayload.Text.get -> string!
 AprsNet.Packets.PacketType
 AprsNet.Packets.PacketType.Item = 4 -> AprsNet.Packets.PacketType
 AprsNet.Packets.PacketType.Message = 5 -> AprsNet.Packets.PacketType
@@ -129,11 +150,13 @@ AprsNet.Packets.ParseIssueCodeExtensions
 AprsNet.Packets.ParseIssue.Code.get -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InformationTooLong = 7 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssue.Code.init -> void
+AprsNet.Packets.ParseIssueCode.InvalidAddressee = 15 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidCallsign = 5 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidLatitude = 10 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidLongitude = 11 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidSymbolCode = 13 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidSymbolTable = 12 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidTelemetryDefinition = 16 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidTimestamp = 8 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.LowercaseHemisphere = 14 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.MissingHeader = 0 -> AprsNet.Packets.ParseIssueCode
@@ -210,6 +233,30 @@ AprsNet.Packets.StatusReport.Symbol.get -> AprsNet.Packets.AprsSymbol?
 AprsNet.Packets.StatusReport.TextBytes.get -> System.ReadOnlyMemory<byte>
 AprsNet.Packets.StatusReport.Text.get -> string!
 AprsNet.Packets.StatusReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp?
+AprsNet.Packets.TelemetryDefinition
+AprsNet.Packets.TelemetryDefinition.Addressee.get -> string!
+AprsNet.Packets.TelemetryDefinition.BitSense.get -> string?
+AprsNet.Packets.TelemetryDefinition.Equations.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryEquation>!
+AprsNet.Packets.TelemetryDefinitionKind
+AprsNet.Packets.TelemetryDefinitionKind.BitSense = 3 -> AprsNet.Packets.TelemetryDefinitionKind
+AprsNet.Packets.TelemetryDefinitionKind.Equations = 2 -> AprsNet.Packets.TelemetryDefinitionKind
+AprsNet.Packets.TelemetryDefinition.Kind.get -> AprsNet.Packets.TelemetryDefinitionKind
+AprsNet.Packets.TelemetryDefinitionKind.ParameterNames = 0 -> AprsNet.Packets.TelemetryDefinitionKind
+AprsNet.Packets.TelemetryDefinitionKind.Units = 1 -> AprsNet.Packets.TelemetryDefinitionKind
+AprsNet.Packets.TelemetryDefinition.Labels.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Packets.TelemetryDefinition.ProjectName.get -> string?
+AprsNet.Packets.TelemetryEquation
+AprsNet.Packets.TelemetryEquation.A.get -> double
+AprsNet.Packets.TelemetryEquation.A.init -> void
+AprsNet.Packets.TelemetryEquation.Apply(double value) -> double
+AprsNet.Packets.TelemetryEquation.B.get -> double
+AprsNet.Packets.TelemetryEquation.B.init -> void
+AprsNet.Packets.TelemetryEquation.C.get -> double
+AprsNet.Packets.TelemetryEquation.C.init -> void
+AprsNet.Packets.TelemetryEquation.Deconstruct(out double A, out double B, out double C) -> void
+AprsNet.Packets.TelemetryEquation.Equals(AprsNet.Packets.TelemetryEquation other) -> bool
+AprsNet.Packets.TelemetryEquation.TelemetryEquation(double A, double B, double C) -> void
+AprsNet.Packets.TelemetryEquation.TelemetryEquation() -> void
 override AprsNet.Packets.AprsPacket.ToString() -> string!
 ~override AprsNet.Packets.AprsPosition.Equals(object obj) -> bool
 override AprsNet.Packets.AprsPosition.GetHashCode() -> int
@@ -241,6 +288,9 @@ override AprsNet.Packets.PathEntry.ToString() -> string!
 override AprsNet.Packets.PowerHeightGain.Equals(object? obj) -> bool
 override AprsNet.Packets.PowerHeightGain.GetHashCode() -> int
 override AprsNet.Packets.PowerHeightGain.ToString() -> string!
+~override AprsNet.Packets.TelemetryEquation.Equals(object obj) -> bool
+override AprsNet.Packets.TelemetryEquation.GetHashCode() -> int
+~override AprsNet.Packets.TelemetryEquation.ToString() -> string
 static AprsNet.Packets.AprsPacket.Parse(string! line) -> AprsNet.Packets.AprsPacket!
 static AprsNet.Packets.AprsPacket.Parse(System.ReadOnlySpan<byte> line) -> AprsNet.Packets.AprsPacket!
 static AprsNet.Packets.AprsPosition.operator !=(AprsNet.Packets.AprsPosition left, AprsNet.Packets.AprsPosition right) -> bool
@@ -265,3 +315,5 @@ static AprsNet.Packets.PathEntry.operator !=(AprsNet.Packets.PathEntry left, Apr
 static AprsNet.Packets.PathEntry.operator ==(AprsNet.Packets.PathEntry left, AprsNet.Packets.PathEntry right) -> bool
 static AprsNet.Packets.PowerHeightGain.operator !=(AprsNet.Packets.PowerHeightGain? left, AprsNet.Packets.PowerHeightGain? right) -> bool
 static AprsNet.Packets.PowerHeightGain.operator ==(AprsNet.Packets.PowerHeightGain? left, AprsNet.Packets.PowerHeightGain? right) -> bool
+static AprsNet.Packets.TelemetryEquation.operator !=(AprsNet.Packets.TelemetryEquation left, AprsNet.Packets.TelemetryEquation right) -> bool
+static AprsNet.Packets.TelemetryEquation.operator ==(AprsNet.Packets.TelemetryEquation left, AprsNet.Packets.TelemetryEquation right) -> bool

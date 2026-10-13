@@ -23,6 +23,8 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.InvalidSymbolTable => "The symbol table identifier is not valid.",
             ParseIssueCode.InvalidSymbolCode => "The symbol code is not a printable ASCII character.",
             ParseIssueCode.LowercaseHemisphere => "A position uses a lower-case hemisphere letter.",
+            ParseIssueCode.InvalidAddressee => "The message has no 9-character addressee followed by ':'.",
+            ParseIssueCode.InvalidTelemetryDefinition => "The telemetry definition's values cannot be read.",
             _ => code.ToString(),
         };
 }

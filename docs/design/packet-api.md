@@ -1,6 +1,6 @@
 # Packet API design
 
-Status: **agreed; the header, position reports and status reports are implemented** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
+Status: **agreed; milestone 1 is implemented: the header, position reports, status reports and messages** (`AprsNet.Packets`). This is the shape of `AprsPacket` and how text
 and bytes get into it. Packet payload types (positions, Mic-E, messages…) build on it and get their own notes as they
 land.
 
@@ -230,6 +230,23 @@ form the spec allows; other forms stay text, and an impossible zulu timestamp st
 warning), or a 4- or 6-character Maidenhead locator and symbol at the start (upper-cased whatever case it arrived in),
 and a trailing `^HP` meteor-scatter beam heading and ERP. `Text` keeps everything after the timestamp or locator,
 including the leading space after a locator and any `^HP` code, so it round-trips.
+
+### Messages
+
+The message format (`:ADDRESSEE:`, APRS101 ch. 13–15) carries two payloads:
+
+- `MessagePayload`, with a `Kind`: text message, acknowledgement, rejection, bulletin (`BLN0`–`BLN9`, group
+  bulletins such as `BLN4WX`), announcement (`BLNA`–`BLNZ`), NWS bulletin (`NWS-…`) or directed query (`?APRSD`,
+  `?PING?`). The message ID is split off the text; an APRS 1.1 reply-ack `{MM}AA` gives `MessageId` `MM` and
+  `ReplyAck` `AA` (empty when the sender only advertises support). `ack`/`rej` texts carry the answered ID in
+  `MessageId`. A `{` not followed by a valid ID (1–5 characters, optional `}` and up to 5 more) stays in the text.
+- `TelemetryDefinition` for `PARM.`, `UNIT.`, `EQNS.` and `BITS.`, which are sent as messages to the telemetry
+  station's own callsign. `EQNS.` with fewer than five channels is accepted in whole triples, as real stations send
+  it; unreadable equations or bits keep the definition kind with an `InvalidTelemetryDefinition` warning.
+
+A missing or unpadded addressee is the only error (`InvalidAddressee`). Real traffic uses longer announcement
+names than the spec (`BLNALUX`, `BLNA-WEB`); these read as announcement `A` with the rest as the group. NTS
+radiogram routing inside the text (`N1\…`) is not decoded yet.
 
 ## AX.25 and KISS (phase 2)
 

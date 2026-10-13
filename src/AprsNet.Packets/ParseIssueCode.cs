@@ -50,4 +50,10 @@ public enum ParseIssueCode
 
     /// <summary>A position uses a lower-case hemisphere letter (<c>n</c>, <c>s</c>, <c>e</c>, <c>w</c>); it is still decoded.</summary>
     LowercaseHemisphere,
+
+    /// <summary>A message has no 9-character addressee followed by <c>:</c>.</summary>
+    InvalidAddressee,
+
+    /// <summary>A telemetry definition (<c>EQNS.</c> or <c>BITS.</c>) has values that cannot be read; it is kept without them.</summary>
+    InvalidTelemetryDefinition,
 }
