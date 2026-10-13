@@ -27,6 +27,7 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.InvalidTelemetryDefinition => "The telemetry definition's values cannot be read.",
             ParseIssueCode.InvalidObject => "The object has no 9-character name followed by * or _ and a timestamp.",
             ParseIssueCode.InvalidItem => "The item has no 3 to 9 character name followed by ! or _.",
+            ParseIssueCode.InvalidMicEDestination => "The Mic-E destination does not encode a latitude and message.",
             _ => code.ToString(),
         };
 }

@@ -95,6 +95,22 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void EveryMicEReportDecodes()
+    {
+        var reports = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Type == PacketType.MicE)
+            .ToList();
+
+        Assert.True(reports.Count > 800, $"only {reports.Count} Mic-E reports in the corpus");
+        Assert.All(reports, p => Assert.IsType<MicEReport>(p.Payload));
+        Assert.DoesNotContain(reports, p => p.Issues.Count > 0);
+        Assert.Contains(reports, p => p.Payload is MicEReport { Device: "TM-D710" });
+        Assert.Contains(reports, p => p.Payload is MicEReport { Device: "FTM-400DR" });
+    }
+
+    [Fact]
     public void AnIGateThatInsertsUiMarkersLeavesThePacketTypeUnknown()
     {
         // One IGate in the Kansas City capture inserts " <UI>:" before the data type identifier. The packet is kept

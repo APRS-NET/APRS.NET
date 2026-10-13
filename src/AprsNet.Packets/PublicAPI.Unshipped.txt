@@ -157,6 +157,29 @@ AprsNet.Packets.MessagePayload.QueryType.get -> string?
 AprsNet.Packets.MessagePayload.ReplyAck.get -> string?
 AprsNet.Packets.MessagePayload.Text.get -> string!
 AprsNet.Packets.MessagePayload.TextBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Committed = 4 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom0 = 7 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom1 = 8 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom2 = 9 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom3 = 10 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom4 = 11 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom5 = 12 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Custom6 = 13 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Emergency = 14 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.EnRoute = 1 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.InService = 2 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.OffDuty = 0 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Priority = 6 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Returning = 3 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Special = 5 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEMessage.Unknown = 15 -> AprsNet.Packets.MicEMessage
+AprsNet.Packets.MicEReport
+AprsNet.Packets.MicEReport.Device.get -> string?
+AprsNet.Packets.MicEReport.IsCurrentFix.get -> bool
+AprsNet.Packets.MicEReport.IsMessagingCapable.get -> bool
+AprsNet.Packets.MicEReport.MaidenheadLocator.get -> string?
+AprsNet.Packets.MicEReport.Message.get -> AprsNet.Packets.MicEMessage
 AprsNet.Packets.ObjectReport
 AprsNet.Packets.ObjectReport.IsLive.get -> bool
 AprsNet.Packets.ObjectReport.Name.get -> string!
@@ -193,6 +216,7 @@ AprsNet.Packets.ParseIssueCode.InvalidCallsign = 5 -> AprsNet.Packets.ParseIssue
 AprsNet.Packets.ParseIssueCode.InvalidItem = 18 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidLatitude = 10 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidLongitude = 11 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidMicEDestination = 19 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidObject = 17 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidSymbolCode = 13 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InvalidSymbolTable = 12 -> AprsNet.Packets.ParseIssueCode

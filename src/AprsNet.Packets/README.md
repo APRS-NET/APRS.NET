@@ -31,11 +31,12 @@ altitude, PHG, RNG, DFS, DF bearings and `!DAO!` precision. Status reports are d
 Maidenhead locator and symbol, and meteor-scatter beam heading and power. Messages are decoded as `MessagePayload`
 (text messages with IDs and APRS 1.1 reply-acks, acks, rejects, bulletins, announcements, NWS bulletins and directed
 queries) or `TelemetryDefinition` (`PARM.`, `UNIT.`, `EQNS.`, `BITS.`). Objects and items are decoded as
-`ObjectReport` and `ItemReport`, including area shapes and signposts. Other packet types (Mic-E, weather,
-telemetry…) come back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+`ObjectReport` and `ItemReport`, including area shapes and signposts, and Mic-E reports as `MicEReport` (position,
+speed and course, message, altitude, device and status text). Other packet types (weather, telemetry…) come back
+with `Outcome == ParseOutcome.Unsupported` until their decoders land.
 
 ```csharp
-if (packet.Payload is PositionedPayload report) // a position report, object or item
+if (packet.Payload is PositionedPayload report) // a position report, object, item or Mic-E report
 {
     Console.WriteLine($"{report.Position.Latitude:0.00000} {report.Position.Longitude:0.00000} {report.Symbol}");
     if (report.Course is { } course && report.SpeedKnots is { } speed) Console.WriteLine($"{course}° at {speed} kn");

@@ -64,7 +64,7 @@ internal static class StatusDecoder
     /// A Maidenhead locator (two letters A–R, two digits, optionally two letters A–X) followed by a symbol table and
     /// code, then the end of the report or a space before the text.
     /// </summary>
-    private static (string Locator, AprsSymbol Symbol)? TryLocator(ReadOnlySpan<byte> body, out int length)
+    internal static (string Locator, AprsSymbol Symbol)? TryLocator(ReadOnlySpan<byte> body, out int length)
     {
         foreach (var size in (ReadOnlySpan<int>)[6, 4])
         {

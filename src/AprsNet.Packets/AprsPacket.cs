@@ -203,7 +203,14 @@ public sealed partial class AprsPacket
         var type = TypeOf(information.Span);
         var payload = issues.Any(i => i.Severity == ParseIssueSeverity.Error)
             ? null
-            : Decode(type, information[..Math.Min(information.Length, MaxInformationLength)], colon + 1, issues);
+            : Decode(
+                type,
+                information[..Math.Min(information.Length, MaxInformationLength)],
+                colon + 1,
+                destination.Value,
+                gt + 1,
+                issues
+            );
         return new AprsPacket(raw, source, destination, path, information, type, payload, issues);
     }
 
@@ -211,11 +218,14 @@ public sealed partial class AprsPacket
         PacketType type,
         ReadOnlyMemory<byte> information,
         int offset,
+        string destination,
+        int destinationOffset,
         List<ParseIssue> issues
     ) =>
         type switch
         {
             PacketType.Position => PositionDecoder.Decode(information, offset, issues),
+            PacketType.MicE => MicEDecoder.Decode(information, destination, offset, destinationOffset, issues),
             PacketType.Status => StatusDecoder.Decode(information, offset, issues),
             PacketType.Message => MessageDecoder.Decode(information, offset, issues),
             PacketType.Object => ObjectDecoder.DecodeObject(information, offset, issues),

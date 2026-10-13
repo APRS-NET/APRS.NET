@@ -1,6 +1,6 @@
 # Packet API design
 
-Status: **agreed; milestone 1 is implemented (the header, position reports, status reports and messages), plus objects and items** (`AprsNet.Packets`). This is the shape of `AprsPacket` and how text
+Status: **agreed; milestone 1 is implemented (the header, position reports, status reports and messages), plus objects, items and Mic-E** (`AprsNet.Packets`). This is the shape of `AprsPacket` and how text
 and bytes get into it. Packet payload types (positions, Mic-E, messages…) build on it and get their own notes as they
 land.
 
@@ -261,6 +261,23 @@ Two extensions apply to any positioned payload: an area symbol (`\l`) reads its 
 a line's corridor width from `{nnn}` in the comment; a signpost symbol (`\m`) reads its 1–3 character text from
 `{…}`. Both stay in the comment. Weather in an object's comment and storm data on `\@` wait for the weather
 decoder.
+
+### Mic-E
+
+`MicEReport` (`` ` ``, `'`, and the rev. 0 bytes 0x1C/0x1D) is also a `PositionedPayload`. The destination's six
+characters give the latitude, ambiguity, message bits, N/S, the +100° longitude offset and E/W (its SSID is
+ignored); the first nine information bytes give longitude, speed, course and symbol. Then, per APRS 1.1 and 1.2:
+
+- an optional **type byte** (`␠`, `>`, `]`, `` ` ``, `'`) sets `IsMessagingCapable` and starts device detection;
+- an optional `xxx}` **altitude** comes right after it (A11-ERR-02), otherwise `/A=` in the text is used;
+- a trailing **device code** (Kenwood `=`/`^`, Yaesu `_x`, Byonics `|x` and the rest of the 2021 APRS 1.2 table) sets
+  `Device` and is removed from `Comment`; an unrecognised code stays in the text (A12-MICE-02). Newer Yaesu codes
+  (`_4`–`_7`) are not in that table and are left in the text until the maintained `aprs-deviceid` list is adopted;
+- `!DAO!` precision applies, and a Maidenhead locator at the start of the text is reported too.
+
+`IsCurrentFix` follows the data type (`` ` `` and 0x1C current), except that Kenwood TM-D700 radios send `'` for
+current data (`']`). Speeds over 670 knots use the APRS 1.2 rule S × 112 − 74370. The original Mic-E telemetry is
+superseded by the type codes and not decoded.
 
 ## AX.25 and KISS (phase 2)
 

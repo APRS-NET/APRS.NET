@@ -320,7 +320,7 @@ internal static class PositionDecoder
         return true;
     }
 
-    private static bool TrySymbol(byte table, byte code, int offset, List<ParseIssue> issues, out AprsSymbol symbol)
+    internal static bool TrySymbol(byte table, byte code, int offset, List<ParseIssue> issues, out AprsSymbol symbol)
     {
         if (AprsSymbol.TryCreate((char)table, (char)code, out symbol))
         {
@@ -467,7 +467,7 @@ internal static class PositionDecoder
     }
 
     /// <summary>Altitude <c>/A=aaaaaa</c> in feet, anywhere in a comment.</summary>
-    private static double? CommentAltitude(ReadOnlySpan<byte> comment)
+    internal static double? CommentAltitude(ReadOnlySpan<byte> comment)
     {
         var at = comment.IndexOf("/A="u8);
         if (at < 0 || comment.Length < at + 9)
@@ -484,7 +484,7 @@ internal static class PositionDecoder
     /// <summary>
     /// Applies a <c>!DAO!</c> token (APRS 1.2) to an unambiguous position and returns the comment text without it.
     /// </summary>
-    private static (AprsPosition Position, char? Datum, string Comment) ApplyDao(
+    internal static (AprsPosition Position, char? Datum, string Comment) ApplyDao(
         AprsPosition position,
         ReadOnlySpan<byte> comment
     )

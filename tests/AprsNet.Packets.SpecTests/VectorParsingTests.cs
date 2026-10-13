@@ -45,7 +45,18 @@ public class VectorParsingTests
         var packet = AprsPacket.Parse(line);
 
         Assert.True(packet.HasHeader, $"{id}: {string.Join(", ", packet.Issues)}");
-        Assert.DoesNotContain(packet.Issues, i => i.Severity == ParseIssueSeverity.Error);
+        if (
+            VectorFileTests.Vector(id).GetProperty("expect").TryGetProperty("reject", out var reject)
+            && reject.GetBoolean()
+        )
+        {
+            // Vectors a decoder must reject (a truncated Mic-E report) parse their header but not their payload.
+            Assert.Equal(ParseOutcome.Malformed, packet.Outcome);
+        }
+        else
+        {
+            Assert.DoesNotContain(packet.Issues, i => i.Severity == ParseIssueSeverity.Error);
+        }
         Assert.Equal(line, packet.ToString());
         Assert.Equal(line[(line.IndexOf(':', StringComparison.Ordinal) + 1)..], Latin1(packet.Information));
     }

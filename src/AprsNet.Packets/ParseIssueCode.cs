@@ -62,4 +62,7 @@ public enum ParseIssueCode
 
     /// <summary>An item has no 3–9 character name followed by <c>!</c> (live) or <c>_</c> (killed).</summary>
     InvalidItem,
+
+    /// <summary>A Mic-E destination is not six characters that each encode a latitude digit and a flag.</summary>
+    InvalidMicEDestination,
 }
