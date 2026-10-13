@@ -140,6 +140,7 @@ internal sealed partial class Anonymizer(Mapping map)
         "RFONLY",
         "RELAY",
         "WIDE",
+        "LOCAL", // a generic path alias in the Czech network (APNU19,LOCAL,qAR), and a bulletin group (BLN1LOCAL)
         "TRACE",
         "IGATECALL",
         "FIRST",
@@ -153,6 +154,7 @@ internal sealed partial class Anonymizer(Mapping map)
         "NINTH",
         "TENTH",
         "APRSFI", // aprs.fi's APRS-IS login (APRSFI-I3)
+        "APRS", // the generic destination, and South Africa's APRS-IS server APRS-ZA
         "WINLINK",
         "QTH", // "location": one DMR hotspot puts it in the path
         "DMR", // digital voice modes, which gateways put in the path
@@ -162,6 +164,44 @@ internal sealed partial class Anonymizer(Mapping map)
         "C4FM",
         "DEMO", // APRS-IS simulators (DEMO-002, MARSQ-052): not people, and their 3-digit SSIDs are worth keeping
         "MARSQ",
+        "ECHO", // a generic APRS101 alias
+        "IGATE", // generic words that some stations use as path elements; as X-names they would rewrite comments
+        "DIRECT",
+        "SOUTH",
+        "SUNSET",
+        "CHURCH",
+        "UTC",
+        "ARES",
+        "MARS",
+        "NASA",
+        "KLUB",
+        "SOTA",
+        "OTA",
+        "ORG",
+        "GRP",
+        "OPR",
+        "ROLL",
+        "TGIF",
+        "MY",
+        "NWS", // NWS-xxxxx bulletin addressees and the services that send them
+        "WXALRT",
+        "WHO", // APRS message services and bots, which identify no one
+        "WHOIS",
+        "JOKE",
+        "REPEAT",
+        "SMS",
+        "MAIL",
+        "IRC",
+        "MPAD",
+        "WXBOT",
+        "WXNOW",
+        "WXYO",
+        "ANSRVR",
+        "CQSRVR",
+        "RGSTRY",
+        "HAMAPI",
+        "EHAM",
+        "QRX",
     };
 
     /// <summary>
@@ -219,9 +259,20 @@ internal sealed partial class Anonymizer(Mapping map)
             yield return body[1..10];
         }
 
+        if (body.Length > 0 && body[0] == ')' && ItemNameEnd(body) is var name and > 0)
+        {
+            yield return body[1..name];
+        }
+
         if (!IsTelemetryDefinition(body))
         {
             yield return body[keep..];
+        }
+        else if (
+            body[10..].StartsWith(":BITS.", StringComparison.Ordinal) && body.IndexOf(',', 10) is var comma and > 0
+        )
+        {
+            yield return body[(comma + 1)..];
         }
     }
 
@@ -309,11 +360,19 @@ internal sealed partial class Anonymizer(Mapping map)
             '!' or '=' => Position(1),
             '/' or '@' => Position(8), // after the 7-byte timestamp
             ';' => Position(18), // name(9), live/killed flag, timestamp(7); RewriteBody handles the name
+            ')' when ItemNameEnd(body) is var name and > 0 => Position(name + 1), // name(3-9), live/killed flag
             '`' or '\'' => 9, // Mic-E longitude, speed/course, symbol, table
             '_' => 9, // positionless weather timestamp
             _ => 0,
         };
         return Math.Min(end, body.Length);
+    }
+
+    /// <summary>Where an item's 3–9 character name ends: the index of its <c>!</c> (live) or <c>_</c> (killed) flag.</summary>
+    private static int ItemNameEnd(string body)
+    {
+        var flag = body.AsSpan(4, Math.Min(7, Math.Max(0, body.Length - 4))).IndexOfAny('!', '_');
+        return flag < 0 ? 0 : flag + 4;
     }
 
     private string RewriteBody(string body)
@@ -325,11 +384,21 @@ internal sealed partial class Anonymizer(Mapping map)
             return ";" + ReplaceText(body[1..10]) + body[10..keep] + ReplaceText(body[keep..]);
         }
 
+        if (body.Length > 0 && body[0] == ')' && ItemNameEnd(body) is var item and > 0)
+        {
+            // Likewise an item name (RPTR-1, or a callsign); the position after it is encoded data.
+            return ")" + ReplaceText(body[1..item]) + body[item..keep] + ReplaceText(body[keep..]);
+        }
+
         if (IsTelemetryDefinition(body))
         {
-            // PARM./UNIT./EQNS./BITS. text is channel names and units ("Rx1h" looks like a callsign); only the
-            // addressee is anonymized.
-            return ":" + ReplaceText(body[1..10]) + body[10..];
+            // PARM./UNIT./EQNS./BITS. text is channel names and units ("Rx1h" looks like a callsign), so only the
+            // addressee is anonymized, and the BITS. project name, which is free text that can name the station.
+            var definition = body[10..];
+            var project = definition.StartsWith(":BITS.", StringComparison.Ordinal) ? definition.IndexOf(',') : -1;
+            return ":"
+                + ReplaceText(body[1..10])
+                + (project < 0 ? definition : definition[..(project + 1)] + ReplaceText(definition[(project + 1)..]));
         }
 
         return body[..keep] + ReplaceText(body[keep..]);
@@ -566,8 +635,12 @@ internal sealed partial class Anonymizer(Mapping map)
     private static partial Regex Generic();
 
     // Callsign-shaped words that are APRS field values: AFRS range (R25m, E10k), digital voice modes, and weather
-    // software tags after the weather data (APRS101 ch. 12: software d/M/P/S/W/X plus an Ultimeter unit, "XU2k").
-    [GeneratedRegex(@"^(?:[RNSEW][0-9]{2}[MK]|C4FM|[dMPSWX]U2(?:k|kr|R))$", RegexOptions.IgnoreCase)]
+    // software tags after the weather data (APRS101 ch. 12: software d/M/P/S/W/X plus an Ultimeter unit, "XU2k"; one station sends "TU2K"), and APRX telemetry channel
+    // names (Rx1h, Dg1h), which one user-defined packet quotes outside a PARM. message.
+    [GeneratedRegex(
+        @"^(?:[RNSEW][0-9]{2}[MK]|C4FM|[dMPSTWX]U2(?:k|kr|R)|(?:RX|TX|DG)[0-9]H)$",
+        RegexOptions.IgnoreCase
+    )]
     private static partial Regex NotACallsign();
 
     [GeneratedRegex(@"^:.{9}:(?:PARM|UNIT|EQNS|BITS)\.")]
