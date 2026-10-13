@@ -28,6 +28,8 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.InvalidObject => "The object has no 9-character name followed by * or _ and a timestamp.",
             ParseIssueCode.InvalidItem => "The item has no 3 to 9 character name followed by ! or _.",
             ParseIssueCode.InvalidMicEDestination => "The Mic-E destination does not encode a latitude and message.",
+            ParseIssueCode.InvalidTelemetry =>
+                "The telemetry report's sequence, analog values or digital bits cannot be read.",
             _ => code.ToString(),
         };
 }

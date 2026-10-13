@@ -65,4 +65,10 @@ public enum ParseIssueCode
 
     /// <summary>A Mic-E destination is not six characters that each encode a latitude digit and a flag.</summary>
     InvalidMicEDestination,
+
+    /// <summary>
+    /// A telemetry report has no numeric or <c>MIC</c> sequence, an analog value that is not a number, or digital
+    /// channels that are not eight <c>0</c>/<c>1</c> characters.
+    /// </summary>
+    InvalidTelemetry,
 }

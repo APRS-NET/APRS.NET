@@ -111,6 +111,22 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void EveryTelemetryReportDecodes()
+    {
+        var reports = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Type == PacketType.Telemetry)
+            .ToList();
+
+        Assert.True(reports.Count > 80, $"only {reports.Count} telemetry reports in the corpus");
+        Assert.All(reports, p => Assert.IsType<TelemetryReport>(p.Payload));
+        Assert.DoesNotContain(reports, p => p.Issues.Count > 0);
+        Assert.Contains(reports, p => p.Payload is TelemetryReport { Digital.Count: 0 });
+        Assert.Contains(reports, p => p.Payload is TelemetryReport { Digital.Count: 8 });
+    }
+
+    [Fact]
     public void AnIGateThatInsertsUiMarkersLeavesThePacketTypeUnknown()
     {
         // One IGate in the Kansas City capture inserts " <UI>:" before the data type identifier. The packet is kept

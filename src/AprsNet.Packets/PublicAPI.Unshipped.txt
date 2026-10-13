@@ -382,3 +382,11 @@ static AprsNet.Packets.TelemetryEquation.operator ==(AprsNet.Packets.TelemetryEq
 ~override AprsNet.Packets.PathEntry.Equals(object obj) -> bool
 ~override AprsNet.Packets.TelemetryEquation.Equals(object obj) -> bool
 ~override AprsNet.Packets.TelemetryEquation.ToString() -> string
+AprsNet.Packets.ParseIssueCode.InvalidTelemetry = 20 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.TelemetryReport
+AprsNet.Packets.TelemetryReport.Analog.get -> System.Collections.Generic.IReadOnlyList<double?>!
+AprsNet.Packets.TelemetryReport.CommentBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.TelemetryReport.Comment.get -> string!
+AprsNet.Packets.TelemetryReport.Digital.get -> System.Collections.Generic.IReadOnlyList<bool>!
+AprsNet.Packets.TelemetryReport.Sequence.get -> string!
+AprsNet.Packets.TelemetryReport.SequenceNumber.get -> int?

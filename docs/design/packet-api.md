@@ -279,6 +279,16 @@ ignored); the first nine information bytes give longitude, speed, course and sym
 current data (`']`). Speeds over 670 knots use the APRS 1.2 rule S × 112 − 74370. The original Mic-E telemetry is
 superseded by the type codes and not decoded.
 
+### Telemetry reports
+
+`TelemetryReport` (`T#`) holds the `Sequence` as sent (`005` or `MIC`, with or without the comma after `MIC`) and
+as a `SequenceNumber`, the raw `Analog` values, the eight `Digital` channels and the `Comment` after them. Real
+traffic bends APRS101's three-digit 0–255 values, so, as aprs.fi does, values may be decimals, negative or larger,
+sequences may have any number of digits, fewer than five analog values may be sent, an empty value is `null`, and the
+digital channels may be left out. A value that is not a number, or digital channels that are not eight `0`/`1`
+characters, make the report malformed (`InvalidTelemetry`). Values stay raw: applying a station's `EQNS.` needs its
+earlier definition messages, which is a job for the caller.
+
 ## AX.25 and KISS (phase 2)
 
 A TNC in KISS mode sends AX.25 frames, not TNC2 text: callsigns are shifted 7-byte fields with the SSID and

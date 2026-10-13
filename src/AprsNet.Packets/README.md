@@ -32,8 +32,9 @@ Maidenhead locator and symbol, and meteor-scatter beam heading and power. Messag
 (text messages with IDs and APRS 1.1 reply-acks, acks, rejects, bulletins, announcements, NWS bulletins and directed
 queries) or `TelemetryDefinition` (`PARM.`, `UNIT.`, `EQNS.`, `BITS.`). Objects and items are decoded as
 `ObjectReport` and `ItemReport`, including area shapes and signposts, and Mic-E reports as `MicEReport` (position,
-speed and course, message, altitude, device and status text). Other packet types (weather, telemetry…) come back
-with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+speed and course, message, altitude, device and status text). Telemetry reports are decoded as `TelemetryReport`
+(sequence, raw analog values, digital bits and comment). Other packet types (weather, third-party…) come back with
+`Outcome == ParseOutcome.Unsupported` until their decoders land.
 
 ```csharp
 if (packet.Payload is PositionedPayload report) // a position report, object, item or Mic-E report
