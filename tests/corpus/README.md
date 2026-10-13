@@ -15,6 +15,13 @@ capture). [CAPTURE-PLAN.md](CAPTURE-PLAN.md) lists the areas still to capture.
 | `aprs-is/2026-10-12-r20km.log` | APRS-IS, read-only login, filter `r/38.98/-94.67/20` (20 km radius), three captures on 2026-10-12 UTC totalling about 2 h 10 min | 1,113 |
 | `aprs-is/2026-10-12-sf-r30km.log` | APRS-IS, read-only login, filter `r/37.77/-122.42/30` (30 km around San Francisco), 1 h on 2026-10-12 UTC. Simulated stations (`DEMO-*`, `MARSQ-*`) are sampled to their first 10 packets each (1,040 dropped) | 392 |
 | `aprs-is/2026-10-12-ruhr-r40km.log` | APRS-IS, read-only login, filter `r/51.46/7.01/40` (40 km around Essen, Germany), 1 h on 2026-10-12 UTC (evening local time). Four reconnects lose about 95 s each | 1,656 |
+| `aprs-is/2026-10-12-tokyo-r40km.log` | APRS-IS, read-only login, filter `r/35.68/139.77/40` (40 km around Tokyo), 2 h from 22:56 UTC (Tuesday morning local time) | 1,533 |
+| `aprs-is/2026-10-12-sydney-r50km.log` | APRS-IS, read-only login, filter `r/-33.87/151.21/50` (50 km around Sydney), 2 h from 22:56 UTC (Tuesday morning local time) | 672 |
+| `aprs-is/2026-10-12-denver-r50km.log` | APRS-IS, read-only login, filter `r/39.74/-104.99/50` (50 km around Denver), 2 h from 22:56 UTC (Monday afternoon local time) | 1,521 |
+| `aprs-is/2026-10-12-la-r50km.log` | APRS-IS, read-only login, filter `r/34.05/-118.24/50` (50 km around Los Angeles), 2 h from 22:56 UTC (Monday afternoon local time). 4 lines carrying leaked KISS frames were dropped (see below) | 1,502 |
+
+The four 2-hour captures ran in parallel through a mobile router whose connection drops every 15–17 minutes, so each
+has six gaps of about 95 seconds where the client detected the dead connection and reconnected.
 
 Format: one packet per line, `<UTC receive timestamp> <raw APRS-IS line>`, Latin-1 so every byte round-trips (Mic-E
 data is not valid UTF-8). The timestamp is the moment `aprscli` read the line.
@@ -36,6 +43,12 @@ repeater objects, MMDVM gateways for DMR, C4FM, NXDN and D-Star, UTF-8 text in c
 station whose path uses a lower-case `wide2-1` alias. Odd path elements kept as sent: a bare `Q` from one LoRa
 firmware and `QTH*` from a DMR hotspot.
 
+The Tokyo capture adds Japanese digit-first callsigns (`7K`, `7M`, `JA`–`JR`), heavy Mic-E use, D-STAR DPRS and gateway
+traffic, Geiger-counter radiation telemetry and weather stations named after airport codes. All its text is ASCII.
+Sydney adds Rural Fire Service hazard-reduction objects, Pactor and Winlink nodes, and UTF-8 status text (`°C`,
+kaomoji). Denver adds Front Range digipeaters with long paths, many objects and Winlink gateways. Los Angeles adds
+Winlink gateway objects with position ambiguity (`3408.  N`), a seismograph station, and heavy object and Mic-E use.
+
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
 software tag. Beacons repeat, so there are far fewer distinct packets than lines; dedupe when building test cases.
@@ -46,12 +59,16 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
 
 - **Callsigns** (source, path, IGate, object names, message addressees and mentions in text) became same-length
   pseudonyms starting with `Q`, keeping the call-area digit and SSID. Q is not an ITU national prefix, so no
-  pseudonym can be a real station. The mapping is consistent across the file.
+  pseudonym can be a real station. Digit-first calls (`7K1ABC`, `2E0ABC`) start with `0Q` instead, as no prefix starts
+  with 0. The mapping is consistent across files.
 - **Named stations** (digis, hospitals and other tactical names) became same-length `X…` names, keeping any SSID.
   SvxLink's `EL-`/`ER-` tags are kept and the callsign after them is mapped.
   APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
 - **E-mail addresses** are masked (`x` for letters, `0` for digits), and personal names in comments (one in San Francisco,
-  13 first names in Rhine-Ruhr) were replaced with same-length `Xxxx` words.
+  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles) were replaced with same-length `Xxxx` words.
+- **Leaked KISS frames** (a gateway passing binary AX.25 frames into the information field, often re-encoded as UTF-8)
+  hold callsigns as shifted bytes the text rules cannot see, so the tool refuses lines with a KISS frame delimiter;
+  `--drop-binary` leaves them out.
 - **Kept byte for byte:** positions (they are broadcast publicly and archived anyway), timestamps, Mic-E destination
   and data bytes, `!DAO!` and base-91 telemetry tokens, device TOCALLs, generic path aliases (`WIDEn-N`, `TCPIP*`,
   q-constructs) and APRS-IS server names.

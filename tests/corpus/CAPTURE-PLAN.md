@@ -24,22 +24,22 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 | 5 | Netherlands (Randstad) | `r/52.20/4.60/50` | `PA`/`PD` calls, dense IGates, many weather stations | |
 | 6 | London | `r/51.51/-0.13/40` | `G`/`M`/`2E0` calls (digit-first prefixes), longitudes either side of Greenwich | |
 | | **Japan** | | | |
-| 7 | Tokyo / Kanto | `r/35.68/139.77/40` | `JA`/`JH`/`JR`/`7Kx` calls, Kenwood and Yaesu Mic-E, D-STAR DPRS gateways, likely Shift-JIS or UTF-8 text | |
+| 7 | Tokyo / Kanto | `r/35.68/139.77/40` | `JA`/`JH`/`JR`/`7Kx` calls, Kenwood and Yaesu Mic-E, D-STAR DPRS gateways (the capture's text was all ASCII) | Captured 2026-10-12 (`tokyo-r40km`) |
 | 8 | Osaka / Kansai | `r/34.69/135.50/40` | A second Japanese region, so findings are not Tokyo-specific | |
 | | **Southern hemisphere and elsewhere** | | | |
-| 9 | Sydney | `r/-33.87/151.21/50` | South and east quadrant, `VK` calls | |
+| 9 | Sydney | `r/-33.87/151.21/50` | South and east quadrant, `VK` calls | Captured 2026-10-12 (`sydney-r50km`) |
 | 10 | Melbourne | `r/-37.81/144.96/50` | Active VK3 WIDE network | |
 | 11 | Auckland | `r/-36.85/174.76/50` | Longitudes near +180, `ZL` calls | |
 | 12 | Johannesburg / Gauteng | `r/-26.20/28.05/60` | `ZS` calls, an active regional network, a different device mix | |
 | 13 | São Paulo | `r/-23.55/-46.63/60` | South and west quadrant, `PY` calls, Portuguese text | |
 | | **North America** | | | |
-| 14 | Denver / Front Range | `r/39.74/-104.99/50` | Mountaintop digis with long paths, high `/A=` altitudes, balloon launches | |
-| 15 | Los Angeles | `r/34.05/-118.24/50` | Very high volume, many objects and items | |
+| 14 | Denver / Front Range | `r/39.74/-104.99/50` | Mountaintop digis with long paths, high `/A=` altitudes, balloon launches | Captured 2026-10-12 (`denver-r50km`) |
+| 15 | Los Angeles | `r/34.05/-118.24/50` | Very high volume, many objects and items | Captured 2026-10-12 (`la-r50km`) |
 | 16 | Seattle / Puget Sound | `r/47.61/-122.33/50` | Dense digis, maritime stations, `VE7` calls across the border | |
 | 17 | Dallas–Fort Worth | `r/32.78/-96.80/50` | Weather-heavy (CWOP), Skywarn objects and bulletins | |
 | 18 | Orlando / Central Florida | `r/28.54/-81.38/50` | Weather stations, hurricane-season objects, mobiles | |
 
-Already captured: Overland Park, KS (`r/38.98/-94.67/20`) and San Francisco (`r/37.77/-122.42/30`).
+Also captured: Overland Park, KS (`r/38.98/-94.67/20`) and San Francisco (`r/37.77/-122.42/30`).
 
 If only a few: Rhine-Ruhr, Tokyo, London, Sydney and Denver cover the most callsign formats, quadrants and encodings.
 
