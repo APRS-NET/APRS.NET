@@ -18,11 +18,11 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 | --- | --- | --- | --- | --- |
 | | **Germany and Central Europe** | | | |
 | 1 | Rhine-Ruhr (Essen/Dortmund) | `r/51.46/7.01/40` | Densest German area: `DLx`/`DOx`/`DBx` calls, fixed digis and IGates, LoRa APRS IGates, German comments | Captured 2026-10-12 (`ruhr-r40km`) |
-| 2 | Munich | `r/48.14/11.58/40` | Alpine digis, LoRa trackers, `DL` and `OE` calls near the Austrian border | |
-| 3 | Berlin | `r/52.52/13.40/30` | Big-city German mix; a cross-check against Rhine-Ruhr | |
-| 4 | Prague | `r/50.08/14.44/40` | `OK` calls, an active LoRa APRS community, diacritics in comments | |
-| 5 | Netherlands (Randstad) | `r/52.20/4.60/50` | `PA`/`PD` calls, dense IGates, many weather stations | |
-| 6 | London | `r/51.51/-0.13/40` | `G`/`M`/`2E0` calls (digit-first prefixes), longitudes either side of Greenwich | |
+| 2 | Munich | `r/48.14/11.58/40` | Alpine digis, LoRa trackers, `DL` and `OE` calls near the Austrian border || Captured 2026-10-13 (`munich-r40km`) |
+| 3 | Berlin | `r/52.52/13.40/30` | Big-city German mix; a cross-check against Rhine-Ruhr || Captured 2026-10-13 (`berlin-r30km`) |
+| 4 | Prague | `r/50.08/14.44/40` | `OK` calls, an active LoRa APRS community, diacritics in comments || Captured 2026-10-13 (`prague-r40km`) |
+| 5 | Netherlands (Randstad) | `r/52.20/4.60/50` | `PA`/`PD` calls, dense IGates, many weather stations || Captured 2026-10-13 (`randstad-r50km`) |
+| 6 | London | `r/51.51/-0.13/40` | `G`/`M`/`2E0` calls (digit-first prefixes), longitudes either side of Greenwich || Captured 2026-10-13 (`london-r40km`) |
 | | **Japan** | | | |
 | 7 | Tokyo / Kanto | `r/35.68/139.77/40` | `JA`/`JH`/`JR`/`7Kx` calls, Kenwood and Yaesu Mic-E, D-STAR DPRS gateways (the capture's text was all ASCII) | Captured 2026-10-12 (`tokyo-r40km`) |
 | 8 | Osaka / Kansai | `r/34.69/135.50/40` | A second Japanese region, so findings are not Tokyo-specific | |
@@ -30,14 +30,14 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 | 9 | Sydney | `r/-33.87/151.21/50` | South and east quadrant, `VK` calls | Captured 2026-10-12 (`sydney-r50km`) |
 | 10 | Melbourne | `r/-37.81/144.96/50` | Active VK3 WIDE network | |
 | 11 | Auckland | `r/-36.85/174.76/50` | Longitudes near +180, `ZL` calls | |
-| 12 | Johannesburg / Gauteng | `r/-26.20/28.05/60` | `ZS` calls, an active regional network, a different device mix | |
-| 13 | São Paulo | `r/-23.55/-46.63/60` | South and west quadrant, `PY` calls, Portuguese text | |
+| 12 | Johannesburg / Gauteng | `r/-26.20/28.05/60` | `ZS` calls, an active regional network, a different device mix || Captured 2026-10-13 (`johannesburg-r60km`) |
+| 13 | São Paulo | `r/-23.55/-46.63/60` | South and west quadrant, `PY` calls, Portuguese text || Captured 2026-10-13 (`saopaulo-r60km`) |
 | | **North America** | | | |
 | 14 | Denver / Front Range | `r/39.74/-104.99/50` | Mountaintop digis with long paths, high `/A=` altitudes, balloon launches | Captured 2026-10-12 (`denver-r50km`) |
 | 15 | Los Angeles | `r/34.05/-118.24/50` | Very high volume, many objects and items | Captured 2026-10-12 (`la-r50km`) |
-| 16 | Seattle / Puget Sound | `r/47.61/-122.33/50` | Dense digis, maritime stations, `VE7` calls across the border | |
-| 17 | Dallas–Fort Worth | `r/32.78/-96.80/50` | Weather-heavy (CWOP), Skywarn objects and bulletins | |
-| 18 | Orlando / Central Florida | `r/28.54/-81.38/50` | Weather stations, hurricane-season objects, mobiles | |
+| 16 | Seattle / Puget Sound | `r/47.61/-122.33/50` | Dense digis, maritime stations, `VE7` calls across the border || Captured 2026-10-13 (`seattle-r50km`) |
+| 17 | Dallas–Fort Worth | `r/32.78/-96.80/50` | Weather-heavy (CWOP), Skywarn objects and bulletins || Captured 2026-10-13 (`dfw-r50km`) |
+| 18 | Orlando / Central Florida | `r/28.54/-81.38/50` | Weather stations, hurricane-season objects, mobiles || Captured 2026-10-13 (`orlando-r50km`) |
 
 Also captured: Overland Park, KS (`r/38.98/-94.67/20`) and San Francisco (`r/37.77/-122.42/30`).
 

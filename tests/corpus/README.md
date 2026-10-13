@@ -19,6 +19,21 @@ capture). [CAPTURE-PLAN.md](CAPTURE-PLAN.md) lists the areas still to capture.
 | `aprs-is/2026-10-12-sydney-r50km.log` | APRS-IS, read-only login, filter `r/-33.87/151.21/50` (50 km around Sydney), 2 h from 22:56 UTC (Tuesday morning local time) | 672 |
 | `aprs-is/2026-10-12-denver-r50km.log` | APRS-IS, read-only login, filter `r/39.74/-104.99/50` (50 km around Denver), 2 h from 22:56 UTC (Monday afternoon local time) | 1,521 |
 | `aprs-is/2026-10-12-la-r50km.log` | APRS-IS, read-only login, filter `r/34.05/-118.24/50` (50 km around Los Angeles), 2 h from 22:56 UTC (Monday afternoon local time). 4 lines carrying leaked KISS frames were dropped (see below) | 1,502 |
+| `aprs-is/2026-10-13-munich-r40km.log` | APRS-IS, read-only login, filter `r/48.14/11.58/40` (40 km around Munich), 2 h from 11:13 UTC (Tuesday afternoon local time) | 1,541 |
+| `aprs-is/2026-10-13-prague-r40km.log` | APRS-IS, read-only login, filter `r/50.08/14.44/40` (40 km around Prague), 2 h from 11:13 UTC (Tuesday afternoon local time) | 982 |
+| `aprs-is/2026-10-13-london-r40km.log` | APRS-IS, read-only login, filter `r/51.51/-0.13/40` (40 km around London), 2 h from 11:13 UTC (Tuesday midday local time) | 1,150 |
+| `aprs-is/2026-10-13-johannesburg-r60km.log` | APRS-IS, read-only login, filter `r/-26.20/28.05/60` (60 km around Johannesburg), 2 h from 11:13 UTC (Tuesday afternoon local time) | 819 |
+| `aprs-is/2026-10-13-berlin-r30km.log` | APRS-IS, read-only login, filter `r/52.52/13.40/30` (30 km around Berlin), 2 h from 13:16 UTC (Tuesday afternoon local time) | 1,783 |
+| `aprs-is/2026-10-13-randstad-r50km.log` | APRS-IS, read-only login, filter `r/52.20/4.60/50` (50 km around the Randstad, Netherlands), 2 h from 13:16 UTC (Tuesday afternoon local time) | 2,522 |
+| `aprs-is/2026-10-13-saopaulo-r60km.log` | APRS-IS, read-only login, filter `r/-23.55/-46.63/60` (60 km around São Paulo), 2 h from 13:16 UTC (Tuesday morning local time) | 1,299 |
+| `aprs-is/2026-10-13-orlando-r50km.log` | APRS-IS, read-only login, filter `r/28.54/-81.38/50` (50 km around Orlando), 2 h from 13:16 UTC (Tuesday morning local time) | 1,347 |
+| `aprs-is/2026-10-13-dfw-r50km.log` | APRS-IS, read-only login, filter `r/32.78/-96.80/50` (50 km around Dallas–Fort Worth), 2 h from 15:17 UTC (Tuesday morning local time) | 2,024 |
+| `aprs-is/2026-10-13-seattle-r50km.log` | APRS-IS, read-only login, filter `r/47.61/-122.33/50` (50 km around Seattle), 2 h from 15:17 UTC (Tuesday morning local time) | 2,139 |
+| `aprs-is/2026-10-13-type-items.log` | APRS-IS, read-only login, filter `t/i` (items worldwide), 1 h from 11:18 UTC | 2,136 |
+| `aprs-is/2026-10-13-type-messages.log` | APRS-IS, read-only login, filter `t/m` (messages worldwide), 2 h from 11:18 UTC. Every ack, reject, bulletin, NWS, query and telemetry definition is kept; person-to-person text is sampled to the first 2 per sender and addressee, 400 in all (2,914 dropped) | 2,236 |
+| `aprs-is/2026-10-13-type-user.log` | APRS-IS, read-only login, filter `t/u` (user-defined worldwide), 2 h from 11:18 UTC | 703 |
+| `aprs-is/2026-10-13-type-weather-positionless.log` | APRS-IS, read-only login, filter `t/w` (weather worldwide), 1 h from 11:18 UTC, keeping only positionless (`_`) and raw station (`!!`, `$ULTW`, `#`, `*`) lines (34,260 position weather lines dropped) | 754 |
+| `aprs-is/2026-10-13-type-nws.log` | APRS-IS, read-only login, filter `t/n` (NWS bulletins worldwide), 5 h 45 min from 11:21 UTC. A `t/q` (query) capture over the same hours received nothing | 500 |
 
 The four 2-hour captures ran in parallel through a mobile router whose connection drops every 15–17 minutes, so each
 has six gaps of about 95 seconds where the client detected the dead connection and reconnected.
@@ -49,6 +64,15 @@ Sydney adds Rural Fire Service hazard-reduction objects, Pactor and Winlink node
 kaomoji). Denver adds Front Range digipeaters with long paths, many objects and Winlink gateways. Los Angeles adds
 Winlink gateway objects with position ambiguity (`3408.  N`), a seismograph station, and heavy object and Mic-E use.
 
+The 2026-10-13 captures add Central Europe (Munich, Prague, Berlin, the Randstad), London, Johannesburg, São Paulo,
+Orlando, Dallas–Fort Worth and Seattle, and five worldwide captures by packet type for types the area captures
+rarely see: items (lighthouses, DMR gateways, Spanish and Uruguayan stations, a few with broken coordinates or names
+over 9 characters), messages (bulletins, announcements, bots, queries, NTS radiograms, Turkish and Malaysian nets,
+8-character and over-padded addressees), user-defined packets (`{{` telemetry, and a gateway that dumps whole decoded
+packets as Python dictionaries), NWS bulletins (both `NWS-` and `NWS_` addressees) and positionless weather
+(`_MMDDHHMM`, an upper-case `C018S000G000T068…` variant, a `_DDHHMMz` variant, and raw Ultimeter `!!` and `$ULTW`
+data). Prague has a Mic-E tracker whose destination reaches APRS-IS with 7 characters after a bad digipeater.
+
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
 software tag. Beacons repeat, so there are far fewer distinct packets than lines; dedupe when building test cases.
@@ -64,8 +88,10 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
 - **Named stations** (digis, hospitals and other tactical names) became same-length `X…` names, keeping any SSID.
   SvxLink's `EL-`/`ER-` tags are kept and the callsign after them is mapped.
   APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
-- **E-mail addresses** are masked (`x` for letters, `0` for digits), and personal names in comments (one in San Francisco,
-  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles) were replaced with same-length `Xxxx` words.
+- **E-mail addresses** are masked (`x` for letters, `0` for digits; in the 2026-10-13 user-defined capture this also
+  changed a few bytes of opaque base-91 `{{B` data that looked like an address), and personal names in comments (one in San Francisco,
+  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, and about 60 across the 2026-10-13 captures,
+  with a street address, a phone number used as an SMS address and a few IP addresses) were replaced with same-length `Xxxx` words.
 - **Leaked KISS frames** (a gateway passing binary AX.25 frames into the information field, often re-encoded as UTF-8)
   hold callsigns as shifted bytes the text rules cannot see, so the tool refuses lines with a KISS frame delimiter;
   `--drop-binary` leaves them out.

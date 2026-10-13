@@ -64,7 +64,7 @@ public class CorpusParsingTests
     }
 
     [Fact]
-    public void EveryMessageDecodes()
+    public void MessagesDecodeUnlessTheyAreNotMessages()
     {
         var messages = CorpusFiles()
             .SelectMany(row => Packets(row.Data))
@@ -73,14 +73,31 @@ public class CorpusParsingTests
             .ToList();
 
         Assert.True(messages.Count > 300, $"only {messages.Count} messages in the corpus");
-        Assert.All(messages, p => Assert.Equal(ParseOutcome.Parsed, p.Outcome));
+        // A few stations put a position or a comment after the ':' data type, with no addressee at all.
+        var broken = messages.Where(p => p.Outcome != ParseOutcome.Parsed).ToList();
+        Assert.All(broken, p => Assert.Contains(p.Issues, i => i.Code == ParseIssueCode.InvalidAddressee));
+        Assert.True(broken.Count * 100 < messages.Count, $"{broken.Count} of {messages.Count} messages failed");
         Assert.Contains(messages, p => p.Payload is TelemetryDefinition { Kind: TelemetryDefinitionKind.Equations });
         Assert.Contains(messages, p => p.Payload is MessagePayload { Kind: MessageKind.Acknowledgement });
-        Assert.DoesNotContain(messages, p => p.Issues.Count > 0);
+        Assert.Contains(messages, p => p.Payload is MessagePayload { Kind: MessageKind.Bulletin });
+        Assert.Contains(messages, p => p.Payload is MessagePayload { Kind: MessageKind.NwsBulletin });
+        // SvxLink sends 8-character addressees and some bulletins pad past 9; both are read, with a warning.
+        Assert.Contains(messages, p => p.Issues.Any(i => i.Code == ParseIssueCode.UnpaddedAddressee));
+        Assert.All(
+            messages.Where(p => p.Outcome == ParseOutcome.Parsed),
+            p =>
+                Assert.All(
+                    p.Issues,
+                    i =>
+                        Assert.True(
+                            i.Code is ParseIssueCode.UnpaddedAddressee or ParseIssueCode.InvalidTelemetryDefinition
+                        )
+                )
+        );
     }
 
     [Fact]
-    public void EveryObjectAndItemDecodes()
+    public void ObjectsAndItemsDecodeUnlessTheSenderBrokeThem()
     {
         var packets = CorpusFiles()
             .SelectMany(row => Packets(row.Data))
@@ -88,14 +105,31 @@ public class CorpusParsingTests
             .Where(p => p.Type is PacketType.Object or PacketType.Item)
             .ToList();
 
+        // Real senders get some wrong: DMR gateway items at 003-0.00W or 99900.00N, minutes of 80, names over 9
+        // characters (F/SISARGAS). Each must be reported as such, and they stay a small share.
         Assert.True(packets.Count > 900, $"only {packets.Count} objects and items in the corpus");
-        Assert.All(packets, p => Assert.IsAssignableFrom<PositionedPayload>(p.Payload));
+        var broken = packets.Where(p => p.Payload is null).ToList();
+        Assert.All(
+            broken,
+            p =>
+                Assert.Contains(
+                    p.Issues,
+                    i =>
+                        i.Code
+                            is ParseIssueCode.InvalidLatitude
+                                or ParseIssueCode.InvalidLongitude
+                                or ParseIssueCode.InvalidObject
+                                or ParseIssueCode.InvalidItem
+                                or ParseIssueCode.PositionTooShort
+                )
+        );
+        Assert.True(broken.Count * 20 < packets.Count, $"{broken.Count} of {packets.Count} objects and items failed");
         Assert.Contains(packets, p => p.Payload is ObjectReport { IsLive: false });
         Assert.Contains(packets, p => p.Payload is ItemReport);
     }
 
     [Fact]
-    public void EveryMicEReportDecodes()
+    public void MicEReportsDecodeUnlessTheDestinationIsBroken()
     {
         var reports = CorpusFiles()
             .SelectMany(row => Packets(row.Data))
@@ -104,14 +138,22 @@ public class CorpusParsingTests
             .ToList();
 
         Assert.True(reports.Count > 800, $"only {reports.Count} Mic-E reports in the corpus");
-        Assert.All(reports, p => Assert.IsType<MicEReport>(p.Payload));
-        Assert.DoesNotContain(reports, p => p.Issues.Count > 0);
+        // One Prague tracker's packets reach APRS-IS with a 7-character destination (UP0P413) after a bad digipeater.
+        Assert.All(
+            reports.Where(p => p.Payload is null),
+            p =>
+            {
+                Assert.NotEqual(6, p.Destination!.Value.Split('-')[0].Length);
+                Assert.Contains(p.Issues, i => i.Code == ParseIssueCode.InvalidMicEDestination);
+            }
+        );
+        Assert.DoesNotContain(reports, p => p.Payload is not null && p.Issues.Count > 0);
         Assert.Contains(reports, p => p.Payload is MicEReport { Device: "TM-D710" });
         Assert.Contains(reports, p => p.Payload is MicEReport { Device: "FTM-400DR" });
     }
 
     [Fact]
-    public void EveryTelemetryReportDecodes()
+    public void TelemetryReportsDecodeUnlessTheirBitsAreBroken()
     {
         var reports = CorpusFiles()
             .SelectMany(row => Packets(row.Data))
@@ -120,8 +162,11 @@ public class CorpusParsingTests
             .ToList();
 
         Assert.True(reports.Count > 80, $"only {reports.Count} telemetry reports in the corpus");
-        Assert.All(reports, p => Assert.IsType<TelemetryReport>(p.Payload));
-        Assert.DoesNotContain(reports, p => p.Issues.Count > 0);
+        // One Dallas station sends a single digital bit ("T#738,116,0,584,52,0,0") instead of eight.
+        var broken = reports.Where(p => p.Payload is null).ToList();
+        Assert.All(broken, p => Assert.Contains(p.Issues, i => i.Code == ParseIssueCode.InvalidTelemetry));
+        Assert.True(broken.Count * 100 < reports.Count, $"{broken.Count} of {reports.Count} telemetry reports failed");
+        Assert.DoesNotContain(reports, p => p.Payload is not null && p.Issues.Count > 0);
         Assert.Contains(reports, p => p.Payload is TelemetryReport { Digital.Count: 0 });
         Assert.Contains(reports, p => p.Payload is TelemetryReport { Digital.Count: 8 });
     }
