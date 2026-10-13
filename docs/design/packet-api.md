@@ -1,6 +1,6 @@
 # Packet API design
 
-Status: **agreed; the header parser is implemented, payloads are not** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
+Status: **agreed; the header and position reports are implemented** (M1, `AprsNet.Packets`). This is the shape of `AprsPacket` and how text
 and bytes get into it. Packet payload types (positions, Mic-E, messages…) build on it and get their own notes as they
 land.
 
@@ -198,6 +198,30 @@ switch (packet.Payload)
 
 A third-party packet (`}`) holds another `AprsPacket` parsed from the bytes after the `}`. It is parsed once, with no
 deeper nesting, so a crafted packet cannot recurse.
+
+### Position reports
+
+`PositionReport` (`!`, `=`, `/`, `@`) is the first payload. Its building blocks are shared with objects, items and
+Mic-E when those land: `AprsPosition` (latitude, longitude, ambiguity), `AprsTimestamp` (with `ToDateTimeOffset`
+relative to the receive time), `AprsSymbol`, and the data-extension records (`PowerHeightGain`,
+`DirectionFindingStrength`, `DirectionFindingReport`, `CompressionType`).
+
+Decisions:
+
+- **Ambiguity** keeps the blanked digits as zeros (the corner of the ambiguity box), as the APRS101 vectors expect;
+  the latitude's ambiguity also blanks the longitude's digits.
+- **One data extension** after an uncompressed position (course/speed with an optional DF bearing, or PHG, RNG,
+  DFS). Anything else stays in the comment. `/A=` altitude is read from anywhere in the comment and left there.
+- **`!DAO!`** (APRS 1.2) adds precision to unambiguous uncompressed positions and is removed from `Comment`;
+  `CommentBytes` keeps every byte.
+- **Comments** decode as UTF-8 when the bytes are valid UTF-8, otherwise as Latin-1.
+- **X1J** (`!` after a beacon text) is not supported: APRS 1.1 erratum A11-ERR-01 deprecates it, so `!` is a data
+  type only at offset 0. `!!` is raw Ultimeter weather, not a position.
+- **Leniency seen in real traffic:** lower-case hemisphere letters decode with a `LowercaseHemisphere` warning, and a
+  broken timestamp in front of a good position only loses the time (`InvalidTimestamp` as a warning). A missing or
+  broken position is an error.
+- **Weather on the weather-station symbol** (`_`): course and speed are the wind until the weather decoder (M3)
+  reads the rest of the comment.
 
 ## AX.25 and KISS (phase 2)
 

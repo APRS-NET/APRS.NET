@@ -26,8 +26,19 @@ Strings must hold one character per byte (Latin-1), as `AprsIsClient` returns th
 Mic-E data is not valid UTF-8. `Parse(string)` throws `ArgumentException` for a character above U+00FF, because such
 a string has already lost bytes.
 
-Only the header is decoded so far; payload decoding (positions, Mic-E, messages…) is in progress. See
-[the design notes](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/packet-api.md).
+Position reports are decoded: plain and compressed positions, ambiguity, timestamps, symbols, course and speed,
+altitude, PHG, RNG, DFS, DF bearings and `!DAO!` precision. Other packet types (Mic-E, messages, objects…) come back
+with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+
+```csharp
+if (packet.Payload is PositionReport report)
+{
+    Console.WriteLine($"{report.Position.Latitude:0.00000} {report.Position.Longitude:0.00000} {report.Symbol}");
+    if (report.Course is { } course && report.SpeedKnots is { } speed) Console.WriteLine($"{course}° at {speed} kn");
+}
+```
+
+See [the design notes](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/packet-api.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
 

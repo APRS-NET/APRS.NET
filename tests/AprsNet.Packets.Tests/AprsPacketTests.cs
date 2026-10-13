@@ -24,8 +24,8 @@ public class AprsPacketTests
         Assert.Equal(["WIDE1-1", "WIDE2-1", "qAR", "N1CALL-10"], packet.Path.Select(p => p.Station.Value));
         Assert.Equal("!4903.50N/07201.75W-Test", Encoding.Latin1.GetString(packet.Information.Span));
         Assert.Equal(PacketType.Position, packet.Type);
-        Assert.Equal(ParseOutcome.Unsupported, packet.Outcome);
-        Assert.Null(packet.Payload);
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
+        Assert.IsType<PositionReport>(packet.Payload);
         Assert.Empty(packet.Issues);
     }
 

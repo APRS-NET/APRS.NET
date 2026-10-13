@@ -29,4 +29,25 @@ public enum ParseIssueCode
 
     /// <summary>The information field is longer than any APRS packet should be; only its start is decoded.</summary>
     InformationTooLong,
+
+    /// <summary>A timestamp is not <c>DDHHMMz</c>, <c>DDHHMM/</c> or <c>HHMMSSh</c> with valid values.</summary>
+    InvalidTimestamp,
+
+    /// <summary>The information field ends before the position does.</summary>
+    PositionTooShort,
+
+    /// <summary>The latitude is not <c>DDMM.hhN</c> or <c>S</c>, out of range, or not valid base-91.</summary>
+    InvalidLatitude,
+
+    /// <summary>The longitude is not <c>DDDMM.hhE</c> or <c>W</c>, out of range, or not valid base-91.</summary>
+    InvalidLongitude,
+
+    /// <summary>The symbol table is not <c>/</c>, <c>\</c>, an overlay character, or (compressed) <c>a</c>–<c>j</c>.</summary>
+    InvalidSymbolTable,
+
+    /// <summary>The symbol code is not a printable ASCII character.</summary>
+    InvalidSymbolCode,
+
+    /// <summary>A position uses a lower-case hemisphere letter (<c>n</c>, <c>s</c>, <c>e</c>, <c>w</c>); it is still decoded.</summary>
+    LowercaseHemisphere,
 }

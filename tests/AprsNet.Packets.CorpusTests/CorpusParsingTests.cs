@@ -10,6 +10,9 @@ public class CorpusParsingTests
 {
     private static readonly string _directory = Path.Combine(AppContext.BaseDirectory, "corpus");
 
+    // Header problems are bugs in our reading of real traffic; payload problems can be the sender's.
+    private const ParseIssueCode _firstPayloadIssue = ParseIssueCode.InvalidTimestamp;
+
     public static TheoryData<string> CorpusFiles() => CorpusFileTests.CorpusFiles();
 
     [Theory]
@@ -23,8 +26,27 @@ public class CorpusParsingTests
             Assert.True(bytes.AsSpan().SequenceEqual(packet.Raw.Span), $"{file}:{lineNumber} changed its bytes");
             Assert.Equal(Encoding.Latin1.GetString(bytes), packet.ToString());
             Assert.True(packet.HasHeader, $"{file}:{lineNumber}: {string.Join(", ", packet.Issues)}");
-            Assert.DoesNotContain(packet.Issues, i => i.Severity == ParseIssueSeverity.Error);
+            Assert.DoesNotContain(
+                packet.Issues,
+                i => i.Severity == ParseIssueSeverity.Error && i.Code < _firstPayloadIssue
+            );
         }
+    }
+
+    [Fact]
+    public void AlmostEveryPositionDecodes()
+    {
+        // Real traffic includes broken positions (a weather template with no position, for example), so this is a
+        // floor that catches regressions rather than a demand for perfection.
+        var positions = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Type == PacketType.Position)
+            .ToList();
+        var decoded = positions.Count(p => p.Payload is PositionReport);
+
+        Assert.True(positions.Count > 5000, $"only {positions.Count} positions in the corpus");
+        Assert.True(decoded >= positions.Count * 0.995, $"{decoded} of {positions.Count} positions decoded");
     }
 
     [Fact]

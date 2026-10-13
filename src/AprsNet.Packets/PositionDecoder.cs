@@ -1,0 +1,513 @@
+using System.Text;
+using System.Text.Unicode;
+
+namespace AprsNet.Packets;
+
+/// <summary>
+/// Decodes position reports (APRS101 ch. 8 and 9, APRS 1.2 <c>!DAO!</c>). Parsing helpers here are shared by the
+/// payloads that carry a position.
+/// </summary>
+internal static class PositionDecoder
+{
+    // Positions within the 8-byte latitude and 9-byte longitude that may be blanked for ambiguity, last first.
+    private static readonly int[] _latitudeBlanks = [6, 5, 3, 2];
+    private static readonly int[] _longitudeBlanks = [7, 6, 4, 3];
+
+    /// <summary>Decodes a position report; <paramref name="offset"/> is where the information field starts in Raw.</summary>
+    public static PositionReport? Decode(ReadOnlyMemory<byte> information, int offset, List<ParseIssue> issues)
+    {
+        var info = information.Span;
+        var at = 1;
+        AprsTimestamp? timestamp = null;
+        var badTimestamp = false;
+        if (info[0] is (byte)'/' or (byte)'@')
+        {
+            badTimestamp = !AprsTimestamp.TryParse(info[1..], out var parsed);
+            timestamp = badTimestamp ? null : parsed;
+            at = 8;
+        }
+
+        var messaging = info[0] is (byte)'=' or (byte)'@';
+        var report =
+            info.Length > at && (char.IsAsciiDigit((char)info[at]) || info[at] == ' ')
+                ? DecodeUncompressed(information, at, offset, timestamp, messaging, issues)
+                : DecodeCompressed(information, at, offset, timestamp, messaging, issues);
+        if (badTimestamp)
+        {
+            // A broken timestamp in front of a good position (seen from some firmware) only loses the time.
+            var severity = report is null ? ParseIssueSeverity.Error : ParseIssueSeverity.Warning;
+            issues.Insert(0, new ParseIssue(ParseIssueCode.InvalidTimestamp, severity, offset + 1));
+        }
+
+        return report;
+    }
+
+    private static PositionReport? DecodeUncompressed(
+        ReadOnlyMemory<byte> information,
+        int at,
+        int offset,
+        AprsTimestamp? timestamp,
+        bool messaging,
+        List<ParseIssue> issues
+    )
+    {
+        var info = information.Span;
+        if (info.Length < at + 19)
+        {
+            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
+            return null;
+        }
+
+        if (!TryLatitude(info.Slice(at, 8), out var latitude, out var ambiguity, out var lowerLatitude))
+        {
+            issues.Add(Error(ParseIssueCode.InvalidLatitude, offset + at));
+            return null;
+        }
+
+        if (!TryLongitude(info.Slice(at + 9, 9), ambiguity, out var longitude, out var lowerLongitude))
+        {
+            issues.Add(Error(ParseIssueCode.InvalidLongitude, offset + at + 9));
+            return null;
+        }
+
+        if (lowerLatitude || lowerLongitude)
+        {
+            issues.Add(
+                new ParseIssue(
+                    ParseIssueCode.LowercaseHemisphere,
+                    ParseIssueSeverity.Warning,
+                    offset + at + (lowerLatitude ? 7 : 17)
+                )
+            );
+        }
+
+        if (!TrySymbol(info[at + 8], info[at + 18], offset + at + 8, issues, out var symbol))
+        {
+            return null;
+        }
+
+        // Data extension: course/speed (with a DF bearing report on the DF symbol), PHG, RNG or DFS.
+        var rest = info[(at + 19)..];
+        int? course = null;
+        double? speed = null;
+        PowerHeightGain? phg = null;
+        double? range = null;
+        DirectionFindingStrength? dfs = null;
+        DirectionFindingReport? df = null;
+        var used = 0;
+        if (TryCourseSpeed(rest, out course, out var speedKnots))
+        {
+            speed = speedKnots;
+            used = 7;
+            if (symbol == new AprsSymbol('/', '\\') && TryBearing(rest[7..], course == 0, out df))
+            {
+                used = 15;
+            }
+        }
+        else if (TryPhg(rest, "PHG"u8, out var p, out var h, out var g, out var d))
+        {
+            phg = new PowerHeightGain(p * p, h, g, d);
+            used = 7;
+        }
+        else if (rest.Length >= 7 && rest.StartsWith("RNG"u8) && TryDigits(rest.Slice(3, 4), out var miles))
+        {
+            range = miles;
+            used = 7;
+        }
+        else if (TryPhg(rest, "DFS"u8, out var s, out h, out g, out d))
+        {
+            dfs = new DirectionFindingStrength(s, h, g, d);
+            used = 7;
+        }
+
+        var commentStart = at + 19 + used;
+        var comment = information[commentStart..];
+        var (position, datum, text) = ApplyDao(new AprsPosition(latitude, longitude, ambiguity), comment.Span);
+        return new PositionReport
+        {
+            Position = position,
+            Symbol = symbol,
+            Timestamp = timestamp,
+            IsMessagingCapable = messaging,
+            Course = course,
+            SpeedKnots = speed,
+            AltitudeFeet = CommentAltitude(comment.Span),
+            PowerHeightGain = phg,
+            RangeMiles = range,
+            DirectionFindingStrength = dfs,
+            DirectionFinding = df,
+            Datum = datum,
+            CommentBytes = comment,
+            Comment = text,
+        };
+    }
+
+    private static PositionReport? DecodeCompressed(
+        ReadOnlyMemory<byte> information,
+        int at,
+        int offset,
+        AprsTimestamp? timestamp,
+        bool messaging,
+        List<ParseIssue> issues
+    )
+    {
+        var info = information.Span;
+        if (info.Length < at + 13)
+        {
+            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
+            return null;
+        }
+
+        var table = info[at] is >= (byte)'a' and <= (byte)'j' ? (byte)('0' + info[at] - 'a') : info[at];
+        if (!TryBase91(info.Slice(at + 1, 4), out var y) || y > 380926 * 180)
+        {
+            issues.Add(Error(ParseIssueCode.InvalidLatitude, offset + at + 1));
+            return null;
+        }
+
+        if (!TryBase91(info.Slice(at + 5, 4), out var x) || x > 190463 * 360)
+        {
+            issues.Add(Error(ParseIssueCode.InvalidLongitude, offset + at + 5));
+            return null;
+        }
+
+        if (!TrySymbol(table, info[at + 9], offset + at, issues, out var symbol))
+        {
+            return null;
+        }
+
+        int? course = null;
+        double? speed = null;
+        double? range = null;
+        double? altitude = null;
+        CompressionType? type = null;
+        var (c, s, t) = (info[at + 10], info[at + 11], info[at + 12]);
+        if (c != ' ' && t is >= 33 and <= 123 && s is >= 33 and <= 123)
+        {
+            var bits = t - 33;
+            type = new CompressionType(
+                (bits & 0b100000) != 0 ? CompressedGpsFix.Current : CompressedGpsFix.Old,
+                (CompressedNmeaSource)((bits >> 3) & 0b11),
+                (CompressedOrigin)(bits & 0b111)
+            );
+            if (type.Value.NmeaSource == CompressedNmeaSource.Gga && c is >= 33 and <= 123)
+            {
+                altitude = Math.Pow(1.002, ((c - 33) * 91) + (s - 33));
+            }
+            else if (c == '{')
+            {
+                range = 2 * Math.Pow(1.08, s - 33);
+            }
+            else if (c is >= 33 and <= (byte)'z')
+            {
+                course = (c - 33) * 4;
+                speed = Math.Pow(1.08, s - 33) - 1;
+            }
+        }
+
+        var comment = information[(at + 13)..];
+        return new PositionReport
+        {
+            Position = new AprsPosition(90 - (y / 380926.0), -180 + (x / 190463.0)),
+            Symbol = symbol,
+            Timestamp = timestamp,
+            IsMessagingCapable = messaging,
+            IsCompressed = true,
+            Course = course,
+            SpeedKnots = speed,
+            RangeMiles = range,
+            AltitudeFeet = altitude ?? CommentAltitude(comment.Span),
+            CompressionType = type,
+            CommentBytes = comment,
+            Comment = Text(comment.Span),
+        };
+    }
+
+    /// <summary>Latitude <c>DDMM.hhN</c>, where trailing digits may be spaces for ambiguity.</summary>
+    internal static bool TryLatitude(
+        ReadOnlySpan<byte> field,
+        out double degrees,
+        out int ambiguity,
+        out bool lowercase
+    )
+    {
+        degrees = 0;
+        ambiguity = 0;
+        lowercase = field[7] is (byte)'n' or (byte)'s';
+        while (ambiguity < 4 && field[_latitudeBlanks[ambiguity]] == ' ')
+        {
+            ambiguity++;
+        }
+
+        Span<byte> digits = stackalloc byte[8];
+        field.CopyTo(digits);
+        for (var i = 0; i < ambiguity; i++)
+        {
+            digits[_latitudeBlanks[i]] = (byte)'0';
+        }
+
+        if (
+            digits[4] != '.'
+            || field[7] is not ((byte)'N' or (byte)'S' or (byte)'n' or (byte)'s')
+            || !TryDigits(digits[..4], out var degreesMinutes)
+            || !TryDigits(digits.Slice(5, 2), out var hundredths)
+        )
+        {
+            return false;
+        }
+
+        var minutes = (degreesMinutes % 100) + (hundredths / 100.0);
+        degrees = (degreesMinutes / 100) + (minutes / 60);
+        if (minutes >= 60 || degrees > 90)
+        {
+            return false;
+        }
+
+        degrees = field[7] is (byte)'S' or (byte)'s' ? -degrees : degrees;
+        return true;
+    }
+
+    /// <summary>Longitude <c>DDDMM.hhW</c>; the latitude's ambiguity blanks the same number of trailing digits.</summary>
+    internal static bool TryLongitude(ReadOnlySpan<byte> field, int ambiguity, out double degrees, out bool lowercase)
+    {
+        degrees = 0;
+        lowercase = field[8] is (byte)'e' or (byte)'w';
+        Span<byte> digits = stackalloc byte[9];
+        field.CopyTo(digits);
+        for (var i = 0; i < ambiguity; i++)
+        {
+            digits[_longitudeBlanks[i]] = (byte)'0';
+        }
+
+        if (
+            digits[5] != '.'
+            || field[8] is not ((byte)'E' or (byte)'W' or (byte)'e' or (byte)'w')
+            || !TryDigits(digits[..5], out var degreesMinutes)
+            || !TryDigits(digits.Slice(6, 2), out var hundredths)
+        )
+        {
+            return false;
+        }
+
+        var minutes = (degreesMinutes % 100) + (hundredths / 100.0);
+        degrees = (degreesMinutes / 100) + (minutes / 60);
+        if (minutes >= 60 || degrees > 180)
+        {
+            return false;
+        }
+
+        degrees = field[8] is (byte)'W' or (byte)'w' ? -degrees : degrees;
+        return true;
+    }
+
+    internal static bool TrySymbol(byte table, byte code, int offset, List<ParseIssue> issues, out AprsSymbol symbol)
+    {
+        if (AprsSymbol.TryCreate((char)table, (char)code, out symbol))
+        {
+            return true;
+        }
+
+        var tableValid = AprsSymbol.TryCreate((char)table, '!', out _);
+        issues.Add(Error(tableValid ? ParseIssueCode.InvalidSymbolCode : ParseIssueCode.InvalidSymbolTable, offset));
+        return false;
+    }
+
+    /// <summary>Course and speed <c>CCC/SSS</c>; <c>...</c> or spaces mean not known.</summary>
+    private static bool TryCourseSpeed(ReadOnlySpan<byte> rest, out int? course, out double? speed)
+    {
+        course = null;
+        speed = null;
+        if (
+            rest.Length < 7
+            || rest[3] != '/'
+            || !TryField(rest[..3], out var c)
+            || !TryField(rest.Slice(4, 3), out var s)
+        )
+        {
+            return false;
+        }
+
+        if (c > 360)
+        {
+            return false;
+        }
+
+        (course, speed) = (c, s);
+        return true;
+
+        static bool TryField(ReadOnlySpan<byte> field, out int? value)
+        {
+            value = null;
+            if (field.SequenceEqual("..."u8) || field.SequenceEqual("   "u8))
+            {
+                return true;
+            }
+
+            var ok = TryDigits(field, out var number);
+            value = number;
+            return ok;
+        }
+    }
+
+    /// <summary>A DF bearing report <c>/BRG/NRQ</c> after course and speed.</summary>
+    private static bool TryBearing(ReadOnlySpan<byte> rest, bool fixedStation, out DirectionFindingReport? report)
+    {
+        report = null;
+        if (
+            rest.Length < 8
+            || rest[0] != '/'
+            || rest[4] != '/'
+            || !TryDigits(rest.Slice(1, 3), out var bearing)
+            || !TryDigits(rest.Slice(5, 3), out _)
+        )
+        {
+            return false;
+        }
+
+        report = new DirectionFindingReport(bearing, rest[5] - '0', 1 << (rest[6] - '0'), rest[7] - '0', fixedStation);
+        return true;
+    }
+
+    /// <summary><c>PHGphgd</c> and <c>DFSshgd</c>: a digit, a height code (0 and up, 10 × 2^h feet), gain and direction.</summary>
+    private static bool TryPhg(
+        ReadOnlySpan<byte> rest,
+        ReadOnlySpan<byte> prefix,
+        out int first,
+        out int heightFeet,
+        out int gain,
+        out int? directivity
+    )
+    {
+        (first, heightFeet, gain, directivity) = (0, 0, 0, null);
+        if (
+            rest.Length < 7
+            || !rest.StartsWith(prefix)
+            || !char.IsAsciiDigit((char)rest[3])
+            || rest[4] is < (byte)'0' or > (byte)'@'
+            || !char.IsAsciiDigit((char)rest[5])
+            || rest[6] is < (byte)'0' or > (byte)'8'
+        )
+        {
+            return false;
+        }
+
+        first = rest[3] - '0';
+        heightFeet = 10 << (rest[4] - '0');
+        gain = rest[5] - '0';
+        directivity = rest[6] == '0' ? null : (rest[6] - '0') * 45;
+        return true;
+    }
+
+    /// <summary>Altitude <c>/A=aaaaaa</c> in feet, anywhere in a comment.</summary>
+    internal static double? CommentAltitude(ReadOnlySpan<byte> comment)
+    {
+        var at = comment.IndexOf("/A="u8);
+        if (at < 0 || comment.Length < at + 9)
+        {
+            return null;
+        }
+
+        var field = comment.Slice(at + 3, 6);
+        return field[0] == '-' && TryDigits(field[1..], out var below) ? -below
+            : TryDigits(field, out var feet) ? feet
+            : null;
+    }
+
+    /// <summary>
+    /// Applies a <c>!DAO!</c> token (APRS 1.2) to an unambiguous position and returns the comment text without it.
+    /// </summary>
+    internal static (AprsPosition Position, char? Datum, string Comment) ApplyDao(
+        AprsPosition position,
+        ReadOnlySpan<byte> comment
+    )
+    {
+        for (var at = comment.Length - 5; at >= 0; at--)
+        {
+            var token = comment.Slice(at, 5);
+            if (token[0] != '!' || token[4] != '!' || !char.IsAsciiLetterOrDigit((char)token[1]))
+            {
+                continue;
+            }
+
+            double? extraLatitude;
+            double? extraLongitude;
+            if (char.IsAsciiLetterLower((char)token[1]))
+            {
+                extraLatitude = Base91Minutes(token[2]);
+                extraLongitude = Base91Minutes(token[3]);
+            }
+            else
+            {
+                extraLatitude = DigitMinutes(token[2]);
+                extraLongitude = DigitMinutes(token[3]);
+            }
+
+            if (extraLatitude is null || extraLongitude is null)
+            {
+                continue;
+            }
+
+            if (position.Ambiguity == 0)
+            {
+                position = position with
+                {
+                    Latitude = position.Latitude + (Math.Sign(position.Latitude) * extraLatitude.Value / 60),
+                    Longitude = position.Longitude + (Math.Sign(position.Longitude) * extraLongitude.Value / 60),
+                };
+            }
+
+            var text = Text(comment[..at]) + Text(comment[(at + 5)..]);
+            return (position, (char)token[1], text);
+        }
+
+        return (position, null, Text(comment));
+
+        static double? DigitMinutes(byte b) =>
+            b == ' ' ? 0
+            : char.IsAsciiDigit((char)b) ? (b - '0') * 0.001
+            : null;
+
+        static double? Base91Minutes(byte b) =>
+            b == ' ' ? 0
+            : b is >= 33 and <= 123 ? (b - 33) / 91.0 * 0.01
+            : null;
+    }
+
+    /// <summary>Comment text: UTF-8 when the bytes are valid UTF-8, otherwise one character per byte.</summary>
+    internal static string Text(ReadOnlySpan<byte> bytes) =>
+        Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
+
+    private static bool TryBase91(ReadOnlySpan<byte> bytes, out int value)
+    {
+        value = 0;
+        foreach (var b in bytes)
+        {
+            if (b is < 33 or > 123)
+            {
+                return false;
+            }
+
+            value = (value * 91) + (b - 33);
+        }
+
+        return true;
+    }
+
+    private static bool TryDigits(ReadOnlySpan<byte> bytes, out int value)
+    {
+        value = 0;
+        foreach (var b in bytes)
+        {
+            if (!char.IsAsciiDigit((char)b))
+            {
+                return false;
+            }
+
+            value = (value * 10) + (b - '0');
+        }
+
+        return bytes.Length > 0;
+    }
+
+    private static ParseIssue Error(ParseIssueCode code, int offset) => new(code, ParseIssueSeverity.Error, offset);
+}

@@ -27,6 +27,7 @@ public sealed partial class AprsPacket
         IReadOnlyList<PathEntry>? path,
         ReadOnlyMemory<byte> information,
         PacketType type,
+        AprsPayload? payload,
         IReadOnlyList<ParseIssue> issues
     )
     {
@@ -36,6 +37,7 @@ public sealed partial class AprsPacket
         Path = path;
         Information = information;
         Type = type;
+        Payload = payload;
         Issues = issues;
         Outcome =
             issues.Any(i => i.Severity == ParseIssueSeverity.Error) ? ParseOutcome.Malformed
@@ -135,7 +137,7 @@ public sealed partial class AprsPacket
         if (gt <= 0)
         {
             issues.Add(Error(gt == 0 ? ParseIssueCode.EmptySource : ParseIssueCode.MissingHeader, 0));
-            return new AprsPacket(raw, null, null, null, default, PacketType.Unknown, issues);
+            return new AprsPacket(raw, null, null, null, default, PacketType.Unknown, null, issues);
         }
 
         var source = Station(raw, 0, gt, issues);
@@ -198,8 +200,26 @@ public sealed partial class AprsPacket
             );
         }
 
-        return new AprsPacket(raw, source, destination, path, information, TypeOf(information.Span), issues);
+        var type = TypeOf(information.Span);
+        var payload = issues.Any(i => i.Severity == ParseIssueSeverity.Error)
+            ? null
+            : Decode(type, information[..Math.Min(information.Length, MaxInformationLength)], colon + 1, issues);
+        return new AprsPacket(raw, source, destination, path, information, type, payload, issues);
     }
+
+#pragma warning disable CA1859 // one payload decoder so far; status, messages and the rest join this switch
+    private static AprsPayload? Decode(
+        PacketType type,
+        ReadOnlyMemory<byte> information,
+        int offset,
+        List<ParseIssue> issues
+    ) =>
+        type switch
+        {
+            PacketType.Position => PositionDecoder.Decode(information, offset, issues),
+            _ => null,
+        };
+#pragma warning restore CA1859
 
     private static ParseIssue Error(ParseIssueCode code, int offset) => new(code, ParseIssueSeverity.Error, offset);
 
@@ -226,6 +246,8 @@ public sealed partial class AprsPacket
             ? PacketType.Unknown
             : information[0] switch
             {
+                // "!!" starts raw Ultimeter 2000 weather data (APRS101 ch. 12), not a position.
+                (byte)'!' when information.Length > 1 && information[1] == (byte)'!' => PacketType.Weather,
                 (byte)'!' or (byte)'=' or (byte)'/' or (byte)'@' => PacketType.Position,
                 (byte)'`' or (byte)'\'' or 0x1C or 0x1D => PacketType.MicE,
                 (byte)';' => PacketType.Object,

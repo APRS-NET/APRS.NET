@@ -12,6 +12,17 @@ AprsNet.Packets.AprsPacket.Raw.get -> System.ReadOnlyMemory<byte>
 AprsNet.Packets.AprsPacket.Source.get -> AprsNet.Packets.Callsign?
 AprsNet.Packets.AprsPacket.Type.get -> AprsNet.Packets.PacketType
 AprsNet.Packets.AprsPayload
+AprsNet.Packets.AprsPosition
+AprsNet.Packets.AprsPosition.Ambiguity.get -> int
+AprsNet.Packets.AprsPosition.Ambiguity.init -> void
+AprsNet.Packets.AprsPosition.AprsPosition(double Latitude, double Longitude, int Ambiguity = 0) -> void
+AprsNet.Packets.AprsPosition.AprsPosition() -> void
+AprsNet.Packets.AprsPosition.Deconstruct(out double Latitude, out double Longitude, out int Ambiguity) -> void
+AprsNet.Packets.AprsPosition.Equals(AprsNet.Packets.AprsPosition other) -> bool
+AprsNet.Packets.AprsPosition.Latitude.get -> double
+AprsNet.Packets.AprsPosition.Latitude.init -> void
+AprsNet.Packets.AprsPosition.Longitude.get -> double
+AprsNet.Packets.AprsPosition.Longitude.init -> void
 AprsNet.Packets.AprsSymbol
 AprsNet.Packets.AprsSymbol.AprsSymbol(char table, char code) -> void
 AprsNet.Packets.AprsSymbol.AprsSymbol() -> void
@@ -21,6 +32,19 @@ AprsNet.Packets.AprsSymbol.IsPrimary.get -> bool
 AprsNet.Packets.AprsSymbol.Overlay.get -> char?
 AprsNet.Packets.AprsSymbol.Table.get -> char
 AprsNet.Packets.AprsSymbol.WithoutOverlay.get -> AprsNet.Packets.AprsSymbol
+AprsNet.Packets.AprsTimestamp
+AprsNet.Packets.AprsTimestamp.AprsTimestamp() -> void
+AprsNet.Packets.AprsTimestamp.Day.get -> int?
+AprsNet.Packets.AprsTimestamp.Equals(AprsNet.Packets.AprsTimestamp other) -> bool
+AprsNet.Packets.AprsTimestampFormat
+AprsNet.Packets.AprsTimestampFormat.DayHourMinute = 0 -> AprsNet.Packets.AprsTimestampFormat
+AprsNet.Packets.AprsTimestamp.Format.get -> AprsNet.Packets.AprsTimestampFormat
+AprsNet.Packets.AprsTimestampFormat.HourMinuteSecond = 1 -> AprsNet.Packets.AprsTimestampFormat
+AprsNet.Packets.AprsTimestamp.Hour.get -> int
+AprsNet.Packets.AprsTimestamp.IsLocal.get -> bool
+AprsNet.Packets.AprsTimestamp.Minute.get -> int
+AprsNet.Packets.AprsTimestamp.Second.get -> int?
+AprsNet.Packets.AprsTimestamp.ToDateTimeOffset(System.DateTimeOffset received) -> System.DateTimeOffset?
 AprsNet.Packets.Callsign
 AprsNet.Packets.Callsign.Base.get -> string!
 AprsNet.Packets.Callsign.<Clone>$() -> AprsNet.Packets.Callsign!
@@ -28,6 +52,62 @@ AprsNet.Packets.Callsign.Equals(AprsNet.Packets.Callsign? other) -> bool
 AprsNet.Packets.Callsign.IsAx25.get -> bool
 AprsNet.Packets.Callsign.Ssid.get -> string!
 AprsNet.Packets.Callsign.Value.get -> string!
+AprsNet.Packets.CompressedGpsFix
+AprsNet.Packets.CompressedGpsFix.Current = 1 -> AprsNet.Packets.CompressedGpsFix
+AprsNet.Packets.CompressedGpsFix.Old = 0 -> AprsNet.Packets.CompressedGpsFix
+AprsNet.Packets.CompressedNmeaSource
+AprsNet.Packets.CompressedNmeaSource.Gga = 2 -> AprsNet.Packets.CompressedNmeaSource
+AprsNet.Packets.CompressedNmeaSource.Gll = 1 -> AprsNet.Packets.CompressedNmeaSource
+AprsNet.Packets.CompressedNmeaSource.Other = 0 -> AprsNet.Packets.CompressedNmeaSource
+AprsNet.Packets.CompressedNmeaSource.Rmc = 3 -> AprsNet.Packets.CompressedNmeaSource
+AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.Compressed = 0 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.DigipeaterConversion = 7 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.Kpc3 = 4 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.OtherTracker = 6 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.Pico = 5 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.Reserved = 3 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.Software = 2 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressedOrigin.TncBText = 1 -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressionType
+AprsNet.Packets.CompressionType.CompressionType(AprsNet.Packets.CompressedGpsFix GpsFix, AprsNet.Packets.CompressedNmeaSource NmeaSource, AprsNet.Packets.CompressedOrigin Origin) -> void
+AprsNet.Packets.CompressionType.CompressionType() -> void
+AprsNet.Packets.CompressionType.Deconstruct(out AprsNet.Packets.CompressedGpsFix GpsFix, out AprsNet.Packets.CompressedNmeaSource NmeaSource, out AprsNet.Packets.CompressedOrigin Origin) -> void
+AprsNet.Packets.CompressionType.Equals(AprsNet.Packets.CompressionType other) -> bool
+AprsNet.Packets.CompressionType.GpsFix.get -> AprsNet.Packets.CompressedGpsFix
+AprsNet.Packets.CompressionType.GpsFix.init -> void
+AprsNet.Packets.CompressionType.NmeaSource.get -> AprsNet.Packets.CompressedNmeaSource
+AprsNet.Packets.CompressionType.NmeaSource.init -> void
+AprsNet.Packets.CompressionType.Origin.get -> AprsNet.Packets.CompressedOrigin
+AprsNet.Packets.CompressionType.Origin.init -> void
+AprsNet.Packets.DirectionFindingReport
+AprsNet.Packets.DirectionFindingReport.Bearing.get -> int
+AprsNet.Packets.DirectionFindingReport.Bearing.init -> void
+AprsNet.Packets.DirectionFindingReport.<Clone>$() -> AprsNet.Packets.DirectionFindingReport!
+AprsNet.Packets.DirectionFindingReport.Deconstruct(out int Bearing, out int Hits, out int RangeMiles, out int Quality, out bool IsFixedStation) -> void
+AprsNet.Packets.DirectionFindingReport.DirectionFindingReport(int Bearing, int Hits, int RangeMiles, int Quality, bool IsFixedStation) -> void
+AprsNet.Packets.DirectionFindingReport.Equals(AprsNet.Packets.DirectionFindingReport? other) -> bool
+AprsNet.Packets.DirectionFindingReport.Hits.get -> int
+AprsNet.Packets.DirectionFindingReport.Hits.init -> void
+AprsNet.Packets.DirectionFindingReport.IsFixedStation.get -> bool
+AprsNet.Packets.DirectionFindingReport.IsFixedStation.init -> void
+AprsNet.Packets.DirectionFindingReport.Quality.get -> int
+AprsNet.Packets.DirectionFindingReport.Quality.init -> void
+AprsNet.Packets.DirectionFindingReport.RangeMiles.get -> int
+AprsNet.Packets.DirectionFindingReport.RangeMiles.init -> void
+AprsNet.Packets.DirectionFindingStrength
+AprsNet.Packets.DirectionFindingStrength.<Clone>$() -> AprsNet.Packets.DirectionFindingStrength!
+AprsNet.Packets.DirectionFindingStrength.Deconstruct(out int Strength, out int HeightFeet, out int GainDbi, out int? Directivity) -> void
+AprsNet.Packets.DirectionFindingStrength.DirectionFindingStrength(int Strength, int HeightFeet, int GainDbi, int? Directivity) -> void
+AprsNet.Packets.DirectionFindingStrength.Directivity.get -> int?
+AprsNet.Packets.DirectionFindingStrength.Directivity.init -> void
+AprsNet.Packets.DirectionFindingStrength.Equals(AprsNet.Packets.DirectionFindingStrength? other) -> bool
+AprsNet.Packets.DirectionFindingStrength.GainDbi.get -> int
+AprsNet.Packets.DirectionFindingStrength.GainDbi.init -> void
+AprsNet.Packets.DirectionFindingStrength.HeightFeet.get -> int
+AprsNet.Packets.DirectionFindingStrength.HeightFeet.init -> void
+AprsNet.Packets.DirectionFindingStrength.Strength.get -> int
+AprsNet.Packets.DirectionFindingStrength.Strength.init -> void
 AprsNet.Packets.PacketType
 AprsNet.Packets.PacketType.Item = 4 -> AprsNet.Packets.PacketType
 AprsNet.Packets.PacketType.Message = 5 -> AprsNet.Packets.PacketType
@@ -50,7 +130,14 @@ AprsNet.Packets.ParseIssue.Code.get -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.InformationTooLong = 7 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssue.Code.init -> void
 AprsNet.Packets.ParseIssueCode.InvalidCallsign = 5 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidLatitude = 10 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidLongitude = 11 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidSymbolCode = 13 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidSymbolTable = 12 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidTimestamp = 8 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.LowercaseHemisphere = 14 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.MissingHeader = 0 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.PositionTooShort = 9 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssueCode.TooManyPathEntries = 4 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.ParseIssue.Deconstruct(out AprsNet.Packets.ParseIssueCode Code, out AprsNet.Packets.ParseIssueSeverity Severity, out int Offset) -> void
 AprsNet.Packets.ParseIssue.Equals(AprsNet.Packets.ParseIssue other) -> bool
@@ -83,28 +170,90 @@ AprsNet.Packets.PathEntry.PathEntry(AprsNet.Packets.Callsign! Station, bool HasB
 AprsNet.Packets.PathEntry.PathEntry() -> void
 AprsNet.Packets.PathEntry.Station.get -> AprsNet.Packets.Callsign!
 AprsNet.Packets.PathEntry.Station.init -> void
+AprsNet.Packets.PositionReport
+AprsNet.Packets.PositionReport.AltitudeFeet.get -> double?
+AprsNet.Packets.PositionReport.CommentBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.PositionReport.Comment.get -> string!
+AprsNet.Packets.PositionReport.CompressionType.get -> AprsNet.Packets.CompressionType?
+AprsNet.Packets.PositionReport.Course.get -> int?
+AprsNet.Packets.PositionReport.Datum.get -> char?
+AprsNet.Packets.PositionReport.DirectionFinding.get -> AprsNet.Packets.DirectionFindingReport?
+AprsNet.Packets.PositionReport.DirectionFindingStrength.get -> AprsNet.Packets.DirectionFindingStrength?
+AprsNet.Packets.PositionReport.IsCompressed.get -> bool
+AprsNet.Packets.PositionReport.IsMessagingCapable.get -> bool
+AprsNet.Packets.PositionReport.IsPositionUnknown.get -> bool
+AprsNet.Packets.PositionReport.Position.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.PositionReport.PowerHeightGain.get -> AprsNet.Packets.PowerHeightGain?
+AprsNet.Packets.PositionReport.RangeMiles.get -> double?
+AprsNet.Packets.PositionReport.SpeedKnots.get -> double?
+AprsNet.Packets.PositionReport.Symbol.get -> AprsNet.Packets.AprsSymbol
+AprsNet.Packets.PositionReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp?
+AprsNet.Packets.PowerHeightGain
+AprsNet.Packets.PowerHeightGain.<Clone>$() -> AprsNet.Packets.PowerHeightGain!
+AprsNet.Packets.PowerHeightGain.Deconstruct(out int PowerWatts, out int HeightFeet, out int GainDbi, out int? Directivity) -> void
+AprsNet.Packets.PowerHeightGain.Directivity.get -> int?
+AprsNet.Packets.PowerHeightGain.Directivity.init -> void
+AprsNet.Packets.PowerHeightGain.Equals(AprsNet.Packets.PowerHeightGain? other) -> bool
+AprsNet.Packets.PowerHeightGain.GainDbi.get -> int
+AprsNet.Packets.PowerHeightGain.GainDbi.init -> void
+AprsNet.Packets.PowerHeightGain.HeightFeet.get -> int
+AprsNet.Packets.PowerHeightGain.HeightFeet.init -> void
+AprsNet.Packets.PowerHeightGain.PowerHeightGain(int PowerWatts, int HeightFeet, int GainDbi, int? Directivity) -> void
+AprsNet.Packets.PowerHeightGain.PowerWatts.get -> int
+AprsNet.Packets.PowerHeightGain.PowerWatts.init -> void
+AprsNet.Packets.PowerHeightGain.RangeMiles.get -> double
 override AprsNet.Packets.AprsPacket.ToString() -> string!
+~override AprsNet.Packets.AprsPosition.Equals(object obj) -> bool
+override AprsNet.Packets.AprsPosition.GetHashCode() -> int
+~override AprsNet.Packets.AprsPosition.ToString() -> string
 ~override AprsNet.Packets.AprsSymbol.Equals(object obj) -> bool
 override AprsNet.Packets.AprsSymbol.GetHashCode() -> int
 override AprsNet.Packets.AprsSymbol.ToString() -> string!
+~override AprsNet.Packets.AprsTimestamp.Equals(object obj) -> bool
+override AprsNet.Packets.AprsTimestamp.GetHashCode() -> int
+override AprsNet.Packets.AprsTimestamp.ToString() -> string!
 override AprsNet.Packets.Callsign.Equals(object? obj) -> bool
 override AprsNet.Packets.Callsign.GetHashCode() -> int
 override AprsNet.Packets.Callsign.ToString() -> string!
+~override AprsNet.Packets.CompressionType.Equals(object obj) -> bool
+override AprsNet.Packets.CompressionType.GetHashCode() -> int
+~override AprsNet.Packets.CompressionType.ToString() -> string
+override AprsNet.Packets.DirectionFindingReport.Equals(object? obj) -> bool
+override AprsNet.Packets.DirectionFindingReport.GetHashCode() -> int
+override AprsNet.Packets.DirectionFindingReport.ToString() -> string!
+override AprsNet.Packets.DirectionFindingStrength.Equals(object? obj) -> bool
+override AprsNet.Packets.DirectionFindingStrength.GetHashCode() -> int
+override AprsNet.Packets.DirectionFindingStrength.ToString() -> string!
 ~override AprsNet.Packets.ParseIssue.Equals(object obj) -> bool
 override AprsNet.Packets.ParseIssue.GetHashCode() -> int
 ~override AprsNet.Packets.ParseIssue.ToString() -> string
 ~override AprsNet.Packets.PathEntry.Equals(object obj) -> bool
 override AprsNet.Packets.PathEntry.GetHashCode() -> int
 override AprsNet.Packets.PathEntry.ToString() -> string!
+override AprsNet.Packets.PowerHeightGain.Equals(object? obj) -> bool
+override AprsNet.Packets.PowerHeightGain.GetHashCode() -> int
+override AprsNet.Packets.PowerHeightGain.ToString() -> string!
 static AprsNet.Packets.AprsPacket.Parse(string! line) -> AprsNet.Packets.AprsPacket!
 static AprsNet.Packets.AprsPacket.Parse(System.ReadOnlySpan<byte> line) -> AprsNet.Packets.AprsPacket!
+static AprsNet.Packets.AprsPosition.operator !=(AprsNet.Packets.AprsPosition left, AprsNet.Packets.AprsPosition right) -> bool
+static AprsNet.Packets.AprsPosition.operator ==(AprsNet.Packets.AprsPosition left, AprsNet.Packets.AprsPosition right) -> bool
 static AprsNet.Packets.AprsSymbol.operator !=(AprsNet.Packets.AprsSymbol left, AprsNet.Packets.AprsSymbol right) -> bool
 static AprsNet.Packets.AprsSymbol.operator ==(AprsNet.Packets.AprsSymbol left, AprsNet.Packets.AprsSymbol right) -> bool
 static AprsNet.Packets.AprsSymbol.TryCreate(char table, char code, out AprsNet.Packets.AprsSymbol symbol) -> bool
+static AprsNet.Packets.AprsTimestamp.operator !=(AprsNet.Packets.AprsTimestamp left, AprsNet.Packets.AprsTimestamp right) -> bool
+static AprsNet.Packets.AprsTimestamp.operator ==(AprsNet.Packets.AprsTimestamp left, AprsNet.Packets.AprsTimestamp right) -> bool
 static AprsNet.Packets.Callsign.operator !=(AprsNet.Packets.Callsign? left, AprsNet.Packets.Callsign? right) -> bool
 static AprsNet.Packets.Callsign.operator ==(AprsNet.Packets.Callsign? left, AprsNet.Packets.Callsign? right) -> bool
+static AprsNet.Packets.CompressionType.operator !=(AprsNet.Packets.CompressionType left, AprsNet.Packets.CompressionType right) -> bool
+static AprsNet.Packets.CompressionType.operator ==(AprsNet.Packets.CompressionType left, AprsNet.Packets.CompressionType right) -> bool
+static AprsNet.Packets.DirectionFindingReport.operator !=(AprsNet.Packets.DirectionFindingReport? left, AprsNet.Packets.DirectionFindingReport? right) -> bool
+static AprsNet.Packets.DirectionFindingReport.operator ==(AprsNet.Packets.DirectionFindingReport? left, AprsNet.Packets.DirectionFindingReport? right) -> bool
+static AprsNet.Packets.DirectionFindingStrength.operator !=(AprsNet.Packets.DirectionFindingStrength? left, AprsNet.Packets.DirectionFindingStrength? right) -> bool
+static AprsNet.Packets.DirectionFindingStrength.operator ==(AprsNet.Packets.DirectionFindingStrength? left, AprsNet.Packets.DirectionFindingStrength? right) -> bool
 static AprsNet.Packets.ParseIssueCodeExtensions.Describe(this AprsNet.Packets.ParseIssueCode code) -> string!
 static AprsNet.Packets.ParseIssue.operator !=(AprsNet.Packets.ParseIssue left, AprsNet.Packets.ParseIssue right) -> bool
 static AprsNet.Packets.ParseIssue.operator ==(AprsNet.Packets.ParseIssue left, AprsNet.Packets.ParseIssue right) -> bool
 static AprsNet.Packets.PathEntry.operator !=(AprsNet.Packets.PathEntry left, AprsNet.Packets.PathEntry right) -> bool
 static AprsNet.Packets.PathEntry.operator ==(AprsNet.Packets.PathEntry left, AprsNet.Packets.PathEntry right) -> bool
+static AprsNet.Packets.PowerHeightGain.operator !=(AprsNet.Packets.PowerHeightGain? left, AprsNet.Packets.PowerHeightGain? right) -> bool
+static AprsNet.Packets.PowerHeightGain.operator ==(AprsNet.Packets.PowerHeightGain? left, AprsNet.Packets.PowerHeightGain? right) -> bool

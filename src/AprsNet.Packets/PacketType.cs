@@ -29,7 +29,7 @@ public enum PacketType
     /// <summary>A status report: <c>&gt;</c>.</summary>
     Status,
 
-    /// <summary>A positionless weather report: <c>_</c>.</summary>
+    /// <summary>A positionless weather report (<c>_</c>), or raw Ultimeter weather data (<c>!!</c>).</summary>
     Weather,
 
     /// <summary>A telemetry report: <c>T#</c>.</summary>
