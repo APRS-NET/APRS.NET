@@ -29,6 +29,11 @@ public partial class CorpusFileTests
         "FIFTH",
         "SIXTH",
         "WINLINK",
+        "DMR",
+        "DSTAR",
+        "YSF",
+        "NXDN",
+        "C4FM",
     };
 
     public static TheoryData<string> CorpusFiles()
@@ -99,8 +104,9 @@ public partial class CorpusFileTests
                     continue; // not a callsign (named stations become X-names, which have no digit)
                 }
 
+                // Pseudonyms start with Q, or with 0Q for digit-first prefixes (no ITU prefix starts with 0).
                 Assert.True(
-                    call.StartsWith('Q') || call.StartsWith('q'),
+                    call.StartsWith('Q') || call.StartsWith('q') || call.StartsWith("0Q", StringComparison.Ordinal),
                     $"{file}:{lineNumber} has a callsign that is not a Q pseudonym: {call}"
                 );
             }

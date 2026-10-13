@@ -6,7 +6,8 @@
 //
 //   dotnet run tools/corpus/Anonymize.cs -- --map <mapping.json> --out <file> <capture>...
 //
-// Callsigns become same-length Q-prefixed calls (Q is not an ITU national prefix, so they can never be real),
+// Callsigns become same-length Q-prefixed calls (Q is not an ITU national prefix, so they can never be real; digit-first
+// calls such as 7K1ABC become 0Q1AAA, since no prefix starts with 0),
 // named stations become same-length X-names, and e-mail addresses are masked. Every substitution keeps the length,
 // so each output line is exactly as long as its input line, and the tool checks that. Positions, device TOCALLs,
 // Mic-E destinations, generic path aliases and APRS-IS server names are kept byte for byte.
@@ -23,6 +24,7 @@ using System.Text.RegularExpressions;
 var latin1 = Encoding.Latin1;
 string? mapPath = null;
 string? outPath = null;
+var dropBinary = false;
 var inputs = new List<string>();
 for (var i = 0; i < args.Length; i++)
 {
@@ -34,6 +36,9 @@ for (var i = 0; i < args.Length; i++)
         case "--out":
             outPath = args[++i];
             break;
+        case "--drop-binary":
+            dropBinary = true;
+            break;
         default:
             inputs.Add(args[i]);
             break;
@@ -42,7 +47,7 @@ for (var i = 0; i < args.Length; i++)
 
 if (mapPath is null || outPath is null || inputs.Count == 0)
 {
-    Console.Error.WriteLine("usage: Anonymize.cs --map <mapping.json> --out <file> <capture>...");
+    Console.Error.WriteLine("usage: Anonymize.cs --map <mapping.json> --out <file> [--drop-binary] <capture>...");
     return 3;
 }
 
@@ -52,6 +57,25 @@ var map = File.Exists(mapPath)
 var anonymizer = new Anonymizer(map);
 
 var lines = inputs.SelectMany(path => File.ReadAllLines(path, latin1)).Where(l => l.Length > 0).ToList();
+
+// A broken gateway can leak KISS frames into a packet: binary AX.25 headers hold callsigns as shifted bytes, which
+// the text rules cannot see or rewrite. Refuse them, or drop them with --drop-binary.
+var binary = lines.Where(Anonymizer.HasKissFrame).ToList();
+if (binary.Count > 0)
+{
+    if (!dropBinary)
+    {
+        Console.Error.WriteLine(
+            $"{binary.Count} lines carry KISS frames whose binary AX.25 headers cannot be anonymized; "
+                + "rerun with --drop-binary to leave them out:"
+        );
+        binary.ForEach(l => Console.Error.WriteLine($"  {l}"));
+        return 1;
+    }
+
+    lines = [.. lines.Except(binary)];
+    Console.WriteLine($"dropped {binary.Count} lines carrying KISS frames");
+}
 
 // Pass 1 learns every identifier so pass 2 can also replace mentions that appear before the station is first seen.
 foreach (var line in lines)
@@ -131,9 +155,21 @@ internal sealed partial class Anonymizer(Mapping map)
         "APRSFI", // aprs.fi's APRS-IS login (APRSFI-I3)
         "WINLINK",
         "QTH", // "location": one DMR hotspot puts it in the path
+        "DMR", // digital voice modes, which gateways put in the path
+        "DSTAR",
+        "YSF",
+        "NXDN",
+        "C4FM",
         "DEMO", // APRS-IS simulators (DEMO-002, MARSQ-052): not people, and their 3-digit SSIDs are worth keeping
         "MARSQ",
     };
+
+    /// <summary>
+    /// Whether a line holds a KISS frame delimiter (0xC0, FEND), raw or after a UTF-8 re-encoding of the bytes
+    /// (C3 80), which is how leaked binary frames usually arrive on APRS-IS.
+    /// </summary>
+    public static bool HasKissFrame(string line) =>
+        line.Contains('\u00C0', StringComparison.Ordinal) || line.Contains("\u00C3\u0080", StringComparison.Ordinal);
 
     public static (string? Stamp, string Packet) SplitCapture(string line)
     {
@@ -375,7 +411,10 @@ internal sealed partial class Anonymizer(Mapping map)
 
         if (CallsignExact().IsMatch(call))
         {
-            LearnCall(call);
+            if (!NotACallsign().IsMatch(call))
+            {
+                LearnCall(call);
+            }
         }
         else if (!map.Names.ContainsKey(call.ToUpperInvariant()))
         {
@@ -403,13 +442,19 @@ internal sealed partial class Anonymizer(Mapping map)
 
     private string NewCall(string call)
     {
-        // Keep digits in place; the first letter becomes Q and the other letters count up.
+        // Keep digits in place; the first letter becomes Q and the other letters count up. A digit-first prefix
+        // (7K, 2E) starts with 0 instead: no ITU prefix begins with 0, while some digit+Q prefixes are real (7Q).
         var taken = new HashSet<string>(map.Calls.Values, StringComparer.Ordinal);
         for (var n = 0; ; n++)
         {
             var chars = call.ToCharArray();
             var letters = Enumerable.Range(0, chars.Length).Where(i => char.IsAsciiLetter(chars[i])).ToList();
             chars[letters[0]] = 'Q';
+            if (char.IsAsciiDigit(chars[0]))
+            {
+                chars[0] = '0';
+            }
+
             var counter = n;
             for (var k = letters.Count - 1; k >= 1; k--)
             {
@@ -520,18 +565,19 @@ internal sealed partial class Anonymizer(Mapping map)
     )]
     private static partial Regex Generic();
 
-    // Callsign-shaped words that are APRS field values: AFRS range (R25m, E10k) and digital voice modes.
-    [GeneratedRegex(@"^(?:[RNSEW][0-9]{2}[MK]|C4FM)$", RegexOptions.IgnoreCase)]
+    // Callsign-shaped words that are APRS field values: AFRS range (R25m, E10k), digital voice modes, and weather
+    // software tags after the weather data (APRS101 ch. 12: software d/M/P/S/W/X plus an Ultimeter unit, "XU2k").
+    [GeneratedRegex(@"^(?:[RNSEW][0-9]{2}[MK]|C4FM|[dMPSWX]U2(?:k|kr|R))$", RegexOptions.IgnoreCase)]
     private static partial Regex NotACallsign();
 
     [GeneratedRegex(@"^:.{9}:(?:PARM|UNIT|EQNS|BITS)\.")]
     private static partial Regex TelemetryDefinition();
 
     // !DAO! precision (datum + two bytes) and |base-91 comment telemetry|: encoded data, never text.
-    // Also the fixed-width fields a comment can be glued to without a space ("/A=000040W6XYZ-10", "PHG4540K2XYZ"), so
-    // a callsign right after them is still seen as a separate word.
+    // Also the fixed-width fields a comment can be glued to without a space ("/A=000040W6XYZ-10", "PHG4540K2XYZ",
+    // weather "b10175VK2XYZ"), so a callsign right after them is still seen as a separate word.
     [GeneratedRegex(
-        @"![\x21-\x7b]{3}!|\|(?:[\x21-\x7b]{2}){2,7}\||/A=-?[0-9]{5,6}|PHG[0-9][0-9:;<=>?@A-Z][0-9]{2}|RNG[0-9]{4}|DFS[0-9]{4}"
+        @"![\x21-\x7b]{3}!|\|(?:[\x21-\x7b]{2}){2,7}\||/A=-?[0-9]{5,6}|PHG[0-9][0-9:;<=>?@A-Z][0-9]{2}|RNG[0-9]{4}|DFS[0-9]{4}|(?<=[0-9.])(?:b[0-9]{5}|h[0-9]{2}|[Ll][0-9]{3})"
     )]
     private static partial Regex EncodedToken();
 
