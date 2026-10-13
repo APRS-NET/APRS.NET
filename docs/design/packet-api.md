@@ -289,6 +289,30 @@ digital channels may be left out. A value that is not a number, or digital chann
 characters, make the report malformed (`InvalidTelemetry`). Values stay raw: applying a station's `EQNS.` needs its
 earlier definition messages, which is a job for the caller.
 
+### Weather
+
+`WeatherData` holds the readings in named units (`TemperatureF`, `RainLastHourInches`, `PressureMillibars`…), each
+`null` when not sent or sent as dots or spaces. It appears in two places:
+
+- `PositionedPayload.Weather`, for a position, object or item with the weather station symbol (`_`, any table). The
+  wind comes from `DIR/SPD` (or a compressed course and speed), which also stay in `Course` and `SpeedKnots` as
+  before; the other readings come from the start of the comment, and `Comment` is the text after them.
+  `CommentBytes` still holds every byte. A weather symbol whose comment has no readings has no `Weather`.
+- `WeatherReport` (`_`), the positionless form, with an `MMDDHHMM` timestamp
+  (`AprsTimestampFormat.MonthDayHourMinute`, always zulu). A bad timestamp makes it malformed.
+
+Real stations bend APRS101, so the reader is lenient. Fields come in any order (the corpus has `P` before `p`, and
+`b` before `h`). Any run of dots means no data (`b...` as well as `b.....`). Humidity may have three digits (`h100`,
+`h092`). Some LoRa iGates send a compressed position without course and speed, then `DIR/SPD` in the comment, which
+is read as the wind. Reading stops at the first byte that does not start a field, or at a field that repeats.
+APRS101's software and unit type codes (`wRSW`) are not split out, because most stations put free text there; they
+stay in the comment. APRS 1.1's luminosity (`L`/`l`), snowfall (`s`) and raw rain counter (`#`) are read; other
+letters (`X`, `V`) are not in a published spec and stay in the comment. APRS101 says knots for `DIR/SPD` and mph for
+the positionless form. Stations send mph in both, so `WindSpeedMph` is the value as sent.
+
+Raw weather station data (`!!`, `#`, `*`, `$ULTW`) has no layout in APRS101 and is not decoded. Storm data in `\@`
+objects is not decoded yet.
+
 ## AX.25 and KISS (phase 2)
 
 A TNC in KISS mode sends AX.25 frames, not TNC2 text: callsigns are shifted 7-byte fields with the SSID and

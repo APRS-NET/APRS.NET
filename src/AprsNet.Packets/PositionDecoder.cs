@@ -57,6 +57,11 @@ internal static class PositionDecoder
             target.Signpost = Braces(target.CommentBytes.Span, digitsOnly: false);
         }
 
+        if (decoded && target.Symbol.Code == '_')
+        {
+            WeatherDecoder.Apply(target);
+        }
+
         return decoded;
     }
 
@@ -333,7 +338,7 @@ internal static class PositionDecoder
     }
 
     /// <summary>Course and speed <c>CCC/SSS</c>; <c>...</c> or spaces mean not known.</summary>
-    private static bool TryCourseSpeed(ReadOnlySpan<byte> rest, out int? course, out double? speed)
+    internal static bool TryCourseSpeed(ReadOnlySpan<byte> rest, out int? course, out double? speed)
     {
         course = null;
         speed = null;

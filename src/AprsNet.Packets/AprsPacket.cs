@@ -231,6 +231,7 @@ public sealed partial class AprsPacket
             PacketType.Object => ObjectDecoder.DecodeObject(information, offset, issues),
             PacketType.Item => ObjectDecoder.DecodeItem(information, offset, issues),
             PacketType.Telemetry => TelemetryDecoder.Decode(information, offset, issues),
+            PacketType.Weather => WeatherDecoder.Decode(information, offset, issues),
             _ => null,
         };
 

@@ -30,7 +30,10 @@ public abstract class PositionedPayload : AprsPayload
     /// </summary>
     public int? Course { get; internal set; }
 
-    /// <summary>Speed in knots, or <see langword="null"/> when not sent. For the weather station symbol this is wind speed.</summary>
+    /// <summary>
+    /// Speed in knots, or <see langword="null"/> when not sent. For the weather station symbol this is the wind speed,
+    /// which stations send in mph; <see cref="Weather"/> has it as <see cref="WeatherData.WindSpeedMph"/>.
+    /// </summary>
     public double? SpeedKnots { get; internal set; }
 
     /// <summary>Altitude in feet, from a compressed position or a <c>/A=</c> comment field.</summary>
@@ -57,6 +60,13 @@ public abstract class PositionedPayload : AprsPayload
     /// <summary>The 1–3 character text a signpost symbol (<c>\m</c>) shows, from <c>{55}</c> in the comment.</summary>
     public string? Signpost { get; internal set; }
 
+    /// <summary>
+    /// Weather readings from a weather station symbol (<c>_</c>, any table): wind from <see cref="Course"/> and
+    /// <see cref="SpeedKnots"/> and the other readings from the start of the comment (APRS101 ch. 12).
+    /// <see langword="null"/> for other symbols, or when the comment holds no readings.
+    /// </summary>
+    public WeatherData? Weather { get; internal set; }
+
     /// <summary>The datum named by a <c>!DAO!</c> token (APRS 1.2), for example <c>W</c> for WGS84.</summary>
     public char? Datum { get; internal set; }
 
@@ -64,7 +74,7 @@ public abstract class PositionedPayload : AprsPayload
     public ReadOnlyMemory<byte> CommentBytes { get; internal set; }
 
     /// <summary>
-    /// The comment as text, without a <c>!DAO!</c> token: decoded as UTF-8 when the bytes are valid UTF-8, otherwise
+    /// The comment as text, without a <c>!DAO!</c> token or the <see cref="Weather"/> readings: decoded as UTF-8 when the bytes are valid UTF-8, otherwise
     /// one character per byte (Latin-1). APRS has no text encoding, so this is a best guess.
     /// </summary>
     public string Comment { get; internal set; } = "";

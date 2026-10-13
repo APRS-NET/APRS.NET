@@ -53,8 +53,16 @@ public class ObjectVectorTests
                 case "signpost":
                     Assert.Equal(e.GetString(), payload.Signpost);
                     break;
-                // Weather in an object comment and storm data (\@) belong to the weather decoder, not decoded yet.
-                case "weather" or "storm":
+                case "weather":
+                    WeatherVectorTests.CheckWeather(
+                        id,
+                        e,
+                        payload.Weather ?? throw new InvalidOperationException($"{id}: no weather"),
+                        payload.Comment
+                    );
+                    break;
+                // Storm data (\@ objects) is not decoded yet.
+                case "storm":
                     break;
                 default:
                     Assert.True(

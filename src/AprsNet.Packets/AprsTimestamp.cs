@@ -10,17 +10,29 @@ public enum AprsTimestampFormat
 
     /// <summary>Hour, minute and second, always zulu: <c>HHMMSSh</c>.</summary>
     HourMinuteSecond,
+
+    /// <summary>Month, day, hour and minute, always zulu: <c>MMDDHHMM</c>, used by positionless weather reports.</summary>
+    MonthDayHourMinute,
 }
 
 /// <summary>
-/// A timestamp as sent in a packet. APRS timestamps carry no month or year (and the hour-minute-second form no day),
-/// so <see cref="ToDateTimeOffset"/> places them relative to when the packet was received.
+/// A timestamp as sent in a packet. APRS timestamps carry no year (most carry no month, and the hour-minute-second
+/// form no day), so <see cref="ToDateTimeOffset"/> places them relative to when the packet was received.
 /// </summary>
 public readonly record struct AprsTimestamp
 {
-    private AprsTimestamp(AprsTimestampFormat format, int? day, int hour, int minute, int? second, bool isLocal)
+    private AprsTimestamp(
+        AprsTimestampFormat format,
+        int? day,
+        int hour,
+        int minute,
+        int? second,
+        bool isLocal,
+        int? month = null
+    )
     {
         Format = format;
+        Month = month;
         Day = day;
         Hour = hour;
         Minute = minute;
@@ -31,7 +43,13 @@ public readonly record struct AprsTimestamp
     /// <summary>The format the timestamp was sent in.</summary>
     public AprsTimestampFormat Format { get; }
 
-    /// <summary>Day of the month, 1 to 31, for <see cref="AprsTimestampFormat.DayHourMinute"/>.</summary>
+    /// <summary>Month, 1 to 12, for <see cref="AprsTimestampFormat.MonthDayHourMinute"/>.</summary>
+    public int? Month { get; }
+
+    /// <summary>
+    /// Day of the month, 1 to 31, for <see cref="AprsTimestampFormat.DayHourMinute"/> and
+    /// <see cref="AprsTimestampFormat.MonthDayHourMinute"/>.
+    /// </summary>
     public int? Day { get; }
 
     /// <summary>Hour, 0 to 23.</summary>
@@ -65,6 +83,26 @@ public readonly record struct AprsTimestamp
             return sameDay - utc > TimeSpan.FromHours(1) ? sameDay.AddDays(-1) : sameDay;
         }
 
+        if (Format == AprsTimestampFormat.MonthDayHourMinute)
+        {
+            // This year, or last year when that would put the time more than a day ahead.
+            for (var year = utc.Year; year >= utc.Year - 1; year--)
+            {
+                if (Day > DateTime.DaysInMonth(year, Month!.Value))
+                {
+                    continue;
+                }
+
+                var candidate = new DateTimeOffset(year, Month.Value, Day!.Value, Hour, Minute, 0, TimeSpan.Zero);
+                if (candidate - utc <= TimeSpan.FromDays(1))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
         // Day-hour-minute: this month, or the previous one when that would put the time more than a day ahead.
         for (var monthsBack = 0; monthsBack <= 2; monthsBack++)
         {
@@ -84,11 +122,43 @@ public readonly record struct AprsTimestamp
         return null;
     }
 
-    /// <summary>The timestamp in its wire form, for example <c>092345z</c> or <c>234517h</c>.</summary>
+    /// <summary>The timestamp in its wire form, for example <c>092345z</c>, <c>234517h</c> or <c>10092345</c>.</summary>
     public override string ToString() =>
-        Format == AprsTimestampFormat.HourMinuteSecond
-            ? string.Create(CultureInfo.InvariantCulture, $"{Hour:00}{Minute:00}{Second:00}h")
-            : string.Create(CultureInfo.InvariantCulture, $"{Day:00}{Hour:00}{Minute:00}{(IsLocal ? '/' : 'z')}");
+        Format switch
+        {
+            AprsTimestampFormat.HourMinuteSecond => string.Create(
+                CultureInfo.InvariantCulture,
+                $"{Hour:00}{Minute:00}{Second:00}h"
+            ),
+            AprsTimestampFormat.MonthDayHourMinute => string.Create(
+                CultureInfo.InvariantCulture,
+                $"{Month:00}{Day:00}{Hour:00}{Minute:00}"
+            ),
+            _ => string.Create(CultureInfo.InvariantCulture, $"{Day:00}{Hour:00}{Minute:00}{(IsLocal ? '/' : 'z')}"),
+        };
+
+    /// <summary>Parses the 8-digit <c>MMDDHHMM</c> timestamp at the start of <paramref name="bytes"/>.</summary>
+    internal static bool TryParseMonthDay(ReadOnlySpan<byte> bytes, out AprsTimestamp timestamp)
+    {
+        timestamp = default;
+        if (
+            bytes.Length < 8
+            || !TwoDigits(bytes, 0, out var month)
+            || !TwoDigits(bytes, 2, out var day)
+            || !TwoDigits(bytes, 4, out var hour)
+            || !TwoDigits(bytes, 6, out var minute)
+            || month is < 1 or > 12
+            || day is < 1 or > 31
+            || hour > 23
+            || minute > 59
+        )
+        {
+            return false;
+        }
+
+        timestamp = new AprsTimestamp(AprsTimestampFormat.MonthDayHourMinute, day, hour, minute, null, false, month);
+        return true;
+    }
 
     /// <summary>Parses the 7-byte timestamp at the start of <paramref name="bytes"/>.</summary>
     internal static bool TryParse(ReadOnlySpan<byte> bytes, out AprsTimestamp timestamp)

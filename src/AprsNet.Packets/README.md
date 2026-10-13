@@ -33,7 +33,9 @@ Maidenhead locator and symbol, and meteor-scatter beam heading and power. Messag
 queries) or `TelemetryDefinition` (`PARM.`, `UNIT.`, `EQNS.`, `BITS.`). Objects and items are decoded as
 `ObjectReport` and `ItemReport`, including area shapes and signposts, and Mic-E reports as `MicEReport` (position,
 speed and course, message, altitude, device and status text). Telemetry reports are decoded as `TelemetryReport`
-(sequence, raw analog values, digital bits and comment). Other packet types (weather, third-party…) come back with
+(sequence, raw analog values, digital bits and comment). Weather is decoded as `WeatherData`: on positions, objects
+and items with the weather station symbol (`PositionedPayload.Weather`), and in positionless reports
+(`WeatherReport`). Other packet types (raw weather station data, third-party…) come back with
 `Outcome == ParseOutcome.Unsupported` until their decoders land.
 
 ```csharp

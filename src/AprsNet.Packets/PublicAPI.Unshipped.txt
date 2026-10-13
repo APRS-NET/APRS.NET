@@ -390,3 +390,24 @@ AprsNet.Packets.TelemetryReport.Comment.get -> string!
 AprsNet.Packets.TelemetryReport.Digital.get -> System.Collections.Generic.IReadOnlyList<bool>!
 AprsNet.Packets.TelemetryReport.Sequence.get -> string!
 AprsNet.Packets.TelemetryReport.SequenceNumber.get -> int?
+AprsNet.Packets.AprsTimestampFormat.MonthDayHourMinute = 2 -> AprsNet.Packets.AprsTimestampFormat
+AprsNet.Packets.AprsTimestamp.Month.get -> int?
+AprsNet.Packets.PositionedPayload.Weather.get -> AprsNet.Packets.WeatherData?
+AprsNet.Packets.WeatherData
+AprsNet.Packets.WeatherData.HumidityPercent.get -> int?
+AprsNet.Packets.WeatherData.LuminosityWattsPerSquareMeter.get -> int?
+AprsNet.Packets.WeatherData.PressureMillibars.get -> double?
+AprsNet.Packets.WeatherData.RainCounter.get -> int?
+AprsNet.Packets.WeatherData.RainLast24HoursInches.get -> double?
+AprsNet.Packets.WeatherData.RainLastHourInches.get -> double?
+AprsNet.Packets.WeatherData.RainSinceMidnightInches.get -> double?
+AprsNet.Packets.WeatherData.SnowLast24HoursInches.get -> double?
+AprsNet.Packets.WeatherData.TemperatureF.get -> int?
+AprsNet.Packets.WeatherData.WindDirection.get -> int?
+AprsNet.Packets.WeatherData.WindGustMph.get -> int?
+AprsNet.Packets.WeatherData.WindSpeedMph.get -> double?
+AprsNet.Packets.WeatherReport
+AprsNet.Packets.WeatherReport.CommentBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.WeatherReport.Comment.get -> string!
+AprsNet.Packets.WeatherReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp
+AprsNet.Packets.WeatherReport.Weather.get -> AprsNet.Packets.WeatherData!

@@ -133,18 +133,25 @@ public class PositionVectorTests
         Assert.Equal(overlay, symbol.Overlay);
     }
 
-    private static void Timestamp(JsonElement e, AprsTimestamp timestamp)
+    internal static void Timestamp(JsonElement e, AprsTimestamp timestamp)
     {
-        var format =
-            e.GetProperty("format").GetString() == "HMS"
-                ? AprsTimestampFormat.HourMinuteSecond
-                : AprsTimestampFormat.DayHourMinute;
+        var format = e.GetProperty("format").GetString() switch
+        {
+            "HMS" => AprsTimestampFormat.HourMinuteSecond,
+            "MDHM" => AprsTimestampFormat.MonthDayHourMinute,
+            _ => AprsTimestampFormat.DayHourMinute,
+        };
         Assert.Equal(format, timestamp.Format);
         Assert.Equal(e.GetProperty("hour").GetInt32(), timestamp.Hour);
         Assert.Equal(e.GetProperty("minute").GetInt32(), timestamp.Minute);
         if (e.TryGetProperty("day", out var day))
         {
             Assert.Equal(day.GetInt32(), timestamp.Day);
+        }
+
+        if (e.TryGetProperty("month", out var month))
+        {
+            Assert.Equal(month.GetInt32(), timestamp.Month);
         }
 
         if (e.TryGetProperty("second", out var second))

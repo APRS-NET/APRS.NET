@@ -127,6 +127,24 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void MostWeatherStationsReportWeather()
+    {
+        var stations = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes))
+            .Where(p => p.Payload is PositionedPayload { Symbol.Code: '_' })
+            .Select(p => (PositionedPayload)p.Payload!)
+            .ToList();
+
+        // Some stations use the weather symbol with only a description in the comment.
+        Assert.True(stations.Count > 900, $"only {stations.Count} weather station positions in the corpus");
+        Assert.True(stations.Count(s => s.Weather is not null) > 900);
+        Assert.Contains(stations, s => s.Weather is { PressureMillibars: > 900, TemperatureF: not null });
+        Assert.Contains(stations, s => s.Weather is { LuminosityWattsPerSquareMeter: not null });
+        Assert.DoesNotContain(stations, s => s.Weather is { HumidityPercent: > 100 or < 1 });
+    }
+
+    [Fact]
     public void AnIGateThatInsertsUiMarkersLeavesThePacketTypeUnknown()
     {
         // One IGate in the Kansas City capture inserts " <UI>:" before the data type identifier. The packet is kept
