@@ -51,7 +51,7 @@ public class LineReaderTests
     public async Task AcceptsALineOfExactlyTheLimit()
     {
         var line = new string('a', 64);
-        var reader = Reader(new TrickleStream(Encoding.ASCII.GetBytes(line + "\r\nnext\r\n")), 64);
+        var reader = Reader(new TrickleStream(Encoding.ASCII.GetBytes(line + "\r\nnext\r\n")));
         Assert.Equal([line, "next"], await ReadAll(reader));
         Assert.Equal(0, reader.DiscardedLines);
     }
@@ -65,16 +65,49 @@ public class LineReaderTests
         var data = Encoding.ASCII.GetBytes(new string('x', length) + "\r\nok\r\n");
         foreach (var stream in new Stream[] { new MemoryStream(data), new TrickleStream(data) })
         {
-            var reader = Reader(stream, 64);
+            var reader = Reader(stream);
             Assert.Equal(["ok"], await ReadAll(reader));
             Assert.Equal(1, reader.DiscardedLines);
         }
     }
 
     [Fact]
+    public async Task CountsDiscardedLinesAsDroppedPackets()
+    {
+        var tooLong = new System.Runtime.CompilerServices.StrongBox<long>();
+        using var listener = new System.Diagnostics.Metrics.MeterListener();
+        listener.InstrumentPublished = (instrument, l) =>
+        {
+            if (instrument.Name == "aprsnet.aprsis.packets.dropped")
+            {
+                l.EnableMeasurementEvents(instrument);
+            }
+        };
+        listener.SetMeasurementEventCallback<long>(
+            (_, value, tags, _) =>
+            {
+                foreach (var tag in tags)
+                {
+                    if (tag is { Key: "reason", Value: "too_long" })
+                    {
+                        Interlocked.Add(ref tooLong.Value, value);
+                    }
+                }
+            }
+        );
+        listener.Start();
+
+        var reader = Reader(new MemoryStream(Encoding.ASCII.GetBytes(new string('x', 100) + "\r\nok\r\n")));
+        Assert.Equal(["ok"], await ReadAll(reader));
+
+        // Other tests may discard lines at the same time, so at least this test's one.
+        Assert.True(Interlocked.Read(ref tooLong.Value) >= 1);
+    }
+
+    [Fact]
     public async Task DiscardingDoesNotBufferAnEndlessLine()
     {
-        var reader = Reader(new EndlessStream(), 64);
+        var reader = Reader(new EndlessStream());
         using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await reader.ReadLineAsync(cts.Token));
     }

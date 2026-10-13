@@ -76,6 +76,7 @@ internal sealed class LineReader(Stream stream, int maxLineLength, ILogger logge
     private void Discarded(int length)
     {
         DiscardedLines++;
+        ClientMetrics.TooLong();
         logger.OverlongLineDiscarded(maxLineLength, length);
     }
 }
