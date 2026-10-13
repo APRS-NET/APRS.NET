@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-10-13)
+
+
+### Features
+
+* **packets:** decode Mic-E reports ([69bbc31](https://github.com/APRS-NET/APRS.NET/commit/69bbc31ae43354cb5214bf684faf2faca1928762))
+
 ## [0.1.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-10-13)
 
 
