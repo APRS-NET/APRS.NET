@@ -85,14 +85,13 @@ internal static class PositionDecoder
 
         // Data extension: course/speed (with a DF bearing report on the DF symbol), PHG, RNG or DFS.
         var rest = info[(at + 19)..];
-        int? course = null;
         double? speed = null;
         PowerHeightGain? phg = null;
         double? range = null;
         DirectionFindingStrength? dfs = null;
         DirectionFindingReport? df = null;
         var used = 0;
-        if (TryCourseSpeed(rest, out course, out var speedKnots))
+        if (TryCourseSpeed(rest, out var course, out var speedKnots))
         {
             speed = speedKnots;
             used = 7;
@@ -221,12 +220,7 @@ internal static class PositionDecoder
     }
 
     /// <summary>Latitude <c>DDMM.hhN</c>, where trailing digits may be spaces for ambiguity.</summary>
-    internal static bool TryLatitude(
-        ReadOnlySpan<byte> field,
-        out double degrees,
-        out int ambiguity,
-        out bool lowercase
-    )
+    private static bool TryLatitude(ReadOnlySpan<byte> field, out double degrees, out int ambiguity, out bool lowercase)
     {
         degrees = 0;
         ambiguity = 0;
@@ -253,8 +247,9 @@ internal static class PositionDecoder
             return false;
         }
 
+        var wholeDegrees = degreesMinutes / 100; // DDMM: integer division keeps the degrees
         var minutes = (degreesMinutes % 100) + (hundredths / 100.0);
-        degrees = (degreesMinutes / 100) + (minutes / 60);
+        degrees = wholeDegrees + (minutes / 60);
         if (minutes >= 60 || degrees > 90)
         {
             return false;
@@ -265,7 +260,7 @@ internal static class PositionDecoder
     }
 
     /// <summary>Longitude <c>DDDMM.hhW</c>; the latitude's ambiguity blanks the same number of trailing digits.</summary>
-    internal static bool TryLongitude(ReadOnlySpan<byte> field, int ambiguity, out double degrees, out bool lowercase)
+    private static bool TryLongitude(ReadOnlySpan<byte> field, int ambiguity, out double degrees, out bool lowercase)
     {
         degrees = 0;
         lowercase = field[8] is (byte)'e' or (byte)'w';
@@ -286,8 +281,9 @@ internal static class PositionDecoder
             return false;
         }
 
+        var wholeDegrees = degreesMinutes / 100; // DDMM: integer division keeps the degrees
         var minutes = (degreesMinutes % 100) + (hundredths / 100.0);
-        degrees = (degreesMinutes / 100) + (minutes / 60);
+        degrees = wholeDegrees + (minutes / 60);
         if (minutes >= 60 || degrees > 180)
         {
             return false;
@@ -297,7 +293,7 @@ internal static class PositionDecoder
         return true;
     }
 
-    internal static bool TrySymbol(byte table, byte code, int offset, List<ParseIssue> issues, out AprsSymbol symbol)
+    private static bool TrySymbol(byte table, byte code, int offset, List<ParseIssue> issues, out AprsSymbol symbol)
     {
         if (AprsSymbol.TryCreate((char)table, (char)code, out symbol))
         {
@@ -396,7 +392,7 @@ internal static class PositionDecoder
     }
 
     /// <summary>Altitude <c>/A=aaaaaa</c> in feet, anywhere in a comment.</summary>
-    internal static double? CommentAltitude(ReadOnlySpan<byte> comment)
+    private static double? CommentAltitude(ReadOnlySpan<byte> comment)
     {
         var at = comment.IndexOf("/A="u8);
         if (at < 0 || comment.Length < at + 9)
@@ -413,7 +409,7 @@ internal static class PositionDecoder
     /// <summary>
     /// Applies a <c>!DAO!</c> token (APRS 1.2) to an unambiguous position and returns the comment text without it.
     /// </summary>
-    internal static (AprsPosition Position, char? Datum, string Comment) ApplyDao(
+    private static (AprsPosition Position, char? Datum, string Comment) ApplyDao(
         AprsPosition position,
         ReadOnlySpan<byte> comment
     )

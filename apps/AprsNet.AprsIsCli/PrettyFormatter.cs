@@ -11,8 +11,8 @@ namespace AprsNet.AprsIsCli;
 /// </summary>
 internal static class PrettyFormatter
 {
-    private const int LabelWidth = 10;
-    private const string Indent = "          "; // lines up with the HH:mm:ss received time and two spaces
+    private const int _labelWidth = 10;
+    private const string _indent = "          "; // lines up with the HH:mm:ss received time and two spaces
 
     /// <summary>A block of lines describing one packet, without a trailing newline.</summary>
     public static string Format(AprsPacket packet, DateTimeOffset received, bool color)
@@ -76,7 +76,7 @@ internal static class PrettyFormatter
 
         foreach (var (label, value) in fields)
         {
-            block.AppendLine().Append(Indent).Append(style.Cyan(label.PadRight(LabelWidth))).Append(value);
+            block.AppendLine().Append(_indent).Append(style.Cyan(label.PadRight(_labelWidth))).Append(value);
         }
 
         return block.ToString();

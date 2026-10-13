@@ -28,7 +28,7 @@ public class CorpusParsingTests
             Assert.True(packet.HasHeader, $"{file}:{lineNumber}: {string.Join(", ", packet.Issues)}");
             Assert.DoesNotContain(
                 packet.Issues,
-                i => i.Severity == ParseIssueSeverity.Error && i.Code < _firstPayloadIssue
+                i => i is { Severity: ParseIssueSeverity.Error, Code: < _firstPayloadIssue }
             );
         }
     }

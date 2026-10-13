@@ -186,7 +186,10 @@ internal static class ListenRunner
                 var received = environment.TimeProvider.GetUtcNow();
                 var stamp = LineFormatter.Timestamp(received);
 
-                capture?.Write($"{stamp} {line}\n");
+                if (capture is not null)
+                {
+                    await capture.WriteAsync($"{stamp} {line}\n");
+                }
                 if (packetLog is not null && packetLog.IsEnabled(LogLevel.Information))
                 {
                     packetLog.PacketReceived(Source(line), LineFormatter.EscapeForConsole(line));
@@ -212,7 +215,7 @@ internal static class ListenRunner
 
                         // JSON and pretty carry their own received time, so --timestamps only prefixes raw and decoded.
                         await environment.Out.WriteLineAsync(
-                            options.Timestamps && options.Format is OutputFormat.Raw or OutputFormat.Decoded
+                            options is { Timestamps: true, Format: OutputFormat.Raw or OutputFormat.Decoded }
                                 ? $"{stamp} {text}"
                                 : text
                         );

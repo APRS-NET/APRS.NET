@@ -8,7 +8,7 @@ namespace AprsNet.Symbols;
 internal sealed partial class Svg
 {
     public const string Ink = "#1b1b1b";
-    private const string Paper = "#ffffff";
+    private const string _paper = "#ffffff";
 
     // Fills that are details (glass, screens, wheel hubs): cut out of a single-colour silhouette.
     private static readonly HashSet<string> _details = new(StringComparer.OrdinalIgnoreCase)
@@ -27,18 +27,18 @@ internal sealed partial class Svg
     /// </summary>
     public string? Mono { get; set; }
 
-    private const string CutPrefix = "cut:";
+    private const string _cutPrefix = "cut:";
 
     /// <summary>
     /// Marks a colour as a detail: drawn as given in colour styles, cut out of the silhouette in single-colour ones.
     /// </summary>
-    public static string Cut(string color) => CutPrefix + color;
+    public static string Cut(string color) => _cutPrefix + color;
 
     private string F(string fill) =>
-        fill.StartsWith(CutPrefix, StringComparison.Ordinal) ? Mono ?? fill[CutPrefix.Length..]
+        fill.StartsWith(_cutPrefix, StringComparison.Ordinal) ? Mono ?? fill[_cutPrefix.Length..]
         : Mono is null || fill == "none" ? fill
         : _details.Contains(fill) ? Mono
-        : Paper;
+        : _paper;
 
     private string? S(string? stroke, string fill) =>
         stroke is null ? null
@@ -133,7 +133,7 @@ internal sealed partial class Svg
     /// single-colour style it is drawn larger (the glyph is scaled down with the drawing) and white, or cut out when
     /// <paramref name="cut"/> says it sits on a white shape.
     /// </summary>
-    public Svg Text(string text, double cx, double cy, double height, bool light = true, bool cut = false)
+    public void Text(string text, double cx, double cy, double height, bool light = true, bool cut = false)
     {
         if (Mono is not null)
         {
@@ -146,9 +146,9 @@ internal sealed partial class Svg
         {
             _body.Append(
                 CultureInfo.InvariantCulture,
-                $"<path d=\"{d}\" fill=\"none\" stroke=\"{(cut ? Mono : Paper)}\" stroke-width=\"{N(width)}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+                $"<path d=\"{d}\" fill=\"none\" stroke=\"{(cut ? Mono : _paper)}\" stroke-width=\"{N(width)}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
             );
-            return this;
+            return;
         }
 
         var (glyph, halo) = light ? ("#ffffff", Ink) : (Ink, "#ffffff");
@@ -160,7 +160,6 @@ internal sealed partial class Svg
             CultureInfo.InvariantCulture,
             $"<path d=\"{d}\" fill=\"none\" stroke=\"{glyph}\" stroke-width=\"{N(width)}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
         );
-        return this;
     }
 
     /// <summary>An unfilled circle, with a halo underneath so it reads on any map.</summary>
@@ -170,7 +169,7 @@ internal sealed partial class Svg
         {
             _body.Append(
                 CultureInfo.InvariantCulture,
-                $"<circle cx=\"{N(cx)}\" cy=\"{N(cy)}\" r=\"{N(r)}\" fill=\"none\" stroke=\"{Paper}\" stroke-width=\"{N(width)}\"/>"
+                $"<circle cx=\"{N(cx)}\" cy=\"{N(cy)}\" r=\"{N(r)}\" fill=\"none\" stroke=\"{_paper}\" stroke-width=\"{N(width)}\"/>"
             );
             return this;
         }

@@ -15,6 +15,8 @@ internal sealed class FakeAprsTransport : IAprsTransport
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public bool Connected { get; private set; }
 
+    // Read by the client tests; this file is also compiled into the CLI tests, which do not use every member.
+    // ReSharper disable once UnusedAutoPropertyAccessor.Global
     public bool Disposed { get; private set; }
 
     public ValueTask ConnectAsync(CancellationToken cancellationToken)
@@ -48,6 +50,7 @@ internal sealed class FakeAprsTransport : IAprsTransport
     /// Waits until the client has read everything queued and is blocked waiting for more, so a test can then advance a
     /// fake clock knowing the client's read deadline is running.
     /// </summary>
+    // ReSharper disable once UnusedMember.Global (used by the client tests; see Disposed)
     public async Task WaitUntilReadingAsync()
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));

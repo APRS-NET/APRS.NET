@@ -9,6 +9,7 @@ public sealed class LoginRejectedException : LoginException
     private const string _notAllowed = "# Login by user not allowed";
 
     /// <summary>Creates the exception from the server's message, without the leading <c>#</c>.</summary>
+    // ReSharper disable once MemberCanBePrivate.Global (public API: callers can create it, for example in tests)
     public LoginRejectedException(string serverMessage)
         : base($"The server rejected the login: {serverMessage}")
     {

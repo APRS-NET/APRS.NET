@@ -240,7 +240,7 @@ public class AprsPacketTests
     [InlineData("qAR", PathEntryKind.Station)]
     [InlineData("qAO", PathEntryKind.Station)]
     [InlineData("qAS", PathEntryKind.Station)]
-    public void TheEntryAfterAQConstructIsAServerOrAStation(string q, PathEntryKind kind)
+    public void TheEntryAfterTheQConstructIsAServerOrAStation(string q, PathEntryKind kind)
     {
         var packet = AprsPacket.Parse($"N0CALL>APRS,TCPIP*,{q},T2TEST:>status");
 

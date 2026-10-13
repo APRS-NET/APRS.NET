@@ -10,5 +10,6 @@ public static class AprsIsPorts
     public const int FullFeed = 10152;
 
     /// <summary>HTML status page listing the ports a server offers.</summary>
+    // ReSharper disable once UnusedMember.Global (public API for callers)
     public const int StatusPage = 14501;
 }

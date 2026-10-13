@@ -21,15 +21,12 @@ public class AprsSymbolCatalogTests
     [Fact]
     public void EverySymbolHasANameAndADestinationCode()
     {
-        Assert.All(
-            AprsSymbolCatalog.All,
-            s =>
-            {
-                Assert.False(string.IsNullOrWhiteSpace(s.Name));
-                Assert.Equal(2, s.DestinationCode.Length);
-                Assert.Equal(s.Name, s.ToString());
-            }
-        );
+        foreach (var s in AprsSymbolCatalog.All)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(s.Name));
+            Assert.Equal(2, s.DestinationCode.Length);
+            Assert.Equal(s.Name, s.ToString());
+        }
     }
 
     [Fact]

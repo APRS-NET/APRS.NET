@@ -11,13 +11,12 @@ public class PositionReportTests
         return Assert.IsType<PositionReport>(packet.Payload);
     }
 
-    private static AprsPacket Fail(string information, ParseIssueCode code, int informationOffset)
+    private static void Fail(string information, ParseIssueCode code, int informationOffset)
     {
         var packet = AprsPacket.Parse("N0CALL>APRS:" + information);
         Assert.Equal(ParseOutcome.Malformed, packet.Outcome);
         Assert.Null(packet.Payload);
         Assert.Contains(new ParseIssue(code, ParseIssueSeverity.Error, 12 + informationOffset), packet.Issues);
-        return packet;
     }
 
     [Fact]

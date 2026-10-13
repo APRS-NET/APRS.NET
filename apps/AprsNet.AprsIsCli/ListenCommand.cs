@@ -9,7 +9,7 @@ internal sealed class ListenCommand
 {
     private const string _passcodeVariable = "APRS_PASSCODE";
     public const string DefaultCallsign = "N0CALL";
-    private const string DefaultMaxSilenceText = "10m";
+    private const string _defaultMaxSilenceText = "10m";
 
     private static readonly string[] _regions = ["noam", "soam", "euro", "asia", "aunz"];
 
@@ -92,7 +92,7 @@ internal sealed class ListenCommand
     {
         Description =
             $"Treat the connection as failed after this long with no packets, even if the server still sends "
-            + $"keepalives (its feed may have stalled). Default: {DefaultMaxSilenceText} with --reconnect, "
+            + $"keepalives (its feed may have stalled). Default: {_defaultMaxSilenceText} with --reconnect, "
             + "otherwise off. Use 'off' to disable.",
     };
 
@@ -220,7 +220,7 @@ internal sealed class ListenCommand
 
         var reconnect = parseResult.GetValue(_reconnect);
         TimeSpan? maxSilence = null;
-        var maxSilenceText = parseResult.GetValue(_maxSilence) ?? (reconnect ? DefaultMaxSilenceText : null);
+        var maxSilenceText = parseResult.GetValue(_maxSilence) ?? (reconnect ? _defaultMaxSilenceText : null);
         if (maxSilenceText is not null && !maxSilenceText.Trim().Equals("off", StringComparison.OrdinalIgnoreCase))
         {
             if (!DurationParser.TryParse(maxSilenceText, out var parsedSilence))

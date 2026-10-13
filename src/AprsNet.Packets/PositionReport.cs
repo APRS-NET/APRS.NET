@@ -24,8 +24,7 @@ public sealed class PositionReport : AprsPayload
     public bool IsCompressed { get; internal init; }
 
     /// <summary>Whether the sender marked its position as unknown: <c>\.</c> at 0° N 0° W (APRS101 ch. 6).</summary>
-    public bool IsPositionUnknown =>
-        Symbol == new AprsSymbol('\\', '.') && Position.Latitude == 0 && Position.Longitude == 0;
+    public bool IsPositionUnknown => Symbol == new AprsSymbol('\\', '.') && Position is { Latitude: 0, Longitude: 0 };
 
     /// <summary>
     /// Course over the ground in degrees as sent, 0 to 360, or <see langword="null"/> when not sent. APRS allows

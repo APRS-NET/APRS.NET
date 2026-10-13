@@ -18,7 +18,7 @@ public enum AprsTimestampFormat
 /// </summary>
 public readonly record struct AprsTimestamp
 {
-    internal AprsTimestamp(AprsTimestampFormat format, int? day, int hour, int minute, int? second, bool isLocal)
+    private AprsTimestamp(AprsTimestampFormat format, int? day, int hour, int minute, int? second, bool isLocal)
     {
         Format = format;
         Day = day;

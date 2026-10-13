@@ -148,7 +148,7 @@ public partial class CorpusFileTests
     )]
     private static partial Regex CaptureLine();
 
-    [GeneratedRegex(@"^(?:[A-Z]{1,2}|[0-9][A-Z]|[A-Z][0-9])[0-9][A-Z]{1,4}$", RegexOptions.IgnoreCase)]
+    [GeneratedRegex("^(?:[A-Z]{1,2}|[0-9][A-Z]|[A-Z][0-9])[0-9][A-Z]{1,4}$", RegexOptions.IgnoreCase)]
     private static partial Regex Callsign();
 
     [GeneratedRegex(

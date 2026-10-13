@@ -37,7 +37,7 @@ internal sealed class CliHarness
     public int ConnectionAttempts { get; private set; }
 
     /// <summary>Queues a later connection whose login succeeds and which then sends <paramref name="lines" />.</summary>
-    public FakeAprsTransport AddReconnect(params string[] lines)
+    public void AddReconnect(params string[] lines)
     {
         var transport = new FakeAprsTransport();
         transport.Server($"# logresp NZ0P unverified, server T2TEST{Reconnects.Count + 2}");
@@ -45,7 +45,6 @@ internal sealed class CliHarness
             transport.Server(line);
 
         Reconnects.Enqueue(transport);
-        return transport;
     }
 
     public CliHarness LoginAccepted(string callsign = "NZ0P")

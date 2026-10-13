@@ -1,5 +1,8 @@
 using System.Reflection;
 
+// Options are set by callers, which inspectors cannot see from inside this solution.
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+
 namespace AprsNet.AprsIsTcpClient;
 
 /// <summary>Settings for <see cref="AprsIsClient"/>.</summary>

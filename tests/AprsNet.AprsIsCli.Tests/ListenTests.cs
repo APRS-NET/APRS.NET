@@ -173,7 +173,7 @@ public class ListenTests
             "N0CALL>APRS:>092345zNet Control",
             "N0CALL>APRS:>IO91SX/- ^B7",
             // The client hands over one character per byte, so UTF-8 text arrives as Latin-1 characters.
-            "N0CALL>APRS:>" + Encoding.Latin1.GetString(Encoding.UTF8.GetBytes("Ciallo ☆")),
+            "N0CALL>APRS:>" + Encoding.Latin1.GetString("Ciallo ☆"u8),
         ];
 
         var decoded = await WithPackets(packets)

@@ -63,10 +63,9 @@ public class AprsSymbolImagesTests
     {
         var car = new AprsSymbol('/', '>');
 
-        Assert.NotEqual(
-            AprsSymbolImages.GetSvg(car, AprsSymbolStyle.Conventional),
-            AprsSymbolImages.GetSvg(car, AprsSymbolStyle.Modern)
-        );
+        Assert.NotEqual(AprsSymbolImages.GetSvg(car), AprsSymbolImages.GetSvg(car, AprsSymbolStyle.Modern));
+        // The explicit default is what this checks.
+        // ReSharper disable once RedundantArgumentDefaultValue
         Assert.Equal(AprsSymbolImages.GetSvg(car), AprsSymbolImages.GetSvg(car, AprsSymbolStyle.Conventional));
     }
 

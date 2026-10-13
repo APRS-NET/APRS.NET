@@ -38,6 +38,9 @@ public sealed record DirectionFindingStrength(int Strength, int HeightFeet, int 
 /// <param name="IsFixedStation">Whether the DF station is fixed (course 000) rather than mobile.</param>
 public sealed record DirectionFindingReport(int Bearing, int Hits, int RangeMiles, int Quality, bool IsFixedStation);
 
+// The compression type enums are set by casting bits of the type byte, so their members look unused to inspectors.
+// ReSharper disable UnusedMember.Global
+
 /// <summary>Whether the GPS fix behind a compressed position is current (the compression type byte).</summary>
 public enum CompressedGpsFix
 {
@@ -91,6 +94,8 @@ public enum CompressedOrigin
     /// <summary>Converted by a digipeater.</summary>
     DigipeaterConversion,
 }
+
+// ReSharper restore UnusedMember.Global
 
 /// <summary>The compression type byte of a compressed position (APRS101 ch. 9).</summary>
 /// <param name="GpsFix">Whether the fix is current.</param>
