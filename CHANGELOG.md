@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.9](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.8...v0.1.0-alpha.9) (2026-10-13)
+
+
+### Bug Fixes
+
+* **packets:** read unpadded message addressees with a warning ([c93adf8](https://github.com/APRS-NET/APRS.NET/commit/c93adf8403994de8da29d59c5be5ca1945e3151d))
+
 ## [0.1.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.7...v0.1.0-alpha.8) (2026-10-13)
 
 
