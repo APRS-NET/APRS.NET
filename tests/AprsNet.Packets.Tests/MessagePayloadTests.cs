@@ -143,9 +143,40 @@ public class MessagePayloadTests
     }
 
     [Theory]
-    [InlineData(":N0CALL:hi")]
+    [InlineData(":N0CALL:hi", "N0CALL", "hi")]
+    [InlineData(":EL-N0CAL:UNIT.RX Erlang", "EL-N0CAL", null)]
+    [InlineData(":BLNRAIN    :Heavy rain", "BLNRAIN", "Heavy rain")]
+    [InlineData(":N0CALL-15 :hi", "N0CALL-15", "hi")]
+    public void AnUnpaddedAddresseeIsReadWithAWarning(string information, string addressee, string? text)
+    {
+        var packet = AprsPacket.Parse("N0CALL>APRS:" + information);
+
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
+        Assert.Equal([new ParseIssue(ParseIssueCode.UnpaddedAddressee, ParseIssueSeverity.Warning, 13)], packet.Issues);
+        switch (packet.Payload)
+        {
+            case MessagePayload message:
+                Assert.Equal(addressee, message.Addressee);
+                Assert.Equal(text, message.Text);
+                break;
+            case TelemetryDefinition definition:
+                Assert.Equal(addressee, definition.Addressee);
+                Assert.Equal(["RX Erlang"], definition.Labels);
+                break;
+            default:
+                Assert.Fail("not a message");
+                break;
+        }
+    }
+
+    [Theory]
     [InlineData(":N0CALL   ")]
     [InlineData(":N0CALL    hi")]
+    [InlineData("::hi")]
+    [InlineData(":!4222.58NP08759.47W#PHG3110")]
+    [InlineData(": WIDEn-n Digi: Medina")]
+    [InlineData(":N0 CALL:hi")]
+    [InlineData(":N0CALL1234:hi")]
     public void AMissingAddresseeIsAnError(string information)
     {
         var packet = AprsPacket.Parse("N0CALL>APRS:" + information);
@@ -213,5 +244,6 @@ public class MessagePayloadTests
     {
         Assert.EndsWith(".", ParseIssueCode.InvalidAddressee.Describe(), StringComparison.Ordinal);
         Assert.EndsWith(".", ParseIssueCode.InvalidTelemetryDefinition.Describe(), StringComparison.Ordinal);
+        Assert.EndsWith(".", ParseIssueCode.UnpaddedAddressee.Describe(), StringComparison.Ordinal);
     }
 }

@@ -71,4 +71,10 @@ public enum ParseIssueCode
     /// channels that are not eight <c>0</c>/<c>1</c> characters.
     /// </summary>
     InvalidTelemetry,
+
+    /// <summary>
+    /// A message addressee is not padded to 9 characters (or is padded past 9) before its colon; the message is still
+    /// read.
+    /// </summary>
+    UnpaddedAddressee,
 }

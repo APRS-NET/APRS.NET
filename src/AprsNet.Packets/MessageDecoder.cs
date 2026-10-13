@@ -11,17 +11,22 @@ internal static class MessageDecoder
     {
         // :ADDRESSEE:text — a 9-character addressee padded with spaces, then a colon.
         var info = information.Span;
-        if (info.Length < 11 || info[10] != ':')
+        if (!TryAddressee(info, out var colon))
         {
             issues.Add(new ParseIssue(ParseIssueCode.InvalidAddressee, ParseIssueSeverity.Error, offset + 1));
             return null;
         }
 
-        var addressee = Encoding.Latin1.GetString(info.Slice(1, 9)).TrimEnd(' ');
-        var text = information[11..];
+        if (colon != 10)
+        {
+            issues.Add(new ParseIssue(ParseIssueCode.UnpaddedAddressee, ParseIssueSeverity.Warning, offset + 1));
+        }
+
+        var addressee = Encoding.Latin1.GetString(info[1..colon]).TrimEnd(' ');
+        var text = information[(colon + 1)..];
         if (TelemetryKind(text.Span) is { } kind)
         {
-            return Telemetry(addressee, kind, text[5..], offset + 16, issues);
+            return Telemetry(addressee, kind, text[5..], offset + colon + 6, issues);
         }
 
         if (TryAck(text.Span, out var ackKind, out var ackId, out var ackReply))
@@ -157,6 +162,33 @@ internal static class MessageDecoder
 
         static bool IdCharacters(ReadOnlySpan<byte> bytes) => bytes.IndexOfAnyExceptInRange((byte)'!', (byte)'z') < 0;
     }
+
+    /// <summary>
+    /// Finds the colon after the addressee. APRS101 pads the addressee to 9 characters, but some senders do not pad it
+    /// (SvxLink's <c>:EL-N0CALL:</c>) or pad it past 9 (<c>:BLNRAIN    :</c>), so a 1–9 character callsign-like name
+    /// followed by spaces and a colon within the first 12 bytes is accepted too.
+    /// </summary>
+    private static bool TryAddressee(ReadOnlySpan<byte> info, out int colon)
+    {
+        var found = info.Length > 1 ? info[1..Math.Min(info.Length, 13)].IndexOf((byte)':') : -1;
+        colon = info.Length > 10 && info[10] == ':' ? 10 : found + 1;
+        if (colon == 10)
+        {
+            return true;
+        }
+
+        if (colon < 2)
+        {
+            return false;
+        }
+
+        var name = info[1..colon].TrimEnd((byte)' ');
+        return name.Length is >= 1 and <= 9 && name.IndexOfAnyExcept(_addresseeCharacters) < 0;
+    }
+
+    private static readonly System.Buffers.SearchValues<byte> _addresseeCharacters = System.Buffers.SearchValues.Create(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-"u8
+    );
 
     private static TelemetryDefinitionKind? TelemetryKind(ReadOnlySpan<byte> text) =>
         text.StartsWith("PARM."u8) ? TelemetryDefinitionKind.ParameterNames

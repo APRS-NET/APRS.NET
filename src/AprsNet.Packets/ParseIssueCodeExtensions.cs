@@ -30,6 +30,8 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.InvalidMicEDestination => "The Mic-E destination does not encode a latitude and message.",
             ParseIssueCode.InvalidTelemetry =>
                 "The telemetry report's sequence, analog values or digital bits cannot be read.",
+            ParseIssueCode.UnpaddedAddressee =>
+                "The message addressee is not padded to 9 characters; it is still read.",
             _ => code.ToString(),
         };
 }

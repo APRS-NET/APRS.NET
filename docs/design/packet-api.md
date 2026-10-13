@@ -244,7 +244,10 @@ The message format (`:ADDRESSEE:`, APRS101 ch. 13–15) carries two payloads:
   station's own callsign. `EQNS.` with fewer than five channels is accepted in whole triples, as real stations send
   it; unreadable equations or bits keep the definition kind with an `InvalidTelemetryDefinition` warning.
 
-A missing or unpadded addressee is the only error (`InvalidAddressee`). Real traffic uses longer announcement
+A missing addressee is the only error (`InvalidAddressee`). An addressee that is not padded to 9 characters
+(SvxLink sends `:EL-N0CAL:`) or is padded past 9 (`:BLNRAIN    :`) is read with an `UnpaddedAddressee` warning, as
+long as it is a 1–9 character callsign-like name followed by spaces and a colon within the first 12 bytes; anything
+else after `:` (some stations put a position or a comment there) is still an error. Real traffic uses longer announcement
 names than the spec (`BLNALUX`, `BLNA-WEB`); these read as announcement `A` with the rest as the group. NTS
 radiogram routing inside the text (`N1\…`) is not decoded yet.
 
