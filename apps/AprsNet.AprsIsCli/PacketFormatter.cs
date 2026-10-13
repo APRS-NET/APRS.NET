@@ -51,7 +51,7 @@ internal static class PacketFormatter
         line.Append("  ");
         switch (packet.Payload)
         {
-            case PositionReport report:
+            case PositionedPayload report:
                 Position(line, report);
                 break;
             case StatusReport status:
@@ -123,8 +123,15 @@ internal static class PacketFormatter
             json.WriteEndArray();
             switch (packet.Payload)
             {
-                case PositionReport report:
-                    json.WritePropertyName("position");
+                case PositionedPayload report:
+                    json.WritePropertyName(
+                        report switch
+                        {
+                            ObjectReport => "object",
+                            ItemReport => "item",
+                            _ => "position",
+                        }
+                    );
                     Position(json, report, received);
                     break;
                 case StatusReport status:
@@ -361,9 +368,16 @@ internal static class PacketFormatter
         json.WriteEndObject();
     }
 
-    private static void Position(StringBuilder line, PositionReport report)
+    private static void Position(StringBuilder line, PositionedPayload report)
     {
-        line.Append("position ");
+        line.Append(
+            report switch
+            {
+                ObjectReport o => $"object {o.Name}{(o.IsLive ? "" : " (killed)")}  position ",
+                ItemReport i => $"item {i.Name}{(i.IsLive ? "" : " (killed)")}  position ",
+                _ => "position ",
+            }
+        );
         if (report.IsPositionUnknown)
         {
             line.Append("unknown");
@@ -429,7 +443,17 @@ internal static class PacketFormatter
             line.Append(CultureInfo.InvariantCulture, $"  DF bearing {df.Bearing:000}° quality {df.Quality}");
         }
 
-        if (report.IsMessagingCapable)
+        if (report.Area is { } area)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  area {AreaText(area)}");
+        }
+
+        if (report.Signpost is { } signpost)
+        {
+            line.Append("  signpost ").Append(signpost);
+        }
+
+        if (report is PositionReport { IsMessagingCapable: true })
         {
             line.Append("  messaging");
         }
@@ -440,9 +464,28 @@ internal static class PacketFormatter
         }
     }
 
-    private static void Position(Utf8JsonWriter json, PositionReport report, DateTimeOffset received)
+    /// <summary>An area shape in words: <c>filled box, colour 3, 0.067° × 0.067°</c>.</summary>
+    internal static string AreaText(AreaShape area) =>
+        string.Create(
+            CultureInfo.InvariantCulture,
+            $"{(area.IsFilled ? "filled " : "")}{area.Kind.ToString().ToLowerInvariant()}, colour {area.Color}, {area.LatitudeOffsetDegrees:0.###}° × {area.LongitudeOffsetDegrees:0.###}°{(area.CorridorMiles is { } corridor ? $", corridor {corridor} mi" : "")}"
+        );
+
+    private static void Position(Utf8JsonWriter json, PositionedPayload report, DateTimeOffset received)
     {
         json.WriteStartObject();
+        switch (report)
+        {
+            case ObjectReport o:
+                json.WriteString("name", o.Name);
+                json.WriteBoolean("live", o.IsLive);
+                break;
+            case ItemReport i:
+                json.WriteString("name", i.Name);
+                json.WriteBoolean("live", i.IsLive);
+                break;
+        }
+
         json.WriteNumber("latitude", Math.Round(report.Position.Latitude, 6));
         json.WriteNumber("longitude", Math.Round(report.Position.Longitude, 6));
         json.WriteNumber("ambiguity", report.Position.Ambiguity);
@@ -450,7 +493,11 @@ internal static class PacketFormatter
         Symbol(json, report.Symbol);
         Timestamp(json, report.Timestamp, received);
 
-        json.WriteBoolean("messaging", report.IsMessagingCapable);
+        if (report is PositionReport position)
+        {
+            json.WriteBoolean("messaging", position.IsMessagingCapable);
+        }
+
         json.WriteBoolean("compressed", report.IsCompressed);
         WriteNumber(json, "course", report.Course);
         WriteNumber(json, "speedKnots", report.SpeedKnots);
@@ -495,6 +542,24 @@ internal static class PacketFormatter
             json.WriteString("nmeaSource", JsonNamingPolicy.CamelCase.ConvertName(type.NmeaSource.ToString()));
             json.WriteString("origin", JsonNamingPolicy.CamelCase.ConvertName(type.Origin.ToString()));
             json.WriteEndObject();
+        }
+
+        if (report.Area is { } area)
+        {
+            json.WriteStartObject("area");
+            json.WriteString("shape", area.Kind.ToString().ToLowerInvariant());
+            json.WriteNumber("type", area.Type);
+            json.WriteBoolean("filled", area.IsFilled);
+            json.WriteNumber("color", area.Color);
+            json.WriteNumber("latitudeOffsetDegrees", Math.Round(area.LatitudeOffsetDegrees, 6));
+            json.WriteNumber("longitudeOffsetDegrees", Math.Round(area.LongitudeOffsetDegrees, 6));
+            WriteNumber(json, "corridorMiles", area.CorridorMiles);
+            json.WriteEndObject();
+        }
+
+        if (report.Signpost is { } signpost)
+        {
+            json.WriteString("signpost", signpost);
         }
 
         if (report.Datum is { } datum)

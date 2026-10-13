@@ -209,7 +209,7 @@ public class ListenTests
         var harness = WithPackets(
             "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10:@092345z4903.5 N/07201.75W>088/036/A=001234 Hi",
             "N0CALL>APRS:>IO91SX/- ^B7",
-            "N0CALL>APRS:;LEADER   *092345z4903.50N/07201.75W>",
+            "N0CALL>APRS:T#005,199,000,255,073,123,01101001",
             "N0CALL>APRS:!3907.62n/09447.19w#PHG5132",
             "no header here"
         );
@@ -238,8 +238,8 @@ public class ListenTests
         Assert.Contains("status    \"^B7\"", blocks[1], StringComparison.Ordinal);
         Assert.Contains("locator   IO91SX", blocks[1], StringComparison.Ordinal);
         Assert.Contains("beam      110°, 490 W ERP", blocks[1], StringComparison.Ordinal);
-        Assert.Contains("object    not decoded yet", blocks[2], StringComparison.Ordinal);
-        Assert.Contains("data      ;LEADER   *092345z", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("telemetry not decoded yet", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("data      T#005,199", blocks[2], StringComparison.Ordinal);
         Assert.Contains(
             "station   25 W, antenna 20 ft, 3 dBi toward 090°, range 7.9 mi",
             blocks[3],
@@ -407,6 +407,68 @@ public class ListenTests
         Assert.Contains("telemetry equations for N0QBF-11", pretty[7], StringComparison.Ordinal);
         Assert.Contains("equations 0·v² + 5.2·v + 0", pretty[7], StringComparison.Ordinal);
         Assert.Contains("values    10110000 \"Balloon\"", pretty[8], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ObjectsAndItemsPrintInEveryFormat()
+    {
+        string[] packets =
+        [
+            "N0CALL>APRS:;LEADER   _092345z4903.50N/07201.75W>088/036",
+            "N0CALL>APRS:)AID #2!4903.50N/07201.75WA",
+            "N0CALL>APRS:;ROUTE    *092345z4903.50N\\07201.75Wl610/310{100}",
+            "N0CALL>APRS:)I91 3N!4903.50N\\07201.75Wm{55}",
+        ];
+
+        var decoded = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "4"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.StartsWith(
+            "N0CALL>APRS  object LEADER (killed)  position 49.05833 -72.02917  /> Car  at 092345z",
+            decoded[0],
+            StringComparison.Ordinal
+        );
+        Assert.StartsWith("N0CALL>APRS  item AID #2  position 49.05833", decoded[1], StringComparison.Ordinal);
+        Assert.Contains("area line, colour 3, 0.067° × 0.067°, corridor 100 mi", decoded[2], StringComparison.Ordinal);
+        Assert.Contains("signpost 55", decoded[3], StringComparison.Ordinal);
+        Assert.DoesNotContain("messaging", decoded[0], StringComparison.Ordinal);
+
+        var json = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "json", "-n", "4"],
+                    TestContext.Current.CancellationToken
+                )
+        )
+            .Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement)
+            .ToList();
+        var obj = json[0].GetProperty("object");
+        Assert.Equal("LEADER", obj.GetProperty("name").GetString());
+        Assert.False(obj.GetProperty("live").GetBoolean());
+        Assert.False(obj.TryGetProperty("messaging", out _));
+        Assert.Equal("AID #2", json[1].GetProperty("item").GetProperty("name").GetString());
+        var area = json[2].GetProperty("object").GetProperty("area");
+        Assert.Equal("line", area.GetProperty("shape").GetString());
+        Assert.Equal(100, area.GetProperty("corridorMiles").GetInt32());
+        Assert.Equal("55", json[3].GetProperty("item").GetProperty("signpost").GetString());
+
+        var pretty = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "pretty", "-n", "4"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("object    LEADER  killed", pretty[0], StringComparison.Ordinal);
+        Assert.DoesNotContain("messaging", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("item      AID #2", pretty[1], StringComparison.Ordinal);
+        Assert.Contains("area      line, colour 3", pretty[2], StringComparison.Ordinal);
+        Assert.Contains("signpost  55", pretty[3], StringComparison.Ordinal);
     }
 
     [Fact]

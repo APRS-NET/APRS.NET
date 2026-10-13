@@ -36,7 +36,7 @@ internal static class PrettyFormatter
         var fields = new List<(string Label, string Value)>();
         switch (packet.Payload)
         {
-            case PositionReport report:
+            case PositionedPayload report:
                 Position(fields, report, received, style);
                 break;
             case StatusReport status:
@@ -96,11 +96,21 @@ internal static class PrettyFormatter
 
     private static void Position(
         List<(string Label, string Value)> fields,
-        PositionReport report,
+        PositionedPayload report,
         DateTimeOffset received,
         Style style
     )
     {
+        switch (report)
+        {
+            case ObjectReport o:
+                fields.Add(("object", style.Bold(Safe(o.Name)) + (o.IsLive ? "" : style.Red("  killed"))));
+                break;
+            case ItemReport i:
+                fields.Add(("item", style.Bold(Safe(i.Name)) + (i.IsLive ? "" : style.Red("  killed"))));
+                break;
+        }
+
         var where = report.IsPositionUnknown
             ? "unknown"
             : string.Create(
@@ -199,7 +209,20 @@ internal static class PrettyFormatter
             fields.Add(("datum", datum is 'W' or 'w' ? "WGS84 (extra precision)" : $"{datum} (extra precision)"));
         }
 
-        fields.Add(("messaging", report.IsMessagingCapable ? "yes" : "no"));
+        if (report.Area is { } area)
+        {
+            fields.Add(("area", PacketFormatter.AreaText(area)));
+        }
+
+        if (report.Signpost is { } signpost)
+        {
+            fields.Add(("signpost", style.Bold(Safe(signpost))));
+        }
+
+        if (report is PositionReport position)
+        {
+            fields.Add(("messaging", position.IsMessagingCapable ? "yes" : "no"));
+        }
         if (report.Comment.Trim().Length > 0)
         {
             fields.Add(("comment", style.Green($"\"{Safe(report.Comment.Trim())}\"")));
