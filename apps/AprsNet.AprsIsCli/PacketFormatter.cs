@@ -63,6 +63,9 @@ internal static class PacketFormatter
             case TelemetryDefinition definition:
                 Telemetry(line, definition);
                 break;
+            case TelemetryReport telemetry:
+                Telemetry(line, telemetry);
+                break;
             default:
                 line.Append(Name(packet.Type))
                     .Append(packet.Outcome == ParseOutcome.Malformed ? " (malformed)" : " (not decoded yet)");
@@ -147,6 +150,10 @@ internal static class PacketFormatter
                     json.WritePropertyName("telemetryDefinition");
                     Telemetry(json, definition);
                     break;
+                case TelemetryReport telemetry:
+                    json.WritePropertyName("telemetry");
+                    Telemetry(json, telemetry);
+                    break;
             }
 
             json.WriteEndObject();
@@ -204,6 +211,30 @@ internal static class PacketFormatter
             .Append("  ");
         line.Append(Values(definition));
     }
+
+    private static void Telemetry(StringBuilder line, TelemetryReport report)
+    {
+        line.Append("telemetry #").Append(report.Sequence).Append("  ").Append(Analog(report));
+        if (report.Digital.Count > 0)
+        {
+            line.Append("  bits ").Append(Bits(report));
+        }
+
+        if (report.Comment.Trim().Length > 0)
+        {
+            line.Append("  \"").Append(report.Comment.Trim()).Append('"');
+        }
+    }
+
+    /// <summary>The raw analog values as sent, <c>-</c> for an empty field: <c>199, 0, 255, 73, 123</c>.</summary>
+    internal static string Analog(TelemetryReport report) =>
+        string.Join(
+            ", ",
+            report.Analog.Select(v => v is { } value ? value.ToString(CultureInfo.InvariantCulture) : "-")
+        );
+
+    /// <summary>The digital channels as <c>0</c>/<c>1</c> characters: <c>01101001</c>.</summary>
+    internal static string Bits(TelemetryReport report) => string.Concat(report.Digital.Select(b => b ? '1' : '0'));
 
     /// <summary>A definition kind in words: <c>names</c>, <c>units</c>, <c>equations</c>, <c>bit sense</c>.</summary>
     internal static string Words(TelemetryDefinitionKind kind) =>
@@ -272,6 +303,38 @@ internal static class PacketFormatter
         json.WriteEndArray();
         WriteString(json, "bitSense", definition.BitSense);
         WriteString(json, "projectName", definition.ProjectName);
+        json.WriteEndObject();
+    }
+
+    private static void Telemetry(Utf8JsonWriter json, TelemetryReport report)
+    {
+        json.WriteStartObject();
+        json.WriteString("sequence", report.Sequence);
+        if (report.SequenceNumber is { } number)
+        {
+            json.WriteNumber("sequenceNumber", number);
+        }
+        else
+        {
+            json.WriteNull("sequenceNumber");
+        }
+
+        json.WriteStartArray("analog");
+        foreach (var value in report.Analog)
+        {
+            if (value is { } v)
+            {
+                json.WriteNumberValue(v);
+            }
+            else
+            {
+                json.WriteNullValue();
+            }
+        }
+
+        json.WriteEndArray();
+        WriteString(json, "digital", report.Digital.Count > 0 ? Bits(report) : null);
+        json.WriteString("comment", report.Comment);
         json.WriteEndObject();
     }
 

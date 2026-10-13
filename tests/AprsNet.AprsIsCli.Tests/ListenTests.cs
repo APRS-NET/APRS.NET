@@ -209,7 +209,7 @@ public class ListenTests
         var harness = WithPackets(
             "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10:@092345z4903.5 N/07201.75W>088/036/A=001234 Hi",
             "N0CALL>APRS:>IO91SX/- ^B7",
-            "N0CALL>APRS:T#005,199,000,255,073,123,01101001",
+            "N0CALL>APRS:_10090556c220s004g005t077",
             "N0CALL>APRS:!3907.62n/09447.19w#PHG5132",
             "no header here"
         );
@@ -238,8 +238,8 @@ public class ListenTests
         Assert.Contains("status    \"^B7\"", blocks[1], StringComparison.Ordinal);
         Assert.Contains("locator   IO91SX", blocks[1], StringComparison.Ordinal);
         Assert.Contains("beam      110°, 490 W ERP", blocks[1], StringComparison.Ordinal);
-        Assert.Contains("telemetry not decoded yet", blocks[2], StringComparison.Ordinal);
-        Assert.Contains("data      T#005,199", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("weather   not decoded yet", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("data      _10090556c220", blocks[2], StringComparison.Ordinal);
         Assert.Contains(
             "station   25 W, antenna 20 ft, 3 dBi toward 090°, range 7.9 mi",
             blocks[3],
@@ -518,6 +518,58 @@ public class ListenTests
         Assert.Contains("Mic-E     Emergency", pretty[1], StringComparison.Ordinal);
         Assert.Contains("device    not identified", pretty[1], StringComparison.Ordinal);
         Assert.Contains("fix       old", pretty[1], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TelemetryReportsPrintInEveryFormat()
+    {
+        string[] packets = ["N0CALL>APRS:T#005,199,000,255,073,123,01101001Solar", "N0CALL>APRS:T#MIC13.35,,0.5"];
+
+        var decoded = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "decoded", "-n", "2"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(
+            [
+                "N0CALL>APRS  telemetry #005  199, 0, 255, 73, 123  bits 01101001  \"Solar\"",
+                "N0CALL>APRS  telemetry #MIC  13.35, -, 0.5",
+            ],
+            decoded
+        );
+
+        var json = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "json", "-n", "2"],
+                    TestContext.Current.CancellationToken
+                )
+        )
+            .Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement.GetProperty("telemetry"))
+            .ToList();
+        Assert.Equal(5, json[0].GetProperty("sequenceNumber").GetInt32());
+        Assert.Equal(73, json[0].GetProperty("analog")[3].GetDouble());
+        Assert.Equal("01101001", json[0].GetProperty("digital").GetString());
+        Assert.Equal("Solar", json[0].GetProperty("comment").GetString());
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, json[1].GetProperty("sequenceNumber").ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, json[1].GetProperty("analog")[1].ValueKind);
+        Assert.Equal(System.Text.Json.JsonValueKind.Null, json[1].GetProperty("digital").ValueKind);
+
+        var pretty = (
+            await WithPackets(packets)
+                .RunAsync(
+                    ["listen", "-c", "NZ0P", "--format", "pretty", "-n", "2"],
+                    TestContext.Current.CancellationToken
+                )
+        ).Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Contains("telemetry #005", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("analog    199, 0, 255, 73, 123", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("digital   01101001", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("comment   \"Solar\"", pretty[0], StringComparison.Ordinal);
+        Assert.DoesNotContain("digital", pretty[1], StringComparison.Ordinal);
     }
 
     [Fact]

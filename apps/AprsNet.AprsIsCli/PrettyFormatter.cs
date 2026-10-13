@@ -54,6 +54,20 @@ internal static class PrettyFormatter
                     )
                 );
                 break;
+            case TelemetryReport telemetry:
+                fields.Add(("telemetry", style.Bold($"#{Safe(telemetry.Sequence)}")));
+                fields.Add(("analog", PacketFormatter.Analog(telemetry)));
+                if (telemetry.Digital.Count > 0)
+                {
+                    fields.Add(("digital", PacketFormatter.Bits(telemetry)));
+                }
+
+                if (telemetry.Comment.Trim().Length > 0)
+                {
+                    fields.Add(("comment", style.Green($"\"{Safe(telemetry.Comment.Trim())}\"")));
+                }
+
+                break;
             default:
                 fields.Add(
                     (
