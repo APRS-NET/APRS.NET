@@ -20,9 +20,11 @@ internal static class AprsEncoder
             MessagePayload message => Message(message),
             PositionReport position => PositionEncoder.Encode(position),
             MicEReport micE => MicEEncoder.Encode(micE),
+            ObjectReport report => PositionEncoder.Encode(report),
+            ItemReport item => PositionEncoder.Encode(item),
             _ => throw new NotSupportedException(
                 $"Encoding {payload.GetType().Name} is not supported yet; status reports, messages, position "
-                    + "reports and Mic-E reports are."
+                    + "reports, Mic-E reports, objects and items are."
             ),
         };
 
@@ -39,6 +41,12 @@ internal static class AprsEncoder
                 ? "the messaging flag does not survive encoding"
                 : PositionMismatch(e, a),
             (MicEReport e, MicEReport a) => MicEEncoder.Mismatch(e, a),
+            (ObjectReport e, ObjectReport a) => e.Name != a.Name ? "the name does not survive encoding"
+            : e.IsLive != a.IsLive ? "the live or killed flag does not survive encoding"
+            : PositionMismatch(e, a),
+            (ItemReport e, ItemReport a) => e.Name != a.Name ? "the name does not survive encoding"
+            : e.IsLive != a.IsLive ? "the live or killed flag does not survive encoding"
+            : PositionMismatch(e, a),
             _ => $"it decodes as {actual?.GetType().Name ?? "nothing"}, not {expected.GetType().Name}",
         };
 

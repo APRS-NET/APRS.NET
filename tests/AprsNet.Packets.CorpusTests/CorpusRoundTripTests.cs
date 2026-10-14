@@ -11,6 +11,7 @@ public class CorpusRoundTripTests
     {
         var checkedPackets = 0;
         var micE = 0;
+        var objectsAndItems = 0;
         var failures = new List<string>();
         foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
         {
@@ -22,16 +23,24 @@ public class CorpusRoundTripTests
                         is not {
                             HasHeader: true,
                             Outcome: ParseOutcome.Parsed,
-                            Payload: StatusReport or MessagePayload or PositionReport or MicEReport
+                            Payload: StatusReport
+                                or MessagePayload
+                                or PositionReport
+                                or MicEReport
+                                or ObjectReport
+                                or ItemReport
                         }
-                    || packet.Payload is MicEReport { Message: MicEMessage.Unknown }
+                    || packet.Payload is MicEReport { Message: MicEMessage.Unknown } or ObjectReport { Timestamp: null }
                 )
                 {
-                    continue; // not encodable, or a Mic-E message that mixes standard and custom bits
+                    // Not encodable: a Mic-E message that mixes standard and custom bits, or an object whose broken
+                    // timestamp the parser dropped.
+                    continue;
                 }
 
                 checkedPackets++;
                 micE += packet.Payload is MicEReport ? 1 : 0;
+                objectsAndItems += packet.Payload is ObjectReport or ItemReport ? 1 : 0;
                 try
                 {
                     var rebuilt = AprsPacket.Create(packet.Source, packet.Destination, packet.Path, packet.Payload);
@@ -48,7 +57,8 @@ public class CorpusRoundTripTests
                         )
                         || packet.Payload
                             is StatusReport { MaidenheadLocator: not null }
-                                or PositionReport { Position.Ambiguity: > 0 };
+                                or PositionedPayload { Position.Ambiguity: > 0 }
+                                and not MicEReport;
                     if (
                         !normalised
                         && (
@@ -69,6 +79,7 @@ public class CorpusRoundTripTests
 
         Assert.True(checkedPackets > 30_000, $"only {checkedPackets} packets");
         Assert.True(micE > 2_500, $"only {micE} Mic-E packets");
+        Assert.True(objectsAndItems > 5_000, $"only {objectsAndItems} objects and items");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
@@ -182,6 +193,84 @@ public class CorpusRoundTripTests
         }
 
         Assert.True(checkedPackets > 2_000, $"only {checkedPackets} packets");
+        Assert.True(
+            failures.Count == 0,
+            $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
+        );
+    }
+
+    [Fact]
+    public void ObjectsAndItemsRebuiltFromTheirValuesDecodeTheSame()
+    {
+        // As for positions: only the values a caller can set are copied into a new object or item.
+        var checkedPackets = 0;
+        var failures = new List<string>();
+        foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in CorpusParsingTests.Packets(file))
+            {
+                var packet = AprsPacket.Parse(bytes);
+                if (
+                    packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: PositionedPayload parsed }
+                    || parsed is not (ObjectReport { Timestamp: not null } or ItemReport)
+                    || parsed.Weather is not null
+                    || parsed.Datum is not null
+                    || parsed.Area is not null
+                    || parsed.DirectionFinding is not null
+                    || parsed.Comment.Any(char.IsControl)
+                )
+                {
+                    continue; // fields a caller cannot set yet, or control bytes the encoder refuses in new text
+                }
+
+                checkedPackets++;
+                AprsPayload copy = parsed switch
+                {
+                    ObjectReport o => new ObjectReport
+                    {
+                        Name = o.Name,
+                        IsLive = o.IsLive,
+                        Timestamp = o.Timestamp,
+                        Position = o.Position,
+                        Symbol = o.Symbol,
+                        IsCompressed = o.IsCompressed,
+                        Course = o.Course,
+                        SpeedKnots = o.SpeedKnots,
+                        AltitudeFeet = o.AltitudeFeet,
+                        PowerHeightGain = o.PowerHeightGain,
+                        RangeMiles = o.RangeMiles,
+                        DirectionFindingStrength = o.DirectionFindingStrength,
+                        Comment = o.Comment,
+                    },
+                    ItemReport i => new ItemReport
+                    {
+                        Name = i.Name,
+                        IsLive = i.IsLive,
+                        Position = i.Position,
+                        Symbol = i.Symbol,
+                        IsCompressed = i.IsCompressed,
+                        Course = i.Course,
+                        SpeedKnots = i.SpeedKnots,
+                        AltitudeFeet = i.AltitudeFeet,
+                        PowerHeightGain = i.PowerHeightGain,
+                        RangeMiles = i.RangeMiles,
+                        DirectionFindingStrength = i.DirectionFindingStrength,
+                        Comment = i.Comment,
+                    },
+                    _ => throw new InvalidOperationException(),
+                };
+                try
+                {
+                    AprsPacket.Create(packet.Source, packet.Destination, packet.Path, copy);
+                }
+                catch (ArgumentException ex)
+                {
+                    failures.Add($"{file}:{lineNumber} {ex.Message} {packet}");
+                }
+            }
+        }
+
+        Assert.True(checkedPackets > 3_000, $"only {checkedPackets} packets");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))

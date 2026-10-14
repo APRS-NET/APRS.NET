@@ -481,9 +481,46 @@ AprsPacket.Create(source, Callsign.Parse("APZ123"), [], report).ToString();
   are kept as they arrived. All 3,138 Mic-E packets in the corpus rebuild exactly, destination included, apart from
   those whose message mixes standard and custom bits. A second corpus test rebuilds each from its values alone.
 
+### Objects and items
+
+`ObjectReport` and `ItemReport` share the position body with position reports (`PositionEncoder.WriteBody`), so the
+rules above for positions, extensions, altitude and comments apply to them unchanged.
+
+```csharp
+var leader = new ObjectReport
+{
+    Name = "LEADER",
+    Timestamp = AprsTimestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+    Position = new AprsPosition(49.05833, -72.02917),
+    Symbol = new AprsSymbol('/', '>'),
+};
+address.Create(leader); // ;LEADER   *092345z4903.50N/07201.75W>
+
+// Later, to take it off the map: the same object, killed.
+address.Create(new ObjectReport
+{
+    Name = leader.Name,
+    IsLive = false,
+    Timestamp = AprsTimestamp.FromDateTimeOffset(DateTimeOffset.UtcNow),
+    Position = leader.Position,
+    Symbol = leader.Symbol,
+}); // ;LEADER   _100012z4903.50N/07201.75W>
+```
+
+- **New objects and items are live.** `IsLive` defaults to `true`, so forgetting it cannot send a kill; to remove one
+  from the map, send it again with `IsLive = false`.
+- **Names.** An object name is 1 to 9 printable ASCII characters without trailing spaces, padded to 9 when sent. An
+  item name is 3 to 9 printable ASCII characters without `!` or `_`, which end it on the wire. Parsed names are written
+  back as received.
+- **Timestamps.** An object needs one (`DDHHMMz`, `DDHHMM/` or `HHMMSSh`); an item has none, and setting one throws.
+  A parsed object whose broken timestamp the parser dropped cannot be rebuilt.
+- **Round trips.** All 6,540 objects and items in the corpus with a usable timestamp rebuild byte for byte, and a
+  second corpus test rebuilds them from their values alone.
+
 Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries), position reports (uncompressed and compressed) and Mic-E reports. Objects and items
-come next; other payload types throw `NotSupportedException`.
+bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects and items.
+Other payload types (telemetry, weather without a position, capabilities, queries, user-defined data) throw
+`NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)
 

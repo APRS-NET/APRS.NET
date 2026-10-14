@@ -42,6 +42,66 @@ internal static class PositionEncoder
         return [.. info];
     }
 
+    /// <summary>
+    /// Writes an object (APRS101 ch. 11): <c>;</c>, the name padded to 9, <c>*</c> (live) or <c>_</c> (killed), the
+    /// timestamp, then the position body.
+    /// </summary>
+    public static byte[] Encode(ObjectReport report)
+    {
+        var name = report.Name;
+        if (name.Length is < 1 or > 9 || name[^1] == ' ' || !IsName(name))
+        {
+            throw new ArgumentException(
+                "An object name must be 1 to 9 printable ASCII characters without trailing spaces."
+            );
+        }
+
+        if (report.Timestamp is not { } timestamp)
+        {
+            throw new ArgumentException("An object needs a timestamp, for example AprsTimestamp.FromDateTimeOffset.");
+        }
+
+        if (timestamp.Format == AprsTimestampFormat.MonthDayHourMinute)
+        {
+            throw new ArgumentException("An object timestamp is DDHHMMz, DDHHMM/ or HHMMSSh, not MMDDHHMM.");
+        }
+
+        var info = new List<byte>(64) { (byte)';' };
+        info.AddRange(Encoding.Latin1.GetBytes(name.PadRight(9)));
+        info.Add(report.IsLive ? (byte)'*' : (byte)'_');
+        info.AddRange(Encoding.ASCII.GetBytes(timestamp.ToString()));
+        WriteBody(info, report);
+        return [.. info];
+    }
+
+    /// <summary>
+    /// Writes an item (APRS101 ch. 11): <c>)</c>, the 3–9 character name, <c>!</c> (live) or <c>_</c> (killed), then
+    /// the position body. Items have no timestamp.
+    /// </summary>
+    public static byte[] Encode(ItemReport report)
+    {
+        var name = report.Name;
+        if (name.Length is < 3 or > 9 || name.AsSpan().IndexOfAny('!', '_') >= 0 || !IsName(name))
+        {
+            throw new ArgumentException("An item name must be 3 to 9 printable ASCII characters, without '!' or '_'.");
+        }
+
+        if (report.Timestamp is not null)
+        {
+            throw new ArgumentException(
+                "An item has no timestamp; send an object for something that changes over time."
+            );
+        }
+
+        var info = new List<byte>(64) { (byte)')' };
+        info.AddRange(Encoding.Latin1.GetBytes(name));
+        info.Add(report.IsLive ? (byte)'!' : (byte)'_');
+        WriteBody(info, report);
+        return [.. info];
+    }
+
+    private static bool IsName(string name) => name.All(c => c is >= ' ' and <= '~');
+
     /// <summary>The position, symbol, data extension, altitude and comment.</summary>
     public static void WriteBody(List<byte> info, PositionedPayload payload)
     {
