@@ -501,3 +501,21 @@ static AprsNet.Packets.MaidenheadLocator.operator ==(AprsNet.Packets.MaidenheadL
 static AprsNet.Packets.MaidenheadLocator.Parse(string! text) -> AprsNet.Packets.MaidenheadLocator!
 static AprsNet.Packets.MaidenheadLocator.TryParse(string? text, out AprsNet.Packets.MaidenheadLocator? locator) -> bool
 static AprsNet.Packets.MaidenheadLocator.TryParse(string? text, out AprsNet.Packets.MaidenheadLocator? locator, out AprsNet.Packets.MaidenheadParseError? error) -> bool
+AprsNet.Packets.PacketAddress
+AprsNet.Packets.PacketAddress.<Clone>$() -> AprsNet.Packets.PacketAddress!
+AprsNet.Packets.PacketAddress.Create(AprsNet.Packets.AprsPayload! payload) -> AprsNet.Packets.AprsPacket!
+AprsNet.Packets.PacketAddress.Create(AprsNet.Packets.AprsPayload! payload, System.Collections.Generic.IEnumerable<AprsNet.Packets.PathEntry>! path) -> AprsNet.Packets.AprsPacket!
+AprsNet.Packets.PacketAddress.Destination.get -> AprsNet.Packets.Callsign!
+AprsNet.Packets.PacketAddress.Destination.init -> void
+AprsNet.Packets.PacketAddress.Equals(AprsNet.Packets.PacketAddress? other) -> bool
+AprsNet.Packets.PacketAddress.PacketAddress(AprsNet.Packets.Callsign! source, AprsNet.Packets.Callsign! destination, System.Collections.Generic.IEnumerable<AprsNet.Packets.PathEntry>! path) -> void
+AprsNet.Packets.PacketAddress.Path.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>!
+AprsNet.Packets.PacketAddress.Path.init -> void
+AprsNet.Packets.PacketAddress.Source.get -> AprsNet.Packets.Callsign!
+AprsNet.Packets.PacketAddress.Source.init -> void
+override AprsNet.Packets.PacketAddress.Equals(object? obj) -> bool
+override AprsNet.Packets.PacketAddress.GetHashCode() -> int
+override AprsNet.Packets.PacketAddress.ToString() -> string!
+static AprsNet.Packets.PacketAddress.operator !=(AprsNet.Packets.PacketAddress? left, AprsNet.Packets.PacketAddress? right) -> bool
+static AprsNet.Packets.PacketAddress.operator ==(AprsNet.Packets.PacketAddress? left, AprsNet.Packets.PacketAddress? right) -> bool
+static AprsNet.Packets.PacketAddress.Parse(string! source, string! destination, System.Collections.Generic.IEnumerable<string!>! path) -> AprsNet.Packets.PacketAddress!

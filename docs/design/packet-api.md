@@ -414,6 +414,34 @@ Decisions:
 - **Not settable yet:** weather readings, the `!DAO!` datum, area shapes, DF bearing reports and signposts are
   derived from the comment or not encodable on their own yet; parsed payloads carry them through unchanged.
 
+### Sending as one station
+
+An app sends every packet with the same source, the same destination (its TOCALL) and usually the same path.
+`PacketAddress` holds those three, checked when it is made, and `Create(payload)` passes them to `AprsPacket.Create`:
+
+```csharp
+var rf = PacketAddress.Parse("N0CALL-9", "APZ123", ["WIDE1-1", "WIDE2-1"]);
+var aprsIs = rf with { Path = [] };
+rf.Create(beacon);
+rf.Create(beacon, [PathEntry.Parse("WIDE2-2")]); // this packet only; rf.Path is unchanged
+```
+
+- **A record, not a builder.** Only the header is shared between packets; the payload stays the parser's own record,
+  built with an object initializer. A fluent builder (`.Speed(36).Altitude(1200)`) would be a second model of the same
+  fields, so `Parse(Create(x))` round-trips would compare builder state with parsed payloads, `with` edits on a parsed
+  payload would no longer feed back into sending, and values with units would lose their names (`SpeedKnots`,
+  `AltitudeFeet`).
+- **Immutable.** The parts are checked once, in the constructor or `Parse`, and again by `with`, so an address that
+  exists is sendable. A beacon scheduler, a messaging queue and an object timer can share one instance across threads
+  without locking; a changed path or callsign is a new address.
+- **What is checked.** The source is a callsign of 1 to 6 letters or digits with an optional SSID of 1 or 2 letters or
+  digits, without the `*` repeated marker; APRS-IS accepts SSIDs such as `-L` that AX.25 cannot carry, so check
+  `Source.IsAx25` before sending on RF. The destination must fit AX.25, as every TOCALL does. Path entries follow
+  `PathEntry.Parse`, at most 10. Each error names the part (`The source 'N0CALL*' …`) and the parameter.
+- **Mic-E.** A Mic-E packet carries its latitude in the destination in place of the TOCALL. Mic-E encoding is not
+  supported yet, so `Create` throws `NotSupportedException` for a `MicEReport`; once it is, `Create` will write the
+  Mic-E destination instead of `Destination`.
+
 Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
 bulletins and directed queries) and position reports (uncompressed and compressed). Objects and items come next;
 other payload types throw `NotSupportedException`.
