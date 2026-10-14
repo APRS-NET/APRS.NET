@@ -9,6 +9,7 @@ internal static class AprsCli
     {
         var root = new RootCommand("APRS.NET command-line tool.");
         root.Subcommands.Add(new ListenCommand(environment).Build());
+        root.Subcommands.Add(new PasscodeCommand(environment).Build());
         return root;
     }
 

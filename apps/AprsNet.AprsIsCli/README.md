@@ -65,4 +65,17 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` (plus the usual `OTEL_EXPORTER_OTLP_*` variabl
 - **Logs:** connection, login and filter events. Add `--log-packets` to log every received packet as `Packet from {Source}: {Packet}` (control characters escaped). Packet logs go to OpenTelemetry only, so they never appear on the terminal.
 - **Metrics:** the client's `AprsNet.*` meters (lines received, connection attempts, login results, drops), flushed when the command exits.
 
+## passcode
+
+Print the APRS-IS passcode for a callsign: the number a verified login sends instead of `-1`. The SSID and letter
+case do not change it. Only the number goes to stdout, so a script can capture it:
+
+```sh
+aprscli passcode N0CALL          # 13023
+export APRS_PASSCODE=$(aprscli passcode N0CALL)
+```
+
+The passcode is a public hash of the callsign, not a secret; it only stops people from transmitting by mistake. Use
+it only for your own licensed callsign. An invalid callsign exits with code 3.
+
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>
