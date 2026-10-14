@@ -77,4 +77,7 @@ public enum ParseIssueCode
     /// read.
     /// </summary>
     UnpaddedAddressee,
+
+    /// <summary>A user-defined packet (<c>{</c>) is shorter than its user ID and packet type.</summary>
+    InvalidUserDefined,
 }

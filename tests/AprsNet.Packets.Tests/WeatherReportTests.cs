@@ -80,13 +80,43 @@ public class WeatherReportTests
         Assert.Equal([new ParseIssue(ParseIssueCode.InvalidTimestamp, ParseIssueSeverity.Error, 13)], packet.Issues);
     }
 
-    [Fact]
-    public void RawWeatherIsNotDecoded()
+    [Theory]
+    [InlineData(
+        "!!006B005803500000----03E9--------002105140000005D",
+        RawWeatherFormat.UltimeterDataLogging,
+        "006B005803500000----03E9--------002105140000005D"
+    )]
+    [InlineData(
+        "$ULTW0031003702CE0069----000086A00001----011901CC00000005",
+        RawWeatherFormat.UltimeterPacket,
+        "0031003702CE0069----000086A00001----011901CC00000005"
+    )]
+    [InlineData("#50B7500820082", RawWeatherFormat.PeetBrosUII, "50B7500820082")]
+    [InlineData("*7007600000000", RawWeatherFormat.PeetBrosUII, "7007600000000")]
+    public void RecognisesRawWeatherStationData(string information, RawWeatherFormat format, string data)
     {
-        var packet = Parse("!!006B005803500000----03E9--------002105140000005D");
+        var packet = Parse(information);
 
         Assert.Equal(PacketType.Weather, packet.Type);
-        Assert.Equal(ParseOutcome.Unsupported, packet.Outcome);
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
+        Assert.Empty(packet.Issues);
+        var raw = Assert.IsType<RawWeatherReport>(packet.Payload);
+        Assert.Equal(format, raw.Format);
+        Assert.Equal(data, raw.Data);
+    }
+
+    [Theory]
+    [InlineData("*APRS SERRA DA OSSA ")] // beacon text, from the corpus
+    [InlineData("* N0CALL * Mailbox / Digi *")]
+    [InlineData("###################")]
+    [InlineData("#50B75")] // too short to be station data
+    [InlineData("$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A")]
+    public void TextThatOnlyStartsLikeRawWeatherIsNotWeather(string information)
+    {
+        var packet = Parse(information);
+
+        Assert.Equal(PacketType.Unknown, packet.Type);
+        Assert.Null(packet.Payload);
     }
 
     [Fact]

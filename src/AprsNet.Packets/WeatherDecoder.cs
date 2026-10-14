@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Globalization;
+using System.Text;
 
 namespace AprsNet.Packets;
 
@@ -11,14 +12,14 @@ namespace AprsNet.Packets;
 internal static class WeatherDecoder
 {
     private static readonly SearchValues<byte> _decimal = SearchValues.Create("0123456789."u8);
+    private static readonly SearchValues<byte> _hex = SearchValues.Create("0123456789ABCDEFabcdef"u8);
 
     /// <summary>Decodes a positionless report; <paramref name="offset"/> is where the information field starts in Raw.</summary>
-    public static WeatherReport? Decode(ReadOnlyMemory<byte> information, int offset, List<ParseIssue> issues)
+    public static AprsPayload? Decode(ReadOnlyMemory<byte> information, int offset, List<ParseIssue> issues)
     {
-        // "!!" raw Ultimeter data is also typed as weather; its layout is not in APRS101, so it is not decoded.
         if (information.Span[0] != '_')
         {
-            return null;
+            return DecodeRaw(information.Span);
         }
 
         if (!AprsTimestamp.TryParseMonthDay(information.Span[1..], out var timestamp))
@@ -50,6 +51,35 @@ internal static class WeatherDecoder
             Comment = AprsText.Decode(comment.Span),
         };
     }
+
+    /// <summary>
+    /// Raw station data, already recognised by its identifier (see <see cref="IsRaw"/>). Only the format is known:
+    /// APRS101 does not give the field layouts.
+    /// </summary>
+    private static RawWeatherReport DecodeRaw(ReadOnlySpan<byte> information)
+    {
+        var (format, skip) = information[0] switch
+        {
+            (byte)'!' => (RawWeatherFormat.UltimeterDataLogging, 2),
+            (byte)'$' => (RawWeatherFormat.UltimeterPacket, 5),
+            _ => (RawWeatherFormat.PeetBrosUII, 1),
+        };
+        return new RawWeatherReport { Format = format, Data = Encoding.Latin1.GetString(information[skip..]) };
+    }
+
+    /// <summary>
+    /// Whether the information field is raw weather station data: <c>!!</c> or <c>$ULTW</c> (Ultimeter 2000), or
+    /// <c>#</c> or <c>*</c> followed only by hex digits (Peet Bros U-II). Stations also start beacon text with
+    /// <c>*</c> or <c>#</c>, so those two need the hex digits to count.
+    /// </summary>
+    public static bool IsRaw(ReadOnlySpan<byte> information) =>
+        information.StartsWith("!!"u8)
+        || information.StartsWith("$ULTW"u8)
+        || (
+            information.Length >= 9
+            && information[0] is (byte)'#' or (byte)'*'
+            && information[1..].IndexOfAnyExcept(_hex) < 0
+        );
 
     /// <summary>
     /// Reads the weather in the comment of a weather station position into <paramref name="target"/>: wind from its

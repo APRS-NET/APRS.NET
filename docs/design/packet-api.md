@@ -161,7 +161,9 @@ public enum PacketType
     Weather,              // _ (positionless)
     Telemetry,            // T#
     ThirdParty,           // }
-    // later: Capabilities, Query, Nmea, UserDefined, …
+    Capabilities,         // <
+    UserDefined,          // {
+    // later: Query, Nmea, …
 }
 
 public readonly record struct ParseIssue(ParseIssueCode Code, ParseIssueSeverity Severity, int Offset);
@@ -313,8 +315,20 @@ stay in the comment. APRS 1.1's luminosity (`L`/`l`), snowfall (`s`) and raw rai
 letters (`X`, `V`) are not in a published spec and stay in the comment. APRS101 says knots for `DIR/SPD` and mph for
 the positionless form. Stations send mph in both, so `WindSpeedMph` is the value as sent.
 
-Raw weather station data (`!!`, `#`, `*`, `$ULTW`) has no layout in APRS101 and is not decoded. Storm data in `\@`
-objects is not decoded yet.
+Raw weather station data (`!!`, `#`, `*`, `$ULTW`) has no layout in APRS101, so it is recognised but not decoded:
+`RawWeatherReport` names the format (Ultimeter 2000 data logging or packet mode, Peet Bros U-II) and keeps the data as
+sent. `#` and `*` count only when hex digits follow, because stations also start beacon text with them. Storm data in
+`\@` objects is not decoded yet.
+
+### Station capabilities and user-defined data
+
+`CapabilitiesReport` (`<`, APRS101 ch. 15) keeps every `TOKEN` or `TOKEN=VALUE` entry in order, trimmed, with
+helpers for the IGate fields (`IsIGate`, `MessageCount`, `LocalStationCount`) and `GetValue` for the counters newer
+IGates add (`PKT_CNT`, `RF_CNT`…). A list of tokens cannot be malformed, so it never fails.
+
+`UserDefinedPayload` (`{`, APRS101 ch. 18) splits off the user ID and packet type and keeps the data as sent; `{{`
+marks an experimental packet. The data belongs to the sending program and is not interpreted. A packet shorter than
+its user ID and packet type is malformed (`InvalidUserDefined`).
 
 ## AX.25 and KISS (phase 2)
 

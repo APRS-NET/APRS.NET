@@ -232,6 +232,8 @@ public sealed partial class AprsPacket
             PacketType.Item => ObjectDecoder.DecodeItem(information, offset, issues),
             PacketType.Telemetry => TelemetryDecoder.Decode(information, offset, issues),
             PacketType.Weather => WeatherDecoder.Decode(information, offset, issues),
+            PacketType.Capabilities => CapabilitiesDecoder.Decode(information),
+            PacketType.UserDefined => UserDefinedDecoder.Decode(information, offset, issues),
             _ => null,
         };
 
@@ -260,8 +262,8 @@ public sealed partial class AprsPacket
             ? PacketType.Unknown
             : information[0] switch
             {
-                // "!!" starts raw Ultimeter 2000 weather data (APRS101 ch. 12), not a position.
-                (byte)'!' when information.Length > 1 && information[1] == (byte)'!' => PacketType.Weather,
+                // Raw weather station data (APRS101 ch. 12): "!!" is Ultimeter data, not a position.
+                _ when WeatherDecoder.IsRaw(information) => PacketType.Weather,
                 (byte)'!' or (byte)'=' or (byte)'/' or (byte)'@' => PacketType.Position,
                 (byte)'`' or (byte)'\'' or 0x1C or 0x1D => PacketType.MicE,
                 (byte)';' => PacketType.Object,
@@ -270,6 +272,8 @@ public sealed partial class AprsPacket
                 (byte)'>' => PacketType.Status,
                 (byte)'_' => PacketType.Weather,
                 (byte)'}' => PacketType.ThirdParty,
+                (byte)'<' => PacketType.Capabilities,
+                (byte)'{' => PacketType.UserDefined,
                 (byte)'T' when information.Length > 1 && information[1] == (byte)'#' => PacketType.Telemetry,
                 _ => PacketType.Unknown,
             };

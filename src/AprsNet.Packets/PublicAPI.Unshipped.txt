@@ -412,3 +412,25 @@ AprsNet.Packets.WeatherReport.Comment.get -> string!
 AprsNet.Packets.WeatherReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp
 AprsNet.Packets.WeatherReport.Weather.get -> AprsNet.Packets.WeatherData!
 AprsNet.Packets.ParseIssueCode.UnpaddedAddressee = 21 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.CapabilitiesReport
+AprsNet.Packets.CapabilitiesReport.Capabilities.get -> System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string!, string?>>!
+AprsNet.Packets.CapabilitiesReport.GetValue(string! token) -> string?
+AprsNet.Packets.CapabilitiesReport.IsIGate.get -> bool
+AprsNet.Packets.CapabilitiesReport.LocalStationCount.get -> int?
+AprsNet.Packets.CapabilitiesReport.MessageCount.get -> int?
+AprsNet.Packets.PacketType.Capabilities = 10 -> AprsNet.Packets.PacketType
+AprsNet.Packets.PacketType.UserDefined = 11 -> AprsNet.Packets.PacketType
+AprsNet.Packets.ParseIssueCode.InvalidUserDefined = 22 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.RawWeatherFormat
+AprsNet.Packets.RawWeatherFormat.PeetBrosUII = 2 -> AprsNet.Packets.RawWeatherFormat
+AprsNet.Packets.RawWeatherFormat.UltimeterDataLogging = 0 -> AprsNet.Packets.RawWeatherFormat
+AprsNet.Packets.RawWeatherFormat.UltimeterPacket = 1 -> AprsNet.Packets.RawWeatherFormat
+AprsNet.Packets.RawWeatherReport
+AprsNet.Packets.RawWeatherReport.Data.get -> string!
+AprsNet.Packets.RawWeatherReport.Format.get -> AprsNet.Packets.RawWeatherFormat
+AprsNet.Packets.UserDefinedPayload
+AprsNet.Packets.UserDefinedPayload.Data.get -> string!
+AprsNet.Packets.UserDefinedPayload.DataBytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Packets.UserDefinedPayload.IsExperimental.get -> bool
+AprsNet.Packets.UserDefinedPayload.UserId.get -> char
+AprsNet.Packets.UserDefinedPayload.UserPacketType.get -> char

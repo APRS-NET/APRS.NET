@@ -209,7 +209,7 @@ public class ListenTests
         var harness = WithPackets(
             "N0CALL-9>APRS,WIDE1-1*,qAR,N1CALL-10:@092345z4903.5 N/07201.75W>088/036/A=001234 Hi",
             "N0CALL>APRS:>IO91SX/- ^B7",
-            "N0CALL>APRS:!!006B005803500000----03E9--------002105140000005D",
+            "N0CALL>APRS:$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A",
             "N0CALL>APRS:!3907.62n/09447.19w#PHG5132",
             "no header here"
         );
@@ -238,8 +238,8 @@ public class ListenTests
         Assert.Contains("status    \"^B7\"", blocks[1], StringComparison.Ordinal);
         Assert.Contains("locator   IO91SX", blocks[1], StringComparison.Ordinal);
         Assert.Contains("beam      110°, 490 W ERP", blocks[1], StringComparison.Ordinal);
-        Assert.Contains("weather   not decoded yet", blocks[2], StringComparison.Ordinal);
-        Assert.Contains("data      !!006B", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("unknown   not decoded yet", blocks[2], StringComparison.Ordinal);
+        Assert.Contains("data      $GPRMC,123519", blocks[2], StringComparison.Ordinal);
         Assert.Contains(
             "station   25 W, antenna 20 ft, 3 dBi toward 090°, range 7.9 mi",
             blocks[3],

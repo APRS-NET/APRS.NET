@@ -29,7 +29,10 @@ public enum PacketType
     /// <summary>A status report: <c>&gt;</c>.</summary>
     Status,
 
-    /// <summary>A positionless weather report (<c>_</c>), or raw Ultimeter weather data (<c>!!</c>).</summary>
+    /// <summary>
+    /// A positionless weather report (<c>_</c>), or raw weather station data: Ultimeter 2000 (<c>!!</c>,
+    /// <c>$ULTW</c>) or Peet Bros U-II (<c>#</c> or <c>*</c> followed by hex digits).
+    /// </summary>
     Weather,
 
     /// <summary>A telemetry report: <c>T#</c>.</summary>
@@ -37,4 +40,10 @@ public enum PacketType
 
     /// <summary>Third-party traffic: <c>}</c>.</summary>
     ThirdParty,
+
+    /// <summary>Station capabilities: <c>&lt;</c>, for example an IGate's <c>&lt;IGATE,MSG_CNT=0,LOC_CNT=1</c>.</summary>
+    Capabilities,
+
+    /// <summary>User-defined data: <c>{</c>, a user ID and a packet type chosen by the sending program.</summary>
+    UserDefined,
 }

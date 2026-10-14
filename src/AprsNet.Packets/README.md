@@ -35,8 +35,11 @@ queries) or `TelemetryDefinition` (`PARM.`, `UNIT.`, `EQNS.`, `BITS.`). Objects 
 speed and course, message, altitude, device and status text). Telemetry reports are decoded as `TelemetryReport`
 (sequence, raw analog values, digital bits and comment). Weather is decoded as `WeatherData`: on positions, objects
 and items with the weather station symbol (`PositionedPayload.Weather`), and in positionless reports
-(`WeatherReport`). Other packet types (raw weather station data, third-party…) come back with
-`Outcome == ParseOutcome.Unsupported` until their decoders land.
+(`WeatherReport`); raw weather station data is recognised as `RawWeatherReport` (the station format and its data,
+which APRS101 does not lay out). Station capabilities such as an IGate's `<IGATE,MSG_CNT=0,LOC_CNT=1` are decoded as
+`CapabilitiesReport`, and user-defined packets (`{`) as `UserDefinedPayload` (user ID, packet type and the data as
+sent). Other packet types (queries, raw NMEA, third-party…) come back with `Outcome == ParseOutcome.Unsupported`
+until their decoders land.
 
 ```csharp
 if (packet.Payload is PositionedPayload report) // a position report, object, item or Mic-E report

@@ -27,6 +27,9 @@ public class VectorParsingTests
         ["status"] = PacketType.Status,
         ["telemetry"] = PacketType.Telemetry,
         ["thirdParty"] = PacketType.ThirdParty,
+        ["capabilities"] = PacketType.Capabilities,
+        ["userDefined"] = PacketType.UserDefined,
+        ["rawWeather"] = PacketType.Weather,
         ["unknown"] = PacketType.Unknown,
         ["invalid"] = PacketType.Unknown,
     };

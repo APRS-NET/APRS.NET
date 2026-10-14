@@ -32,6 +32,7 @@ public static class ParseIssueCodeExtensions
                 "The telemetry report's sequence, analog values or digital bits cannot be read.",
             ParseIssueCode.UnpaddedAddressee =>
                 "The message addressee is not padded to 9 characters; it is still read.",
+            ParseIssueCode.InvalidUserDefined => "The user-defined packet has no user ID and packet type after '{'.",
             _ => code.ToString(),
         };
 }
