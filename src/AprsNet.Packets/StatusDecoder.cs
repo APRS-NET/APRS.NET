@@ -84,16 +84,7 @@ internal static class StatusDecoder
         return null;
     }
 
-    private static bool IsLocator(ReadOnlySpan<byte> locator) =>
-        Field(locator[0])
-        && Field(locator[1])
-        && char.IsAsciiDigit((char)locator[2])
-        && char.IsAsciiDigit((char)locator[3])
-        && (locator.Length == 4 || (Subsquare(locator[4]) && Subsquare(locator[5])));
-
-    private static bool Field(byte b) => (b | 0x20) is >= (byte)'a' and <= (byte)'r';
-
-    private static bool Subsquare(byte b) => (b | 0x20) is >= (byte)'a' and <= (byte)'x';
+    private static bool IsLocator(ReadOnlySpan<byte> locator) => MaidenheadLocator.IsValid(locator, locator.Length);
 
     /// <summary>Beam heading / 10: <c>0</c>–<c>9</c> for 0–90°, <c>A</c>–<c>Z</c> for 100–350°.</summary>
     private static bool TryHeading(byte code, out int degrees)

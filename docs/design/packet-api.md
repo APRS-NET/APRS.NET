@@ -330,6 +330,36 @@ IGates add (`PKT_CNT`, `RF_CNT`…). A list of tokens cannot be malformed, so it
 marks an experimental packet. The data belongs to the sending program and is not interpreted. A packet shorter than
 its user ID and packet type is malformed (`InvalidUserDefined`).
 
+## Maidenhead locators and geodesy
+
+`MaidenheadLocator` converts between Maidenhead (IARU) locators and positions, following the IARU Region 1 VHF
+Handbook 10.03 (February 2026), section 20.2, "Definition of the IARU locator". It reads 4, 6, 8 and 10 characters
+(field, square, subsquare, extended square, extended subsquare), ignoring case and surrounding whitespace, and gives
+the squaroid's centre (the IARU reference location) and its south-west and north-east corners. `FromPosition` goes
+the other way at a chosen length.
+
+Decisions:
+
+- **Home.** Geodesy lives in `AprsNet.Packets`, not a separate package: `AprsPosition` is defined here, the rest of
+  AprsMap's gap G08 (distance and bearing, destination point, the ambiguity box of an `AprsPosition`, unit
+  conversions, the PHG range formula) builds on it, and the decoders already read locators in status and Mic-E
+  reports. A separate `AprsNet.Geo` would either depend on `AprsNet.Packets` or be depended on by it, so it could not
+  hold all of G08. The package stays I/O-free and BCL-only.
+- **Edges follow the handbook's test cases** (section 20.2.7): longitude 180° is the same meridian as 180° W and falls
+  in field `A` (`AJ00AA` on the equator), latitude 90° falls in the last row, and at the poles, where longitude is
+  undefined, the longitude characters are the lowest (`AA00AA`, `AR09AX`). The handbook prints the ten-character South
+  Pole locator as `A00AA00AA`, one character short; `AA00AA00AA` is what its rules give.
+- **Exact cells.** Positions are converted to the finest squaroids (1/2880° of longitude, 1/5760° of latitude) as
+  integers once, and shorter locators are taken from those, so a locator is always a prefix of the longer ones and a
+  value within floating-point error of an edge lands on the edge (2° W, 50° N is `IO90`).
+- **Written form.** The handbook writes locators in upper case and recommends accepting any case. `Value` uses the
+  common written form with lower-case subsquare letters (`FN31pr`, `JN18du55ix`), which AprsMap shows to users.
+- **User input.** `TryParse` never throws and reports why text is not a locator: empty, a character out of range for
+  its position (with its index in the text as given and the pair it belongs to), or the wrong length. Characters are
+  checked before the length, so a typo is reported where it is. `Parse` throws `FormatException` with the same message.
+- **Decoders.** The status and Mic-E decoders check locators with the same rules; their `MaidenheadLocator` string
+  properties can be passed to `MaidenheadLocator.Parse`.
+
 ## Building packets
 
 `AprsPacket.Create(source, destination, path, payload)` is the reverse of `Parse`: it writes the header and encodes
