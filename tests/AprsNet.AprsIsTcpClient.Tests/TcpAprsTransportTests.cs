@@ -106,16 +106,41 @@ public class TcpAprsTransportTests
     [Fact]
     public async Task ConnectToAClosedPortFails()
     {
-        // Hold the port bound but not listening for the whole test: connections to it are refused, and no parallel
-        // test can claim it (freeing the port first raced with other tests and occasionally connected).
-        using var closed = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        closed.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-        var port = ((IPEndPoint)closed.LocalEndPoint!).Port;
+        // A freed port is closed until something else binds it, and a parallel test occasionally does. A bound but
+        // idle socket is no substitute: macOS drops connections to it instead of refusing them. So when the connection
+        // is not refused (the port was taken), try a fresh port. Short timeouts keep that retry quick.
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            int port;
+            using (var probe = new TcpListener(IPAddress.Loopback, 0))
+            {
+                probe.Start();
+                port = ((IPEndPoint)probe.LocalEndpoint).Port;
+            }
 
-        var options = new AprsIsClientOptions { Endpoint = new AprsIsEndpoint("127.0.0.1", port), Callsign = "NZ0P" };
-        await using var client = new AprsIsClient(options);
+            var options = new AprsIsClientOptions
+            {
+                Endpoint = new AprsIsEndpoint("127.0.0.1", port),
+                Callsign = "NZ0P",
+                ConnectTimeout = TimeSpan.FromSeconds(2),
+                LoginTimeout = TimeSpan.FromSeconds(1),
+            };
+            await using var client = new AprsIsClient(options);
+            try
+            {
+                await client.ConnectAsync(TestContext.Current.CancellationToken);
+            }
+            catch (SocketException)
+            {
+                return; // refused, as expected
+            }
+            catch (Exception ex) when (ex is TimeoutException or LoginException)
+            {
+                // Something else was listening on the port by then; try another.
+            }
+        }
 
-        await Assert.ThrowsAsync<SocketException>(() => client.ConnectAsync(TestContext.Current.CancellationToken));
+        Assert.Fail("Five freed ports in a row were taken before the connection; the test cannot run here.");
     }
 
     private static Task Send(NetworkStream stream, string text)
