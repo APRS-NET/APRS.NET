@@ -25,11 +25,11 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 | 6 | London | `r/51.51/-0.13/40` | `G`/`M`/`2E0` calls (digit-first prefixes), longitudes either side of Greenwich || Captured 2026-10-13 (`london-r40km`) |
 | | **Japan** | | | |
 | 7 | Tokyo / Kanto | `r/35.68/139.77/40` | `JA`/`JH`/`JR`/`7Kx` calls, Kenwood and Yaesu Mic-E, D-STAR DPRS gateways (the capture's text was all ASCII) | Captured 2026-10-12 (`tokyo-r40km`) |
-| 8 | Osaka / Kansai | `r/34.69/135.50/40` | A second Japanese region, so findings are not Tokyo-specific | |
+| 8 | Osaka / Kansai | `r/34.69/135.50/40` | A second Japanese region, so findings are not Tokyo-specific || Captured 2026-10-14 (`osaka-r40km`) |
 | | **Southern hemisphere and elsewhere** | | | |
 | 9 | Sydney | `r/-33.87/151.21/50` | South and east quadrant, `VK` calls | Captured 2026-10-12 (`sydney-r50km`) |
-| 10 | Melbourne | `r/-37.81/144.96/50` | Active VK3 WIDE network | |
-| 11 | Auckland | `r/-36.85/174.76/50` | Longitudes near +180, `ZL` calls | |
+| 10 | Melbourne | `r/-37.81/144.96/50` | Active VK3 WIDE network || Captured 2026-10-14 (`melbourne-r50km`) |
+| 11 | Auckland | `r/-36.85/174.76/50` | Longitudes near +180, `ZL` calls || Captured 2026-10-14 (`auckland-r50km`) |
 | 12 | Johannesburg / Gauteng | `r/-26.20/28.05/60` | `ZS` calls, an active regional network, a different device mix || Captured 2026-10-13 (`johannesburg-r60km`) |
 | 13 | São Paulo | `r/-23.55/-46.63/60` | South and west quadrant, `PY` calls, Portuguese text || Captured 2026-10-13 (`saopaulo-r60km`) |
 | | **North America** | | | |
@@ -39,7 +39,8 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 | 17 | Dallas–Fort Worth | `r/32.78/-96.80/50` | Weather-heavy (CWOP), Skywarn objects and bulletins || Captured 2026-10-13 (`dfw-r50km`) |
 | 18 | Orlando / Central Florida | `r/28.54/-81.38/50` | Weather stations, hurricane-season objects, mobiles || Captured 2026-10-13 (`orlando-r50km`) |
 
-Also captured: Overland Park, KS (`r/38.98/-94.67/20`) and San Francisco (`r/37.77/-122.42/30`).
+Also captured: Overland Park, KS (`r/38.98/-94.67/20`), San Francisco (`r/37.77/-122.42/30`) and Kuala Lumpur
+(`r/3.14/101.69/50`, picked for the active Malaysian network seen in the message capture).
 
 If only a few: Rhine-Ruhr, Tokyo, London, Sydney and Denver cover the most callsign formats, quadrants and encodings.
 

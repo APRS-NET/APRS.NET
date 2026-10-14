@@ -34,9 +34,14 @@ capture). [CAPTURE-PLAN.md](CAPTURE-PLAN.md) lists the areas still to capture.
 | `aprs-is/2026-10-13-type-user.log` | APRS-IS, read-only login, filter `t/u` (user-defined worldwide), 2 h from 11:18 UTC | 703 |
 | `aprs-is/2026-10-13-type-weather-positionless.log` | APRS-IS, read-only login, filter `t/w` (weather worldwide), 1 h from 11:18 UTC, keeping only positionless (`_`) and raw station (`!!`, `$ULTW`, `#`, `*`) lines (34,260 position weather lines dropped) | 754 |
 | `aprs-is/2026-10-13-type-nws.log` | APRS-IS, read-only login, filter `t/n` (NWS bulletins worldwide), 5 h 45 min from 11:21 UTC. A `t/q` (query) capture over the same hours received nothing | 500 |
+| `aprs-is/2026-10-14-osaka-r40km.log` | APRS-IS, read-only login, filter `r/34.69/135.50/40` (40 km around Osaka), 2 h from 01:19 UTC (Wednesday morning local time). 8 lines carrying leaked KISS frames were dropped | 593 |
+| `aprs-is/2026-10-14-melbourne-r50km.log` | APRS-IS, read-only login, filter `r/-37.81/144.96/50` (50 km around Melbourne), 2 h from 01:19 UTC (Wednesday midday local time) | 722 |
+| `aprs-is/2026-10-14-auckland-r50km.log` | APRS-IS, read-only login, filter `r/-36.85/174.76/50` (50 km around Auckland), 2 h from 01:19 UTC (Wednesday afternoon local time) | 470 |
+| `aprs-is/2026-10-14-kualalumpur-r50km.log` | APRS-IS, read-only login, filter `r/3.14/101.69/50` (50 km around Kuala Lumpur), 2 h from 01:19 UTC (Wednesday morning local time) | 2,200 |
 
-The four 2-hour captures ran in parallel through a mobile router whose connection drops every 15–17 minutes, so each
-has six gaps of about 95 seconds where the client detected the dead connection and reconnected.
+The four 2026-10-12 2-hour captures ran in parallel through a mobile router whose connection drops every 15–17
+minutes, so each has six gaps of about 95 seconds where the client detected the dead connection and reconnected. The
+four 2026-10-14 captures ran over a fixed home connection and have no reconnects.
 
 Format: one packet per line, `<UTC receive timestamp> <raw APRS-IS line>`, Latin-1 so every byte round-trips (Mic-E
 data is not valid UTF-8). The timestamp is the moment `aprscli` read the line.
@@ -73,6 +78,14 @@ packets as Python dictionaries), NWS bulletins (both `NWS-` and `NWS_` addressee
 (`_MMDDHHMM`, an upper-case `C018S000G000T068…` variant, a `_DDHHMMz` variant, and raw Ultimeter `!!` and `$ULTW`
 data). Prague has a Mic-E tracker whose destination reaches APRS-IS with 7 characters after a bad digipeater.
 
+The 2026-10-14 captures fill in Asia and the Pacific. Osaka adds a second Japanese region with D-STAR gateways,
+airport weather stations and a Dire Wolf station whose leaked KISS frames were dropped. Melbourne adds the VK3 network,
+LoRa trackers and IGates, and a BBS object listing Winlink and FBB services by SSID. Auckland adds `ZL` calls at
+longitudes near +175°, and repeater objects linked to IRLP and AllStarLink nodes. Kuala Lumpur is the
+busiest: `9M`/`9W` digit-first calls, a dense LoRa APRS network (about a third of its lines), many telemetry
+definitions, a weather service (`WXMY-n`) with `BLNnWXMY` bulletins, and message bots answering
+`Unknown command`.
+
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
 software tag. Beacons repeat, so there are far fewer distinct packets than lines; dedupe when building test cases.
@@ -90,7 +103,7 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
   APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
 - **E-mail addresses** are masked (`x` for letters, `0` for digits; in the 2026-10-13 user-defined capture this also
   changed a few bytes of opaque base-91 `{{B` data that looked like an address), and personal names in comments (one in San Francisco,
-  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, and about 60 across the 2026-10-13 captures,
+  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and four in the 2026-10-14 captures,
   with a street address, a phone number used as an SMS address and a few IP addresses) were replaced with same-length `Xxxx` words.
 - **Leaked KISS frames** (a gateway passing binary AX.25 frames into the information field, often re-encoded as UTF-8)
   hold callsigns as shifted bytes the text rules cannot see, so the tool refuses lines with a KISS frame delimiter;
