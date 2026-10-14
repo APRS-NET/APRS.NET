@@ -11,12 +11,21 @@ public readonly record struct PathEntry(Callsign Station, bool HasBeenRepeated, 
     /// is classified as the parser would; an APRS-IS server name after a q-construct is classified when the packet is
     /// built.
     /// </summary>
-    /// <exception cref="ArgumentException">The entry is not a usable callsign or alias.</exception>
+    /// <exception cref="AprsValidationException">
+    /// The entry is not a usable callsign or alias: <see cref="AprsValidationErrorCode.PathEntryInvalidLength"/> or
+    /// <see cref="AprsValidationErrorCode.PathEntryInvalidCharacter"/>.
+    /// </exception>
     public static PathEntry Parse(string entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
         var repeated = entry.EndsWith('*');
-        var station = Callsign.Parse(repeated ? entry[..^1] : entry);
+        var name = repeated ? entry[..^1] : entry;
+        if (Callsign.Check(name, nameof(entry), pathEntry: true) is { } error)
+        {
+            throw error;
+        }
+
+        var station = Callsign.Parse(name);
         return new PathEntry(station, repeated, AprsPacket.Classify(station.Value, serverFollows: false));
     }
 

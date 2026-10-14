@@ -109,3 +109,4 @@ override AprsNet.AprsIsTcpClient.AprsIsServerPreset.ToString() -> string!
 static AprsNet.AprsIsTcpClient.AprsIsServerPreset.All.get -> System.Collections.Generic.IReadOnlyList<AprsNet.AprsIsTcpClient.AprsIsServerPreset!>!
 static AprsNet.AprsIsTcpClient.AprsIsServerPreset.TryFind(AprsNet.AprsIsTcpClient.AprsIsEndpoint? endpoint, out AprsNet.AprsIsTcpClient.AprsIsServerPreset? preset) -> bool
 static AprsNet.AprsIsTcpClient.AprsIsServerPreset.TryFind(string? keyOrServer, out AprsNet.AprsIsTcpClient.AprsIsServerPreset? preset) -> bool
+static AprsNet.AprsIsTcpClient.AprsIsEndpoint.Parse(string! text) -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!

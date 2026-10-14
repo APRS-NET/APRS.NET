@@ -19,24 +19,57 @@ public sealed record Callsign
     /// check <see cref="IsAx25"/> for packets that go on the air.
     /// </summary>
     /// <exception cref="ArgumentException"><paramref name="value"/> is not a usable header entry.</exception>
+    /// <exception cref="AprsValidationException">
+    /// <paramref name="value"/> is not a usable header entry: <see cref="AprsValidationErrorCode.CallsignInvalidLength"/>
+    /// or <see cref="AprsValidationErrorCode.CallsignInvalidCharacter"/>.
+    /// </exception>
     public static Callsign Parse(string value) =>
-        TryParse(value, out var callsign)
-            ? callsign
-            : throw new ArgumentException(
-                "A callsign must be 1 to 9 printable ASCII characters without spaces, '>', ':', ',' or '*'.",
-                nameof(value)
-            );
+        Check(value, nameof(value), pathEntry: false) is { } error ? throw error : new Callsign(value);
 
     /// <summary>Creates a callsign as <see cref="Parse"/> does, or returns <see langword="false"/>.</summary>
     public static bool TryParse([NotNullWhen(true)] string? value, [NotNullWhen(true)] out Callsign? callsign)
     {
-        callsign =
-            value is { Length: >= 1 and <= 9 }
-            && value.All(c => c is >= '!' and <= '~' and not ('>' or ':' or ',' or '*'))
-                ? new Callsign(value)
-                : null;
+        callsign = Check(value, nameof(value), pathEntry: false) is null ? new Callsign(value!) : null;
         return callsign is not null;
     }
+
+    /// <summary>
+    /// Why <paramref name="value"/> is not a usable header entry (1 to 9 printable ASCII characters without spaces,
+    /// <c>&gt;</c>, <c>:</c>, <c>,</c> or <c>*</c>), or <see langword="null"/> when it is.
+    /// </summary>
+    internal static AprsValidationException? Check(string? value, string paramName, bool pathEntry)
+    {
+        const string message =
+            "A callsign must be 1 to 9 printable ASCII characters without spaces, '>', ':', ',' or '*'.";
+        if (value is not { Length: >= 1 and <= 9 })
+        {
+            return new AprsValidationException(
+                pathEntry
+                    ? AprsValidationErrorCode.PathEntryInvalidLength
+                    : AprsValidationErrorCode.CallsignInvalidLength,
+                message,
+                paramName,
+                value
+            );
+        }
+
+        var bad = value.AsSpan().IndexOfAnyExcept(_headerCharacters);
+        return bad < 0
+            ? null
+            : new AprsValidationException(
+                pathEntry
+                    ? AprsValidationErrorCode.PathEntryInvalidCharacter
+                    : AprsValidationErrorCode.CallsignInvalidCharacter,
+                message,
+                paramName,
+                value,
+                bad
+            );
+    }
+
+    private static readonly System.Buffers.SearchValues<char> _headerCharacters = System.Buffers.SearchValues.Create(
+        "!\"#$%&'()+-./0123456789;<=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
+    );
 
     /// <summary>The identifier as received, for example <c>N0CALL-9</c>.</summary>
     public string Value { get; }

@@ -59,7 +59,7 @@ public class PacketAddressTests
     [InlineData("")]
     public void AnInvalidSourceIsRefusedWhenTheAddressIsMade(string source)
     {
-        var ex = Assert.Throws<ArgumentException>(() => PacketAddress.Parse(source, "APZ123", []));
+        var ex = Assert.Throws<AprsValidationException>(() => PacketAddress.Parse(source, "APZ123", []));
 
         Assert.StartsWith($"The source '{source}'", ex.Message, StringComparison.Ordinal);
         Assert.Equal("source", ex.ParamName);
@@ -83,7 +83,7 @@ public class PacketAddressTests
     [InlineData("APZ123-DS")]
     public void AnInvalidDestinationIsRefusedWhenTheAddressIsMade(string destination)
     {
-        var ex = Assert.Throws<ArgumentException>(() => PacketAddress.Parse("N0CALL-9", destination, []));
+        var ex = Assert.Throws<AprsValidationException>(() => PacketAddress.Parse("N0CALL-9", destination, []));
 
         Assert.StartsWith($"The destination '{destination}'", ex.Message, StringComparison.Ordinal);
         Assert.Equal("destination", ex.ParamName);
@@ -96,7 +96,9 @@ public class PacketAddressTests
     [InlineData("TOOLONGALIAS")]
     public void AnInvalidPathEntryIsRefusedWhenTheAddressIsMade(string entry)
     {
-        var ex = Assert.Throws<ArgumentException>(() => PacketAddress.Parse("N0CALL-9", "APZ123", ["WIDE1-1", entry]));
+        var ex = Assert.Throws<AprsValidationException>(() =>
+            PacketAddress.Parse("N0CALL-9", "APZ123", ["WIDE1-1", entry])
+        );
 
         Assert.StartsWith($"The path entry '{entry}'", ex.Message, StringComparison.Ordinal);
         Assert.Equal("path", ex.ParamName);
@@ -105,7 +107,7 @@ public class PacketAddressTests
     [Fact]
     public void ADefaultPathEntryIsRefused()
     {
-        var ex = Assert.Throws<ArgumentException>(() => _rf with { Path = [default] });
+        var ex = Assert.Throws<AprsValidationException>(() => _rf with { Path = [default] });
 
         Assert.StartsWith("The path entry", ex.Message, StringComparison.Ordinal);
         Assert.Equal("Path", ex.ParamName);
@@ -114,7 +116,7 @@ public class PacketAddressTests
     [Fact]
     public void APathOfMoreThanTenEntriesIsRefused()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
+        var ex = Assert.Throws<AprsValidationException>(() =>
             PacketAddress.Parse("N0CALL-9", "APZ123", Enumerable.Repeat("WIDE1-1", 11))
         );
 
@@ -124,7 +126,7 @@ public class PacketAddressTests
     [Fact]
     public void WithChecksTheNewParts()
     {
-        var ex = Assert.Throws<ArgumentException>(() => _rf with { Destination = Callsign.Parse("APRS-DS") });
+        var ex = Assert.Throws<AprsValidationException>(() => _rf with { Destination = Callsign.Parse("APRS-DS") });
 
         Assert.StartsWith("The destination 'APRS-DS'", ex.Message, StringComparison.Ordinal);
     }

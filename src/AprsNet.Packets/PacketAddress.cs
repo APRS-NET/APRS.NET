@@ -34,7 +34,9 @@ public sealed record PacketAddress
     /// <param name="source">The sending station, for example <c>N0CALL-9</c>.</param>
     /// <param name="destination">The TOCALL that identifies the software, for example <c>APZ123</c>.</param>
     /// <param name="path">The default path entries, for example <c>["WIDE1-1", "WIDE2-1"]</c>, or none for APRS-IS.</param>
-    /// <exception cref="ArgumentException">A part cannot be sent; the message names which.</exception>
+    /// <exception cref="AprsValidationException">
+    /// A part cannot be sent; the message names which and <see cref="AprsValidationException.Code"/> says why.
+    /// </exception>
     public static PacketAddress Parse(string source, string destination, IEnumerable<string> path)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -140,19 +142,42 @@ public sealed record PacketAddress
     private static Callsign CheckSource(Callsign source, string paramName)
     {
         ArgumentNullException.ThrowIfNull(source, paramName);
-        var @base = source.Base;
-        var ssid = source.Ssid;
-        return
-            Callsign.TryParse(source.Value, out _)
-            && @base.Length is >= 1 and <= 6
-            && @base.All(char.IsAsciiLetterOrDigit)
-            && (
-                !source.Value.Contains('-', StringComparison.Ordinal)
-                || (ssid.Length is 1 or 2 && ssid.All(char.IsAsciiLetterOrDigit))
-            )
-            ? source
-            : throw BadSource(source.Value, paramName);
+        return SourceProblem(source.Value) is null ? source : throw BadSource(source.Value, paramName);
     }
+
+    /// <summary>
+    /// Why <paramref name="value"/> cannot send: the code and the offending character's index, or
+    /// <see langword="null"/> for a callsign of 1-6 letters or digits with an optional SSID of 1-2 letters or digits.
+    /// </summary>
+    private static (AprsValidationErrorCode Code, int? Index)? SourceProblem(string? value)
+    {
+        if (Callsign.Check(value, "", pathEntry: false) is { } header)
+        {
+            return (header.Code, header.Index);
+        }
+
+        var dash = value!.IndexOf('-', StringComparison.Ordinal);
+        var @base = dash < 0 ? value : value[..dash];
+        var bad = @base.AsSpan().IndexOfAnyExcept(_lettersAndDigits);
+        if (@base.Length is < 1 or > 6)
+        {
+            return (AprsValidationErrorCode.CallsignInvalidLength, null);
+        }
+
+        if (bad >= 0)
+        {
+            return (AprsValidationErrorCode.CallsignInvalidCharacter, bad);
+        }
+
+        var ssid = value[(dash + 1)..];
+        return dash >= 0 && (ssid.Length is < 1 or > 2 || ssid.AsSpan().IndexOfAnyExcept(_lettersAndDigits) >= 0)
+            ? (AprsValidationErrorCode.CallsignInvalidSsid, dash + 1)
+            : null;
+    }
+
+    private static readonly System.Buffers.SearchValues<char> _lettersAndDigits = System.Buffers.SearchValues.Create(
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    );
 
     /// <summary>A TOCALL: any callsign that fits an AX.25 address.</summary>
     private static Callsign CheckDestination(Callsign destination, string paramName)
@@ -169,9 +194,9 @@ public sealed record PacketAddress
         {
             return PathEntry.Parse(entry);
         }
-        catch (ArgumentException ex)
+        catch (AprsValidationException ex)
         {
-            throw BadPathEntry(entry, ex);
+            throw BadPathEntry(entry, ex.Code, ex.Index);
         }
     }
 
@@ -181,39 +206,53 @@ public sealed record PacketAddress
         PathEntry[] entries = [.. path];
         foreach (var entry in entries)
         {
-            if (entry.Station is null || !Callsign.TryParse(entry.Station.Value, out _))
+            if (Callsign.Check(entry.Station?.Value, paramName, pathEntry: true) is { } error)
             {
-                throw BadPathEntry(entry.Station?.Value, null, paramName);
+                throw BadPathEntry(entry.Station?.Value, error.Code, error.Index, paramName);
             }
         }
 
         return entries.Length <= AprsPacket.MaxPathEntries
             ? entries
-            : throw new ArgumentException(
+            : throw new AprsValidationException(
+                AprsValidationErrorCode.PathTooLong,
                 $"The path has {entries.Length} entries; a path holds at most {AprsPacket.MaxPathEntries}.",
-                paramName
+                paramName,
+                string.Join(',', entries)
             );
     }
 
-    private static ArgumentException BadSource(string? value, string paramName) =>
+    private static AprsValidationException BadSource(string? value, string paramName) =>
         new(
+            SourceProblem(value)?.Code ?? AprsValidationErrorCode.CallsignInvalidCharacter,
             $"The source '{value}' is not a callsign that can send: use 1 to 6 letters or digits, optionally followed "
                 + "by '-' and an SSID of 1 or 2 letters or digits (N0CALL-9), without the '*' repeated marker.",
-            paramName
+            paramName,
+            value,
+            SourceProblem(value)?.Index
         );
 
-    private static ArgumentException BadDestination(string? value, string paramName) =>
+    private static AprsValidationException BadDestination(string? value, string paramName) =>
         new(
+            AprsValidationErrorCode.DestinationInvalid,
             $"The destination '{value}' is not a TOCALL: use 1 to 6 upper-case letters or digits, optionally followed "
                 + "by an SSID from 0 to 15 (APZ123).",
-            paramName
+            paramName,
+            value
         );
 
-    private static ArgumentException BadPathEntry(string? value, Exception? inner, string paramName = "path") =>
+    private static AprsValidationException BadPathEntry(
+        string? value,
+        AprsValidationErrorCode code,
+        int? index,
+        string paramName = "path"
+    ) =>
         new(
+            code,
             $"The path entry '{value}' is not a usable callsign or alias: use 1 to 9 printable ASCII characters "
                 + "without spaces, '>', ':' or ',' (WIDE1-1), with a trailing '*' only once repeated.",
             paramName,
-            inner
+            value,
+            index
         );
 }

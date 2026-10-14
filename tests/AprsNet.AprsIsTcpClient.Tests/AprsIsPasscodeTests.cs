@@ -1,3 +1,5 @@
+using AprsNet.Packets;
+
 namespace AprsNet.AprsIsTcpClient.Tests;
 
 public class AprsIsPasscodeTests
@@ -38,17 +40,19 @@ public class AprsIsPasscodeTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("-9")]
-    [InlineData("N0CALLTOOLONG")]
-    [InlineData("N0 CALL")]
-    [InlineData("N0CALL ")]
-    [InlineData("N0/CALL")]
-    [InlineData("NÖCALL")]
-    public void RejectsCallsignsThatAreNotLettersAndDigits(string callsign)
+    [InlineData("", AprsValidationErrorCode.CallsignInvalidLength, null)]
+    [InlineData("-9", AprsValidationErrorCode.CallsignInvalidLength, null)]
+    [InlineData("N0CALLTOOLONG", AprsValidationErrorCode.CallsignInvalidLength, null)]
+    [InlineData("N0 CALL", AprsValidationErrorCode.CallsignInvalidCharacter, 2)]
+    [InlineData("N0CALL ", AprsValidationErrorCode.CallsignInvalidCharacter, 6)]
+    [InlineData("N0/CALL", AprsValidationErrorCode.CallsignInvalidCharacter, 2)]
+    [InlineData("NÖCALL", AprsValidationErrorCode.CallsignInvalidCharacter, 1)]
+    public void RejectsCallsignsThatAreNotLettersAndDigits(string callsign, AprsValidationErrorCode code, int? index)
     {
-        var ex = Assert.Throws<ArgumentException>(() => AprsIsPasscode.Compute(callsign));
+        var ex = Assert.Throws<AprsValidationException>(() => AprsIsPasscode.Compute(callsign));
         Assert.Equal("callsign", ex.ParamName);
+        Assert.Equal(code, ex.Code);
+        Assert.Equal(index, ex.Index);
     }
 
     [Fact]

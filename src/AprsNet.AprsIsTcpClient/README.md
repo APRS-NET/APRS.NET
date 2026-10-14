@@ -18,6 +18,24 @@ if (AprsIsServerPreset.TryFind("euro.aprs2.net:14580", out var region))
     Console.WriteLine(region.Name); // Europe and Africa
 ```
 
+## Errors in the user's language
+
+Settings a person types (callsign, software name and version, filter, server address, passcode callsign) are refused
+with `AprsValidationException`, an `ArgumentException` whose `Code` is a stable `AprsValidationErrorCode` to translate,
+with `Index` and `Character` pointing at the offending character where there is one. `AprsIsEndpoint.Parse` does the
+same for a typed `host:port`:
+
+```csharp
+try
+{
+    var endpoint = AprsIsEndpoint.Parse(serverText);
+}
+catch (AprsValidationException ex)
+{
+    ShowError(Localize(ex.Code), ex.Index); // ServerPortInvalid at 19, for "rotate.aprs2.net:14a80"
+}
+```
+
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>
