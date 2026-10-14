@@ -67,19 +67,30 @@ public enum MicEMessage
 /// </summary>
 public sealed class MicEReport : PositionedPayload
 {
-    internal MicEReport() { }
+    /// <summary>
+    /// Creates a Mic-E report to send with <see cref="AprsPacket.Create"/>: a position, symbol, message, course and
+    /// speed, an altitude and status text. The latitude and message go in the packet's destination.
+    /// </summary>
+    public MicEReport() { }
 
-    /// <summary>The message from the destination's message bits.</summary>
-    public MicEMessage Message { get; internal init; }
+    /// <summary>
+    /// The message from the destination's message bits. The default, <see cref="MicEMessage.OffDuty"/>, is what most
+    /// trackers send; <see cref="MicEMessage.Unknown"/> cannot be sent.
+    /// </summary>
+    public MicEMessage Message { get; init; }
 
     /// <summary>
     /// Whether the data type identifier marks a current GPS fix (<c>`</c>, or 0x1C in rev. 0 radios). Kenwood
-    /// TM-D700 radios send <c>'</c> for current data, so <c>']</c> also counts as current (APRS 1.2).
+    /// TM-D700 radios send <c>'</c> for current data, so <c>']</c> also counts as current (APRS 1.2). Set it for a
+    /// position from a live GPS fix.
     /// </summary>
-    public bool IsCurrentFix { get; internal init; }
+    public bool IsCurrentFix { get; init; }
 
-    /// <summary>Whether the type byte says the radio can receive messages (<c>&gt;</c>, <c>]</c> or <c>`</c>).</summary>
-    public bool IsMessagingCapable { get; internal init; }
+    /// <summary>
+    /// Whether the type byte says the radio can receive messages (<c>&gt;</c>, <c>]</c> or <c>`</c>). A new report is
+    /// sent with <c>`</c> when set and a space when not, without a device code.
+    /// </summary>
+    public bool IsMessagingCapable { get; init; }
 
     /// <summary>
     /// The radio or tracker, from the type byte and the trailing manufacturer code (APRS 1.2), such as <c>TH-D74</c>

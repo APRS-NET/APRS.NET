@@ -35,9 +35,10 @@ public abstract class PositionedPayload : AprsPayload
     /// <summary>
     /// The data extension as sent (uncompressed), or the compressed position's <c>csT</c> bytes. The format has several
     /// spellings of one value (unknown course and speed as dots or spaces, ignored <c>csT</c> bytes), so a parsed
-    /// payload is rebuilt with the bytes it arrived with. Callers cannot set it.
+    /// payload is rebuilt with the bytes it arrived with. For Mic-E it is the type, longitude, speed and course bytes.
+    /// Callers cannot set it.
     /// </summary>
-    internal ReadOnlyMemory<byte> ExtensionBytes { get; }
+    internal ReadOnlyMemory<byte> ExtensionBytes { get; init; }
 
     /// <summary>The position. With a <c>!DAO!</c> token the extra precision is already applied.</summary>
     public AprsPosition Position { get; init; }

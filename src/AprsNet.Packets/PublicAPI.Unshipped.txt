@@ -519,3 +519,7 @@ override AprsNet.Packets.PacketAddress.ToString() -> string!
 static AprsNet.Packets.PacketAddress.operator !=(AprsNet.Packets.PacketAddress? left, AprsNet.Packets.PacketAddress? right) -> bool
 static AprsNet.Packets.PacketAddress.operator ==(AprsNet.Packets.PacketAddress? left, AprsNet.Packets.PacketAddress? right) -> bool
 static AprsNet.Packets.PacketAddress.Parse(string! source, string! destination, System.Collections.Generic.IEnumerable<string!>! path) -> AprsNet.Packets.PacketAddress!
+AprsNet.Packets.MicEReport.IsCurrentFix.init -> void
+AprsNet.Packets.MicEReport.IsMessagingCapable.init -> void
+AprsNet.Packets.MicEReport.Message.init -> void
+AprsNet.Packets.MicEReport.MicEReport() -> void

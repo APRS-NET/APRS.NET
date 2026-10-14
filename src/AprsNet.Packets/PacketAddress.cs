@@ -82,12 +82,12 @@ public sealed record PacketAddress
     /// <summary>Builds a packet from this address and <paramref name="payload"/>, with the default path.</summary>
     /// <param name="payload">The payload to encode; see <see cref="AprsPacket.Create"/> for the types supported.</param>
     /// <exception cref="ArgumentException">The payload cannot be encoded, or would not decode back the same.</exception>
-    /// <exception cref="NotSupportedException">
-    /// The payload type cannot be encoded yet. That includes <see cref="MicEReport"/>: a Mic-E packet carries its
-    /// latitude in the destination field in place of the TOCALL, so once Mic-E encoding is supported this method will
-    /// write that destination instead of <see cref="Destination"/>.
-    /// </exception>
-    public AprsPacket Create(AprsPayload payload) => Build(payload, _path);
+    /// <remarks>
+    /// A <see cref="MicEReport"/> carries its latitude and message in the destination field, so its packet is sent with
+    /// that in place of <see cref="Destination"/>, keeping only the TOCALL's SSID (a Mic-E digipeater path code).
+    /// </remarks>
+    /// <exception cref="NotSupportedException">The payload type cannot be encoded yet.</exception>
+    public AprsPacket Create(AprsPayload payload) => AprsPacket.Create(_source, _destination, _path, payload);
 
     /// <summary>
     /// Builds a packet from this address and <paramref name="payload"/>, sent with <paramref name="path"/> instead of
@@ -98,11 +98,10 @@ public sealed record PacketAddress
     /// <exception cref="ArgumentException">
     /// A path entry cannot be sent, or the payload cannot be encoded or would not decode back the same.
     /// </exception>
-    /// <exception cref="NotSupportedException">
-    /// The payload type cannot be encoded yet, including <see cref="MicEReport"/>; see <see cref="Create(AprsPayload)"/>.
-    /// </exception>
+    /// <remarks>A <see cref="MicEReport"/> replaces the TOCALL; see <see cref="Create(AprsPayload)"/>.</remarks>
+    /// <exception cref="NotSupportedException">The payload type cannot be encoded yet.</exception>
     public AprsPacket Create(AprsPayload payload, IEnumerable<PathEntry> path) =>
-        Build(payload, CheckPath(path, nameof(path)));
+        AprsPacket.Create(_source, _destination, CheckPath(path, nameof(path)), payload);
 
     /// <summary>Whether both addresses have the same source, destination and path entries.</summary>
     public bool Equals(PacketAddress? other) =>
@@ -135,17 +134,6 @@ public sealed record PacketAddress
         }
 
         return header.ToString();
-    }
-
-    private AprsPacket Build(AprsPayload payload, IEnumerable<PathEntry> path)
-    {
-        ArgumentNullException.ThrowIfNull(payload);
-        return payload is MicEReport
-            ? throw new NotSupportedException(
-                "Encoding Mic-E reports is not supported yet. A Mic-E packet carries its latitude in the destination "
-                    + "field, so it will replace the address's TOCALL once it is."
-            )
-            : AprsPacket.Create(_source, _destination, path, payload);
     }
 
     /// <summary>A callsign of 1-6 letters or digits with an optional SSID of 1-2 letters or digits.</summary>

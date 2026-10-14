@@ -118,9 +118,15 @@ public sealed partial class AprsPacket
     /// if the payload would not survive that (text that a receiver would read as a timestamp, say).
     /// </summary>
     /// <param name="source">The sending station.</param>
-    /// <param name="destination">The destination field: usually a software TOCALL such as <c>APRS</c> or <c>APZ123</c>.</param>
+    /// <param name="destination">
+    /// The destination field: usually a software TOCALL such as <c>APRS</c> or <c>APZ123</c>. A
+    /// <see cref="MicEReport"/> carries its latitude and message here instead, so for one the destination is replaced
+    /// and only its SSID is kept, which Mic-E reads as a digipeater path code (APRS101 ch. 10).
+    /// </param>
     /// <param name="path">Digipeater aliases such as <c>WIDE1-1</c>, or none for APRS-IS.</param>
-    /// <param name="payload">The payload to encode. Status reports and messages are supported so far.</param>
+    /// <param name="payload">
+    /// The payload to encode. Status reports, messages, position reports and Mic-E reports are supported so far.
+    /// </param>
     /// <exception cref="ArgumentException">A value cannot be encoded, or would not decode back to the same payload.</exception>
     /// <exception cref="NotSupportedException">The payload type cannot be encoded yet.</exception>
     public static AprsPacket Create(
@@ -134,6 +140,11 @@ public sealed partial class AprsPacket
         ArgumentNullException.ThrowIfNull(destination);
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(payload);
+
+        if (payload is MicEReport micE)
+        {
+            destination = MicEEncoder.Destination(micE, destination);
+        }
 
         var header = new StringBuilder(source.Value).Append('>').Append(destination.Value);
         var entries = 0;
