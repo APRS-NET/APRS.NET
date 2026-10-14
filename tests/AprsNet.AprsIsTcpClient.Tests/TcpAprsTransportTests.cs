@@ -108,7 +108,8 @@ public class TcpAprsTransportTests
     {
         // A freed port is closed until something else binds it, and a parallel test occasionally does. A bound but
         // idle socket is no substitute: macOS drops connections to it instead of refusing them. So when the connection
-        // is not refused (the port was taken), try a fresh port. Short timeouts keep that retry quick.
+        // is accepted (the port was taken), try a fresh port. The connect timeout stays at its default: Windows takes
+        // about two seconds to report a refused loopback connection.
         for (var attempt = 0; attempt < 5; attempt++)
         {
             int port;
@@ -122,7 +123,6 @@ public class TcpAprsTransportTests
             {
                 Endpoint = new AprsIsEndpoint("127.0.0.1", port),
                 Callsign = "NZ0P",
-                ConnectTimeout = TimeSpan.FromSeconds(2),
                 LoginTimeout = TimeSpan.FromSeconds(1),
             };
             await using var client = new AprsIsClient(options);
@@ -134,9 +134,9 @@ public class TcpAprsTransportTests
             {
                 return; // refused, as expected
             }
-            catch (Exception ex) when (ex is TimeoutException or LoginException)
+            catch (LoginException)
             {
-                // Something else was listening on the port by then; try another.
+                // Something else accepted the connection, so the port was taken by then; try another.
             }
         }
 
