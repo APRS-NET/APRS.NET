@@ -140,6 +140,8 @@ internal sealed partial class Anonymizer(Mapping map)
         "RFONLY",
         "RELAY",
         "WIDE",
+        "EL", // EchoLink and SvxLink nodes named by node number (EL-318140); EL-<call> tags are split off first
+        "ER",
         "LOCAL", // a generic path alias in the Czech network (APNU19,LOCAL,qAR), and a bulletin group (BLN1LOCAL)
         "TRACE",
         "IGATECALL",
@@ -167,6 +169,31 @@ internal sealed partial class Anonymizer(Mapping map)
         "ECHO", // a generic APRS101 alias
         "IGATE", // generic words that some stations use as path elements; as X-names they would rewrite comments
         "DIRECT",
+        "GATE", // dictionary words that stations in the worldwide status capture use as names
+        "BEACON",
+        "CEDAR",
+        "FLINT",
+        "HEAT",
+        "JAVA",
+        "MARBLE",
+        "ONION",
+        "PATH",
+        "SALT",
+        "SUMMIT",
+        "UNION",
+        "VIC",
+        "LILYGO", // a LoRa board maker that one tracker uses as its name
+        "MESHCORE", // a mesh radio protocol, used as a station name
+        "MAGNET",
+        "LETO",
+        "REPEATER",
+        "TETRA",
+        "ALDER",
+        "BORING",
+        "GRAND",
+        "LIST",
+        "SADDLE",
+        "MOSCOW", // a Moscow weather station (MOSCOW-13); as an X-name it would rewrite the city and T2MOSCOW
         "SOUTH",
         "SUNSET",
         "CHURCH",
@@ -246,6 +273,14 @@ internal sealed partial class Anonymizer(Mapping map)
                     LearnCall(m.Value);
                 }
             }
+
+            foreach (Match m in SpacedCallsign().Matches(text))
+            {
+                if (Unspaced(m.Value) is { } call && !_keep.Contains(call) && !NotACallsign().IsMatch(call))
+                {
+                    LearnCall(call);
+                }
+            }
         }
     }
 
@@ -269,13 +304,20 @@ internal sealed partial class Anonymizer(Mapping map)
         {
             yield return body[keep..];
         }
-        else if (
-            body[10..].StartsWith(":BITS.", StringComparison.Ordinal) && body.IndexOf(',', 10) is var comma and > 0
-        )
+        else if (BitsProject(body[10..]) is var project and >= 0)
         {
-            yield return body[(comma + 1)..];
+            yield return body[(10 + project + 1)..];
         }
     }
+
+    /// <summary>
+    /// Where the free-text project title of a BITS. definition starts (minus one), or -1 for other definitions:
+    /// BITS.11111111,&lt;project&gt;, and a few stations send only a title ("BITS.&lt;call&gt;-R telemetry by &lt;call&gt;").
+    /// </summary>
+    private static int BitsProject(string definition) =>
+        !definition.StartsWith(":BITS.", StringComparison.Ordinal) ? -1
+        : definition.IndexOf(',') is >= 0 and var comma ? comma
+        : ":BITS.".Length - 1;
 
     public string Rewrite(string packet)
     {
@@ -310,6 +352,7 @@ internal sealed partial class Anonymizer(Mapping map)
             var packet = SplitCapture(line).Packet;
             var (header, _) = SplitPacket(packet);
             var tocallEnd = header is null ? 0 : IndexOfTocallEnd(header);
+            var encoded = EncodedToken().Matches(packet);
             foreach (var original in originals)
             {
                 foreach (Match m in LeakPattern(original).Matches(packet))
@@ -321,7 +364,21 @@ internal sealed partial class Anonymizer(Mapping map)
                         continue;
                     }
 
+                    // So is base-91 telemetry or !DAO! that happens to spell a callsign (|'R7X|), kept byte for byte.
+                    if (encoded.Any(e => m.Index >= e.Index && m.Index + m.Length <= e.Index + e.Length))
+                    {
+                        continue;
+                    }
+
                     leaks.Add($"{original}: {packet}");
+                }
+            }
+
+            foreach (Match m in SpacedCallsign().Matches(packet))
+            {
+                if (Unspaced(m.Value) is { } call && map.Calls.ContainsKey(call))
+                {
+                    leaks.Add($"{m.Value}: {packet}");
                 }
             }
         }
@@ -396,7 +453,7 @@ internal sealed partial class Anonymizer(Mapping map)
             // PARM./UNIT./EQNS./BITS. text is channel names and units ("Rx1h" looks like a callsign), so only the
             // addressee is anonymized, and the BITS. project name, which is free text that can name the station.
             var definition = body[10..];
-            var project = definition.StartsWith(":BITS.", StringComparison.Ordinal) ? definition.IndexOf(',') : -1;
+            var project = BitsProject(definition);
             return ":"
                 + ReplaceText(body[1..10])
                 + (project < 0 ? definition : definition[..(project + 1)] + ReplaceText(definition[(project + 1)..]));
@@ -432,7 +489,7 @@ internal sealed partial class Anonymizer(Mapping map)
             text = Word(original).Replace(text, m => MatchCase(m.Value, replacement));
         }
 
-        return CallsignInText()
+        text = CallsignInText()
             .Replace(
                 text,
                 m =>
@@ -440,6 +497,22 @@ internal sealed partial class Anonymizer(Mapping map)
                         ? MatchCase(m.Value, mapped)
                         : m.Value
             );
+
+        // A callsign spelled out with spaces ("S P 4 X Y Z") keeps its spacing.
+        return SpacedCallsign()
+            .Replace(
+                text,
+                m =>
+                    Unspaced(m.Value) is { } call && map.Calls.TryGetValue(call, out var mapped)
+                        ? string.Join(' ', mapped.ToCharArray())
+                        : m.Value
+            );
+    }
+
+    private static string? Unspaced(string spaced)
+    {
+        var call = spaced.Replace(" ", "", StringComparison.Ordinal);
+        return CallsignExact().IsMatch(call) ? call : null;
     }
 
     private string MapToken(string token)
@@ -626,12 +699,17 @@ internal sealed partial class Anonymizer(Mapping map)
     )]
     private static partial Regex CallsignInText();
 
-    [GeneratedRegex(@"^E[LR]-(?=(?:[A-Z]{1,2}|[0-9][A-Z]|[A-Z][0-9])[0-9][A-Z]{1,4}(?:-|$))", RegexOptions.IgnoreCase)]
+    // Single upper-case letters and digits separated by single spaces, as some comments spell out their callsign.
+    [GeneratedRegex(@"(?<![A-Za-z0-9] ?)(?:[A-Z0-9] ){2,5}[A-Z0-9](?! ?[A-Za-z0-9])")]
+    private static partial Regex SpacedCallsign();
+
+    // SvxLink and EchoLink tags (EL-, ER-, and RRF- on the French network) before a station; EL-318140 is a node number.
+    [GeneratedRegex(@"^(?:E[LR]|RRF)-(?=[A-Z0-9]*[A-Z])", RegexOptions.IgnoreCase)]
     private static partial Regex EchoLinkTag();
 
     [GeneratedRegex(
-        @"^(?:WIDE[1-7](?:-[1-7])?|TRACE[1-7]?(?:-[1-7])?|TEMP[1-7]-[1-7]|qA[A-Za-z]|T2[A-Z0-9]+|[A-Z]{2,5}[1-7]-[1-7]|AMBCWOP-\d+|WLNK-\d+|CWOP-\d+|CORE-\d+)$",
-        RegexOptions.IgnoreCase // some stations send lower-case aliases (wide2-1)
+        @"^(?:WIDE[1-7](?:-[0-9]{1,2})?|TRACE[1-7]?(?:-[1-7])?|TEMP[1-7]-[1-7]|qA[A-Za-z]|T2[A-Z0-9]+|[A-Z]{2,5}[1-7]-[1-7]|AMBCWOP-\d+|WLNK-\d+|CWOP-\d+|CORE-\d+)$",
+        RegexOptions.IgnoreCase // some stations send lower-case aliases (wide2-1) or out-of-range ones (WIDE1-10)
     )]
     private static partial Regex Generic();
 
@@ -649,9 +727,10 @@ internal sealed partial class Anonymizer(Mapping map)
 
     // !DAO! precision (datum + two bytes) and |base-91 comment telemetry|: encoded data, never text.
     // Also the fixed-width fields a comment can be glued to without a space ("/A=000040W6XYZ-10", "PHG4540K2XYZ",
-    // weather "b10175VK2XYZ"), so a callsign right after them is still seen as a separate word.
+    // weather "b10175VK2XYZ", a status timestamp ">140548zN8XYZ-10"), so a callsign right after them is still seen as
+    // a separate word.
     [GeneratedRegex(
-        @"![\x21-\x7b]{3}!|\|(?:[\x21-\x7b]{2}){2,7}\||/A=-?[0-9]{5,6}|PHG[0-9][0-9:;<=>?@A-Z][0-9]{2}|RNG[0-9]{4}|DFS[0-9]{4}|(?<=[0-9.])(?:b[0-9]{5}|h[0-9]{2}|[Ll][0-9]{3})"
+        @"![\x21-\x7b]{3}!|\|(?:[\x21-\x7b]{2}){2,7}\||/A=-?[0-9]{5,6}|PHG[0-9][0-9:;<=>?@A-Z][0-9]{2}|RNG[0-9]{4}|DFS[0-9]{4}|(?<=^>)[0-9]{6}[zh/]|(?<=[0-9.])(?:b[0-9]{5}|h[0-9]{2}|[Ll][0-9]{3})"
     )]
     private static partial Regex EncodedToken();
 
