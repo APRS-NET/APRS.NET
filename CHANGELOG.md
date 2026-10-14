@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.11](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.10...v0.1.0-alpha.11) (2026-10-14)
+
+
+### Features
+
+* **packets:** decode station capabilities, user-defined data and raw weather ([cf7b210](https://github.com/APRS-NET/APRS.NET/commit/cf7b210dedaf84f203e8be25b3d38fb87e56b6ce))
+
 ## [0.1.0-alpha.10](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.9...v0.1.0-alpha.10) (2026-10-14)
 
 
