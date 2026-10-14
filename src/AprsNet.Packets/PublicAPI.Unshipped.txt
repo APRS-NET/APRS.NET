@@ -523,3 +523,9 @@ AprsNet.Packets.MicEReport.IsCurrentFix.init -> void
 AprsNet.Packets.MicEReport.IsMessagingCapable.init -> void
 AprsNet.Packets.MicEReport.Message.init -> void
 AprsNet.Packets.MicEReport.MicEReport() -> void
+AprsNet.Packets.ItemReport.IsLive.init -> void
+AprsNet.Packets.ItemReport.ItemReport() -> void
+AprsNet.Packets.ItemReport.Name.init -> void
+AprsNet.Packets.ObjectReport.IsLive.init -> void
+AprsNet.Packets.ObjectReport.Name.init -> void
+AprsNet.Packets.ObjectReport.ObjectReport() -> void
