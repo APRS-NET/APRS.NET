@@ -77,6 +77,21 @@ internal static class PrettyFormatter
                 }
 
                 break;
+            case CapabilitiesReport capabilities:
+                fields.Add(("abilities", style.Bold(Safe(PacketFormatter.Capabilities(capabilities)))));
+                break;
+            case UserDefinedPayload user:
+                fields.Add(("user data", PacketFormatter.UserDefined(user)));
+                if (user.Data.Length > 0)
+                {
+                    fields.Add(("data", style.Green($"\"{Safe(user.Data)}\"")));
+                }
+
+                break;
+            case RawWeatherReport raw:
+                fields.Add(("raw wx", PacketFormatter.RawWeather(raw.Format)));
+                fields.Add(("data", Safe(raw.Data)));
+                break;
             default:
                 fields.Add(
                     (

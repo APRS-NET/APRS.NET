@@ -45,6 +45,42 @@ public sealed class ParseTests : IDisposable
     }
 
     [Fact]
+    public async Task PrintsCapabilitiesUserDefinedDataAndRawWeather()
+    {
+        var result = await RunAsync(
+            new CliHarness(),
+            "--format",
+            "decoded",
+            "N0CALL>APRS:<IGATE,MSG_CNT=0,LOC_CNT=1",
+            "N0CALL>APRS:{Q1qwerty",
+            "N0CALL>APRS:{{zasdfg",
+            "N0CALL>APRS:!!006B005803500000----03E9--------002105140000005D"
+        );
+
+        Assert.Equal(
+            [
+                "N0CALL>APRS  capabilities  IGATE, MSG_CNT=0, LOC_CNT=1",
+                "N0CALL>APRS  user-defined  user Q, type 1  \"qwerty\"",
+                "N0CALL>APRS  user-defined  experimental, type z  \"asdfg\"",
+                "N0CALL>APRS  raw weather  Ultimeter 2000 (data logging)  006B005803500000----03E9--------002105140000005D",
+            ],
+            OutputLines(result)
+        );
+    }
+
+    [Fact]
+    public async Task WritesCapabilitiesAsJsonInOrder()
+    {
+        var result = await RunAsync(new CliHarness(), "--format", "json", "N0CALL>APRS:<IGATE,MSG_CNT=3");
+
+        using var json = JsonDocument.Parse(OutputLines(result)[0]);
+        var capabilities = json.RootElement.GetProperty("capabilities");
+        Assert.Equal("IGATE", capabilities[0].GetProperty("token").GetString());
+        Assert.False(capabilities[0].TryGetProperty("value", out _));
+        Assert.Equal("3", capabilities[1].GetProperty("value").GetString());
+    }
+
+    [Fact]
     public async Task ParsesArgumentsAsUtf8Text()
     {
         var result = await RunAsync(new CliHarness(), "--format", "decoded", "N0CALL>APRS:>状态 21°C");

@@ -75,6 +75,20 @@ internal static class PacketFormatter
                 }
 
                 break;
+            case CapabilitiesReport capabilities:
+                line.Append("capabilities  ").Append(Capabilities(capabilities));
+                break;
+            case UserDefinedPayload user:
+                line.Append("user-defined  ").Append(UserDefined(user));
+                if (user.Data.Length > 0)
+                {
+                    line.Append("  \"").Append(user.Data).Append('"');
+                }
+
+                break;
+            case RawWeatherReport raw:
+                line.Append("raw weather  ").Append(RawWeather(raw.Format)).Append("  ").Append(raw.Data);
+                break;
             default:
                 line.Append(Name(packet.Type))
                     .Append(packet.Outcome == ParseOutcome.Malformed ? " (malformed)" : " (not decoded yet)");
@@ -168,6 +182,37 @@ internal static class PacketFormatter
                     Timestamp(json, weather.Timestamp, received);
                     WeatherReadings(json, weather.Weather);
                     json.WriteString("comment", weather.Comment);
+                    json.WriteEndObject();
+                    break;
+                case CapabilitiesReport capabilities:
+                    json.WriteStartArray("capabilities");
+                    foreach (var (token, value) in capabilities.Capabilities)
+                    {
+                        json.WriteStartObject();
+                        json.WriteString("token", token);
+                        if (value is not null)
+                        {
+                            json.WriteString("value", value);
+                        }
+
+                        json.WriteEndObject();
+                    }
+
+                    json.WriteEndArray();
+                    break;
+                case UserDefinedPayload user:
+                    json.WriteStartObject("userDefined");
+                    json.WriteString("userId", user.UserId.ToString());
+                    json.WriteString("packetType", user.UserPacketType.ToString());
+                    json.WriteBoolean("experimental", user.IsExperimental);
+                    json.WriteString("data", user.Data);
+                    json.WriteEndObject();
+                    break;
+                case RawWeatherReport raw:
+                    json.WriteStartObject("rawWeather");
+                    json.WriteString("format", Name(raw.Format));
+                    json.WriteString("station", RawWeather(raw.Format));
+                    json.WriteString("data", raw.Data);
                     json.WriteEndObject();
                     break;
             }
@@ -815,6 +860,24 @@ internal static class PacketFormatter
 
     private static string Direction(int? degrees) =>
         degrees is { } d ? d.ToString("000", CultureInfo.InvariantCulture) + "°" : "omni";
+
+    /// <summary>The capabilities as sent: <c>IGATE, MSG_CNT=0, LOC_CNT=1</c>.</summary>
+    internal static string Capabilities(CapabilitiesReport report) =>
+        string.Join(", ", report.Capabilities.Select(c => c.Value is null ? c.Key : $"{c.Key}={c.Value}"));
+
+    /// <summary><c>user Q, type 1</c>, or <c>experimental, type z</c> for <c>{{</c>.</summary>
+    internal static string UserDefined(UserDefinedPayload user) =>
+        user.IsExperimental
+            ? $"experimental, type {user.UserPacketType}"
+            : $"user {user.UserId}, type {user.UserPacketType}";
+
+    internal static string RawWeather(RawWeatherFormat format) =>
+        format switch
+        {
+            RawWeatherFormat.UltimeterDataLogging => "Ultimeter 2000 (data logging)",
+            RawWeatherFormat.UltimeterPacket => "Ultimeter 2000 (packet mode)",
+            _ => "Peet Bros U-II",
+        };
 
     private static string Name<T>(T value)
         where T : struct, Enum => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
