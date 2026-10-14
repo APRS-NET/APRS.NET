@@ -28,6 +28,12 @@ internal sealed class CliHarness
     /// <summary>Pretend stdout is a terminal, for <c>--color auto</c>.</summary>
     public bool OutIsTerminal { get; set; }
 
+    /// <summary>Standard input for <c>parse</c> and <c>replay -</c>. Null leaves it empty.</summary>
+    public string? Input { get; set; }
+
+    /// <summary>Pretend stdin is a terminal, so <c>parse</c> without packets refuses to wait on it.</summary>
+    public bool InIsTerminal { get; set; }
+
     /// <summary>
     /// Transports for the second and later connections, in order. Once used up, further connections are refused.
     /// </summary>
@@ -63,6 +69,8 @@ internal sealed class CliHarness
             Out = output,
             OutIsTerminal = OutIsTerminal,
             Error = error,
+            In = Input is null ? TextReader.Null : new StringReader(Input),
+            InIsTerminal = InIsTerminal,
             LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddProvider(Logs)),
             TimeProvider = Time,
             ReconnectDelay = TimeSpan.FromMilliseconds(10),

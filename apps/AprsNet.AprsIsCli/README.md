@@ -65,6 +65,49 @@ Set `OTEL_EXPORTER_OTLP_ENDPOINT` (plus the usual `OTEL_EXPORTER_OTLP_*` variabl
 - **Logs:** connection, login and filter events. Add `--log-packets` to log every received packet as `Packet from {Source}: {Packet}` (control characters escaped). Packet logs go to OpenTelemetry only, so they never appear on the terminal.
 - **Metrics:** the client's `AprsNet.*` meters (lines received, connection attempts, login results, drops), flushed when the command exits.
 
+## parse
+
+Decode packets and print their fields. Give packets as arguments (quote each one), or read lines from `--file` or
+standard input. Capture files from `listen --capture` work as input, and their timestamps become the received time.
+
+```sh
+aprscli parse 'N0CALL-9>APRS,WIDE1-1:=4903.50N/07201.75W>088/036 Hi'
+aprscli parse --format decoded -i captures/noam.log
+aprscli listen -n 20 | aprscli parse --format json | jq .type
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-i`, `--file` | Read packets from a file, one per line. Not combinable with packet arguments. |
+| `--format` | `pretty` (default), `decoded` or `json`, as for `listen`. |
+| `--color` | `auto` (default), `always` or `never`, for `--format pretty`. |
+
+Arguments are text, so they are parsed as their UTF-8 bytes; files and standard input are read byte for byte
+(Latin-1), exactly like `listen`. Server `#` comments and blank lines in files are skipped. With no packets and no
+`--file`, `parse` reads standard input until it closes, and refuses to wait if standard input is a terminal.
+
+## replay
+
+Run captured lines through the parser and report what it made of them: packets by outcome and type, every parse
+issue with its description, and the data types that are not decoded yet, each with example lines and where they came
+from (`file:line`). Use it on new captures to find parser gaps.
+
+```sh
+aprscli replay captures/*.log
+aprscli replay tests/corpus/aprs-is/*.log --examples 1
+aprscli replay captures/noam.log --format json | jq '.undecoded[] | {identifier, packets}'
+cat captures/noam.log | aprscli replay -
+```
+
+| Option | Meaning |
+| --- | --- |
+| `<files>` | One or more capture files or files of raw lines; `-` reads standard input. All files are checked before any is read. |
+| `-e`, `--examples` | Example lines per issue and per undecoded data type. Default 3; `0` hides them. |
+| `--format` | `text` (default) or `json`. |
+
+Server `#` comments and blank lines are counted and skipped. Undecoded packets are grouped by their data type
+identifier (the first byte of the information field, in hex when unprintable).
+
 ## passcode
 
 Print the APRS-IS passcode for a callsign: the number a verified login sends instead of `-1`. The SSID and letter

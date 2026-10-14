@@ -10,6 +10,12 @@ internal sealed class CliEnvironment
 
     public required TextWriter Error { get; init; }
 
+    /// <summary>Standard input, read as Latin-1 so packet bytes arrive unchanged (<c>parse</c> and <c>replay -</c>).</summary>
+    public TextReader In { get; init; } = TextReader.Null;
+
+    /// <summary>Whether <see cref="In"/> is an interactive terminal, so <c>parse</c> does not wait on it for nothing.</summary>
+    public bool InIsTerminal { get; init; }
+
     public required ILoggerFactory LoggerFactory { get; init; }
 
     public Func<string, string?> GetEnvironmentVariable { get; init; } = Environment.GetEnvironmentVariable;

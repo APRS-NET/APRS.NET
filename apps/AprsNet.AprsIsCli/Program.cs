@@ -18,6 +18,8 @@ var environment = new CliEnvironment
     Out = stdout,
     OutIsTerminal = !Console.IsOutputRedirected,
     Error = Console.Error,
+    In = new StreamReader(Console.OpenStandardInput(), Encoding.Latin1),
+    InIsTerminal = !Console.IsInputRedirected,
     LoggerFactory = loggerFactory,
 };
 
