@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.12](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.11...v0.1.0-alpha.12) (2026-10-14)
+
+
+### Features
+
+* **aprs-is:** list the aprs2.net rotates as server presets ([eeae65b](https://github.com/APRS-NET/APRS.NET/commit/eeae65b8205ecd9b83256f61f311ea3f2851cced))
+* **aprs-is:** list the aprs2.net rotates as server presets ([74d78a6](https://github.com/APRS-NET/APRS.NET/commit/74d78a618972507db04124333c0bfbf34cc2592e))
+* **packets:** build position reports with AprsPacket.Create ([5c068c3](https://github.com/APRS-NET/APRS.NET/commit/5c068c3d45c92ec7c3e54ba79e3365a1b65bc297))
+* **packets:** build status reports and messages with AprsPacket.Create ([513ce70](https://github.com/APRS-NET/APRS.NET/commit/513ce70544435334ee31aa938d468e4cfcf50371))
+* **packets:** convert Maidenhead locators to and from positions ([363ebf1](https://github.com/APRS-NET/APRS.NET/commit/363ebf1daa76aa5c88721878fbab6232bcc74ade))
+* **packets:** convert Maidenhead locators to and from positions ([b455771](https://github.com/APRS-NET/APRS.NET/commit/b45577161b1d25723b5c7be6b10e33acf10b7d44))
+
 ## [0.1.0-alpha.11](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.10...v0.1.0-alpha.11) (2026-10-14)
 
 
