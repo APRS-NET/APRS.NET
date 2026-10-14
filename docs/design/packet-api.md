@@ -438,13 +438,52 @@ rf.Create(beacon, [PathEntry.Parse("WIDE2-2")]); // this packet only; rf.Path is
   digits, without the `*` repeated marker; APRS-IS accepts SSIDs such as `-L` that AX.25 cannot carry, so check
   `Source.IsAx25` before sending on RF. The destination must fit AX.25, as every TOCALL does. Path entries follow
   `PathEntry.Parse`, at most 10. Each error names the part (`The source 'N0CALL*' …`) and the parameter.
-- **Mic-E.** A Mic-E packet carries its latitude in the destination in place of the TOCALL. Mic-E encoding is not
-  supported yet, so `Create` throws `NotSupportedException` for a `MicEReport`; once it is, `Create` will write the
-  Mic-E destination instead of `Destination`.
+- **Mic-E.** A Mic-E packet carries its latitude in the destination in place of the TOCALL, so for a `MicEReport`
+  `Create` sends that instead of `Destination`, keeping only the TOCALL's SSID (see Mic-E reports below).
+
+### Mic-E reports
+
+`AprsPacket.Create` writes a `MicEReport`'s latitude, message and the north, longitude-offset and west flags into the
+destination, replacing the one given; that destination's SSID is kept, because Mic-E reads it as a digipeater path
+code (APRS101 ch. 10). `PacketAddress.Create` does the same with its TOCALL.
+
+```csharp
+var report = new MicEReport
+{
+    Position = new AprsPosition(33.42733, -112.129),
+    Symbol = new AprsSymbol('/', 'j'),
+    Message = MicEMessage.Returning,
+    IsCurrentFix = true,
+    IsMessagingCapable = true,
+    Course = 251,
+    SpeedKnots = 20,
+    Comment = "Mobile",
+};
+AprsPacket.Create(source, Callsign.Parse("APZ123"), [], report).ToString();
+// N0CALL-9>S32UVT:`(_fn"Oj/`Mobile
+```
+
+- **Settable:** `Message` (any but `Unknown`, which mixes standard and custom bits), `IsCurrentFix` (`` ` `` or `'`
+  data type), `IsMessagingCapable`, and the shared position fields: position and ambiguity, symbol, course, speed,
+  altitude and comment. Mic-E has no timestamp, compression, PHG, range or DFS; setting one throws.
+- **Course and speed are always sent.** The format has no "unknown" form, so a missing course or speed is sent as 0
+  (APRS reads course 0 as unknown). Speeds are whole knots up to 670: higher values decode by the APRS 1.2 rule for
+  fast objects such as the ISS.
+- **Printable where the format allows.** Speeds under 40 knots use the `l`–`o` form of the speed byte, and a speed
+  ending in 0 uses the +400° form of the next byte, so neither is a control character. The course's tens and units byte has no such form, so
+  courses ending in 00–03 or 99 still send a control character or DEL.
+- **Type byte.** A new report sends `` ` `` when it can receive messages and a space (original Mic-E) when not, then
+  the altitude as base-91 metres (`xxx}`), then the comment, with no device code. After `` ` `` a receiver still reads
+  the last two bytes as a device code, so a comment ending in one (` X` is the AP510) is refused.
+- **Longitude.** 0–9° and 100–109° each have two spellings; new reports use APRS101's (the offset flag with
+  bytes 118–127 and 108–117), and parsed reports keep theirs.
+- **Parsed reports rebuild byte for byte.** The type, longitude, speed and course bytes and the text after the symbol
+  are kept as they arrived. All 3,138 Mic-E packets in the corpus rebuild exactly, destination included, apart from
+  those whose message mixes standard and custom bits. A second corpus test rebuilds each from its values alone.
 
 Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries) and position reports (uncompressed and compressed). Objects and items come next;
-other payload types throw `NotSupportedException`.
+bulletins and directed queries), position reports (uncompressed and compressed) and Mic-E reports. Objects and items
+come next; other payload types throw `NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)
 

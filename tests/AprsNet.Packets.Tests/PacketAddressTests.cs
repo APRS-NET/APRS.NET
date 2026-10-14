@@ -177,12 +177,14 @@ public class PacketAddressTests
     }
 
     [Fact]
-    public void AMicEPayloadIsRefused()
+    public void AMicEReportReplacesTheTocallWithItsLatitude()
     {
         var micE = AprsPacket.Parse("N0CALL>S32U6T:`(_fn\"Oj/]Mobile").Payload;
         Assert.IsType<MicEReport>(micE);
 
-        var ex = Assert.Throws<NotSupportedException>(() => _rf.Create(micE));
-        Assert.Contains("Mic-E", ex.Message, StringComparison.Ordinal);
+        var packet = _rf.Create(micE);
+
+        Assert.Equal("N0CALL-9>S32U6T,WIDE1-1,WIDE2-1:`(_fn\"Oj/]Mobile", packet.ToString());
+        Assert.Equal("APZ123", _rf.Destination.Value);
     }
 }

@@ -96,6 +96,7 @@ internal static class MicEDecoder
             SpeedKnots = speed,
             AltitudeFeet = altitudeFeet ?? PositionDecoder.CommentAltitude(status.Span),
             Datum = datum,
+            ExtensionBytes = information[..7],
             CommentBytes = text,
             Comment = comment,
             Message = fields.Message,

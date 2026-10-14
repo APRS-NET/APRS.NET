@@ -10,6 +10,7 @@ public class CorpusRoundTripTests
     public void PacketsRebuildByteForByte()
     {
         var checkedPackets = 0;
+        var micE = 0;
         var failures = new List<string>();
         foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
         {
@@ -18,17 +19,19 @@ public class CorpusRoundTripTests
                 var packet = AprsPacket.Parse(bytes);
                 if (
                     packet
-                    is not {
-                        HasHeader: true,
-                        Outcome: ParseOutcome.Parsed,
-                        Payload: StatusReport or MessagePayload or PositionReport
-                    }
+                        is not {
+                            HasHeader: true,
+                            Outcome: ParseOutcome.Parsed,
+                            Payload: StatusReport or MessagePayload or PositionReport or MicEReport
+                        }
+                    || packet.Payload is MicEReport { Message: MicEMessage.Unknown }
                 )
                 {
-                    continue;
+                    continue; // not encodable, or a Mic-E message that mixes standard and custom bits
                 }
 
                 checkedPackets++;
+                micE += packet.Payload is MicEReport ? 1 : 0;
                 try
                 {
                     var rebuilt = AprsPacket.Create(packet.Source, packet.Destination, packet.Path, packet.Payload);
@@ -46,7 +49,13 @@ public class CorpusRoundTripTests
                         || packet.Payload
                             is StatusReport { MaidenheadLocator: not null }
                                 or PositionReport { Position.Ambiguity: > 0 };
-                    if (!normalised && !rebuilt.Information.Span.SequenceEqual(packet.Information.Span))
+                    if (
+                        !normalised
+                        && (
+                            !rebuilt.Information.Span.SequenceEqual(packet.Information.Span)
+                            || rebuilt.Destination != packet.Destination
+                        )
+                    )
                     {
                         failures.Add($"{file}:{lineNumber} differs:\n  was {packet}\n  now {rebuilt}");
                     }
@@ -59,6 +68,7 @@ public class CorpusRoundTripTests
         }
 
         Assert.True(checkedPackets > 30_000, $"only {checkedPackets} packets");
+        Assert.True(micE > 2_500, $"only {micE} Mic-E packets");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
@@ -118,6 +128,60 @@ public class CorpusRoundTripTests
         }
 
         Assert.True(checkedPackets > 20_000, $"only {checkedPackets} packets");
+        Assert.True(
+            failures.Count == 0,
+            $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
+        );
+    }
+
+    [Fact]
+    public void MicEReportsRebuiltFromTheirValuesDecodeTheSame()
+    {
+        // As above for Mic-E: the destination, longitude, speed and course bytes are written from the values, and
+        // Create checks that a receiver decodes the same values.
+        var checkedPackets = 0;
+        var failures = new List<string>();
+        foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in CorpusParsingTests.Packets(file))
+            {
+                var packet = AprsPacket.Parse(bytes);
+                if (
+                    packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: MicEReport parsed }
+                    || parsed.Message == MicEMessage.Unknown
+                    || parsed.Datum is not null
+                    || parsed.SpeedKnots > 670
+                    || parsed.Comment.Any(char.IsControl)
+                )
+                {
+                    continue; // values a caller cannot set or send
+                }
+
+                checkedPackets++;
+                var copy = new MicEReport
+                {
+                    Position = parsed.Position,
+                    Symbol = parsed.Symbol,
+                    Message = parsed.Message,
+                    IsCurrentFix = parsed.IsCurrentFix,
+                    IsMessagingCapable = parsed.IsMessagingCapable,
+                    Course = parsed.Course,
+                    SpeedKnots = parsed.SpeedKnots,
+                    AltitudeFeet = parsed.AltitudeFeet,
+                    Comment = parsed.Comment,
+                };
+                try
+                {
+                    AprsPacket.Create(packet.Source, packet.Destination, packet.Path, copy);
+                }
+                catch (ArgumentException ex)
+                {
+                    failures.Add($"{file}:{lineNumber} {ex.Message} {packet}");
+                }
+            }
+        }
+
+        Assert.True(checkedPackets > 2_000, $"only {checkedPackets} packets");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
