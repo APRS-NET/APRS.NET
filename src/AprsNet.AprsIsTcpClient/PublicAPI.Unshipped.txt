@@ -99,3 +99,5 @@ static AprsNet.AprsIsTcpClient.AprsIsEndpoint.SouthAmerica.get -> AprsNet.AprsIs
 static AprsNet.AprsIsTcpClient.AprsIsEndpoint.TryParse(string? text, out AprsNet.AprsIsTcpClient.AprsIsEndpoint? endpoint) -> bool
 static AprsNet.AprsIsTcpClient.LoginResult.operator !=(AprsNet.AprsIsTcpClient.LoginResult? left, AprsNet.AprsIsTcpClient.LoginResult? right) -> bool
 static AprsNet.AprsIsTcpClient.LoginResult.operator ==(AprsNet.AprsIsTcpClient.LoginResult? left, AprsNet.AprsIsTcpClient.LoginResult? right) -> bool
+AprsNet.AprsIsTcpClient.AprsIsPasscode
+static AprsNet.AprsIsTcpClient.AprsIsPasscode.Compute(string! callsign) -> int
