@@ -106,12 +106,11 @@ public class TcpAprsTransportTests
     [Fact]
     public async Task ConnectToAClosedPortFails()
     {
-        int port;
-        using (var probe = new TcpListener(IPAddress.Loopback, 0))
-        {
-            probe.Start();
-            port = ((IPEndPoint)probe.LocalEndpoint).Port;
-        }
+        // Hold the port bound but not listening for the whole test: connections to it are refused, and no parallel
+        // test can claim it (freeing the port first raced with other tests and occasionally connected).
+        using var closed = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        closed.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+        var port = ((IPEndPoint)closed.LocalEndPoint!).Port;
 
         var options = new AprsIsClientOptions { Endpoint = new AprsIsEndpoint("127.0.0.1", port), Callsign = "NZ0P" };
         await using var client = new AprsIsClient(options);
