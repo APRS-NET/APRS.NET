@@ -106,7 +106,9 @@ public partial class CorpusFileTests
 
                 // Pseudonyms start with Q, or with 0Q for digit-first prefixes (no ITU prefix starts with 0).
                 Assert.True(
-                    call.StartsWith('Q') || call.StartsWith('q') || call.StartsWith("0Q", StringComparison.Ordinal),
+                    call.StartsWith('Q')
+                        || call.StartsWith('q')
+                        || call.StartsWith("0Q", StringComparison.OrdinalIgnoreCase),
                     $"{file}:{lineNumber} has a callsign that is not a Q pseudonym: {call}"
                 );
             }
@@ -119,9 +121,15 @@ public partial class CorpusFileTests
     {
         // Only the domain is checked: a mask can sit right after position bytes ("…53Whxxxx.xx0xxx@xxxxx.xxx"),
         // so the local part's start is ambiguous, but a real address always has a real domain.
+        // Compressed position bytes are base-91 data that can look like one ("!L7@h.Ps__&"), so they are skipped.
         foreach (var line in Lines(file))
         {
-            foreach (Match domain in EmailDomain().Matches(line))
+            var info = CaptureLine().Match(line).Groups["info"];
+            var position = CompressedPosition().Match(info.Value);
+            var text = position.Success
+                ? line[..info.Index] + new string(' ', position.Length) + line[(info.Index + position.Length)..]
+                : line;
+            foreach (Match domain in EmailDomain().Matches(text))
             {
                 Assert.True(
                     MaskedDomain().IsMatch(domain.Value),
@@ -158,6 +166,10 @@ public partial class CorpusFileTests
 
     [GeneratedRegex(@"(?<=[A-Za-z0-9._%+-])@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")]
     private static partial Regex EmailDomain();
+
+    // A compressed position report: data type, optional timestamp, table, 4+4 base-91 bytes, symbol, cs, T.
+    [GeneratedRegex(@"^[!=/@](?:[0-9]{6}[zh/])?[/\\A-Za-j][!-{]{8}.[!-{ ]{3}")]
+    private static partial Regex CompressedPosition();
 
     [GeneratedRegex(@"^@[x0-]+(?:\.[x0-]+)+$")]
     private static partial Regex MaskedDomain();

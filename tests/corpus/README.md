@@ -38,10 +38,25 @@ capture). [CAPTURE-PLAN.md](CAPTURE-PLAN.md) lists the areas still to capture.
 | `aprs-is/2026-10-14-melbourne-r50km.log` | APRS-IS, read-only login, filter `r/-37.81/144.96/50` (50 km around Melbourne), 2 h from 01:19 UTC (Wednesday midday local time) | 722 |
 | `aprs-is/2026-10-14-auckland-r50km.log` | APRS-IS, read-only login, filter `r/-36.85/174.76/50` (50 km around Auckland), 2 h from 01:19 UTC (Wednesday afternoon local time) | 470 |
 | `aprs-is/2026-10-14-kualalumpur-r50km.log` | APRS-IS, read-only login, filter `r/3.14/101.69/50` (50 km around Kuala Lumpur), 2 h from 01:19 UTC (Wednesday morning local time) | 2,200 |
+| `aprs-is/2026-10-14-seoul-r50km.log` | APRS-IS, read-only login, filter `r/37.57/126.98/50` (50 km around Seoul), 2 h from 05:34 UTC (Wednesday afternoon local time) | 194 |
+| `aprs-is/2026-10-14-taipei-r50km.log` | APRS-IS, read-only login, filter `r/25.03/121.56/50` (50 km around Taipei), 2 h from 05:34 UTC (Wednesday afternoon local time) | 1,542 |
+| `aprs-is/2026-10-14-manila-r50km.log` | APRS-IS, read-only login, filter `r/14.60/120.98/50` (50 km around Manila), 2 h from 05:34 UTC (Wednesday afternoon local time) | 718 |
+| `aprs-is/2026-10-14-perth-r50km.log` | APRS-IS, read-only login, filter `r/-31.95/115.86/50` (50 km around Perth), 2 h from 05:34 UTC (Wednesday afternoon local time) | 596 |
+| `aprs-is/2026-10-14-bangalore-r60km.log` | APRS-IS, read-only login, filter `r/12.97/77.59/60` (60 km around Bengaluru), 2 h from 07:36 UTC (Wednesday afternoon local time) | 681 |
+| `aprs-is/2026-10-14-bangkok-r50km.log` | APRS-IS, read-only login, filter `r/13.75/100.50/50` (50 km around Bangkok), 2 h from 07:36 UTC (Wednesday afternoon local time) | 3,370 |
+| `aprs-is/2026-10-14-jakarta-r60km.log` | APRS-IS, read-only login, filter `r/-6.21/106.85/60` (60 km around Jakarta), 2 h from 07:36 UTC (Wednesday afternoon local time) | 2,196 |
+| `aprs-is/2026-10-14-moscow-r50km.log` | APRS-IS, read-only login, filter `r/55.75/37.62/50` (50 km around Moscow), 2 h from 07:36 UTC (Wednesday morning local time) | 982 |
+| `aprs-is/2026-10-14-warsaw-r40km.log` | APRS-IS, read-only login, filter `r/52.23/21.01/40` (40 km around Warsaw), 2 h from 09:37 UTC (Wednesday late morning local time) | 2,634 |
+| `aprs-is/2026-10-14-milan-r50km.log` | APRS-IS, read-only login, filter `r/45.46/9.19/50` (50 km around Milan), 2 h from 09:37 UTC (Wednesday late morning local time) | 2,606 |
+| `aprs-is/2026-10-14-madrid-r50km.log` | APRS-IS, read-only login, filter `r/40.42/-3.70/50` (50 km around Madrid), 2 h from 09:37 UTC (Wednesday late morning local time) | 2,645 |
+| `aprs-is/2026-10-14-telaviv-r50km.log` | APRS-IS, read-only login, filter `r/32.08/34.78/50` (50 km around Tel Aviv), 2 h from 09:37 UTC (Wednesday midday local time) | 106 |
+| `aprs-is/2026-10-14-type-status.log` | APRS-IS, read-only login, filter `t/s` (status reports worldwide), 1 h from 05:34 UTC. Sampled to one line per sender and per distinct text (digits ignored), keeping every timestamped, Maidenhead, beam-heading and non-ASCII status and every second plain one (25,510 dropped) | 2,547 |
+| `aprs-is/2026-10-14-type-telemetry.log` | APRS-IS, read-only login, filter `t/t` (telemetry worldwide), 1 h from 07:36 UTC. Sampled to the first odd `T#` report of every sender and, for every fifth sender, its first `T#` report and first `PARM.`/`UNIT.`/`EQNS.`/`BITS.` (38,288 dropped) | 2,330 |
 
 The four 2026-10-12 2-hour captures ran in parallel through a mobile router whose connection drops every 15–17
 minutes, so each has six gaps of about 95 seconds where the client detected the dead connection and reconnected. The
-four 2026-10-14 captures ran over a fixed home connection and have no reconnects.
+2026-10-14 captures ran over a fixed home connection and have no reconnects. A 6-hour capture of
+packets digipeated by the ISS (`d/RS0ISS*`) received nothing; its digipeater was off.
 
 Format: one packet per line, `<UTC receive timestamp> <raw APRS-IS line>`, Latin-1 so every byte round-trips (Mic-E
 data is not valid UTF-8). The timestamp is the moment `aprscli` read the line.
@@ -86,6 +101,13 @@ busiest: `9M`/`9W` digit-first calls, a dense LoRa APRS network (about a third o
 definitions, a weather service (`WXMY-n`) with `BLNnWXMY` bulletins, and message bots answering
 `Unknown command`.
 
+The later 2026-10-14 captures add East and Southeast Asia (Seoul, Taipei, Manila, Bangkok, Jakarta), India, Perth,
+Moscow, Warsaw, Milan, Madrid and Tel Aviv. Bangkok has Thai UTF-8 weather summaries; Warsaw, Milan and Madrid have
+dense LoRa APRS networks and many compressed positions; Madrid has a busy message network; Moscow has DX-cluster
+objects. The worldwide status sample adds Chinese FMO network status in UTF-8, Turkish airport weather text and
+Maidenhead-locator status; the telemetry sample adds SvxLink `RXTLM-1` reports from `EL-`, `ER-` and `RRF-` nodes,
+`T#` reports with non-numeric or missing fields, and a `BITS.` line with only a title.
+
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
 software tag. Beacons repeat, so there are far fewer distinct packets than lines; dedupe when building test cases.
@@ -99,12 +121,14 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
   pseudonym can be a real station. Digit-first calls (`7K1ABC`, `2E0ABC`) start with `0Q` instead, as no prefix starts
   with 0. The mapping is consistent across files.
 - **Named stations** (digis, hospitals and other tactical names) became same-length `X…` names, keeping any SSID.
-  SvxLink's `EL-`/`ER-` tags are kept and the callsign after them is mapped.
+  SvxLink's `EL-`/`ER-`/`RRF-` tags are kept and the station after them is mapped; `EL-<node number>` is kept.
+  Callsigns spelled out with spaces (`S P 4 X Y Z`) are mapped and keep their spacing.
   APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
 - **E-mail addresses** are masked (`x` for letters, `0` for digits; in the 2026-10-13 user-defined capture this also
   changed a few bytes of opaque base-91 `{{B` data that looked like an address), and personal names in comments (one in San Francisco,
-  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and four in the 2026-10-14 captures,
-  with a street address, a phone number used as an SMS address and a few IP addresses) were replaced with same-length `Xxxx` words.
+  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and about 90 in the 2026-10-14 captures,
+  with a street address, a few phone numbers and a few IP addresses; names in Chinese status text became
+  `某` ("so-and-so"), which keeps the byte length) were replaced with same-length `Xxxx` words.
 - **Leaked KISS frames** (a gateway passing binary AX.25 frames into the information field, often re-encoded as UTF-8)
   hold callsigns as shifted bytes the text rules cannot see, so the tool refuses lines with a KISS frame delimiter;
   `--drop-binary` leaves them out.
