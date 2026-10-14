@@ -366,10 +366,27 @@ Decisions:
   with a trailing `*` for an entry that has been repeated.
 - **Timestamps.** `AprsTimestamp.DayHourMinute`, `HourMinuteSecond`, `MonthDayHourMinute` and `FromDateTimeOffset`
   create them; `ToString()` is the wire form.
+- **Positions are rounded to the format.** Uncompressed positions are sent in hundredths of a minute, speeds in
+  whole knots, PHG as its codes (power 0, 1, 4 … 81 W, height 10 × 2ⁿ ft), so `Create` checks that the position
+  lands within the format's precision and that the symbol, timestamp, extension and comment survive; the returned
+  packet shows the exact values sent. Ambiguity blanks the same digits the parser reads; give the box corner.
+- **One data extension.** Course and speed, PHG, range or DF signal strength, as APRS101 allows after an uncompressed
+  position; more than one throws. A compressed position carries course and speed, else range, else altitude in its
+  `cs` bytes, and has no PHG, DFS or ambiguity.
+- **Altitude** goes in front of the comment as `/A=` (the parser reads it from anywhere and leaves it in `Comment`),
+  unless the comment already has one or a compressed position carries it.
+- **Parsed spellings are kept.** The format spells some values several ways (unknown course and speed as `.../...`
+  or spaces, the ignored `csT` bytes of a compressed position without course or speed), so a parsed payload keeps the
+  bytes its data extension arrived with. Every position report in the corpus rebuilds byte for byte, apart from what
+  the parser normalises (lower-case hemispheres, a broken timestamp it dropped, ambiguity applied to both
+  coordinates). A second corpus test copies only the settable values into new reports, so extensions are also encoded
+  from their values.
+- **Not settable yet:** weather readings, the `!DAO!` datum, area shapes, DF bearing reports and signposts are
+  derived from the comment or not encodable on their own yet; parsed payloads carry them through unchanged.
 
-Supported so far: status reports and messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries). Positions, objects and items come next; other payload types throw
-`NotSupportedException`.
+Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
+bulletins and directed queries) and position reports (uncompressed and compressed). Objects and items come next;
+other payload types throw `NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)
 

@@ -56,7 +56,7 @@ public class AprsPacketCreateTests
     }
 
     [Fact]
-    public void PayloadTypesWithoutAnEncoderAreNotSupported()
+    public void PayloadTypesWithoutAnEncoderAreNotSupportedYet()
     {
         var packet = AprsPacket.Parse("N0CALL>APRS:<IGATE,MSG_CNT=0");
 
@@ -417,5 +417,415 @@ public class AprsPacketCreateTests
         Assert.Throws<ArgumentOutOfRangeException>(() => AprsTimestamp.HourMinuteSecond(0, 0, 60));
         Assert.Throws<ArgumentOutOfRangeException>(() => AprsTimestamp.MonthDayHourMinute(13, 1, 0, 0));
         Assert.Throws<ArgumentOutOfRangeException>(() => AprsTimestamp.MonthDayHourMinute(4, 31, 0, 0));
+    }
+
+    // Position reports
+
+    private static readonly AprsSymbol _car = new('/', '>');
+
+    // APRS101's example position: 49°03.50' N, 72°01.75' W.
+    private static readonly AprsPosition _example = new(49 + (3.5 / 60), -(72 + (1.75 / 60)));
+
+    private static PositionReport Decoded(AprsPayload payload) =>
+        Assert.IsType<PositionReport>(Create(payload).Payload);
+
+    [Fact]
+    public void EncodesTheSpecExamplePosition()
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            Course = 88,
+            SpeedKnots = 36,
+            Comment = "Test",
+        };
+
+        Assert.Equal("!4903.50N/07201.75W>088/036Test", Information(report));
+    }
+
+    [Theory]
+    [InlineData(false, null, "!")]
+    [InlineData(true, null, "=")]
+    [InlineData(false, "092345z", "/092345z")]
+    [InlineData(true, "234517h", "@234517h")]
+    public void ChoosesTheDataTypeFromMessagingAndTimestamp(bool messaging, string? timestamp, string prefix)
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            IsMessagingCapable = messaging,
+            Timestamp = timestamp switch
+            {
+                "092345z" => AprsTimestamp.DayHourMinute(9, 23, 45),
+                "234517h" => AprsTimestamp.HourMinuteSecond(23, 45, 17),
+                _ => null,
+            },
+        };
+
+        Assert.Equal(prefix + "4903.50N/07201.75W>", Information(report));
+    }
+
+    [Theory]
+    [InlineData(-33.8675, 151.2083, "3352.05S/15112.50E>")]
+    [InlineData(0, 0, "0000.00N/00000.00E>")]
+    [InlineData(10.999999, -0.0000001, "1100.00N/00000.00W>")] // rounding carries into the degrees
+    [InlineData(90, 180, "9000.00N/18000.00E>")]
+    public void WritesHemispheresAndRounds(double latitude, double longitude, string expected)
+    {
+        var report = new PositionReport { Position = new AprsPosition(latitude, longitude), Symbol = _car };
+
+        Assert.Equal("!" + expected, Information(report));
+    }
+
+    [Theory]
+    [InlineData(1, "4903.5 N/07201.7 W>")]
+    [InlineData(2, "4903.  N/07201.  W>")]
+    [InlineData(3, "490 .  N/0720 .  W>")]
+    [InlineData(4, "49  .  N/072  .  W>")]
+    public void BlanksDigitsForAmbiguity(int ambiguity, string expected)
+    {
+        // The parser keeps blanked digits as zeros, so an ambiguous position is given as its box corner.
+        var report = new PositionReport
+        {
+            Position = new AprsPosition(49 + (3.5 / 60), -(72 + (1.7 / 60)), ambiguity),
+            Symbol = _car,
+        };
+
+        Assert.Equal("!" + expected, Information(report));
+        Assert.Equal(ambiguity, Decoded(report).Position.Ambiguity);
+    }
+
+    [Fact]
+    public void WritesOverlaySymbols()
+    {
+        var report = new PositionReport { Position = _example, Symbol = new AprsSymbol('S', '#') };
+
+        Assert.Equal("!4903.50NS07201.75W#", Information(report));
+    }
+
+    [Theory]
+    [InlineData(null, 36.0, ".../036")]
+    [InlineData(88, null, "088/...")]
+    [InlineData(360, 0.4, "360/000")]
+    [InlineData(0, 999.4, "000/999")]
+    public void WritesCourseAndSpeed(int? course, double? speed, string expected)
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            Course = course,
+            SpeedKnots = speed,
+        };
+
+        Assert.Equal("!4903.50N/07201.75W>" + expected, Information(report));
+    }
+
+    [Fact]
+    public void WritesPowerHeightGain()
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = new AprsSymbol('/', '#'),
+            PowerHeightGain = new PowerHeightGain(25, 20, 3, 90),
+        };
+
+        Assert.Equal("!4903.50N/07201.75W#PHG5132", Information(report));
+        Assert.Equal(new PowerHeightGain(25, 20, 3, 90), Decoded(report).PowerHeightGain);
+    }
+
+    [Fact]
+    public void RoundsPhgToTheNearestCodes()
+    {
+        // 5 W is between the 4 W and 9 W codes; 100 ft is between 80 and 160.
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            PowerHeightGain = new PowerHeightGain(5, 100, 6, null),
+        };
+
+        Assert.Equal(new PowerHeightGain(4, 80, 6, null), Decoded(report).PowerHeightGain);
+    }
+
+    [Fact]
+    public void WritesRangeAndDfSignalStrength()
+    {
+        Assert.EndsWith(
+            "RNG0050",
+            Information(
+                new PositionReport
+                {
+                    Position = _example,
+                    Symbol = _car,
+                    RangeMiles = 50,
+                }
+            ),
+            StringComparison.Ordinal
+        );
+        Assert.EndsWith(
+            "DFS2360",
+            Information(
+                new PositionReport
+                {
+                    Position = _example,
+                    Symbol = new AprsSymbol('\\', '\\'),
+                    DirectionFindingStrength = new DirectionFindingStrength(2, 80, 6, null),
+                }
+            ),
+            StringComparison.Ordinal
+        );
+    }
+
+    [Theory]
+    [InlineData(1234.4, "/A=001234Hi")]
+    [InlineData(-12, "/A=-00012Hi")]
+    public void PutsTheAltitudeInFrontOfTheComment(double feet, string expected)
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            AltitudeFeet = feet,
+            Comment = "Hi",
+        };
+
+        Assert.EndsWith(expected, Information(report), StringComparison.Ordinal);
+        Assert.Equal(Math.Round(feet), Decoded(report).AltitudeFeet);
+    }
+
+    [Fact]
+    public void DoesNotRepeatAnAltitudeTheCommentHas()
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            AltitudeFeet = 1234,
+            Comment = "Hi /A=001234",
+        };
+
+        Assert.EndsWith(">Hi /A=001234", Information(report), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EncodesACompressedPositionWithCourseAndSpeed()
+    {
+        var report = new PositionReport
+        {
+            Position = new AprsPosition(49.5, -72.75),
+            Symbol = _car,
+            IsCompressed = true,
+            Course = 88,
+            SpeedKnots = 36.2,
+        };
+
+        var decoded = Decoded(report);
+
+        Assert.True(decoded.IsCompressed);
+        Assert.Equal(49.5, decoded.Position.Latitude, 5);
+        Assert.Equal(-72.75, decoded.Position.Longitude, 5);
+        Assert.Equal(88, decoded.Course);
+        Assert.Equal(36.2, decoded.SpeedKnots!.Value, 0);
+    }
+
+    [Fact]
+    public void EncodesCompressedRangeAndAltitude()
+    {
+        var range = Decoded(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                IsCompressed = true,
+                RangeMiles = 20,
+            }
+        );
+        var altitude = Decoded(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                IsCompressed = true,
+                AltitudeFeet = 10004,
+                Comment = "Hi",
+            }
+        );
+
+        Assert.Equal(20, range.RangeMiles!.Value, 0);
+        Assert.InRange(altitude.AltitudeFeet!.Value, 10004 * 0.998, 10004 * 1.002); // 0.2% steps
+        Assert.Equal("Hi", altitude.Comment); // carried in the compressed bytes, not the comment
+    }
+
+    [Fact]
+    public void CompressedPositionsPutAnAltitudeWithCourseInTheComment()
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = _car,
+            IsCompressed = true,
+            Course = 90,
+            SpeedKnots = 10,
+            AltitudeFeet = 500,
+        };
+
+        Assert.EndsWith("/A=000500", Information(report), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CompressedOverlayDigitsUseLowerCaseLetters()
+    {
+        var report = new PositionReport
+        {
+            Position = _example,
+            Symbol = new AprsSymbol('3', '#'),
+            IsCompressed = true,
+        };
+
+        Assert.StartsWith("!d", Information(report), StringComparison.Ordinal);
+        Assert.Equal(new AprsSymbol('3', '#'), Decoded(report).Symbol);
+    }
+
+    [Fact]
+    public void EncodesCommentTextAsUtf8()
+    {
+        Assert.Equal(
+            "21°C",
+            Decoded(
+                new PositionReport
+                {
+                    Position = _example,
+                    Symbol = _car,
+                    Comment = "21°C",
+                }
+            ).Comment
+        );
+    }
+
+    [Fact]
+    public void ParsedPositionsRebuildWithTheirOriginalSpelling()
+    {
+        // Unknown course and speed as dots, and a compressed position's ignored csT bytes, are kept as sent.
+        foreach (
+            var line in new[] { "N0CALL>APRS:!4903.50N/07201.75W_.../...g005t077", "N0CALL>APRS:=/5L!!<*e7> sTComment" }
+        )
+        {
+            var parsed = AprsPacket.Parse(line);
+
+            var rebuilt = AprsPacket.Create(parsed.Source!, parsed.Destination!, parsed.Path!, parsed.Payload!);
+
+            Assert.Equal(line, rebuilt.ToString());
+        }
+    }
+
+    [Fact]
+    public void RejectsPositionErrors()
+    {
+        Rejects(new PositionReport { Position = new AprsPosition(91, 0), Symbol = _car }, "Latitude");
+        Rejects(new PositionReport { Position = new AprsPosition(0, -181), Symbol = _car }, "Longitude");
+        Rejects(new PositionReport { Position = _example }, "needs a symbol");
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                Timestamp = AprsTimestamp.MonthDayHourMinute(1, 2, 3, 4),
+            },
+            "not MMDDHHMM"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                Course = 90,
+                RangeMiles = 5,
+            },
+            "one data extension"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                Course = 361,
+            },
+            "Course"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                SpeedKnots = 1000,
+            },
+            "Speed"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                PowerHeightGain = new PowerHeightGain(4, 20, 3, 100),
+            },
+            "Directivity"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                PowerHeightGain = new PowerHeightGain(4, 5, 3, null),
+            },
+            "height"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                IsCompressed = true,
+                PowerHeightGain = new PowerHeightGain(4, 20, 3, null),
+            },
+            "no PHG"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = new AprsPosition(49, -72, 2),
+                Symbol = _car,
+                IsCompressed = true,
+            },
+            "no ambiguity"
+        );
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = _car,
+                Comment = "a\tb",
+            },
+            "control characters"
+        );
+    }
+
+    [Fact]
+    public void RejectsACommentThatWouldBeReadAsWeather()
+    {
+        var weatherStation = new AprsSymbol('/', '_');
+
+        Rejects(
+            new PositionReport
+            {
+                Position = _example,
+                Symbol = weatherStation,
+                Comment = "t075 nice day",
+            },
+            "weather"
+        );
     }
 }

@@ -85,7 +85,7 @@ internal static class WeatherDecoder
     /// Reads the weather in the comment of a weather station position into <paramref name="target"/>: wind from its
     /// course and speed, the other fields from the comment, whose text then starts after the readings.
     /// </summary>
-    public static void Apply(PositionedPayload target)
+    public static void Apply(PositionFields target)
     {
         var weather = new WeatherData { WindDirection = target.Course, WindSpeedMph = target.SpeedKnots };
         var text = target.CommentBytes.Span;

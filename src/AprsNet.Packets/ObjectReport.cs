@@ -8,6 +8,9 @@ public sealed class ObjectReport : PositionedPayload
 {
     internal ObjectReport() { }
 
+    internal ObjectReport(PositionFields fields)
+        : base(fields) { }
+
     /// <summary>The object's name without its padding: <c>LEADER</c> from <c>LEADER   </c>.</summary>
     public string Name { get; internal init; } = "";
 

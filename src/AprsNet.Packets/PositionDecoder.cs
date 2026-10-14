@@ -15,16 +15,16 @@ internal static class PositionDecoder
     {
         var info = information.Span;
         var at = 1;
-        var report = new PositionReport { IsMessagingCapable = info[0] is (byte)'=' or (byte)'@' };
+        var fields = new PositionFields();
         var badTimestamp = false;
         if (info[0] is (byte)'/' or (byte)'@')
         {
             badTimestamp = !AprsTimestamp.TryParse(info[1..], out var parsed);
-            report.Timestamp = badTimestamp ? null : parsed;
+            fields.Timestamp = badTimestamp ? null : parsed;
             at = 8;
         }
 
-        var decoded = TryDecodePosition(information, at, offset, issues, report);
+        var decoded = TryDecodePosition(information, at, offset, issues, fields);
         if (badTimestamp)
         {
             // A broken timestamp in front of a good position (seen from some firmware) only loses the time.
@@ -32,7 +32,7 @@ internal static class PositionDecoder
             issues.Insert(0, new ParseIssue(ParseIssueCode.InvalidTimestamp, severity, offset + 1));
         }
 
-        return decoded ? report : null;
+        return decoded ? new PositionReport(fields) { IsMessagingCapable = info[0] is (byte)'=' or (byte)'@' } : null;
     }
 
     /// <summary>
@@ -44,7 +44,7 @@ internal static class PositionDecoder
         int at,
         int offset,
         List<ParseIssue> issues,
-        PositionedPayload target
+        PositionFields target
     )
     {
         var info = information.Span;
@@ -70,7 +70,7 @@ internal static class PositionDecoder
         int at,
         int offset,
         List<ParseIssue> issues,
-        PositionedPayload target
+        PositionFields target
     )
     {
         var info = information.Span;
@@ -172,6 +172,7 @@ internal static class PositionDecoder
         target.Datum = datum;
         target.CommentBytes = comment;
         target.Comment = text;
+        target.ExtensionBytes = information.Slice(at + 19, used);
         return true;
     }
 
@@ -180,7 +181,7 @@ internal static class PositionDecoder
         int at,
         int offset,
         List<ParseIssue> issues,
-        PositionedPayload target
+        PositionFields target
     )
     {
         var info = information.Span;
@@ -248,6 +249,7 @@ internal static class PositionDecoder
         target.CompressionType = type;
         target.CommentBytes = comment;
         target.Comment = Text(comment.Span);
+        target.ExtensionBytes = information.Slice(at + 10, 3);
         return true;
     }
 

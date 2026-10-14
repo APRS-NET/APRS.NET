@@ -18,8 +18,10 @@ internal static class AprsEncoder
         {
             StatusReport status => Status(status),
             MessagePayload message => Message(message),
+            PositionReport position => PositionEncoder.Encode(position),
             _ => throw new NotSupportedException(
-                $"Encoding {payload.GetType().Name} is not supported yet; status reports and messages are."
+                $"Encoding {payload.GetType().Name} is not supported yet; status reports, messages and position "
+                    + "reports are."
             ),
         };
 
@@ -32,6 +34,9 @@ internal static class AprsEncoder
         {
             (StatusReport e, StatusReport a) => StatusMismatch(e, a),
             (MessagePayload e, MessagePayload a) => MessageMismatch(e, a),
+            (PositionReport e, PositionReport a) => e.IsMessagingCapable != a.IsMessagingCapable
+                ? "the messaging flag does not survive encoding"
+                : PositionMismatch(e, a),
             _ => $"it decodes as {actual?.GetType().Name ?? "nothing"}, not {expected.GetType().Name}",
         };
 
@@ -186,6 +191,45 @@ internal static class AprsEncoder
         }
 
         return Encoding.UTF8.GetBytes(text);
+    }
+
+    /// <summary>
+    /// Compares what a receiver decodes with what was given. Numbers are rounded to the format's precision, so they
+    /// only have to land within it; text, symbol, timestamp and which fields are present must match exactly.
+    /// </summary>
+    internal static string? PositionMismatch(PositionedPayload e, PositionedPayload a)
+    {
+        // An uncompressed position is sent in hundredths of a minute, coarser with ambiguity; compressed is finer.
+        var latitudeStep = e.IsCompressed ? 1 / 380926.0 : AmbiguityStep(e.Position.Ambiguity);
+        var longitudeStep = e.IsCompressed ? 1 / 190463.0 : AmbiguityStep(e.Position.Ambiguity);
+        var datumSlack = e.Datum is null ? 0 : 0.01 / 60; // a !DAO! position is truncated, not rounded
+        return e.Symbol != a.Symbol ? "the symbol does not survive encoding"
+            : e.Timestamp != a.Timestamp ? "the timestamp does not survive encoding"
+            : e.IsCompressed != a.IsCompressed ? "the position format does not survive encoding"
+            : e.Position.Ambiguity != a.Position.Ambiguity ? "the ambiguity does not survive encoding"
+            : Math.Abs(e.Position.Latitude - a.Position.Latitude) > latitudeStep + datumSlack + 1e-9
+            || Math.Abs(e.Position.Longitude - a.Position.Longitude) > longitudeStep + datumSlack + 1e-9
+                ? "the position does not survive encoding"
+            : (e.Course is null) != (a.Course is null) || (e.SpeedKnots is null) != (a.SpeedKnots is null)
+                ? "the course and speed do not survive encoding"
+            : (e.PowerHeightGain is null) != (a.PowerHeightGain is null)
+            || (e.RangeMiles is null) != (a.RangeMiles is null)
+            || (e.DirectionFindingStrength is null) != (a.DirectionFindingStrength is null)
+                ? "the data extension does not survive encoding"
+            : (e.AltitudeFeet is null) != (a.AltitudeFeet is null) ? "the altitude does not survive encoding"
+            : (e.Weather is null) != (a.Weather is null) ? "the comment would be read as weather readings"
+            : PositionEncoder.ExpectedComment(e) != a.Comment ? "the comment does not survive encoding"
+            : null;
+
+        static double AmbiguityStep(int ambiguity) =>
+            ambiguity switch
+            {
+                0 => 0.5 / 6000, // half a hundredth of a minute
+                1 => 0.1 / 60,
+                2 => 1.0 / 60,
+                3 => 10.0 / 60,
+                _ => 1.0,
+            };
     }
 
     private static string? StatusMismatch(StatusReport e, StatusReport a) =>

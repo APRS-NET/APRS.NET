@@ -453,3 +453,16 @@ static AprsNet.Packets.AprsTimestamp.MonthDayHourMinute(int month, int day, int 
 static AprsNet.Packets.Callsign.Parse(string! value) -> AprsNet.Packets.Callsign!
 static AprsNet.Packets.Callsign.TryParse(string? value, out AprsNet.Packets.Callsign? callsign) -> bool
 static AprsNet.Packets.PathEntry.Parse(string! entry) -> AprsNet.Packets.PathEntry
+AprsNet.Packets.PositionReport.IsMessagingCapable.init -> void
+AprsNet.Packets.PositionReport.PositionReport() -> void
+AprsNet.Packets.PositionedPayload.AltitudeFeet.init -> void
+AprsNet.Packets.PositionedPayload.Comment.init -> void
+AprsNet.Packets.PositionedPayload.Course.init -> void
+AprsNet.Packets.PositionedPayload.DirectionFindingStrength.init -> void
+AprsNet.Packets.PositionedPayload.IsCompressed.init -> void
+AprsNet.Packets.PositionedPayload.Position.init -> void
+AprsNet.Packets.PositionedPayload.PowerHeightGain.init -> void
+AprsNet.Packets.PositionedPayload.RangeMiles.init -> void
+AprsNet.Packets.PositionedPayload.SpeedKnots.init -> void
+AprsNet.Packets.PositionedPayload.Symbol.init -> void
+AprsNet.Packets.PositionedPayload.Timestamp.init -> void

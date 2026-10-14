@@ -8,6 +8,9 @@ public sealed class ItemReport : PositionedPayload
 {
     internal ItemReport() { }
 
+    internal ItemReport(PositionFields fields)
+        : base(fields) { }
+
     /// <summary>The item's name, 3 to 9 characters.</summary>
     public string Name { get; internal init; } = "";
 

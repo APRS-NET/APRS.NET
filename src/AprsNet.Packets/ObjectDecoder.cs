@@ -18,15 +18,9 @@ internal static class ObjectDecoder
             return null;
         }
 
-        var report = new ObjectReport
-        {
-            Name = Encoding.Latin1.GetString(info.Slice(1, 9)).TrimEnd(' '),
-            IsLive = info[10] == '*',
-        };
         var badTimestamp = !AprsTimestamp.TryParse(info[11..], out var timestamp);
-        report.Timestamp = badTimestamp ? null : timestamp;
-
-        var decoded = PositionDecoder.TryDecodePosition(information, 18, offset, issues, report);
+        var fields = new PositionFields { Timestamp = badTimestamp ? null : timestamp };
+        var decoded = PositionDecoder.TryDecodePosition(information, 18, offset, issues, fields);
         if (badTimestamp)
         {
             // Objects must carry a timestamp, but a broken one in front of a good position only loses the time.
@@ -34,7 +28,13 @@ internal static class ObjectDecoder
             issues.Insert(0, new ParseIssue(ParseIssueCode.InvalidTimestamp, severity, offset + 11));
         }
 
-        return decoded ? report : null;
+        return decoded
+            ? new ObjectReport(fields)
+            {
+                Name = Encoding.Latin1.GetString(info.Slice(1, 9)).TrimEnd(' '),
+                IsLive = info[10] == '*',
+            }
+            : null;
     }
 
     /// <summary>
@@ -50,11 +50,13 @@ internal static class ObjectDecoder
             return null;
         }
 
-        var report = new ItemReport
-        {
-            Name = Encoding.Latin1.GetString(info.Slice(1, nameLength)),
-            IsLive = info[1 + nameLength] == '!',
-        };
-        return PositionDecoder.TryDecodePosition(information, nameLength + 2, offset, issues, report) ? report : null;
+        var fields = new PositionFields();
+        return PositionDecoder.TryDecodePosition(information, nameLength + 2, offset, issues, fields)
+            ? new ItemReport(fields)
+            {
+                Name = Encoding.Latin1.GetString(info.Slice(1, nameLength)),
+                IsLive = info[1 + nameLength] == '!',
+            }
+            : null;
     }
 }
