@@ -71,6 +71,17 @@ var beacon = new PositionReport
 // payload: !4903.50N/07201.75W>088/036On the road
 ```
 
+An app sends as one station, so `PacketAddress` holds its source, TOCALL and default path, checked once:
+
+```csharp
+var rf = PacketAddress.Parse("N0CALL-9", "APZ123", ["WIDE1-1", "WIDE2-1"]);
+var aprsIs = rf with { Path = [] };
+
+rf.Create(beacon);                                   // N0CALL-9>APZ123,WIDE1-1,WIDE2-1:!4903.50N/...
+aprsIs.Create(new StatusReport { Text = "QRV" });     // N0CALL-9>APZ123:>QRV
+rf.Create(beacon, [PathEntry.Parse("WIDE2-2")]);     // this packet only
+```
+
 `MaidenheadLocator` converts between Maidenhead locators (4, 6, 8 or 10 characters) and positions, following the
 IARU Region 1 VHF Handbook:
 
