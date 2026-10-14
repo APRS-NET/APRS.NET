@@ -185,6 +185,7 @@ internal sealed partial class Anonymizer(Mapping map)
         "MY",
         "NWS", // NWS-xxxxx bulletin addressees and the services that send them
         "WXALRT",
+        "WXMY", // a Malaysian weather service: its stations (WXMY-5) and BLNnWXMY bulletins identify no one
         "WHO", // APRS message services and bots, which identify no one
         "WHOIS",
         "JOKE",
