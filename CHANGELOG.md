@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.15](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.14...v0.1.0-alpha.15) (2026-10-14)
+
+
+### Features
+
+* give validation errors stable codes for translation ([1db4a47](https://github.com/APRS-NET/APRS.NET/commit/1db4a476dab5352739987bbff76e7b6855c54be8))
+* give validation errors stable codes for translation ([6c373e6](https://github.com/APRS-NET/APRS.NET/commit/6c373e6c5bbd78bf04746698b4cfd0ad1216513b))
+
 ## [0.1.0-alpha.14](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.13...v0.1.0-alpha.14) (2026-10-14)
 
 
