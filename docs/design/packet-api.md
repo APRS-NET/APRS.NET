@@ -330,6 +330,47 @@ IGates add (`PKT_CNT`, `RF_CNT`…). A list of tokens cannot be malformed, so it
 marks an experimental packet. The data belongs to the sending program and is not interpreted. A packet shorter than
 its user ID and packet type is malformed (`InvalidUserDefined`).
 
+## Building packets
+
+`AprsPacket.Create(source, destination, path, payload)` is the reverse of `Parse`: it writes the header and encodes
+the payload as the information field. Callers build payloads with object initializers; the properties a caller sets
+are `public init`, while the ones the parser derives (a status report's beam heading, a message's bulletin ID or query
+type) and the exact-byte views (`TextBytes`, `CommentBytes`) stay read-only.
+
+```csharp
+var packet = AprsPacket.Create(
+    Callsign.Parse("N0CALL-9"),
+    Callsign.Parse("APZ123"),
+    [PathEntry.Parse("WIDE1-1"), PathEntry.Parse("WIDE2-1")],
+    new MessagePayload { Addressee = "WU2Z", Text = "Testing", MessageId = "003" });
+packet.ToString(); // N0CALL-9>APZ123,WIDE1-1,WIDE2-1::WU2Z     :Testing{003
+```
+
+Decisions:
+
+- **One model.** The payload types are the parser's own, not separate builder types, so a parsed payload can be
+  rebuilt as it is and round-trip tests compare like with like.
+- **The result is parsed back.** `Create` returns the parser's view of the bytes it wrote, so the packet is exactly
+  what a receiver decodes. If that differs from the payload given (status text that a receiver would read as a
+  timestamp, a message whose kind contradicts its addressee), `Create` throws `ArgumentException` instead of returning
+  a packet that would be misread.
+- **Text.** Text set by a caller is written as UTF-8 (APRS 1.2). Text that came from the parser keeps its original
+  bytes, so a Latin-1 comment is not re-encoded. Control characters are rejected.
+- **Spec limits apply to new text only.** Message text from a caller follows APRS101 (at most 67 characters, no `|`,
+  `~` or `{`); parsed text is written back as received.
+- **Normalisation.** `Create` writes the canonical form: addressees padded to exactly 9 characters and Maidenhead
+  locators in upper case, as the parser already reports them. Every other status report and message in the corpus
+  rebuilds byte for byte.
+- **Headers.** `Callsign.Parse` accepts 1 to 9 printable ASCII characters without spaces or the header separators
+  (`>`, `:`, `,`, `*`); it does not require AX.25 (check `IsAx25` for RF). `PathEntry.Parse` takes the wire form,
+  with a trailing `*` for an entry that has been repeated.
+- **Timestamps.** `AprsTimestamp.DayHourMinute`, `HourMinuteSecond`, `MonthDayHourMinute` and `FromDateTimeOffset`
+  create them; `ToString()` is the wire form.
+
+Supported so far: status reports and messages (text, acknowledgements, rejections, bulletins, announcements, NWS
+bulletins and directed queries). Positions, objects and items come next; other payload types throw
+`NotSupportedException`.
+
 ## AX.25 and KISS (phase 2)
 
 A TNC in KISS mode sends AX.25 frames, not TNC2 text: callsigns are shifted 7-byte fields with the SSID and
@@ -359,8 +400,8 @@ All input is hostile. `Parse` rejects nothing for being long, but:
 
 ## Open questions
 
-- [ ] Should `Callsign` also be usable on its own (`Callsign.Parse("N0CALL-9")`) for building packets, or only come
-  from the parser until the encoder lands?
+- [x] Should `Callsign` also be usable on its own for building packets? **Decided: yes,** `Callsign.Parse` and
+  `TryParse` (see Building packets).
 - [ ] Is 512 the right decoding cap? APRS-IS servers accept 512-byte lines; AX.25 allows a 256-byte information field.
 - [ ] Should `PacketType` follow APRS101 chapter names (useful in docs) or the C# payload type names (useful in code)?
   The metrics plan asks the same question for the `type` tag.

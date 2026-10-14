@@ -204,7 +204,7 @@ public class CorpusParsingTests
     }
 
     /// <summary>The packet bytes of each line, after the "&lt;timestamp&gt; " prefix.</summary>
-    private static IEnumerable<(int LineNumber, byte[] Bytes)> Packets(string file)
+    internal static IEnumerable<(int LineNumber, byte[] Bytes)> Packets(string file)
     {
         var lines = File.ReadAllBytes(Path.Combine(_directory, file)).AsMemory();
         var lineNumber = 0;

@@ -35,19 +35,24 @@ public enum MessageKind
 /// </summary>
 public sealed class MessagePayload : AprsPayload
 {
-    internal MessagePayload() { }
+    /// <summary>
+    /// Creates a message to encode with <see cref="AprsPacket.Create"/>. Set <see cref="Addressee"/>, and
+    /// <see cref="Text"/> and an optional <see cref="MessageId"/> for a text message or bulletin, or
+    /// <see cref="Kind"/> and the <see cref="MessageId"/> being answered for an acknowledgement or rejection.
+    /// </summary>
+    public MessagePayload() { }
 
     /// <summary>The addressee without its padding, for example <c>WU2Z</c>, <c>BLN3</c> or <c>NWS-WARN</c>.</summary>
-    public string Addressee { get; internal init; } = "";
+    public string Addressee { get; init; } = "";
 
     /// <summary>What kind of message this is.</summary>
-    public MessageKind Kind { get; internal init; }
+    public MessageKind Kind { get; init; }
 
     /// <summary>
     /// The message text without the message ID: decoded as UTF-8 when the bytes are valid UTF-8 (APRS 1.2),
     /// otherwise one character per byte. Empty for acknowledgements and rejections.
     /// </summary>
-    public string Text { get; internal init; } = "";
+    public string Text { get; init; } = "";
 
     /// <summary>The text exactly as sent, without the message ID.</summary>
     public ReadOnlyMemory<byte> TextBytes { get; internal init; }
@@ -56,13 +61,13 @@ public sealed class MessagePayload : AprsPayload
     /// The message ID (<c>{003</c> gives <c>003</c>), or for an acknowledgement or rejection the ID it answers.
     /// With an APRS 1.1 reply-ack (<c>{MM}AA</c>) this is the <c>MM</c> part.
     /// </summary>
-    public string? MessageId { get; internal init; }
+    public string? MessageId { get; init; }
 
     /// <summary>
     /// The APRS 1.1 reply-ack part (<c>AA</c> in <c>{MM}AA</c>): the ID of a message this one also acknowledges.
     /// Empty when the sender only advertises reply-ack support (<c>{MM}</c>), <see langword="null"/> without it.
     /// </summary>
-    public string? ReplyAck { get; internal init; }
+    public string? ReplyAck { get; init; }
 
     /// <summary>Whether the sender supports APRS 1.1 reply-acks (its message ID ends in <c>}</c>).</summary>
     public bool IsReplyAckCapable => ReplyAck is not null;

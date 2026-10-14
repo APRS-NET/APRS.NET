@@ -434,3 +434,22 @@ AprsNet.Packets.UserDefinedPayload.DataBytes.get -> System.ReadOnlyMemory<byte>
 AprsNet.Packets.UserDefinedPayload.IsExperimental.get -> bool
 AprsNet.Packets.UserDefinedPayload.UserId.get -> char
 AprsNet.Packets.UserDefinedPayload.UserPacketType.get -> char
+AprsNet.Packets.MessagePayload.Addressee.init -> void
+AprsNet.Packets.MessagePayload.Kind.init -> void
+AprsNet.Packets.MessagePayload.MessageId.init -> void
+AprsNet.Packets.MessagePayload.MessagePayload() -> void
+AprsNet.Packets.MessagePayload.ReplyAck.init -> void
+AprsNet.Packets.MessagePayload.Text.init -> void
+AprsNet.Packets.StatusReport.MaidenheadLocator.init -> void
+AprsNet.Packets.StatusReport.StatusReport() -> void
+AprsNet.Packets.StatusReport.Symbol.init -> void
+AprsNet.Packets.StatusReport.Text.init -> void
+AprsNet.Packets.StatusReport.Timestamp.init -> void
+static AprsNet.Packets.AprsPacket.Create(AprsNet.Packets.Callsign! source, AprsNet.Packets.Callsign! destination, System.Collections.Generic.IEnumerable<AprsNet.Packets.PathEntry>! path, AprsNet.Packets.AprsPayload! payload) -> AprsNet.Packets.AprsPacket!
+static AprsNet.Packets.AprsTimestamp.DayHourMinute(int day, int hour, int minute, bool isLocal = false) -> AprsNet.Packets.AprsTimestamp
+static AprsNet.Packets.AprsTimestamp.FromDateTimeOffset(System.DateTimeOffset time, AprsNet.Packets.AprsTimestampFormat format = AprsNet.Packets.AprsTimestampFormat.DayHourMinute) -> AprsNet.Packets.AprsTimestamp
+static AprsNet.Packets.AprsTimestamp.HourMinuteSecond(int hour, int minute, int second) -> AprsNet.Packets.AprsTimestamp
+static AprsNet.Packets.AprsTimestamp.MonthDayHourMinute(int month, int day, int hour, int minute) -> AprsNet.Packets.AprsTimestamp
+static AprsNet.Packets.Callsign.Parse(string! value) -> AprsNet.Packets.Callsign!
+static AprsNet.Packets.Callsign.TryParse(string? value, out AprsNet.Packets.Callsign? callsign) -> bool
+static AprsNet.Packets.PathEntry.Parse(string! entry) -> AprsNet.Packets.PathEntry

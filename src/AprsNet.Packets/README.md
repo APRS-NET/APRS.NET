@@ -49,6 +49,18 @@ if (packet.Payload is PositionedPayload report) // a position report, object, it
 }
 ```
 
+`AprsPacket.Create` builds packets from payloads, the reverse of `Parse`. Status reports and messages are supported
+so far:
+
+```csharp
+var packet = AprsPacket.Create(
+    Callsign.Parse("N0CALL-9"),
+    Callsign.Parse("APZ123"),
+    [PathEntry.Parse("WIDE1-1")],
+    new MessagePayload { Addressee = "WU2Z", Text = "Testing", MessageId = "003" });
+// N0CALL-9>APZ123,WIDE1-1::WU2Z     :Testing{003
+```
+
 See [the design notes](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/packet-api.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

@@ -84,7 +84,7 @@ public sealed partial class AprsPacket
     /// malformed data: check <see cref="Outcome"/> and <see cref="Issues"/>.
     /// </summary>
     public static AprsPacket Parse(ReadOnlySpan<byte> line) =>
-        Create(line[..^LineEndingLength(line[^Math.Min(2, line.Length)..])].ToArray());
+        Build(line[..^LineEndingLength(line[^Math.Min(2, line.Length)..])].ToArray());
 
     /// <summary>
     /// Parses one TNC2-format line held as Latin-1 text, as <c>AprsIsClient</c> returns it: each character is one
@@ -109,7 +109,58 @@ public sealed partial class AprsPacket
         }
 
         var ending = LineEndingLength(line.AsSpan(line.Length - Math.Min(2, line.Length)));
-        return Create(Encoding.Latin1.GetBytes(line, 0, line.Length - ending));
+        return Build(Encoding.Latin1.GetBytes(line, 0, line.Length - ending));
+    }
+
+    /// <summary>
+    /// Builds a packet from a payload: the header <c>SOURCE&gt;DESTINATION,PATH</c> and the payload encoded as the
+    /// information field. The result is parsed back, so it is exactly what a receiver will decode, and building fails
+    /// if the payload would not survive that (text that a receiver would read as a timestamp, say).
+    /// </summary>
+    /// <param name="source">The sending station.</param>
+    /// <param name="destination">The destination field: usually a software TOCALL such as <c>APRS</c> or <c>APZ123</c>.</param>
+    /// <param name="path">Digipeater aliases such as <c>WIDE1-1</c>, or none for APRS-IS.</param>
+    /// <param name="payload">The payload to encode. Status reports and messages are supported so far.</param>
+    /// <exception cref="ArgumentException">A value cannot be encoded, or would not decode back to the same payload.</exception>
+    /// <exception cref="NotSupportedException">The payload type cannot be encoded yet.</exception>
+    public static AprsPacket Create(
+        Callsign source,
+        Callsign destination,
+        IEnumerable<PathEntry> path,
+        AprsPayload payload
+    )
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(destination);
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(payload);
+
+        var header = new StringBuilder(source.Value).Append('>').Append(destination.Value);
+        var entries = 0;
+        foreach (var entry in path)
+        {
+            ArgumentNullException.ThrowIfNull(entry.Station, nameof(path));
+            header.Append(',').Append(entry);
+            entries++;
+        }
+
+        if (entries > MaxPathEntries)
+        {
+            throw new ArgumentException($"A path holds at most {MaxPathEntries} entries.", nameof(path));
+        }
+
+        var information = AprsEncoder.Encode(payload);
+        var packet = Build([.. Encoding.Latin1.GetBytes(header.Append(':').ToString()), .. information]);
+        var problem =
+            packet.Outcome != ParseOutcome.Parsed
+                ? $"it would not decode ({string.Join(", ", packet.Issues.Select(i => i.Code))})"
+                : AprsEncoder.Mismatch(payload, packet.Payload);
+        return problem is null
+            ? packet
+            : throw new ArgumentException(
+                $"The {payload.GetType().Name} cannot be encoded as given: {problem}.",
+                nameof(payload)
+            );
     }
 
     /// <summary>A new array holding <see cref="Raw"/>.</summary>
@@ -128,7 +179,7 @@ public sealed partial class AprsPacket
         : end.Length > 0 && end[^1] is '\r' or '\n' ? 1
         : 0;
 
-    private static AprsPacket Create(byte[] raw)
+    private static AprsPacket Build(byte[] raw)
     {
         var issues = new List<ParseIssue>();
         var span = raw.AsSpan();
@@ -251,7 +302,7 @@ public sealed partial class AprsPacket
         return new Callsign(Encoding.Latin1.GetString(bytes));
     }
 
-    private static PathEntryKind Classify(string entry, bool serverFollows) =>
+    internal static PathEntryKind Classify(string entry, bool serverFollows) =>
         QConstruct().IsMatch(entry) ? PathEntryKind.QConstruct
         : serverFollows ? PathEntryKind.Server
         : Alias().IsMatch(entry) ? PathEntryKind.Alias

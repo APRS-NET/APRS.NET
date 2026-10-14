@@ -40,6 +40,65 @@ public readonly record struct AprsTimestamp
         IsLocal = isLocal;
     }
 
+    /// <summary>A day-hour-minute timestamp, <c>DDHHMMz</c> in zulu (UTC) or <c>DDHHMM/</c> in local time.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The day is not 1 to 31, the hour 0 to 23 or the minute 0 to 59.</exception>
+    public static AprsTimestamp DayHourMinute(int day, int hour, int minute, bool isLocal = false)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(day, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(day, 31);
+        CheckTime(hour, minute, 0);
+        return new AprsTimestamp(AprsTimestampFormat.DayHourMinute, day, hour, minute, null, isLocal);
+    }
+
+    /// <summary>An hour-minute-second timestamp in zulu (UTC): <c>HHMMSSh</c>.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">The hour is not 0 to 23, or the minute or second 0 to 59.</exception>
+    public static AprsTimestamp HourMinuteSecond(int hour, int minute, int second)
+    {
+        CheckTime(hour, minute, second);
+        return new AprsTimestamp(AprsTimestampFormat.HourMinuteSecond, null, hour, minute, second, isLocal: false);
+    }
+
+    /// <summary>A month-day-hour-minute timestamp in zulu (UTC): <c>MMDDHHMM</c>, for positionless weather reports.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">A field is out of range, or the day does not exist in that month.</exception>
+    public static AprsTimestamp MonthDayHourMinute(int month, int day, int hour, int minute)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(month, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(month, 12);
+        ArgumentOutOfRangeException.ThrowIfLessThan(day, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(day, DateTime.DaysInMonth(2024, month)); // a leap year: 29 Feb is valid
+        CheckTime(hour, minute, 0);
+        return new AprsTimestamp(AprsTimestampFormat.MonthDayHourMinute, day, hour, minute, null, false, month);
+    }
+
+    /// <summary>
+    /// <paramref name="time"/> in UTC, in the given <paramref name="format"/>. Seconds are dropped by the formats that
+    /// have none.
+    /// </summary>
+    public static AprsTimestamp FromDateTimeOffset(
+        DateTimeOffset time,
+        AprsTimestampFormat format = AprsTimestampFormat.DayHourMinute
+    )
+    {
+        var utc = time.UtcDateTime;
+        return format switch
+        {
+            AprsTimestampFormat.HourMinuteSecond => HourMinuteSecond(utc.Hour, utc.Minute, utc.Second),
+            AprsTimestampFormat.MonthDayHourMinute => MonthDayHourMinute(utc.Month, utc.Day, utc.Hour, utc.Minute),
+            AprsTimestampFormat.DayHourMinute => DayHourMinute(utc.Day, utc.Hour, utc.Minute),
+            _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Not an APRS timestamp format."),
+        };
+    }
+
+    private static void CheckTime(int hour, int minute, int second)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(hour);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(hour, 23);
+        ArgumentOutOfRangeException.ThrowIfNegative(minute);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minute, 59);
+        ArgumentOutOfRangeException.ThrowIfNegative(second);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(second, 59);
+    }
+
     /// <summary>The format the timestamp was sent in.</summary>
     public AprsTimestampFormat Format { get; }
 
