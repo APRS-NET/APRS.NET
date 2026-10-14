@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.13](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.12...v0.1.0-alpha.13) (2026-10-14)
+
+
+### Features
+
+* **packets:** send as one station with PacketAddress ([7fc9c44](https://github.com/APRS-NET/APRS.NET/commit/7fc9c44fd81455400dd202106789be6b8e2a42a7))
+* **packets:** send as one station with PacketAddress ([b82f71b](https://github.com/APRS-NET/APRS.NET/commit/b82f71b6a268d28de23b4d5acc9a7b450c818084))
+
 ## [0.1.0-alpha.12](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.11...v0.1.0-alpha.12) (2026-10-14)
 
 
