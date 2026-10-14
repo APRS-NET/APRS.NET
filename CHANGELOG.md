@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.10](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.9...v0.1.0-alpha.10) (2026-10-14)
+
+
+### Features
+
+* **aprs-is:** compute APRS-IS passcodes ([f6658ae](https://github.com/APRS-NET/APRS.NET/commit/f6658ae05575333e4d55f032419434023df3f24a))
+
 ## [0.1.0-alpha.9](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.8...v0.1.0-alpha.9) (2026-10-13)
 
 
