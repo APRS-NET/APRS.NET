@@ -71,6 +71,18 @@ var beacon = new PositionReport
 // payload: !4903.50N/07201.75W>088/036On the road
 ```
 
+`MaidenheadLocator` converts between Maidenhead locators (4, 6, 8 or 10 characters) and positions, following the
+IARU Region 1 VHF Handbook:
+
+```csharp
+var locator = MaidenheadLocator.Parse("fn31pr");                    // FN31pr
+Console.WriteLine($"{locator.Center} {locator.SouthWest} {locator.NorthEast}");
+MaidenheadLocator.FromPosition(48.858222, 2.2945, 10);               // JN18du55ix
+
+if (!MaidenheadLocator.TryParse(input, out var parsed, out var error))
+    Console.WriteLine(error.Message);                               // Character 3 ('Z') must be a digit 0-9 (square).
+```
+
 See [the design notes](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/packet-api.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

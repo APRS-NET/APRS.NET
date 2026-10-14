@@ -466,3 +466,38 @@ AprsNet.Packets.PositionedPayload.RangeMiles.init -> void
 AprsNet.Packets.PositionedPayload.SpeedKnots.init -> void
 AprsNet.Packets.PositionedPayload.Symbol.init -> void
 AprsNet.Packets.PositionedPayload.Timestamp.init -> void
+AprsNet.Packets.MaidenheadLocator
+AprsNet.Packets.MaidenheadLocator.Center.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.MaidenheadLocator.<Clone>$() -> AprsNet.Packets.MaidenheadLocator!
+AprsNet.Packets.MaidenheadLocator.Equals(AprsNet.Packets.MaidenheadLocator? other) -> bool
+AprsNet.Packets.MaidenheadLocator.Length.get -> int
+AprsNet.Packets.MaidenheadLocator.NorthEast.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.MaidenheadLocatorPart
+AprsNet.Packets.MaidenheadLocatorPart.ExtendedSquare = 3 -> AprsNet.Packets.MaidenheadLocatorPart
+AprsNet.Packets.MaidenheadLocatorPart.ExtendedSubsquare = 4 -> AprsNet.Packets.MaidenheadLocatorPart
+AprsNet.Packets.MaidenheadLocatorPart.Field = 0 -> AprsNet.Packets.MaidenheadLocatorPart
+AprsNet.Packets.MaidenheadLocatorPart.Square = 1 -> AprsNet.Packets.MaidenheadLocatorPart
+AprsNet.Packets.MaidenheadLocatorPart.Subsquare = 2 -> AprsNet.Packets.MaidenheadLocatorPart
+AprsNet.Packets.MaidenheadLocator.SouthWest.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.MaidenheadLocator.Value.get -> string!
+AprsNet.Packets.MaidenheadParseError
+AprsNet.Packets.MaidenheadParseError.Character.get -> char?
+AprsNet.Packets.MaidenheadParseError.Index.get -> int
+AprsNet.Packets.MaidenheadParseErrorKind
+AprsNet.Packets.MaidenheadParseErrorKind.Empty = 0 -> AprsNet.Packets.MaidenheadParseErrorKind
+AprsNet.Packets.MaidenheadParseError.Kind.get -> AprsNet.Packets.MaidenheadParseErrorKind
+AprsNet.Packets.MaidenheadParseErrorKind.InvalidCharacter = 2 -> AprsNet.Packets.MaidenheadParseErrorKind
+AprsNet.Packets.MaidenheadParseErrorKind.WrongLength = 1 -> AprsNet.Packets.MaidenheadParseErrorKind
+AprsNet.Packets.MaidenheadParseError.Message.get -> string!
+AprsNet.Packets.MaidenheadParseError.Part.get -> AprsNet.Packets.MaidenheadLocatorPart?
+override AprsNet.Packets.MaidenheadLocator.Equals(object? obj) -> bool
+override AprsNet.Packets.MaidenheadLocator.GetHashCode() -> int
+override AprsNet.Packets.MaidenheadLocator.ToString() -> string!
+override AprsNet.Packets.MaidenheadParseError.ToString() -> string!
+static AprsNet.Packets.MaidenheadLocator.FromPosition(AprsNet.Packets.AprsPosition position, int length) -> AprsNet.Packets.MaidenheadLocator!
+static AprsNet.Packets.MaidenheadLocator.FromPosition(double latitude, double longitude, int length) -> AprsNet.Packets.MaidenheadLocator!
+static AprsNet.Packets.MaidenheadLocator.operator !=(AprsNet.Packets.MaidenheadLocator? left, AprsNet.Packets.MaidenheadLocator? right) -> bool
+static AprsNet.Packets.MaidenheadLocator.operator ==(AprsNet.Packets.MaidenheadLocator? left, AprsNet.Packets.MaidenheadLocator? right) -> bool
+static AprsNet.Packets.MaidenheadLocator.Parse(string! text) -> AprsNet.Packets.MaidenheadLocator!
+static AprsNet.Packets.MaidenheadLocator.TryParse(string? text, out AprsNet.Packets.MaidenheadLocator? locator) -> bool
+static AprsNet.Packets.MaidenheadLocator.TryParse(string? text, out AprsNet.Packets.MaidenheadLocator? locator, out AprsNet.Packets.MaidenheadParseError? error) -> bool
