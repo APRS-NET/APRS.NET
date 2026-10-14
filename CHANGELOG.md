@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0-alpha.14](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.13...v0.1.0-alpha.14) (2026-10-14)
+
+
+### Features
+
+* **packets:** build Mic-E reports with AprsPacket.Create ([bb94099](https://github.com/APRS-NET/APRS.NET/commit/bb94099c1de3cf271b6b672ad0d8ecc9d0990e33))
+* **packets:** build Mic-E reports with AprsPacket.Create ([f6ec72b](https://github.com/APRS-NET/APRS.NET/commit/f6ec72b665aaac36f9fd1bac79b8fae14a84c889))
+* **packets:** build objects and items with AprsPacket.Create ([acde37e](https://github.com/APRS-NET/APRS.NET/commit/acde37e2cc1017026fa0bae7a0c899990b0bf418))
+* **packets:** build objects and items with AprsPacket.Create ([1b04515](https://github.com/APRS-NET/APRS.NET/commit/1b045156a76bf0a1bc1259eaa38e388bc2d5a8b3))
+
 ## [0.1.0-alpha.13](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.12...v0.1.0-alpha.13) (2026-10-14)
 
 
