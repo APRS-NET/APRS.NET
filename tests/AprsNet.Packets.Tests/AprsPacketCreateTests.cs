@@ -77,19 +77,23 @@ public class AprsPacketCreateTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("N0CALL-100")] // 10 characters
-    [InlineData("N0 CALL")]
-    [InlineData("N0CALL>")]
-    [InlineData("N0CALL:")]
-    [InlineData("N0,CALL")]
-    [InlineData("N0CALL*")]
-    [InlineData("NÖCALL")]
-    public void CallsignsThatWouldBreakTheHeaderAreRejected(string value)
+    [InlineData("", AprsValidationErrorCode.CallsignInvalidLength, null)]
+    [InlineData("N0CALL-100", AprsValidationErrorCode.CallsignInvalidLength, null)] // 10 characters
+    [InlineData("N0 CALL", AprsValidationErrorCode.CallsignInvalidCharacter, 2)]
+    [InlineData("N0CALL>", AprsValidationErrorCode.CallsignInvalidCharacter, 6)]
+    [InlineData("N0CALL:", AprsValidationErrorCode.CallsignInvalidCharacter, 6)]
+    [InlineData("N0,CALL", AprsValidationErrorCode.CallsignInvalidCharacter, 2)]
+    [InlineData("N0CALL*", AprsValidationErrorCode.CallsignInvalidCharacter, 6)]
+    [InlineData("NÖCALL", AprsValidationErrorCode.CallsignInvalidCharacter, 1)]
+    public void CallsignsThatWouldBreakTheHeaderAreRejected(string value, AprsValidationErrorCode code, int? index)
     {
         Assert.False(Callsign.TryParse(value, out var callsign));
         Assert.Null(callsign);
-        Assert.Throws<ArgumentException>(() => Callsign.Parse(value));
+        var ex = Assert.Throws<AprsValidationException>(() => Callsign.Parse(value));
+        Assert.Equal(code, ex.Code);
+        Assert.Equal(index, ex.Index);
+        Assert.Equal(value, ex.Value);
+        Assert.Equal("value", ex.ParamName);
     }
 
     [Theory]

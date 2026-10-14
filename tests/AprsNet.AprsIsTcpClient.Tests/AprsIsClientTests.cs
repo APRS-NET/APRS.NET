@@ -1,3 +1,4 @@
+using AprsNet.Packets;
 using Microsoft.Extensions.Time.Testing;
 
 namespace AprsNet.AprsIsTcpClient.Tests;
@@ -242,9 +243,11 @@ public class AprsIsClientTests
         await using var client = new AprsIsClient(Options(), transport: transport);
         await client.ConnectAsync(TestContext.Current.CancellationToken);
 
-        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        var ex = await Assert.ThrowsAsync<AprsValidationException>(async () =>
             await client.SetFilterAsync(filter, TestContext.Current.CancellationToken)
         );
+        Assert.Equal(AprsValidationErrorCode.FilterControlCharacter, ex.Code);
+        Assert.Equal("filter", ex.ParamName);
         Assert.Single(transport.Written);
     }
 
@@ -402,19 +405,27 @@ public class AprsIsClientTests
     }
 
     [Theory]
-    [InlineData("")]
-    [InlineData("TOOLONGCALL1")]
-    [InlineData("N0 CALL")]
-    [InlineData("NZ0P\r\n")]
-    public void OptionsRejectBadCallsigns(string callsign)
+    [InlineData("", AprsValidationErrorCode.CallsignInvalidLength, null)]
+    [InlineData("TOOLONGCALL1", AprsValidationErrorCode.CallsignInvalidLength, null)]
+    [InlineData("N0 CALL", AprsValidationErrorCode.CallsignInvalidCharacter, 2)]
+    [InlineData("NZ0P\r\n", AprsValidationErrorCode.CallsignInvalidCharacter, 4)]
+    public void OptionsRejectBadCallsigns(string callsign, AprsValidationErrorCode code, int? index)
     {
-        Assert.Throws<ArgumentException>(() => new AprsIsClient(Options(o => o.Callsign = callsign)));
+        var ex = Assert.Throws<AprsValidationException>(() => new AprsIsClient(Options(o => o.Callsign = callsign)));
+        Assert.Equal(code, ex.Code);
+        Assert.Equal(index, ex.Index);
+        Assert.Equal("Callsign", ex.ParamName);
     }
 
     [Fact]
     public void OptionsRejectAFilterWithControlCharacters()
     {
-        Assert.Throws<ArgumentException>(() => new AprsIsClient(Options(o => o.Filter = "r/1/2/3\r\nx")));
+        var ex = Assert.Throws<AprsValidationException>(() =>
+            new AprsIsClient(Options(o => o.Filter = "r/1/2/3\r\nx"))
+        );
+        Assert.Equal(AprsValidationErrorCode.FilterControlCharacter, ex.Code);
+        Assert.Equal(7, ex.Index);
+        Assert.Equal('\r', ex.Character);
     }
 
     [Theory]

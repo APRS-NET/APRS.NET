@@ -94,6 +94,10 @@ if (!MaidenheadLocator.TryParse(input, out var parsed, out var error))
     Console.WriteLine(error.Message);                               // Character 3 ('Z') must be a digit 0-9 (square).
 ```
 
+Input a person types (`Callsign.Parse`, `PathEntry.Parse`, `PacketAddress.Parse`) is refused with
+`AprsValidationException`, an `ArgumentException` with a stable `Code` (`AprsValidationErrorCode`) for an app to
+translate, and `Index`/`Character` for the offending character. Codes are never renamed; the English message may be.
+
 See [the design notes](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/packet-api.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

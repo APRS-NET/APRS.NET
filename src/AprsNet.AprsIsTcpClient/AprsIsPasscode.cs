@@ -1,3 +1,5 @@
+using AprsNet.Packets;
+
 namespace AprsNet.AprsIsTcpClient;
 
 /// <summary>
@@ -18,8 +20,10 @@ public static class AprsIsPasscode
     /// Returns the passcode for <paramref name="callsign"/>, from 0 to 32767. The SSID and letter case are ignored,
     /// so <c>n0call-9</c> and <c>N0CALL</c> give the same passcode.
     /// </summary>
-    /// <exception cref="ArgumentException">
-    /// The base callsign (before any <c>-</c>) is empty, longer than 9 characters, or not all ASCII letters and digits.
+    /// <exception cref="AprsValidationException">
+    /// The base callsign (before any <c>-</c>) is empty or longer than 9 characters
+    /// (<see cref="AprsValidationErrorCode.CallsignInvalidLength"/>), or not all ASCII letters and digits
+    /// (<see cref="AprsValidationErrorCode.CallsignInvalidCharacter"/>).
     /// </exception>
     public static int Compute(string callsign)
     {
@@ -27,11 +31,17 @@ public static class AprsIsPasscode
 
         var dash = callsign.IndexOf('-', StringComparison.Ordinal);
         var baseCall = dash < 0 ? callsign : callsign[..dash];
-        if (baseCall.Length is < 1 or > 9 || !baseCall.All(char.IsAsciiLetterOrDigit))
+        var bad = baseCall.AsSpan().IndexOfAnyExcept(AprsIsClientOptions.LettersAndDigits);
+        if (baseCall.Length is < 1 or > 9 || bad >= 0)
         {
-            throw new ArgumentException(
+            throw new AprsValidationException(
+                baseCall.Length is < 1 or > 9
+                    ? AprsValidationErrorCode.CallsignInvalidLength
+                    : AprsValidationErrorCode.CallsignInvalidCharacter,
                 "Callsign must start with 1 to 9 letters or digits, optionally followed by -SSID.",
-                nameof(callsign)
+                nameof(callsign),
+                callsign,
+                baseCall.Length is < 1 or > 9 ? null : bad
             );
         }
 

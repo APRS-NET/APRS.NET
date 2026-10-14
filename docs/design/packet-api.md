@@ -394,6 +394,14 @@ Decisions:
 - **Headers.** `Callsign.Parse` accepts 1 to 9 printable ASCII characters without spaces or the header separators
   (`>`, `:`, `,`, `*`); it does not require AX.25 (check `IsAx25` for RF). `PathEntry.Parse` takes the wire form,
   with a trailing `*` for an entry that has been repeated.
+- **Error codes for typed input.** Where a person types the input (callsigns, path entries, a `PacketAddress`, and in
+  the APRS-IS client the login settings, filter, server address and passcode callsign), the error is an
+  `AprsValidationException`: still an `ArgumentException`, so existing handlers catch it, with a `Code` from
+  `AprsValidationErrorCode`, the refused `Value`, and the `Index` and `Character` at fault. An app shows the error in
+  its reader's language from the code, which works when the error is raised on a server far from the reader. The
+  codes are a stable vocabulary like `ParseIssueCode`: added to, never renamed or reused. `MaidenheadLocator.TryParse`
+  keeps its own `MaidenheadParseError`, which already has a kind, part, index and character. Errors in values a
+  program sets (timeouts, payload fields) stay plain `ArgumentException`s.
 - **Timestamps.** `AprsTimestamp.DayHourMinute`, `HourMinuteSecond`, `MonthDayHourMinute` and `FromDateTimeOffset`
   create them; `ToString()` is the wire form.
 - **Positions are rounded to the format.** Uncompressed positions are sent in hundredths of a minute, speeds in

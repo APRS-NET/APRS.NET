@@ -1,3 +1,5 @@
+using AprsNet.Packets;
+
 namespace AprsNet.AprsIsTcpClient.Tests;
 
 public class AprsIsEndpointTests
@@ -40,7 +42,8 @@ public class AprsIsEndpointTests
     [InlineData(" ")]
     public void ConstructorRejectsBlankHost(string host)
     {
-        Assert.ThrowsAny<ArgumentException>(() => new AprsIsEndpoint(host));
+        var ex = Assert.Throws<AprsValidationException>(() => new AprsIsEndpoint(host));
+        Assert.Equal(AprsValidationErrorCode.ServerHostEmpty, ex.Code);
     }
 
     [Theory]
@@ -48,7 +51,9 @@ public class AprsIsEndpointTests
     [InlineData(65536)]
     public void ConstructorRejectsBadPort(int port)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new AprsIsEndpoint("h", port));
+        var ex = Assert.Throws<AprsValidationException>(() => new AprsIsEndpoint("h", port));
+        Assert.Equal(AprsValidationErrorCode.ServerPortOutOfRange, ex.Code);
+        Assert.Equal("port", ex.ParamName);
     }
 
     [Fact]

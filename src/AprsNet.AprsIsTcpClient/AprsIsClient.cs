@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -128,9 +129,9 @@ public sealed class AprsIsClient : IAsyncDisposable
     public async ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(filter);
-        if (AprsIsClientOptions.ContainsLineBreakOrControl(filter))
+        if (AprsIsClientOptions.FilterError(filter, nameof(filter)) is { } error)
         {
-            throw new ArgumentException("Filter must not contain control characters.", nameof(filter));
+            throw error;
         }
 
         if (Login is null)

@@ -529,3 +529,24 @@ AprsNet.Packets.ItemReport.Name.init -> void
 AprsNet.Packets.ObjectReport.IsLive.init -> void
 AprsNet.Packets.ObjectReport.Name.init -> void
 AprsNet.Packets.ObjectReport.ObjectReport() -> void
+AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidCharacter = 1 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidLength = 0 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidSsid = 11 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.DestinationInvalid = 12 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.FilterControlCharacter = 6 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.PathEntryInvalidCharacter = 3 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.PathEntryInvalidLength = 2 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.PathTooLong = 13 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.ServerHostEmpty = 7 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.ServerHostInvalid = 8 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.ServerPortInvalid = 9 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.ServerPortOutOfRange = 10 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.SoftwareNameInvalid = 4 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationErrorCode.SoftwareVersionInvalid = 5 -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationException
+AprsNet.Packets.AprsValidationException.AprsValidationException(AprsNet.Packets.AprsValidationErrorCode code, string! message, string? paramName, string? value, int? index = null) -> void
+AprsNet.Packets.AprsValidationException.Character.get -> char?
+AprsNet.Packets.AprsValidationException.Code.get -> AprsNet.Packets.AprsValidationErrorCode
+AprsNet.Packets.AprsValidationException.Index.get -> int?
+AprsNet.Packets.AprsValidationException.Value.get -> string?

@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Reflection;
+using AprsNet.Packets;
 
 // Options are set by callers, which inspectors cannot see from inside this solution.
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -55,27 +57,43 @@ public sealed class AprsIsClientOptions
     /// <summary>True when the passcode is <c>-1</c>, so the login cannot transmit.</summary>
     public bool IsReadOnly => Passcode == -1;
 
-    /// <summary>Throws <see cref="ArgumentException"/> if any setting is unusable.</summary>
+    /// <summary>
+    /// Throws <see cref="ArgumentException"/> if any setting is unusable. Settings a person types (callsign, software
+    /// name and version, filter) throw <see cref="AprsValidationException"/>, whose
+    /// <see cref="AprsValidationException.Code"/> says why.
+    /// </summary>
     public void Validate()
     {
         ArgumentNullException.ThrowIfNull(Endpoint);
         ArgumentNullException.ThrowIfNull(TimeProvider);
 
-        if (!IsValidCallsign(Callsign))
+        if (Callsign is not { Length: >= 1 and <= 9 })
         {
-            throw new ArgumentException("Callsign must be 1 to 9 letters, digits or '-'.", nameof(Callsign));
-        }
-
-        if (!IsToken(SoftwareName) || !IsToken(SoftwareVersion))
-        {
-            throw new ArgumentException(
-                "Software name and version must be non-empty with no whitespace or control characters."
+            throw new AprsValidationException(
+                AprsValidationErrorCode.CallsignInvalidLength,
+                CallsignMessage,
+                nameof(Callsign),
+                Callsign
             );
         }
 
-        if (Filter is not null && ContainsLineBreakOrControl(Filter))
+        var badCallsign = Callsign.AsSpan().IndexOfAnyExcept(_loginCallsignCharacters);
+        if (badCallsign >= 0)
         {
-            throw new ArgumentException("Filter must not contain control characters.", nameof(Filter));
+            throw new AprsValidationException(
+                AprsValidationErrorCode.CallsignInvalidCharacter,
+                CallsignMessage,
+                nameof(Callsign),
+                Callsign,
+                badCallsign
+            );
+        }
+
+        CheckToken(SoftwareName, nameof(SoftwareName), AprsValidationErrorCode.SoftwareNameInvalid);
+        CheckToken(SoftwareVersion, nameof(SoftwareVersion), AprsValidationErrorCode.SoftwareVersionInvalid);
+        if (Filter is not null && FilterError(Filter, nameof(Filter)) is { } filterError)
+        {
+            throw filterError;
         }
 
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ConnectTimeout, TimeSpan.Zero);
@@ -89,53 +107,57 @@ public sealed class AprsIsClientOptions
         ArgumentOutOfRangeException.ThrowIfLessThan(ChannelCapacity, 1);
     }
 
-    internal static bool ContainsLineBreakOrControl(string text)
-    {
-        foreach (var c in text)
-        {
-            if (char.IsControl(c))
-            {
-                return true;
-            }
-        }
+    private const string CallsignMessage = "Callsign must be 1 to 9 letters, digits or '-'.";
 
-        return false;
+    internal static readonly SearchValues<char> LettersAndDigits = SearchValues.Create(
+        "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    );
+
+    private static readonly SearchValues<char> _loginCallsignCharacters = SearchValues.Create(
+        "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    );
+
+    /// <summary>The filter's first control character as an error, or <see langword="null"/> when it has none.</summary>
+    internal static AprsValidationException? FilterError(string filter, string paramName)
+    {
+        var index = IndexOf(filter, char.IsControl);
+        return index < 0
+            ? null
+            : new AprsValidationException(
+                AprsValidationErrorCode.FilterControlCharacter,
+                "Filter must not contain control characters.",
+                paramName,
+                filter,
+                index
+            );
     }
 
-    private static bool IsValidCallsign(string value)
+    private static void CheckToken(string value, string paramName, AprsValidationErrorCode code)
     {
-        if (value.Length is < 1 or > 9)
+        var bad = value is null ? -1 : IndexOf(value, c => char.IsWhiteSpace(c) || char.IsControl(c));
+        if (string.IsNullOrEmpty(value) || bad >= 0)
         {
-            return false;
+            throw new AprsValidationException(
+                code,
+                "Software name and version must be non-empty with no whitespace or control characters.",
+                paramName,
+                value,
+                bad >= 0 ? bad : null
+            );
         }
-
-        foreach (var c in value)
-        {
-            if (!(char.IsAsciiLetterOrDigit(c) || c == '-'))
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
-    private static bool IsToken(string value)
+    private static int IndexOf(string text, Func<char, bool> match)
     {
-        if (string.IsNullOrEmpty(value))
+        for (var i = 0; i < text.Length; i++)
         {
-            return false;
-        }
-
-        foreach (var c in value)
-        {
-            if (char.IsWhiteSpace(c) || char.IsControl(c))
+            if (match(text[i]))
             {
-                return false;
+                return i;
             }
         }
 
-        return true;
+        return -1;
     }
 
     private static string DefaultVersion() =>
