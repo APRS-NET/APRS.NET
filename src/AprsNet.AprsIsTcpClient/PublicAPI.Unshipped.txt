@@ -101,3 +101,11 @@ static AprsNet.AprsIsTcpClient.LoginResult.operator !=(AprsNet.AprsIsTcpClient.L
 static AprsNet.AprsIsTcpClient.LoginResult.operator ==(AprsNet.AprsIsTcpClient.LoginResult? left, AprsNet.AprsIsTcpClient.LoginResult? right) -> bool
 AprsNet.AprsIsTcpClient.AprsIsPasscode
 static AprsNet.AprsIsTcpClient.AprsIsPasscode.Compute(string! callsign) -> int
+AprsNet.AprsIsTcpClient.AprsIsServerPreset
+AprsNet.AprsIsTcpClient.AprsIsServerPreset.Endpoint.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
+AprsNet.AprsIsTcpClient.AprsIsServerPreset.Key.get -> string!
+AprsNet.AprsIsTcpClient.AprsIsServerPreset.Name.get -> string!
+override AprsNet.AprsIsTcpClient.AprsIsServerPreset.ToString() -> string!
+static AprsNet.AprsIsTcpClient.AprsIsServerPreset.All.get -> System.Collections.Generic.IReadOnlyList<AprsNet.AprsIsTcpClient.AprsIsServerPreset!>!
+static AprsNet.AprsIsTcpClient.AprsIsServerPreset.TryFind(AprsNet.AprsIsTcpClient.AprsIsEndpoint? endpoint, out AprsNet.AprsIsTcpClient.AprsIsServerPreset? preset) -> bool
+static AprsNet.AprsIsTcpClient.AprsIsServerPreset.TryFind(string? keyOrServer, out AprsNet.AprsIsTcpClient.AprsIsServerPreset? preset) -> bool

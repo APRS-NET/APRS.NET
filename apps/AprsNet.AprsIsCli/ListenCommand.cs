@@ -11,7 +11,11 @@ internal sealed class ListenCommand
     public const string DefaultCallsign = "N0CALL";
     private const string _defaultMaxSilenceText = "10m";
 
-    private static readonly string[] _regions = ["noam", "soam", "euro", "asia", "aunz"];
+    // The regional rotates: every preset except the worldwide one, which is the default.
+    private static readonly string[] _regions =
+    [
+        .. AprsIsServerPreset.All.Where(p => p.Endpoint != AprsIsEndpoint.Rotate).Select(p => p.Key),
+    ];
 
     private readonly Option<string?> _callsign = new("--callsign", "-c")
     {
@@ -358,15 +362,7 @@ internal sealed class ListenCommand
             return true;
         }
 
-        var rotate = region switch
-        {
-            "noam" => AprsIsEndpoint.NorthAmerica,
-            "soam" => AprsIsEndpoint.SouthAmerica,
-            "euro" => AprsIsEndpoint.Europe,
-            "asia" => AprsIsEndpoint.Asia,
-            "aunz" => AprsIsEndpoint.Oceania,
-            _ => AprsIsEndpoint.Rotate,
-        };
+        var rotate = AprsIsServerPreset.TryFind(region, out var preset) ? preset.Endpoint : AprsIsEndpoint.Rotate;
         endpoint = rotate.WithPort(chosenPort);
         return true;
     }
