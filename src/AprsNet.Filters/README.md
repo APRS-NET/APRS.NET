@@ -20,4 +20,4 @@ built.ToString();             // a/50.05/-73.03/49.05/-72.03 b/N0CALL*/N1ABC-7 -
 built.CheckServerLimits();    // null, or why a server would refuse it (more than 9 r/ or f/ terms)
 ```
 
-Not published yet: this is groundwork for the phase 3 gateway.
+Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

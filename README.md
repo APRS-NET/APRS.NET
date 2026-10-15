@@ -26,6 +26,7 @@ dotnet add package AprsNet.Packets --prerelease
 dotnet add package AprsNet.AprsIsTcpClient --prerelease
 dotnet add package AprsNet.Symbols --prerelease
 dotnet add package AprsNet.DeviceId --prerelease
+dotnet add package AprsNet.Filters --prerelease
 ```
 
 The `aprscli` command-line tool is a .NET tool:
@@ -44,6 +45,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `src/AprsNet.Packets`         | Packet models, parser, encoder (no I/O)                                   |
 | `src/AprsNet.AprsIsTcpClient` | APRS-IS client                                                            |
 | `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
+| `src/AprsNet.Filters`         | APRS-IS filters: build them from typed terms, and evaluate them locally   |
 | `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0) |
 | `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool                                           |
 | `tests/`                      | Unit tests and the packet corpus                                          |
