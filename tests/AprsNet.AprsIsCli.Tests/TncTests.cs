@@ -121,7 +121,8 @@ public sealed class TncTests : IDisposable
             var result = await run;
             Assert.Equal(0, result.ExitCode);
             Assert.Equal($"N0CALL>APRS:>At last{Environment.NewLine}", result.Out);
-            Assert.Contains("Connection refused", result.Error, StringComparison.OrdinalIgnoreCase);
+            // The refusal's wording comes from the operating system, so check only the CLI's own part.
+            Assert.Matches(@"aprscli: lost the TNC at 127\.0\.0\.1:\d+: .+; reconnecting in", result.Error);
         }
     }
 
