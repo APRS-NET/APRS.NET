@@ -648,6 +648,12 @@ the source. The rendering step is cheap next to radio data rates, and it keeps o
   to a frame and back to the same packet.
 - The package is not published until the KISS transport ships with it.
 
+`AprsNet.Kiss` frames them for a TNC. `KissFrame.Encode` writes `FEND`, the command byte (port in the high nibble),
+the escaped data and `FEND`. `KissDecoder` reads frames back from a stream that splits them anywhere: it skips noise
+before the first `FEND` and the empty frames TNCs send to resynchronise, and drops (and counts) frames with an invalid
+escape or over `MaxFrameLength`, so line noise never grows its buffer without bound. The TCP and serial transports
+come next.
+
 ## Limits
 
 All input is hostile. `Parse` rejects nothing for being long, but:

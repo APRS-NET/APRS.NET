@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>KISS framing for TNCs: escape and frame data for a KISS TNC, and read frames back from a byte stream that splits them anywhere.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Not published yet (phase 2 groundwork). Set to true when the KISS transport is ready to ship with it. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Ax25/AprsNet.Ax25.csproj" />
+  </ItemGroup>
+</Project>
