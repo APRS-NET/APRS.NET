@@ -44,6 +44,13 @@ public sealed partial class AprsIsServerOptions
     /// <summary>The most packets <see cref="History"/> keeps, oldest dropped first.</summary>
     public int MaxHistoryPackets { get; init; } = 100_000;
 
+    /// <summary>
+    /// Where stations were last heard, for the filter terms that measure from a station: <c>m/km</c> (from the client's
+    /// own callsign), <c>f/call/km</c> and <c>t/types/call/km</c>. The server records every published packet in it.
+    /// Without one, those terms pass nothing.
+    /// </summary>
+    public StationStore? Stations { get; init; }
+
     /// <summary>The software name in the banner and keepalives.</summary>
     public string SoftwareName { get; init; } = "APRS.NET";
 

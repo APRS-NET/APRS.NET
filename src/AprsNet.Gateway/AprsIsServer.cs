@@ -80,6 +80,8 @@ public sealed class AprsIsServer : IAsyncDisposable
     public void Publish(AprsPacket packet)
     {
         ArgumentNullException.ThrowIfNull(packet);
+        GatewayMetrics.Published(_options.ServerName);
+        _options.Stations?.Observe(packet);
         var keepHistory = _options.History > TimeSpan.Zero;
         if (_sessions.IsEmpty && !keepHistory)
         {
@@ -90,7 +92,6 @@ public sealed class AprsIsServer : IAsyncDisposable
         var line = new byte[raw.Length + 2];
         raw.CopyTo(line);
         "\r\n"u8.CopyTo(line.AsSpan(raw.Length));
-        GatewayMetrics.Published(_options.ServerName);
         lock (_publishing)
         {
             if (keepHistory)

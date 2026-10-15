@@ -22,6 +22,7 @@ internal sealed class ClientSession : IDisposable
     private volatile LoginLine? _login;
     private readonly Action<ClientSession, LoginLine> _join;
     private readonly CancellationToken _serverStopping;
+    private AprsFilterContext? _context;
     private bool _invalidLogin;
     private bool _loginTimedOut;
 
@@ -119,6 +120,24 @@ internal sealed class ClientSession : IDisposable
         }
     }
 
+    // m/ measures from wherever the client's own callsign was last heard, as on APRS-IS. The context is kept until
+    // that position changes, so offering a packet allocates nothing.
+    private AprsFilterContext? Context(LoginLine login)
+    {
+        if (_options.Stations is not { } stations)
+        {
+            return null;
+        }
+
+        var mine = stations.LastPosition(login.Callsign);
+        if (_context is null || _context.MyPosition != mine)
+        {
+            _context = new AprsFilterContext { MyPosition = mine, LastPosition = stations.LastPosition };
+        }
+
+        return _context;
+    }
+
     /// <summary>Marks the client logged in, so <see cref="Offer"/> queues packets for it.</summary>
     public void Activate(LoginLine login) => _login = login;
 
@@ -133,7 +152,7 @@ internal sealed class ClientSession : IDisposable
         var addressedToClient =
             packet.Payload is MessagePayload message
             && message.Addressee.Equals(login.Callsign, StringComparison.OrdinalIgnoreCase);
-        if (!addressedToClient && !_filter.Matches(packet))
+        if (!addressedToClient && !_filter.Matches(packet, Context(login)))
         {
             return;
         }

@@ -11,6 +11,7 @@ It is built in layers, each its own pull request:
 | Server | `AprsIsServer`, `AprsIsServerOptions` (`AprsNet.Gateway`) | #68 |
 | De-duplication and history | `PacketDeduplicator`, `AprsIsServerOptions.History` | #69 |
 | Metrics | the `AprsNet.Gateway` meter | #71 |
+| Station store | `StationStore`, `AprsIsServerOptions.Stations` | #72 |
 | Command line | `aprscli serve` | #70 |
 
 Neither project is packable yet.
@@ -42,7 +43,8 @@ addressees as well as `NWS-`. Type letters map to payloads:
 | `w` | positionless weather, raw weather station data, and any position with weather |
 
 Terms that need a station's position (`m/`, `f/`, `t/…/call/km`) look it up through `AprsFilterContext` and pass
-nothing without one. There is no station store yet; the gateway does not supply a context.
+nothing without one. With a `StationStore` the gateway supplies one, as aprsc does: `m/` measures from wherever the
+client's own login callsign was last heard, and `f/` and `t/…/call/km` from the named station's last position.
 
 Not supported: `q/con/I` (it needs a store of IGate positions) and `os/` (strict object names with spaces). Third-party
 packets are matched on their outer header.
@@ -83,12 +85,18 @@ so a beacon every 30 s is never dropped. On a 10-minute full-feed capture, alrea
 gets the ones its filter passes, then the live feed. `Publish` and a client joining take turns under one lock, so a
 joining client gets each packet exactly once and in order.
 
+## Station store
+
+`StationStore` remembers, per callsign, when it was last heard and its last position. Only a station's own position
+counts (position reports, Mic-E, positioned weather), not the objects and items it places elsewhere. The server records
+every published packet before filtering it, so a station's own packet is measured from where it has just reported. It
+is in memory and bounded (100,000 stations by default), forgetting the station heard least recently first.
+
 ## Still to do
 
 - Accepting packets from verified clients, with per-client rate limits.
 - A WebSocket endpoint streaming JSON. This needs a JSON form of packets in a library; the CLI's `--format json` is
   the obvious starting point.
-- A station store, which would give filters `m/`, `f/` and `q/con/I`, and new clients a last-known position per
-  station rather than a time window.
+- Track history in the station store, persistence, and `q/con/I` (which needs IGate positions).
 - A KISS source in `aprscli serve`, merged with APRS-IS through the deduplicator.
 - A health endpoint and a container image.
