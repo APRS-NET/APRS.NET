@@ -61,6 +61,7 @@ public sealed class PacketDeduplicator
             Expire(now);
             if (!_seen.TryAdd(key, now + Window))
             {
+                GatewayMetrics.Duplicate();
                 return false;
             }
 

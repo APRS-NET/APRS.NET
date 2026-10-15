@@ -21,6 +21,9 @@ internal sealed class ClientSession : IDisposable
     private volatile AprsFilter _filter = AprsFilter.Empty;
     private volatile LoginLine? _login;
     private readonly Action<ClientSession, LoginLine> _join;
+    private readonly CancellationToken _serverStopping;
+    private bool _invalidLogin;
+    private bool _loginTimedOut;
 
     public ClientSession(
         TcpClient tcp,
@@ -30,6 +33,7 @@ internal sealed class ClientSession : IDisposable
     )
     {
         _join = join;
+        _serverStopping = serverStopping;
         _tcp = tcp;
         _stream = tcp.GetStream();
         _options = options;
@@ -44,6 +48,15 @@ internal sealed class ClientSession : IDisposable
 
     /// <summary>Whether the session ended on an unexpected exception.</summary>
     public bool Faulted { get; private set; }
+
+    /// <summary>Why the session ended, as a <c>reason</c> tag for the disconnect metric.</summary>
+    public string EndReason =>
+        Faulted ? "error"
+        : Overflowed ? "overflow"
+        : _loginTimedOut ? "login_timeout"
+        : _invalidLogin ? "invalid_login"
+        : _serverStopping.IsCancellationRequested ? "server_stopping"
+        : "closed";
 
     public async Task RunAsync()
     {
@@ -60,8 +73,11 @@ internal sealed class ClientSession : IDisposable
             var login = line is null ? null : LoginLine.TryParse(line);
             if (login is null)
             {
+                _invalidLogin = line is not null;
                 return;
             }
+
+            GatewayMetrics.Login(_options.ServerName, login.IsVerified);
 
             // Ready for packets before the response goes out, so a client that has read it misses nothing; anything
             // published meanwhile waits in the queue until the writer starts.
@@ -83,7 +99,11 @@ internal sealed class ClientSession : IDisposable
             await _closing.CancelAsync().ConfigureAwait(false);
             await Task.WhenAll(writing, keepingAlive, reading).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is OperationCanceledException or TimeoutException or IOException or SocketException)
+        catch (TimeoutException)
+        {
+            _loginTimedOut = true;
+        }
+        catch (Exception e) when (e is OperationCanceledException or IOException or SocketException)
         {
             // The client left, stalled, was too slow, or the server is stopping: in every case the session ends.
         }
@@ -118,7 +138,11 @@ internal sealed class ClientSession : IDisposable
             return;
         }
 
-        if (!_queue.Writer.TryWrite(line))
+        if (_queue.Writer.TryWrite(line))
+        {
+            GatewayMetrics.Queued(_options.ServerName);
+        }
+        else
         {
             Drop();
         }
