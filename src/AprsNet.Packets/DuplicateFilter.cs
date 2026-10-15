@@ -21,7 +21,7 @@ public sealed class DuplicateFilter
     public const int DefaultCapacity = 100_000;
 
     private readonly TimeProvider _timeProvider;
-    private readonly Dictionary<PacketIdentity, DateTimeOffset> _seen = [];
+    private readonly Dictionary<PacketIdentity, DuplicateCheck> _seen = [];
     private readonly Queue<(PacketIdentity Identity, DateTimeOffset Expires)> _expiry = new();
     private readonly Lock _lock = new();
 
@@ -61,16 +61,24 @@ public sealed class DuplicateFilter
     /// Returns <see langword="true"/> for the first copy of a packet in the window, and remembers it;
     /// <see langword="false"/> for a duplicate.
     /// </summary>
-    public bool TryAccept(AprsPacket packet)
+    public bool TryAccept(AprsPacket packet) => !Check(packet).IsDuplicate;
+
+    /// <summary>
+    /// Checks <paramref name="packet"/>, heard on <paramref name="source"/>, against the window: the first copy is
+    /// remembered with its source and time, and a duplicate is reported with the first copy's.
+    /// </summary>
+    /// <param name="packet">The packet heard.</param>
+    /// <param name="source">Where it was heard, such as <c>aprs-is</c> or <c>tnc1</c>; any name the caller chooses.</param>
+    public DuplicateCheck Check(AprsPacket packet, string? source = null)
     {
         var identity = PacketIdentity.Of(packet);
         var now = _timeProvider.GetUtcNow();
         lock (_lock)
         {
             Expire(now);
-            if (_seen.ContainsKey(identity))
+            if (_seen.TryGetValue(identity, out var first))
             {
-                return false;
+                return first with { IsDuplicate = true };
             }
 
             if (_seen.Count == Capacity)
@@ -78,9 +86,10 @@ public sealed class DuplicateFilter
                 _seen.Remove(_expiry.Dequeue().Identity);
             }
 
-            _seen.Add(identity, now + Window);
+            var check = new DuplicateCheck(identity, false, source, now);
+            _seen.Add(identity, check);
             _expiry.Enqueue((identity, now + Window));
-            return true;
+            return check;
         }
     }
 
@@ -104,3 +113,15 @@ public sealed class DuplicateFilter
         }
     }
 }
+
+/// <summary>What <see cref="DuplicateFilter.Check"/> found for a packet.</summary>
+/// <param name="Identity">The packet's identity.</param>
+/// <param name="IsDuplicate">Whether a copy was already seen within the window.</param>
+/// <param name="FirstSource">Where the first copy in the window was heard, if its source was given.</param>
+/// <param name="FirstSeen">When the first copy in the window was heard: now, for a first copy.</param>
+public readonly record struct DuplicateCheck(
+    PacketIdentity Identity,
+    bool IsDuplicate,
+    string? FirstSource,
+    DateTimeOffset FirstSeen
+);

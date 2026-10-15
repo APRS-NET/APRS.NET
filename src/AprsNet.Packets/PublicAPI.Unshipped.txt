@@ -686,3 +686,62 @@ static AprsNet.Packets.PacketIdentity.Of(AprsNet.Packets.AprsPacket! packet) -> 
 static AprsNet.Packets.PacketIdentity.operator !=(AprsNet.Packets.PacketIdentity left, AprsNet.Packets.PacketIdentity right) -> bool
 static AprsNet.Packets.PacketIdentity.operator ==(AprsNet.Packets.PacketIdentity left, AprsNet.Packets.PacketIdentity right) -> bool
 static readonly AprsNet.Packets.DuplicateFilter.DefaultWindow -> System.TimeSpan
+AprsNet.Packets.DuplicateCheck
+AprsNet.Packets.DuplicateCheck.Deconstruct(out AprsNet.Packets.PacketIdentity Identity, out bool IsDuplicate, out string? FirstSource, out System.DateTimeOffset FirstSeen) -> void
+AprsNet.Packets.DuplicateCheck.DuplicateCheck(AprsNet.Packets.PacketIdentity Identity, bool IsDuplicate, string? FirstSource, System.DateTimeOffset FirstSeen) -> void
+AprsNet.Packets.DuplicateCheck.DuplicateCheck() -> void
+AprsNet.Packets.DuplicateCheck.Equals(AprsNet.Packets.DuplicateCheck other) -> bool
+AprsNet.Packets.DuplicateCheck.FirstSeen.get -> System.DateTimeOffset
+AprsNet.Packets.DuplicateCheck.FirstSeen.init -> void
+AprsNet.Packets.DuplicateCheck.FirstSource.get -> string?
+AprsNet.Packets.DuplicateCheck.FirstSource.init -> void
+AprsNet.Packets.DuplicateCheck.Identity.get -> AprsNet.Packets.PacketIdentity
+AprsNet.Packets.DuplicateCheck.Identity.init -> void
+AprsNet.Packets.DuplicateCheck.IsDuplicate.get -> bool
+AprsNet.Packets.DuplicateCheck.IsDuplicate.init -> void
+AprsNet.Packets.DuplicateFilter.Check(AprsNet.Packets.AprsPacket! packet, string? source = null) -> AprsNet.Packets.DuplicateCheck
+AprsNet.Packets.MergedPacket
+AprsNet.Packets.MergedPacket.<Clone>$() -> AprsNet.Packets.MergedPacket!
+AprsNet.Packets.MergedPacket.Deconstruct(out AprsNet.Packets.AprsPacket! Packet, out string! Source, out System.DateTimeOffset ReceivedAt, out AprsNet.Packets.MergedPacketOrigin? DuplicateOf) -> void
+AprsNet.Packets.MergedPacket.DuplicateOf.get -> AprsNet.Packets.MergedPacketOrigin?
+AprsNet.Packets.MergedPacket.DuplicateOf.init -> void
+AprsNet.Packets.MergedPacket.Equals(AprsNet.Packets.MergedPacket? other) -> bool
+AprsNet.Packets.MergedPacket.IsDuplicate.get -> bool
+AprsNet.Packets.MergedPacket.MergedPacket(AprsNet.Packets.AprsPacket! Packet, string! Source, System.DateTimeOffset ReceivedAt, AprsNet.Packets.MergedPacketOrigin? DuplicateOf) -> void
+AprsNet.Packets.MergedPacketOrigin
+AprsNet.Packets.MergedPacketOrigin.<Clone>$() -> AprsNet.Packets.MergedPacketOrigin!
+AprsNet.Packets.MergedPacketOrigin.Deconstruct(out string! Source, out System.DateTimeOffset ReceivedAt) -> void
+AprsNet.Packets.MergedPacketOrigin.Equals(AprsNet.Packets.MergedPacketOrigin? other) -> bool
+AprsNet.Packets.MergedPacketOrigin.MergedPacketOrigin(string! Source, System.DateTimeOffset ReceivedAt) -> void
+AprsNet.Packets.MergedPacketOrigin.ReceivedAt.get -> System.DateTimeOffset
+AprsNet.Packets.MergedPacketOrigin.ReceivedAt.init -> void
+AprsNet.Packets.MergedPacketOrigin.Source.get -> string!
+AprsNet.Packets.MergedPacketOrigin.Source.init -> void
+AprsNet.Packets.MergedPacket.Packet.get -> AprsNet.Packets.AprsPacket!
+AprsNet.Packets.MergedPacket.Packet.init -> void
+AprsNet.Packets.MergedPacket.ReceivedAt.get -> System.DateTimeOffset
+AprsNet.Packets.MergedPacket.ReceivedAt.init -> void
+AprsNet.Packets.MergedPacket.Source.get -> string!
+AprsNet.Packets.MergedPacket.Source.init -> void
+AprsNet.Packets.PacketMerger
+AprsNet.Packets.PacketMerger.Add(string! source, System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>! packets) -> System.Threading.Tasks.Task!
+AprsNet.Packets.PacketMerger.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Packets.PacketMerger.PacketMerger(AprsNet.Packets.DuplicateFilter? duplicates = null, int capacity = 1024, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Packets.PacketMerger.ReadAllAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.MergedPacket!>!
+AprsNet.Packets.PacketMerger.RemoveAsync(string! source) -> System.Threading.Tasks.Task<bool>!
+AprsNet.Packets.PacketMerger.Sources.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+~override AprsNet.Packets.DuplicateCheck.Equals(object obj) -> bool
+override AprsNet.Packets.DuplicateCheck.GetHashCode() -> int
+~override AprsNet.Packets.DuplicateCheck.ToString() -> string
+override AprsNet.Packets.MergedPacket.Equals(object? obj) -> bool
+override AprsNet.Packets.MergedPacket.GetHashCode() -> int
+override AprsNet.Packets.MergedPacketOrigin.Equals(object? obj) -> bool
+override AprsNet.Packets.MergedPacketOrigin.GetHashCode() -> int
+override AprsNet.Packets.MergedPacketOrigin.ToString() -> string!
+override AprsNet.Packets.MergedPacket.ToString() -> string!
+static AprsNet.Packets.DuplicateCheck.operator !=(AprsNet.Packets.DuplicateCheck left, AprsNet.Packets.DuplicateCheck right) -> bool
+static AprsNet.Packets.DuplicateCheck.operator ==(AprsNet.Packets.DuplicateCheck left, AprsNet.Packets.DuplicateCheck right) -> bool
+static AprsNet.Packets.MergedPacket.operator !=(AprsNet.Packets.MergedPacket? left, AprsNet.Packets.MergedPacket? right) -> bool
+static AprsNet.Packets.MergedPacket.operator ==(AprsNet.Packets.MergedPacket? left, AprsNet.Packets.MergedPacket? right) -> bool
+static AprsNet.Packets.MergedPacketOrigin.operator !=(AprsNet.Packets.MergedPacketOrigin? left, AprsNet.Packets.MergedPacketOrigin? right) -> bool
+static AprsNet.Packets.MergedPacketOrigin.operator ==(AprsNet.Packets.MergedPacketOrigin? left, AprsNet.Packets.MergedPacketOrigin? right) -> bool

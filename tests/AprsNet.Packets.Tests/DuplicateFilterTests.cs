@@ -127,4 +127,23 @@ public sealed class DuplicateFilterTests
         Assert.Equal("", default(PacketIdentity).Value);
         Assert.Throws<ArgumentNullException>(() => PacketIdentity.Of(null!));
     }
+
+    [Fact]
+    public void CheckReportsWhereAndWhenTheFirstCopyWasHeard()
+    {
+        var dedupe = new DuplicateFilter(timeProvider: _time);
+        var first = _time.GetUtcNow();
+        var check = dedupe.Check(P("N0CALL>APRS,qAR,IGATE:>hello"), "aprs-is");
+        _time.Advance(TimeSpan.FromSeconds(3));
+        var again = dedupe.Check(P("N0CALL>APRS:>hello"), "kiss");
+        var unnamed = dedupe.Check(P("N0CALL>APRS:>other"));
+
+        Assert.Equal(new DuplicateCheck(PacketIdentity.Of(P("N0CALL>APRS:>hello")), false, "aprs-is", first), check);
+        Assert.True(again.IsDuplicate);
+        Assert.Equal("aprs-is", again.FirstSource);
+        Assert.Equal(first, again.FirstSeen);
+        Assert.Equal(check.Identity, again.Identity);
+        Assert.Null(unnamed.FirstSource);
+        Assert.False(dedupe.TryAccept(P("N0CALL>APRS:>other")));
+    }
 }
