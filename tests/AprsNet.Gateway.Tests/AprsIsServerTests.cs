@@ -24,7 +24,7 @@ public sealed class AprsIsServerTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _server.DisposeAsync();
 
-    private AprsIsServer Start(int maxClients = 100)
+    private AprsIsServer Start(int maxClients = 100, TimeSpan history = default, int maxHistory = 100_000)
     {
         var server = new AprsIsServer(
             new AprsIsServerOptions
@@ -32,6 +32,8 @@ public sealed class AprsIsServerTests : IAsyncLifetime
                 ServerName = "T2TEST",
                 EndPoint = new IPEndPoint(IPAddress.Loopback, 0),
                 MaxClients = maxClients,
+                History = history,
+                MaxHistoryPackets = maxHistory,
                 SoftwareName = "APRS.NET",
                 SoftwareVersion = "9.9",
                 TimeProvider = _time,
@@ -309,6 +311,58 @@ public sealed class AprsIsServerTests : IAsyncLifetime
         }
 
         await WaitUntil(() => server.ClientCount == 0);
+    }
+
+    [Fact]
+    public async Task ANewClientGetsTheRecentPacketsItsFilterPasses()
+    {
+        await using var server = Start(history: TimeSpan.FromMinutes(1));
+        server.Publish(AprsPacket.Parse("N1OLD>APRS:>too old"));
+        _time.Advance(TimeSpan.FromSeconds(61));
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:>first"));
+        server.Publish(AprsPacket.Parse("N2ABC>APRS:>filtered out"));
+        server.Publish(AprsPacket.Parse("N9XYZ>APRS::N0CALL   :a message"));
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:>second"));
+
+        await using var client = await Client.ConnectAsync(server);
+        await client.ReadAsync();
+        await client.WriteAsync($"{Login} filter p/N1");
+        Assert.StartsWith("# logresp", await client.ReadAsync());
+        Assert.Equal("# filter p/N1 active", await client.ReadAsync());
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:>live"));
+
+        Assert.Equal("N1ABC>APRS:>first", await client.ReadAsync());
+        Assert.Equal("N9XYZ>APRS::N0CALL   :a message", await client.ReadAsync());
+        Assert.Equal("N1ABC>APRS:>second", await client.ReadAsync());
+        Assert.Equal("N1ABC>APRS:>live", await client.ReadAsync());
+    }
+
+    [Fact]
+    public async Task TheHistoryKeepsOnlyTheNewestPackets()
+    {
+        await using var server = Start(history: TimeSpan.FromHours(1), maxHistory: 2);
+        foreach (var n in new[] { "1", "2", "3" })
+        {
+            server.Publish(AprsPacket.Parse($"N1ABC>APRS:>packet {n}"));
+        }
+
+        await using var client = await Client.ConnectAsync(server);
+        await client.ReadAsync();
+        await client.WriteAsync($"{Login} filter p/N1");
+        await client.ReadAsync();
+        await client.ReadAsync();
+        Assert.Equal("N1ABC>APRS:>packet 2", await client.ReadAsync());
+        Assert.Equal("N1ABC>APRS:>packet 3", await client.ReadAsync());
+    }
+
+    [Fact]
+    public async Task WithoutHistoryOnlyNewPacketsArrive()
+    {
+        Publish("N1ABC>APRS:>before");
+        await using var client = await LoggedInAsync("filter p/N1");
+        await client.ReadAsync();
+        Publish("N1ABC>APRS:>after");
+        Assert.Equal("N1ABC>APRS:>after", await client.ReadAsync());
     }
 
     private void Publish(string line) => _server.Publish(AprsPacket.Parse(line));

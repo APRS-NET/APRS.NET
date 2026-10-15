@@ -34,6 +34,16 @@ public sealed partial class AprsIsServerOptions
     /// </summary>
     public int ClientQueueLength { get; init; } = 1000;
 
+    /// <summary>
+    /// How far back a client sees on login: published packets this recent that pass its filter are sent first, so a
+    /// map fills in at once. <see cref="TimeSpan.Zero"/>, the default, sends only new packets. At most
+    /// <see cref="MaxHistoryPackets"/> are kept.
+    /// </summary>
+    public TimeSpan History { get; init; } = TimeSpan.Zero;
+
+    /// <summary>The most packets <see cref="History"/> keeps, oldest dropped first.</summary>
+    public int MaxHistoryPackets { get; init; } = 100_000;
+
     /// <summary>The software name in the banner and keepalives.</summary>
     public string SoftwareName { get; init; } = "APRS.NET";
 
@@ -61,6 +71,16 @@ public sealed partial class AprsIsServerOptions
         if (ClientQueueLength < 1)
         {
             throw new ArgumentOutOfRangeException(nameof(ClientQueueLength), ClientQueueLength, "Must be positive.");
+        }
+
+        if (History < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(History), History, "Must not be negative.");
+        }
+
+        if (MaxHistoryPackets < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(MaxHistoryPackets), MaxHistoryPackets, "Must be positive.");
         }
 
         if (LoginTimeout <= TimeSpan.Zero || KeepAliveInterval <= TimeSpan.Zero)
