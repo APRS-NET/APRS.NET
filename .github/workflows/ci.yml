@@ -177,7 +177,7 @@ jobs:
 
   tools:
     # The tools under tools/ are file-based apps outside the solution, so the build above does not compile them; and
-    # docs/spec/coverage is generated from the corpus, so it is checked like the symbol pages in symbols.yml.
+    # docs/spec/coverage and the device table are generated, so they are checked like the symbol pages in symbols.yml.
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
@@ -196,6 +196,13 @@ jobs:
             dotnet build "$tool"
             echo "::endgroup::"
           done
+      - name: Check the device table is up to date
+        run: |
+          dotnet run tools/deviceid/Generate.cs
+          if [ -n "$(git status --porcelain -- src/AprsNet.Packets/AprsDevices.Generated.cs)" ]; then
+            echo "::error::AprsDevices.Generated.cs is out of date. Run 'dotnet run tools/deviceid/Generate.cs' and commit the result."
+            exit 1
+          fi
       - name: Check the corpus coverage pages are up to date
         run: |
           dotnet run tools/corpus/Coverage.cs

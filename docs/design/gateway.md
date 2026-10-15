@@ -76,8 +76,9 @@ Decisions:
 
 ## De-duplication and history
 
-`PacketDeduplicator` applies the APRS-IS rule: the same source, destination and information field within 30 s of the
-first copy is a duplicate, whatever its path. The window runs from the first copy and is not extended by later ones,
+`PacketDeduplicator` applies the APRS-IS rule through `DuplicateFilter` from `AprsNet.Packets`, and counts what it
+drops: the same source, destination and information field within 30 s of the first copy is a duplicate, whatever its
+path. The window runs from the first copy and is not extended by later ones,
 so a beacon every 30 s is never dropped. On a 10-minute full-feed capture, already de-duplicated by the server, it drops
 2 of 54,468.
 

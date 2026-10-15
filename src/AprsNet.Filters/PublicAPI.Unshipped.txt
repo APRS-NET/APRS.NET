@@ -12,3 +12,37 @@ override AprsNet.Filters.AprsFilter.ToString() -> string!
 static AprsNet.Filters.AprsFilter.Empty.get -> AprsNet.Filters.AprsFilter!
 static AprsNet.Filters.AprsFilter.Parse(string! text) -> AprsNet.Filters.AprsFilter!
 static AprsNet.Filters.AprsFilter.TryParse(string? text, out AprsNet.Filters.AprsFilter? filter, out string? error) -> bool
+AprsNet.Filters.AprsFilter.CheckServerLimits() -> string?
+AprsNet.Filters.AprsFilterTerm
+AprsNet.Filters.AprsFilterTerm.Exclude() -> AprsNet.Filters.AprsFilterTerm!
+AprsNet.Filters.AprsFilterTerm.IsExclusion.get -> bool
+AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Items = 4 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Messages = 8 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Nws = 256 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Objects = 2 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Positions = 1 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Queries = 16 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.StatusReports = 32 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Telemetry = 64 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.UserDefined = 128 -> AprsNet.Filters.AprsFilterTypes
+AprsNet.Filters.AprsFilterTypes.Weather = 512 -> AprsNet.Filters.AprsFilterTypes
+const AprsNet.Filters.AprsFilter.ServerTermLimit = 9 -> int
+override AprsNet.Filters.AprsFilterTerm.ToString() -> string!
+static AprsNet.Filters.AprsFilter.Create(params System.Collections.Generic.IEnumerable<AprsNet.Filters.AprsFilterTerm!>! terms) -> AprsNet.Filters.AprsFilter!
+static AprsNet.Filters.AprsFilterTerm.Area(AprsNet.Packets.AprsBounds bounds) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Area(double north, double west, double south, double east) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Buddies(params System.Collections.Generic.IEnumerable<string!>! callsigns) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Destinations(params System.Collections.Generic.IEnumerable<string!>! destinations) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Digipeaters(params System.Collections.Generic.IEnumerable<string!>! callsigns) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.EntryStations(params System.Collections.Generic.IEnumerable<string!>! callsigns) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.FriendRange(string! callsign, double km) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.MessagesTo(params System.Collections.Generic.IEnumerable<string!>! addressees) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.MyRange(double km) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Objects(params System.Collections.Generic.IEnumerable<string!>! names) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Prefix(params System.Collections.Generic.IEnumerable<string!>! prefixes) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.QConstructs(string! letters) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Range(AprsNet.Packets.AprsPosition center, double km) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Symbols(string! primary, string! alternate = "", string! overlays = "") -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Types(AprsNet.Filters.AprsFilterTypes types) -> AprsNet.Filters.AprsFilterTerm!
+static AprsNet.Filters.AprsFilterTerm.Types(AprsNet.Filters.AprsFilterTypes types, string! callsign, double km) -> AprsNet.Filters.AprsFilterTerm!

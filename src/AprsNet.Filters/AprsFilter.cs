@@ -43,6 +43,28 @@ public sealed class AprsFilter
     /// <summary>A filter with no terms, which matches nothing.</summary>
     public static AprsFilter Empty { get; } = new([], [], "");
 
+    /// <summary>
+    /// The most range (<c>r/</c>) and friend-range (<c>f/</c>) terms an APRS-IS server accepts in one filter: 9 of each
+    /// (aprs-is.net, "Server-side Filter Commands").
+    /// </summary>
+    public const int ServerTermLimit = 9;
+
+    /// <summary>
+    /// A filter of the given terms, such as a range around a map view and a buddy list. It is the filter
+    /// <see cref="Parse"/> gives for its <see cref="ToString"/> text, so it can be sent to APRS-IS or evaluated here.
+    /// </summary>
+    /// <exception cref="ArgumentNullException">A term is <see langword="null"/>.</exception>
+    public static AprsFilter Create(params IEnumerable<AprsFilterTerm> terms)
+    {
+        ArgumentNullException.ThrowIfNull(terms);
+        var text = string.Join(' ', terms.Select(t => t?.ToString() ?? throw new ArgumentNullException(nameof(terms))));
+
+        // Every term writes text the parser accepts, so a failure here is a bug in AprsFilterTerm.
+        return TryParse(text, out var filter, out var error)
+            ? filter
+            : throw new InvalidOperationException($"A built filter did not parse: {error}");
+    }
+
     /// <summary>Parses a filter expression.</summary>
     /// <exception cref="FormatException"><paramref name="text"/> has a term that is not a valid filter.</exception>
     public static AprsFilter Parse(string text)
@@ -87,6 +109,22 @@ public sealed class AprsFilter
         filter = new AprsFilter([.. include], [.. exclude], string.Join(' ', terms));
         error = null;
         return true;
+    }
+
+    /// <summary>
+    /// Why an APRS-IS server would not accept this filter as it is, or <see langword="null"/> when it would: more than
+    /// <see cref="ServerTermLimit"/> range or friend-range terms. Local evaluation has no such limit.
+    /// </summary>
+    public string? CheckServerLimits()
+    {
+        var terms = _text.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(t => t.TrimStart('-')).ToArray();
+        var ranges = terms.Count(t => t.StartsWith("r/", StringComparison.Ordinal));
+        var friends = terms.Count(t => t.StartsWith("f/", StringComparison.Ordinal));
+        return ranges > ServerTermLimit
+                ? $"APRS-IS servers accept at most {ServerTermLimit} range (r/) terms; this filter has {ranges}."
+            : friends > ServerTermLimit
+                ? $"APRS-IS servers accept at most {ServerTermLimit} friend (f/) terms; this filter has {friends}."
+            : null;
     }
 
     /// <summary>Whether the filter has no terms, so it matches nothing.</summary>

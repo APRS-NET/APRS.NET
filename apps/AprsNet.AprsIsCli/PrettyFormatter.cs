@@ -305,7 +305,7 @@ internal static class PrettyFormatter
             case MicEReport mice:
                 var message = PacketFormatter.MicEMessageName(mice.Message);
                 fields.Add(("Mic-E", mice.Message == MicEMessage.Emergency ? style.Red(message) : message));
-                fields.Add(("device", mice.Device ?? "not identified"));
+                fields.Add(("device", mice.Device?.ToString() ?? "not identified"));
                 fields.Add(("fix", mice.IsCurrentFix ? "current" : "old"));
                 fields.Add(("messaging", mice.IsMessagingCapable ? "yes" : "no"));
                 if (mice.MaidenheadLocator is { } locator)
