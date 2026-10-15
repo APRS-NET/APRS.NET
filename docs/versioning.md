@@ -8,7 +8,9 @@ pre-release.
 
 ## How it works
 
-1. Commits to `main` use [Conventional Commits](https://www.conventionalcommits.org). With squash merges the **PR title** is the commit message, so the `pr-title` workflow checks it.
+1. Commits to `main` use [Conventional Commits](https://www.conventionalcommits.org). Pull requests are rebase-merged, so
+   every commit lands on `main` as written and release-please reads each one: the `commits` workflow checks every
+   commit in a pull request, and `pr-title` checks the title.
 2. `release-please` (the `release` workflow) keeps a release PR open that bumps the version and updates `CHANGELOG.md`.
 3. Merging that PR creates the `vX.Y.Z` tag and a GitHub release. The `pack` job then builds the tag, runs the tests, and attaches the `.nupkg` and `.snupkg` files to the release.
 4. [MinVer](https://github.com/adamralph/minver) derives each assembly and package version from the nearest tag, so no version number is stored in the repo. Builds between releases look like `0.1.1-alpha.0.3`.

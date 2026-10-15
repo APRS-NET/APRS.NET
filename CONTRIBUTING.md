@@ -54,8 +54,9 @@ See [docs/public-api.md](docs/public-api.md).
 
 ## Commits and pull requests
 
-Commit messages and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org), and a
-workflow checks the title. The type decides the release, so pick it by what ships:
+Commit messages and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org), and
+workflows check both. Pull requests are rebase-merged, so every commit reaches `main` as written: keep each one
+focused, with its own type. The type decides the release, so pick it by what ships:
 
 | Change | Type |
 | --- | --- |
