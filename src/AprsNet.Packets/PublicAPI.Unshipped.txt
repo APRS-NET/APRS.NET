@@ -590,3 +590,10 @@ AprsNet.Packets.TelemetryReport.SequenceNumber.init -> void
 AprsNet.Packets.TelemetryReport.TelemetryReport() -> void
 AprsNet.Packets.PositionedPayload.Telemetry.get -> AprsNet.Packets.TelemetryReport?
 AprsNet.Packets.PositionedPayload.Telemetry.init -> void
+AprsNet.Packets.CapabilitiesReport.Capabilities.init -> void
+AprsNet.Packets.CapabilitiesReport.CapabilitiesReport() -> void
+AprsNet.Packets.UserDefinedPayload.Data.init -> void
+AprsNet.Packets.UserDefinedPayload.UserDefinedPayload() -> void
+AprsNet.Packets.UserDefinedPayload.UserId.init -> void
+AprsNet.Packets.UserDefinedPayload.UserPacketType.init -> void
+static AprsNet.Packets.CapabilitiesReport.ForIGate(int? messageCount, int? localStationCount) -> AprsNet.Packets.CapabilitiesReport!

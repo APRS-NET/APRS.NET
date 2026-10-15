@@ -612,10 +612,17 @@ address.Create(new TelemetryDefinition
   test rebuilds them from their values alone, leaving out what the encoder refuses in new payloads: decimal or
   negative values, and SvxLink's 69-character `UNIT.` definitions.
 
-Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects, items, weather
-and telemetry. Other payload types (raw weather station data, capabilities, user-defined data) throw
-`NotSupportedException`.
+### Capabilities and user-defined data
+
+`CapabilitiesReport.ForIGate(messageCount, localStationCount)` builds the `<IGATE,MSG_CNT=n,LOC_CNT=n` an IGate
+announces; any other list of tokens can be set on `Capabilities`. Tokens and values cannot contain commas (tokens no
+`=`, neither surrounding spaces), since the receiver splits and trims on them. `UserDefinedPayload` writes `{`, a
+printable user ID (`{` for experimental), a printable packet type and the data. Capabilities text now decodes like
+every other text field, as UTF-8 when valid and Latin-1 otherwise, so a WinAPRS `DX=…(12.5mi 241°)` reads the same
+after a round trip. All 1,433 of both in the corpus rebuild byte for byte and from their values alone.
+
+Supported: every payload the parser decodes, apart from raw weather station data (`!!`, `$ULTW`, `#`, `*`), which
+APRS 1.1 discourages and whose layouts belong to the manufacturers; it throws `NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)
 

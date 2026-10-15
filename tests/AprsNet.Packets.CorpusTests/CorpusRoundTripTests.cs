@@ -36,6 +36,8 @@ public class CorpusRoundTripTests
                                 or WeatherReport
                                 or TelemetryReport
                                 or TelemetryDefinition
+                                or CapabilitiesReport
+                                or UserDefinedPayload
                         }
                     || packet.Payload is MicEReport { Message: MicEMessage.Unknown } or ObjectReport { Timestamp: null }
                 )
@@ -415,6 +417,58 @@ public class CorpusRoundTripTests
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {reports + definitions}:\n" + string.Join("\n", failures.Take(60))
+        );
+    }
+
+    [Fact]
+    public void CapabilitiesAndUserDefinedDataRebuiltFromTheirValuesDecodeTheSame()
+    {
+        var checkedPackets = 0;
+        var failures = new List<string>();
+        foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in CorpusParsingTests.Packets(file))
+            {
+                var packet = AprsPacket.Parse(bytes);
+                AprsPayload copy;
+                switch (packet)
+                {
+                    case { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: CapabilitiesReport report }
+                        when report.Capabilities.Count > 0
+                            && !report.Capabilities.Any(c => (c.Key + c.Value).Any(char.IsControl)):
+                        copy = new CapabilitiesReport { Capabilities = report.Capabilities };
+                        break;
+                    case { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: UserDefinedPayload user }
+                        when user.UserId is >= '!' and <= '~'
+                            && user.UserPacketType is >= '!' and <= '~'
+                            && !user.Data.Any(char.IsControl):
+                        copy = new UserDefinedPayload
+                        {
+                            UserId = user.UserId,
+                            UserPacketType = user.UserPacketType,
+                            Data = user.Data,
+                        };
+                        break;
+                    default:
+                        continue;
+                }
+
+                checkedPackets++;
+                try
+                {
+                    AprsPacket.Create(packet.Source, packet.Destination, packet.Path, copy);
+                }
+                catch (ArgumentException ex)
+                {
+                    failures.Add($"{file}:{lineNumber} {ex.Message} {packet}");
+                }
+            }
+        }
+
+        Assert.True(checkedPackets > 1_400, $"only {checkedPackets} packets");
+        Assert.True(
+            failures.Count == 0,
+            $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
         );
     }
 }
