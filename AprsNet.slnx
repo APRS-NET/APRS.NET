@@ -30,7 +30,6 @@
     <Project Path="apps/AprsNet.AprsIsCli/AprsNet.AprsIsCli.csproj" />
   </Folder>
   <Folder Name="/docs/">
-    <File Path="docs/packet-types.md" />
     <File Path="docs/public-api.md" />
     <File Path="docs/versioning.md" />
   </Folder>
