@@ -62,7 +62,8 @@ workflow checks the title. The type decides the release, so pick it by what ship
 | A library in `src/` gains a feature | `feat:` (`feat(packets):`, `feat(aprs-is):`) |
 | A library in `src/` gets a fix | `fix:` |
 | A breaking library change | `feat!:` or `fix!:` |
-| The CLI, tests, tools, docs, CI, benchmarks | `chore:`, `test:`, `docs:`, `ci:`, `build:` |
+| The `aprscli` tool gains a feature or gets a fix | `feat(cli):` or `fix(cli):` |
+| Tests, tools, docs, CI, benchmarks | `chore:`, `test:`, `docs:`, `ci:`, `build:` |
 
 Only `src/` changes produce a release; [docs/versioning.md](docs/versioning.md) has the details. Explain in the body
 why the change is needed and anything a reviewer should check, and keep unrelated changes in separate pull requests.
