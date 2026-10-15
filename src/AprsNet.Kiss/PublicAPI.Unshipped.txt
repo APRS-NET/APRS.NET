@@ -1,0 +1,38 @@
+#nullable enable
+AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.Data = 0 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.FullDuplex = 5 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.Persistence = 2 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.Return = 15 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.SetHardware = 6 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.SlotTime = 3 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.TxDelay = 1 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissCommand.TxTail = 4 -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissDecoder
+AprsNet.Kiss.KissDecoder.Decode(System.ReadOnlySpan<byte> bytes) -> System.Collections.Generic.IReadOnlyList<AprsNet.Kiss.KissFrame>!
+AprsNet.Kiss.KissDecoder.DroppedFrames.get -> long
+AprsNet.Kiss.KissDecoder.KissDecoder(int maxFrameLength = 2048) -> void
+AprsNet.Kiss.KissDecoder.MaxFrameLength.get -> int
+AprsNet.Kiss.KissFrame
+AprsNet.Kiss.KissFrame.Command.get -> AprsNet.Kiss.KissCommand
+AprsNet.Kiss.KissFrame.Command.init -> void
+AprsNet.Kiss.KissFrame.Deconstruct(out int Port, out AprsNet.Kiss.KissCommand Command, out System.ReadOnlyMemory<byte> Payload) -> void
+AprsNet.Kiss.KissFrame.Encode() -> byte[]!
+AprsNet.Kiss.KissFrame.Equals(AprsNet.Kiss.KissFrame other) -> bool
+AprsNet.Kiss.KissFrame.KissFrame(int Port, AprsNet.Kiss.KissCommand Command, System.ReadOnlyMemory<byte> Payload) -> void
+AprsNet.Kiss.KissFrame.KissFrame() -> void
+AprsNet.Kiss.KissFrame.Payload.get -> System.ReadOnlyMemory<byte>
+AprsNet.Kiss.KissFrame.Payload.init -> void
+AprsNet.Kiss.KissFrame.Port.get -> int
+AprsNet.Kiss.KissFrame.Port.init -> void
+AprsNet.Kiss.KissFrame.TryGetAx25(out AprsNet.Ax25.Ax25Frame? frame) -> bool
+const AprsNet.Kiss.KissFrame.FrameEnd = 192 -> byte
+const AprsNet.Kiss.KissFrame.FrameEscape = 219 -> byte
+const AprsNet.Kiss.KissFrame.TransposedFrameEnd = 220 -> byte
+const AprsNet.Kiss.KissFrame.TransposedFrameEscape = 221 -> byte
+~override AprsNet.Kiss.KissFrame.Equals(object obj) -> bool
+override AprsNet.Kiss.KissFrame.GetHashCode() -> int
+~override AprsNet.Kiss.KissFrame.ToString() -> string
+static AprsNet.Kiss.KissFrame.ForAx25(AprsNet.Ax25.Ax25Frame! frame, int port = 0) -> AprsNet.Kiss.KissFrame
+static AprsNet.Kiss.KissFrame.operator !=(AprsNet.Kiss.KissFrame left, AprsNet.Kiss.KissFrame right) -> bool
+static AprsNet.Kiss.KissFrame.operator ==(AprsNet.Kiss.KissFrame left, AprsNet.Kiss.KissFrame right) -> bool
