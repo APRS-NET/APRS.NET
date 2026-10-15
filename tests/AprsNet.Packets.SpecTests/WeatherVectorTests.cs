@@ -44,7 +44,7 @@ public class WeatherVectorTests
                     CheckWeather(id, e, weather, comment);
                     break;
                 case "timestamp" when packet.Payload is WeatherReport report:
-                    PositionVectorTests.Timestamp(e, report.Timestamp);
+                    PositionVectorTests.Timestamp(e, report.Timestamp!.Value);
                     break;
                 default:
                     Assert.True(

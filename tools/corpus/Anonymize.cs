@@ -1,5 +1,4 @@
 #:property TargetFramework=net10.0
-#:property TargetFrameworks=
 #:property PublishAot=false
 
 // Anonymizes aprscli capture files ("<UTC timestamp> <raw line>", Latin-1) for tests/corpus.

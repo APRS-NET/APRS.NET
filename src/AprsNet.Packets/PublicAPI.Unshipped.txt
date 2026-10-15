@@ -409,7 +409,7 @@ AprsNet.Packets.WeatherData.WindSpeedMph.get -> double?
 AprsNet.Packets.WeatherReport
 AprsNet.Packets.WeatherReport.CommentBytes.get -> System.ReadOnlyMemory<byte>
 AprsNet.Packets.WeatherReport.Comment.get -> string!
-AprsNet.Packets.WeatherReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp
+AprsNet.Packets.WeatherReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp?
 AprsNet.Packets.WeatherReport.Weather.get -> AprsNet.Packets.WeatherData!
 AprsNet.Packets.ParseIssueCode.UnpaddedAddressee = 21 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.CapabilitiesReport
@@ -575,3 +575,25 @@ override AprsNet.Packets.WeatherData.GetHashCode() -> int
 override AprsNet.Packets.WeatherData.ToString() -> string!
 static AprsNet.Packets.WeatherData.operator !=(AprsNet.Packets.WeatherData? left, AprsNet.Packets.WeatherData? right) -> bool
 static AprsNet.Packets.WeatherData.operator ==(AprsNet.Packets.WeatherData? left, AprsNet.Packets.WeatherData? right) -> bool
+AprsNet.Packets.TelemetryDefinition.Addressee.init -> void
+AprsNet.Packets.TelemetryDefinition.BitSense.init -> void
+AprsNet.Packets.TelemetryDefinition.Equations.init -> void
+AprsNet.Packets.TelemetryDefinition.Kind.init -> void
+AprsNet.Packets.TelemetryDefinition.Labels.init -> void
+AprsNet.Packets.TelemetryDefinition.ProjectName.init -> void
+AprsNet.Packets.TelemetryDefinition.TelemetryDefinition() -> void
+AprsNet.Packets.TelemetryReport.Analog.init -> void
+AprsNet.Packets.TelemetryReport.Comment.init -> void
+AprsNet.Packets.TelemetryReport.Digital.init -> void
+AprsNet.Packets.TelemetryReport.Sequence.init -> void
+AprsNet.Packets.TelemetryReport.SequenceNumber.init -> void
+AprsNet.Packets.TelemetryReport.TelemetryReport() -> void
+AprsNet.Packets.PositionedPayload.Telemetry.get -> AprsNet.Packets.TelemetryReport?
+AprsNet.Packets.PositionedPayload.Telemetry.init -> void
+AprsNet.Packets.CapabilitiesReport.Capabilities.init -> void
+AprsNet.Packets.CapabilitiesReport.CapabilitiesReport() -> void
+AprsNet.Packets.UserDefinedPayload.Data.init -> void
+AprsNet.Packets.UserDefinedPayload.UserDefinedPayload() -> void
+AprsNet.Packets.UserDefinedPayload.UserId.init -> void
+AprsNet.Packets.UserDefinedPayload.UserPacketType.init -> void
+static AprsNet.Packets.CapabilitiesReport.ForIGate(int? messageCount, int? localStationCount) -> AprsNet.Packets.CapabilitiesReport!

@@ -38,6 +38,8 @@ internal sealed class PositionFields
 
     public char? Datum { get; set; }
 
+    public TelemetryReport? Telemetry { get; set; }
+
     public ReadOnlyMemory<byte> CommentBytes { get; set; }
 
     public string Comment { get; set; } = "";

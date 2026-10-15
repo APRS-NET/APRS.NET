@@ -22,7 +22,10 @@ internal static class WeatherDecoder
             return DecodeRaw(information.Span);
         }
 
-        if (!AprsTimestamp.TryParseMonthDay(information.Span[1..], out var timestamp))
+        AprsTimestamp? timestamp = AprsTimestamp.TryParseMonthDay(information.Span[1..], out var parsed)
+            ? parsed
+            : null;
+        if (timestamp is null && information.Length < 9)
         {
             issues.Add(new ParseIssue(ParseIssueCode.InvalidTimestamp, ParseIssueSeverity.Error, offset + 1));
             return null;
@@ -41,13 +44,30 @@ internal static class WeatherDecoder
             }
         }
 
-        at += ReadFields(body.Span[at..], ref weather, out _);
+        at += ReadFields(body.Span[at..], ref weather, out var fields);
+        if (timestamp is null)
+        {
+            // Stations without a clock send _00000000: with readings behind it, only the time is lost.
+            var readable = fields > 0 || at > 0;
+            issues.Add(
+                new ParseIssue(
+                    ParseIssueCode.InvalidTimestamp,
+                    readable ? ParseIssueSeverity.Warning : ParseIssueSeverity.Error,
+                    offset + 1
+                )
+            );
+            if (!readable)
+            {
+                return null;
+            }
+        }
+
         var comment = body[at..];
         return new WeatherReport
         {
             Timestamp = timestamp,
             Weather = weather,
-            ReadingsBytes = body[..at],
+            ReadingsBytes = information[1..(9 + at)],
             CommentBytes = comment,
             Comment = AprsText.Decode(comment.Span),
         };
@@ -106,7 +126,7 @@ internal static class WeatherDecoder
         }
 
         target.Weather = weather;
-        target.Comment = PositionDecoder.ApplyDao(target.Position, text[used..]).Comment;
+        target.Comment = PositionDecoder.ApplyDao(target.Position, CommentTelemetry.Strip(text[used..], out _)).Comment;
     }
 
     /// <summary>Reads fields until a byte that does not start one; returns the bytes used.</summary>

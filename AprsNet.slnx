@@ -2,6 +2,7 @@
   <Folder Name="/Solution Items/">
     <File Path="AI-DECLARATION.md" />
     <File Path="BannedSymbols.txt" />
+    <File Path="CONTRIBUTING.md" />
     <File Path="BannedSymbols.Library.txt" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
@@ -29,12 +30,17 @@
   <Folder Name="/apps/">
     <Project Path="apps/AprsNet.AprsIsCli/AprsNet.AprsIsCli.csproj" />
   </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/AprsNet.Packets.Benchmarks/AprsNet.Packets.Benchmarks.csproj" />
+  </Folder>
   <Folder Name="/docs/">
+    <File Path="docs/benchmarks.md" />
     <File Path="docs/public-api.md" />
     <File Path="docs/versioning.md" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
+    <Project Path="src/AprsNet.Extensions.DependencyInjection/AprsNet.Extensions.DependencyInjection.csproj" />
     <Project Path="src/AprsNet.Filters/AprsNet.Filters.csproj" />
     <Project Path="src/AprsNet.Packets/AprsNet.Packets.csproj" />
     <Project Path="src/AprsNet.Symbols/AprsNet.Symbols.csproj" />
@@ -42,6 +48,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/AprsNet.AprsIsCli.Tests/AprsNet.AprsIsCli.Tests.csproj" />
     <Project Path="tests/AprsNet.AprsIsTcpClient.Tests/AprsNet.AprsIsTcpClient.Tests.csproj" />
+    <Project Path="tests/AprsNet.Extensions.DependencyInjection.Tests/AprsNet.Extensions.DependencyInjection.Tests.csproj" />
     <Project Path="tests/AprsNet.Filters.Tests/AprsNet.Filters.Tests.csproj" />
     <Project Path="tests/AprsNet.Packets.CorpusTests/AprsNet.Packets.CorpusTests.csproj" />
     <Project Path="tests/AprsNet.Packets.SpecTests/AprsNet.Packets.SpecTests.csproj" />

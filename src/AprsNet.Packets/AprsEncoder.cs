@@ -23,9 +23,12 @@ internal static class AprsEncoder
             ObjectReport report => PositionEncoder.Encode(report),
             ItemReport item => PositionEncoder.Encode(item),
             WeatherReport weather => WeatherEncoder.Encode(weather),
+            TelemetryReport telemetry => TelemetryEncoder.Encode(telemetry),
+            TelemetryDefinition definition => TelemetryEncoder.Encode(definition),
+            CapabilitiesReport capabilities => Capabilities(capabilities),
+            UserDefinedPayload userDefined => UserDefined(userDefined),
             _ => throw new NotSupportedException(
-                $"Encoding {payload.GetType().Name} is not supported yet; status reports, messages, position "
-                    + "reports, Mic-E reports, objects, items and weather reports are."
+                $"Encoding {payload.GetType().Name} is not supported; raw weather station data is only decoded."
             ),
         };
 
@@ -49,8 +52,68 @@ internal static class AprsEncoder
             : e.IsLive != a.IsLive ? "the live or killed flag does not survive encoding"
             : PositionMismatch(e, a),
             (WeatherReport e, WeatherReport a) => WeatherMismatch(e, a),
+            (TelemetryReport e, TelemetryReport a) => TelemetryEncoder.Mismatch(e, a),
+            (TelemetryDefinition e, TelemetryDefinition a) => TelemetryEncoder.Mismatch(e, a),
+            (CapabilitiesReport e, CapabilitiesReport a) => !e.Capabilities.SequenceEqual(a.Capabilities)
+                ? "the capabilities do not survive encoding"
+                : null,
+            (UserDefinedPayload e, UserDefinedPayload a) => e.UserId != a.UserId || e.UserPacketType != a.UserPacketType
+                ? "the user ID or packet type does not survive encoding"
+            : e.Data != a.Data ? "the data does not survive encoding"
+            : null,
             _ => $"it decodes as {actual?.GetType().Name ?? "nothing"}, not {expected.GetType().Name}",
         };
+
+    /// <summary><c>&lt;</c> and the capabilities as <c>TOKEN</c> or <c>TOKEN=VALUE</c>, comma-separated.</summary>
+    private static byte[] Capabilities(CapabilitiesReport report)
+    {
+        if (!report.TextBytes.IsEmpty)
+        {
+            return [(byte)'<', .. report.TextBytes.Span];
+        }
+
+        if (report.Capabilities.Count == 0)
+        {
+            throw new ArgumentException("A capabilities report needs at least one capability, such as IGATE.");
+        }
+
+        var entries = new List<string>();
+        foreach (var (token, value) in report.Capabilities)
+        {
+            if (token.Length == 0 || token.AsSpan().IndexOfAny(',', '=') >= 0 || token.Trim() != token)
+            {
+                throw new ArgumentException(
+                    $"Capability token '{token}' must be non-empty, without ',' or '=' or surrounding spaces."
+                );
+            }
+
+            if (value is not null && (value.Contains(',', StringComparison.Ordinal) || value.Trim() != value))
+            {
+                throw new ArgumentException($"Capability value '{value}' must not contain ',' or surrounding spaces.");
+            }
+
+            entries.Add(value is null ? token : $"{token}={value}");
+        }
+
+        return [(byte)'<', .. TextBytes(ReadOnlyMemory<byte>.Empty, string.Join(',', entries), "capabilities")];
+    }
+
+    /// <summary><c>{</c>, the user ID, the packet type and the data.</summary>
+    private static byte[] UserDefined(UserDefinedPayload payload)
+    {
+        if (payload.UserId is < '!' or > '~' || payload.UserPacketType is < '!' or > '~')
+        {
+            throw new ArgumentException("The user ID and packet type are printable ASCII characters.");
+        }
+
+        return
+        [
+            (byte)'{',
+            (byte)payload.UserId,
+            (byte)payload.UserPacketType,
+            .. TextBytes(payload.DataBytes, payload.Data, "data"),
+        ];
+    }
 
     private static byte[] Status(StatusReport status)
     {
@@ -233,6 +296,7 @@ internal static class AprsEncoder
             : (e.Weather is null) != (a.Weather is null) ? "the comment would be read as weather readings"
             : e.Weather is { } sent && a.Weather is { } read && WeatherEncoder.Mismatch(sent, read) is { } weather
                 ? weather
+            : CommentTelemetry.Mismatch(e.Telemetry, a.Telemetry) is { } telemetry ? telemetry
             : PositionEncoder.ExpectedComment(e) != a.Comment ? "the comment does not survive encoding"
             : null;
 

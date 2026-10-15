@@ -1206,4 +1206,52 @@ public class ListenTests
             Directory.Delete(Path, true);
         }
     }
+
+    [Fact]
+    public async Task StatsSummarizeThePacketsAtTheEnd()
+    {
+        var harness = WithPackets(
+            "W1AW>APRS:>one",
+            "W1AW>APRS:!4903.50N/07201.75W>",
+            "W1AW>APRS:>two",
+            "W1AW>APRS:!9903.50N/07201.75W>",
+            "WU2Z>APRS::NZ0P     :Hello{1",
+            "WU2Z>APRS::NZ0P-9   :Not for this SSID{2",
+            "WU2Z>APRS:%not a known type"
+        );
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-n", "7", "--stats", "1h", "-q"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(
+            "7 packets (1 malformed, 1 unsupported, 1 to NZ0P); position 2, message 2, status 2, unknown 1",
+            result.Error,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public async Task WithoutStatsNoSummaryIsPrinted()
+    {
+        var harness = WithPackets(_packets[0]);
+
+        var result = await harness.RunAsync(["listen", "-c", "NZ0P", "-n", "1"], TestContext.Current.CancellationToken);
+
+        Assert.DoesNotContain("packets (", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnInvalidStatsIntervalIsAUsageError()
+    {
+        var result = await new CliHarness().RunAsync(
+            ["listen", "-c", "NZ0P", "--stats", "often"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("--stats 'often' is not valid", result.Error, StringComparison.Ordinal);
+    }
 }

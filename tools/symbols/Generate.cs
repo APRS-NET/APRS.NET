@@ -1,6 +1,5 @@
 #:project ../../src/AprsNet.Symbols/AprsNet.Symbols.csproj
 #:property TargetFramework=net10.0
-#:property TargetFrameworks=
 #:property PublishAot=false
 
 // Writes the symbol pages from AprsNet.Symbols, so they always show what the library draws:
