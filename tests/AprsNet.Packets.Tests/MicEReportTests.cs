@@ -150,16 +150,14 @@ public class MicEReportTests
     }
 
     [Theory]
-    [InlineData("`" + _body + ">Hello", "TH-D7A", true, "Hello")]
-    [InlineData("`" + _body + ">Hello&", "TH-D75", true, "Hello")]
+    [InlineData("`" + _body + ">Hello", "TH-D7", true, "Hello")]
     [InlineData("`" + _body + ">Hello=", "TH-D72", true, "Hello")]
     [InlineData("`" + _body + ">Hello^", "TH-D74", true, "Hello")]
     [InlineData("`" + _body + "]Hello", "TM-D700", true, "Hello")]
     [InlineData("`" + _body + "]Hello=", "TM-D710", true, "Hello")]
     [InlineData("`" + _body + "`Hello _%", "FTM-400DR", true, "Hello ")]
     [InlineData("`" + _body + "`_1", "FTM-300D", true, "")]
-    [InlineData("'" + _body + "'Tracking|3", "TinyTrak3", false, "Tracking")]
-    [InlineData("`" + _body + "`Hello[1", "APRSdroid", true, "Hello")]
+    [InlineData("'" + _body + "'Tracking|3", "TinyTrack3", false, "Tracking")]
     [InlineData("`" + _body + "`Hello _9", null, true, "Hello _9")]
     [InlineData("`" + _body + " Original", null, false, "Original")]
     [InlineData("`" + _body + "Plain text", null, false, "Plain text")]
@@ -167,7 +165,7 @@ public class MicEReportTests
     {
         var report = Decode(information);
 
-        Assert.Equal(device, report.Device?.Model);
+        Assert.Equal(device, report.Device);
         Assert.Equal(messaging, report.IsMessagingCapable);
         Assert.Equal(comment, report.Comment);
     }
@@ -191,7 +189,7 @@ public class MicEReportTests
 
         Assert.Equal(61, report.AltitudeFeet!.Value * 0.3048, 6);
         Assert.Equal("Hello ", report.Comment);
-        Assert.Equal("FTM-300D", report.Device?.Model);
+        Assert.Equal("FTM-300D", report.Device);
     }
 
     [Fact]

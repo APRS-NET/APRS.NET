@@ -132,16 +132,6 @@ path.IsHeardDirectly;                         // false: a digipeater repeated it
 path.RemainingHopCount;                       // 1
 ```
 
-`AprsDevices` names the device or program that sent a packet, from the
-[aprs-deviceid](https://github.com/aprsorg/aprs-deviceid) list built into the package (CC BY-SA 2.0; see
-THIRD-PARTY-NOTICES.md):
-
-```csharp
-AprsDevices.Identify(packet);              // by the TOCALL, or for Mic-E by its device codes
-AprsDevices.FromTocall("APDW17");          // WB2OSZ DireWolf
-Console.WriteLine($"{AprsDevices.ListCommit} {AprsDevices.ListDate}");
-```
-
 Input a person types (`Callsign.Parse`, `PathEntry.Parse`, `PacketAddress.Parse`) is refused with
 `AprsValidationException`, an `ArgumentException` with a stable `Code` (`AprsValidationErrorCode`) for an app to
 translate, and `Index`/`Character` for the offending character. Codes are never renamed; the English message may be.

@@ -1,8 +1,8 @@
 # Device identification list
 
 `tocalls.yaml` is an unmodified copy of the [aprs-deviceid](https://github.com/aprsorg/aprs-deviceid) list (CC BY-SA
-2.0, see [THIRD-PARTY-NOTICES.md](../../THIRD-PARTY-NOTICES.md)). `tocalls.version` holds the commit it was taken from
-and that commit's date. `Generate.cs` turns it into `src/AprsNet.Packets/AprsDevices.Generated.cs`, and CI fails if the
+2.0, see [the package licence](../../src/AprsNet.DeviceId/LICENSE.md)). `tocalls.version` holds the commit it was taken from
+and that commit's date. `Generate.cs` turns it into `src/AprsNet.DeviceId/AprsDevices.Generated.cs`, and CI fails if the
 generated file is out of date.
 
 To update the list:

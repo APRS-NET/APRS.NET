@@ -158,8 +158,8 @@ public class CorpusParsingTests
             "more Mic-E reports with a good destination fail than the few garbled ones known"
         );
         Assert.DoesNotContain(reports, p => p.Payload is not null && p.Issues.Count > 0);
-        Assert.Contains(reports, p => p.Payload is MicEReport { Device.Model: "TM-D710" });
-        Assert.Contains(reports, p => p.Payload is MicEReport { Device.Model: "FTM-400DR" });
+        Assert.Contains(reports, p => p.Payload is MicEReport { Device: "TM-D710" });
+        Assert.Contains(reports, p => p.Payload is MicEReport { Device: "FTM-400DR" });
     }
 
     [Fact]

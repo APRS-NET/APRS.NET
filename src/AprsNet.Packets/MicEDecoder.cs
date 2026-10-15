@@ -6,6 +6,28 @@ namespace AprsNet.Packets;
 /// </summary>
 internal static class MicEDecoder
 {
+    // Trailing manufacturer and version bytes after a ` or ' type byte (APRS 1.2 device table).
+    private static readonly Dictionary<string, string> _devices = new(StringComparer.Ordinal)
+    {
+        ["_ "] = "VX-8",
+        ["_\""] = "FTM-350",
+        ["_#"] = "VX-8G",
+        ["_$"] = "FT1D",
+        ["_%"] = "FTM-400DR",
+        ["_)"] = "FTM-100D",
+        ["_("] = "FT2D",
+        ["_0"] = "FT3D",
+        ["_3"] = "FT5D",
+        ["_1"] = "FTM-300D",
+        [" X"] = "AP510",
+        ["(5"] = "D578UV",
+        ["(8"] = "D878UV",
+        ["|3"] = "TinyTrack3",
+        ["|4"] = "TinyTrack4",
+        [":4"] = "DR-7400",
+        [":8"] = "DR-7800",
+    };
+
     /// <summary>
     /// Decodes a Mic-E report. <paramref name="offset"/> is where the information field starts in Raw and
     /// <paramref name="destinationOffset"/> where the destination does.
@@ -247,27 +269,39 @@ internal static class MicEDecoder
     }
 
     /// <summary>
-    /// The device from the type byte and the trailing device code, from the aprs-deviceid list, removing a recognised
-    /// code from the status (APRS 1.2, A12-MICE-02).
+    /// The device from the type byte and the trailing manufacturer code, removing a recognised code from the status
+    /// (APRS 1.2, A12-MICE-02).
     /// </summary>
-    private static AprsDevice? Device(char? type, ref ReadOnlyMemory<byte> status)
+    private static string? Device(char? type, ref ReadOnlyMemory<byte> status)
     {
         switch (type)
         {
-            case '>' or ']':
-                var device = AprsDevices.FromMicELegacy(
-                    type.Value,
-                    status.Length > 0 ? (char)status.Span[^1] : null,
-                    out var suffixUsed
-                );
-                status = suffixUsed ? status[..^1] : status;
-                return device;
+            case '>':
+                return Suffix(ref status, '=', "TH-D72") ?? Suffix(ref status, '^', "TH-D74") ?? "TH-D7";
+            case ']':
+                return Suffix(ref status, '=', "TM-D710") ?? "TM-D700";
             case '`' or '\'' when status.Length >= 2:
-                var code = AprsDevices.FromMicECode(System.Text.Encoding.Latin1.GetString(status.Span[^2..]));
-                status = code is null ? status : status[..^2];
-                return code;
+                var code = System.Text.Encoding.Latin1.GetString(status.Span[^2..]);
+                if (_devices.TryGetValue(code, out var device))
+                {
+                    status = status[..^2];
+                    return device;
+                }
+
+                return null;
             default:
                 return null;
+        }
+
+        static string? Suffix(ref ReadOnlyMemory<byte> status, char code, string name)
+        {
+            if (status.Length == 0 || status.Span[^1] != code)
+            {
+                return null;
+            }
+
+            status = status[..^1];
+            return name;
         }
     }
 

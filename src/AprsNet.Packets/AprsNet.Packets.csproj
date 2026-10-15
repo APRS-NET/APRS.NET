@@ -7,7 +7,5 @@
   <ItemGroup>
     <PackageReference Include="MinVer" PrivateAssets="all" />
     <None Include="README.md" Pack="true" PackagePath="/" />
-    <!-- The device table is adapted from aprs-deviceid, licensed CC BY-SA 2.0. -->
-    <None Include="../../THIRD-PARTY-NOTICES.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 </Project>

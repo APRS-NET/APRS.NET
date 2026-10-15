@@ -1,0 +1,44 @@
+#nullable enable
+AprsNet.DeviceId.AprsDevice
+AprsNet.DeviceId.AprsDevice.AprsDevice() -> void
+AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.App = 5 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Daemon = 7 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Digipeater = 10 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.DStar = 12 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Gadget = 2 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDevice.Class.get -> AprsNet.DeviceId.AprsDeviceClass?
+AprsNet.DeviceId.AprsDeviceClass.HandHeld = 4 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.IGate = 11 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDevice.Class.init -> void
+AprsNet.DeviceId.AprsDeviceClass.Network = 9 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Rig = 3 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Satellite = 13 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Service = 8 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Software = 6 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Tracker = 1 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDeviceClass.Weather = 0 -> AprsNet.DeviceId.AprsDeviceClass
+AprsNet.DeviceId.AprsDevice.<Clone>$() -> AprsNet.DeviceId.AprsDevice!
+AprsNet.DeviceId.AprsDevice.Equals(AprsNet.DeviceId.AprsDevice? other) -> bool
+AprsNet.DeviceId.AprsDeviceFeatures
+AprsNet.DeviceId.AprsDevice.Features.get -> AprsNet.DeviceId.AprsDeviceFeatures
+AprsNet.DeviceId.AprsDevice.Features.init -> void
+AprsNet.DeviceId.AprsDeviceFeatures.ItemInMessage = 2 -> AprsNet.DeviceId.AprsDeviceFeatures
+AprsNet.DeviceId.AprsDeviceFeatures.Messaging = 1 -> AprsNet.DeviceId.AprsDeviceFeatures
+AprsNet.DeviceId.AprsDeviceFeatures.None = 0 -> AprsNet.DeviceId.AprsDeviceFeatures
+AprsNet.DeviceId.AprsDevice.Model.get -> string?
+AprsNet.DeviceId.AprsDevice.Model.init -> void
+AprsNet.DeviceId.AprsDevice.OperatingSystem.get -> string?
+AprsNet.DeviceId.AprsDevice.OperatingSystem.init -> void
+AprsNet.DeviceId.AprsDevices
+AprsNet.DeviceId.AprsDevice.Vendor.get -> string?
+AprsNet.DeviceId.AprsDevice.Vendor.init -> void
+override AprsNet.DeviceId.AprsDevice.Equals(object? obj) -> bool
+override AprsNet.DeviceId.AprsDevice.GetHashCode() -> int
+override AprsNet.DeviceId.AprsDevice.ToString() -> string!
+static AprsNet.DeviceId.AprsDevice.operator !=(AprsNet.DeviceId.AprsDevice? left, AprsNet.DeviceId.AprsDevice? right) -> bool
+static AprsNet.DeviceId.AprsDevice.operator ==(AprsNet.DeviceId.AprsDevice? left, AprsNet.DeviceId.AprsDevice? right) -> bool
+static AprsNet.DeviceId.AprsDevices.FromTocall(string! destination) -> AprsNet.DeviceId.AprsDevice?
+static AprsNet.DeviceId.AprsDevices.Identify(AprsNet.Packets.AprsPacket! packet) -> AprsNet.DeviceId.AprsDevice?
+static AprsNet.DeviceId.AprsDevices.ListCommit.get -> string!
+static AprsNet.DeviceId.AprsDevices.ListDate.get -> System.DateOnly

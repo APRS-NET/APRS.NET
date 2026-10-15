@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Identifies the APRS device or program that sent a packet, from the aprs-deviceid list (TOCALLs and Mic-E device codes).</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The code is MIT but the built-in device table is CC BY-SA 2.0, which nuget.org does not accept in a license
+         expression, so this package carries a license file that covers both. -->
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <None Include="LICENSE.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Packets/AprsNet.Packets.csproj" />
+  </ItemGroup>
+</Project>

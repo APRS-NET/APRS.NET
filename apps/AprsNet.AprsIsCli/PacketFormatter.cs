@@ -669,7 +669,7 @@ internal static class PacketFormatter
                 json.WriteBoolean("messaging", mice.IsMessagingCapable);
                 json.WriteString("message", Name(mice.Message));
                 json.WriteBoolean("currentFix", mice.IsCurrentFix);
-                WriteString(json, "device", mice.Device?.ToString());
+                WriteString(json, "device", mice.Device);
                 WriteString(json, "locator", mice.MaidenheadLocator);
                 break;
         }

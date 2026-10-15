@@ -199,7 +199,7 @@ jobs:
       - name: Check the device table is up to date
         run: |
           dotnet run tools/deviceid/Generate.cs
-          if [ -n "$(git status --porcelain -- src/AprsNet.Packets/AprsDevices.Generated.cs)" ]; then
+          if [ -n "$(git status --porcelain -- src/AprsNet.DeviceId/AprsDevices.Generated.cs)" ]; then
             echo "::error::AprsDevices.Generated.cs is out of date. Run 'dotnet run tools/deviceid/Generate.cs' and commit the result."
             exit 1
           fi
