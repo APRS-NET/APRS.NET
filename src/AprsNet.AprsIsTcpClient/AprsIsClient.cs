@@ -151,6 +151,15 @@ public sealed class AprsIsClient : IAsyncDisposable
     public IAsyncEnumerable<string> ReadLinesAsync(CancellationToken cancellationToken = default) =>
         _channel.Reader.ReadAllAsync(cancellationToken);
 
+    /// <summary>
+    /// Yields each packet line parsed, as <see cref="ReadLinesAsync"/> yields the lines; use one or the other. Parsing
+    /// never throws: a malformed line comes back with <see cref="AprsPacket.Outcome"/> and
+    /// <see cref="AprsPacket.Issues"/> saying why. Each packet is counted in the
+    /// <c>aprsnet.aprsis.packets.received</c> metric by type and outcome.
+    /// </summary>
+    public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken = default) =>
+        PacketStream.ParseAsync(ReadLinesAsync(cancellationToken), cancellationToken);
+
     /// <summary>Changes the server-side filter without reconnecting.</summary>
     public async ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken = default)
     {

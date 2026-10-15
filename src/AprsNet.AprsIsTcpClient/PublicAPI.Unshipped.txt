@@ -171,3 +171,5 @@ AprsNet.AprsIsTcpClient.AprsIsConnectionState.Connecting = 1 -> AprsNet.AprsIsTc
 AprsNet.AprsIsTcpClient.AprsIsConnection.State.get -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
 AprsNet.AprsIsTcpClient.AprsIsConnectionState.NotStarted = 0 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
 AprsNet.AprsIsTcpClient.AprsIsConnectionState.Reconnecting = 3 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsClient.ReadPacketsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>!
+AprsNet.AprsIsTcpClient.AprsIsConnection.ReadPacketsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>!

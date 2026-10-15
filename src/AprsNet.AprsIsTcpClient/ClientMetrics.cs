@@ -33,6 +33,31 @@ internal static class ClientMetrics
         "Lines discarded before delivery."
     );
 
+    private static readonly Counter<long> _packetsReceived = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.packets.received",
+        "{packet}",
+        "Packets parsed from the server's lines, by type and outcome."
+    );
+
+    /// <summary>One packet parsed by <c>ReadPacketsAsync</c>. Both tags come from fixed enums, so they stay bounded.</summary>
+    public static void PacketParsed(Packets.PacketType type, Packets.ParseOutcome outcome)
+    {
+        _packetsReceived.Add(
+            1,
+            new KeyValuePair<string, object?>("type", Snake(type.ToString())),
+            new KeyValuePair<string, object?>("outcome", Snake(outcome.ToString()))
+        );
+    }
+
+    /// <summary><c>MicE</c> → <c>mic_e</c>, <c>ThirdParty</c> → <c>third_party</c>.</summary>
+    private static string Snake(string name) =>
+        string.Concat(
+            name.Select(
+                (c, i) =>
+                    i > 0 && char.IsUpper(c) ? "_" + char.ToLowerInvariant(c) : char.ToLowerInvariant(c).ToString()
+            )
+        );
+
     public static void Packet()
     {
         _linesReceived.Add(1, new KeyValuePair<string, object?>("kind", "packet"));
