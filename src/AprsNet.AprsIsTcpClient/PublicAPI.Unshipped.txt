@@ -17,7 +17,7 @@ AprsNet.AprsIsTcpClient.AprsIsClientOptions.ChannelCapacity.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.ConnectTimeout.get -> System.TimeSpan
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.ConnectTimeout.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.Endpoint.get -> AprsNet.AprsIsTcpClient.AprsIsEndpoint!
-AprsNet.AprsIsTcpClient.AprsIsClientOptions.Endpoint.init -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.Endpoint.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.Filter.get -> string?
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.Filter.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.IdleTimeout.get -> System.TimeSpan
@@ -32,9 +32,9 @@ AprsNet.AprsIsTcpClient.AprsIsClientOptions.OverflowPolicy.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.Passcode.get -> int
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.Passcode.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareName.get -> string!
-AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareName.init -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareName.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareVersion.get -> string!
-AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareVersion.init -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.SoftwareVersion.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.TimeProvider.get -> System.TimeProvider!
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.TimeProvider.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.Validate() -> void
