@@ -603,3 +603,54 @@ AprsNet.Packets.ThirdPartyPayload
 AprsNet.Packets.ThirdPartyPayload.Packet.get -> AprsNet.Packets.AprsPacket!
 AprsNet.Packets.ThirdPartyPayload.ThirdPartyPayload(AprsNet.Packets.AprsPacket! packet) -> void
 AprsNet.Packets.ParseIssueCode.UnpaddedObjectName = 25 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.AprsBounds
+AprsNet.Packets.AprsBounds.AprsBounds(AprsNet.Packets.AprsPosition SouthWest, AprsNet.Packets.AprsPosition NorthEast) -> void
+AprsNet.Packets.AprsBounds.AprsBounds() -> void
+AprsNet.Packets.AprsBounds.Center.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.AprsBounds.Contains(AprsNet.Packets.AprsPosition position) -> bool
+AprsNet.Packets.AprsBounds.Deconstruct(out AprsNet.Packets.AprsPosition SouthWest, out AprsNet.Packets.AprsPosition NorthEast) -> void
+AprsNet.Packets.AprsBounds.Equals(AprsNet.Packets.AprsBounds other) -> bool
+AprsNet.Packets.AprsBounds.NorthEast.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.AprsBounds.NorthEast.init -> void
+AprsNet.Packets.AprsBounds.SouthWest.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.AprsBounds.SouthWest.init -> void
+AprsNet.Packets.AprsPosition.GetAmbiguityBounds() -> AprsNet.Packets.AprsBounds
+AprsNet.Packets.AprsUnits
+AprsNet.Packets.Geodesy
+AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.Feet = 2 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.Inches = 1 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.Kilometers = 4 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.Meters = 3 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.Miles = 5 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.Millimeters = 0 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.LengthUnit.NauticalMiles = 6 -> AprsNet.Packets.LengthUnit
+AprsNet.Packets.PressureUnit
+AprsNet.Packets.PressureUnit.InchesOfMercury = 1 -> AprsNet.Packets.PressureUnit
+AprsNet.Packets.PressureUnit.Millibars = 0 -> AprsNet.Packets.PressureUnit
+AprsNet.Packets.PressureUnit.MillimetersOfMercury = 2 -> AprsNet.Packets.PressureUnit
+AprsNet.Packets.SpeedUnit
+AprsNet.Packets.SpeedUnit.KilometersPerHour = 2 -> AprsNet.Packets.SpeedUnit
+AprsNet.Packets.SpeedUnit.Knots = 0 -> AprsNet.Packets.SpeedUnit
+AprsNet.Packets.SpeedUnit.MetersPerSecond = 3 -> AprsNet.Packets.SpeedUnit
+AprsNet.Packets.SpeedUnit.MilesPerHour = 1 -> AprsNet.Packets.SpeedUnit
+AprsNet.Packets.TemperatureUnit
+AprsNet.Packets.TemperatureUnit.Celsius = 1 -> AprsNet.Packets.TemperatureUnit
+AprsNet.Packets.TemperatureUnit.Fahrenheit = 0 -> AprsNet.Packets.TemperatureUnit
+const AprsNet.Packets.Geodesy.EarthRadiusKm = 6371 -> double
+~override AprsNet.Packets.AprsBounds.Equals(object obj) -> bool
+override AprsNet.Packets.AprsBounds.GetHashCode() -> int
+~override AprsNet.Packets.AprsBounds.ToString() -> string
+static AprsNet.Packets.AprsBounds.operator !=(AprsNet.Packets.AprsBounds left, AprsNet.Packets.AprsBounds right) -> bool
+static AprsNet.Packets.AprsBounds.operator ==(AprsNet.Packets.AprsBounds left, AprsNet.Packets.AprsBounds right) -> bool
+static AprsNet.Packets.AprsUnits.Convert(double value, AprsNet.Packets.LengthUnit from, AprsNet.Packets.LengthUnit to) -> double
+static AprsNet.Packets.AprsUnits.Convert(double value, AprsNet.Packets.PressureUnit from, AprsNet.Packets.PressureUnit to) -> double
+static AprsNet.Packets.AprsUnits.Convert(double value, AprsNet.Packets.SpeedUnit from, AprsNet.Packets.SpeedUnit to) -> double
+static AprsNet.Packets.AprsUnits.Convert(double value, AprsNet.Packets.TemperatureUnit from, AprsNet.Packets.TemperatureUnit to) -> double
+static AprsNet.Packets.Geodesy.CompassPoint(double bearing, int points = 16) -> string!
+static AprsNet.Packets.Geodesy.Destination(AprsNet.Packets.AprsPosition start, double bearing, double distanceKm) -> AprsNet.Packets.AprsPosition
+static AprsNet.Packets.Geodesy.DistanceKm(AprsNet.Packets.AprsPosition from, AprsNet.Packets.AprsPosition to) -> double
+static AprsNet.Packets.Geodesy.InitialBearing(AprsNet.Packets.AprsPosition from, AprsNet.Packets.AprsPosition to) -> double
+static AprsNet.Packets.Geodesy.Interpolate(AprsNet.Packets.AprsPosition from, AprsNet.Packets.AprsPosition to, double fraction) -> AprsNet.Packets.AprsPosition
+static AprsNet.Packets.Geodesy.PointsAlong(AprsNet.Packets.AprsPosition from, AprsNet.Packets.AprsPosition to, int segments) -> AprsNet.Packets.AprsPosition[]!
+static AprsNet.Packets.Geodesy.RadioHorizonMiles(double heightFeet) -> double

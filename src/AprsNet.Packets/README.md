@@ -105,6 +105,21 @@ if (!MaidenheadLocator.TryParse(input, out var parsed, out var error))
     Console.WriteLine(error.Message);                               // Character 3 ('Z') must be a digit 0-9 (square).
 ```
 
+`Geodesy` measures on a sphere of 6371 km, as APRS-IS servers do for range filters, and `AprsUnits` converts the
+units APRS sends:
+
+```csharp
+var km = Geodesy.DistanceKm(home, station.Position);
+var bearing = Geodesy.InitialBearing(home, station.Position);
+Console.WriteLine($"{km:F1} km {Geodesy.CompassPoint(bearing)}");    // 12.3 km NNE
+var corner = Geodesy.Destination(home, 45, 50);                      // 50 km north-east
+var line = Geodesy.PointsAlong(home, station.Position, 32);          // a great-circle line to draw
+
+var area = position.GetAmbiguityBounds();                            // where an ambiguous position may be
+AprsUnits.Convert(weather.TemperatureF!.Value, TemperatureUnit.Fahrenheit, TemperatureUnit.Celsius);
+AprsUnits.Convert(weather.PressureMillibars!.Value, PressureUnit.Millibars, PressureUnit.InchesOfMercury);
+```
+
 Input a person types (`Callsign.Parse`, `PathEntry.Parse`, `PacketAddress.Parse`) is refused with
 `AprsValidationException`, an `ArgumentException` with a stable `Code` (`AprsValidationErrorCode`) for an app to
 translate, and `Index`/`Character` for the offending character. Codes are never renamed; the English message may be.
