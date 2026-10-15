@@ -1,6 +1,7 @@
 name: pr-title
 
-# Squash merges use the PR title as the commit message, and release-please reads it to pick the next version.
+# The title describes the pull request as a whole. Pull requests are rebase-merged, so release-please reads each commit
+# instead, and the commits workflow checks those.
 
 on:
   pull_request:
