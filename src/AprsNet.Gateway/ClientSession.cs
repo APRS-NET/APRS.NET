@@ -20,9 +20,16 @@ internal sealed class ClientSession : IDisposable
     private readonly CancellationTokenSource _closing;
     private volatile AprsFilter _filter = AprsFilter.Empty;
     private volatile LoginLine? _login;
+    private readonly Action<ClientSession, LoginLine> _join;
 
-    public ClientSession(TcpClient tcp, AprsIsServerOptions options, CancellationToken serverStopping)
+    public ClientSession(
+        TcpClient tcp,
+        AprsIsServerOptions options,
+        Action<ClientSession, LoginLine> join,
+        CancellationToken serverStopping
+    )
     {
+        _join = join;
         _tcp = tcp;
         _stream = tcp.GetStream();
         _options = options;
@@ -60,7 +67,7 @@ internal sealed class ClientSession : IDisposable
             // published meanwhile waits in the queue until the writer starts.
             var filterReply = login.Filter.Length > 0 ? ApplyFilter(login.Filter) : null;
             using var keepAlive = new PeriodicTimer(_options.KeepAliveInterval, _options.TimeProvider);
-            _login = login;
+            _join(this, login);
             var status = login.IsVerified ? "verified" : "unverified";
             await WriteNowAsync($"# logresp {login.Callsign} {status}, server {_options.ServerName}", token)
                 .ConfigureAwait(false);
@@ -91,6 +98,9 @@ internal sealed class ClientSession : IDisposable
             _tcp.Close();
         }
     }
+
+    /// <summary>Marks the client logged in, so <see cref="Offer"/> queues packets for it.</summary>
+    public void Activate(LoginLine login) => _login = login;
 
     /// <summary>Queues the packet if the client's filter passes it, or it is a message to the client.</summary>
     public void Offer(AprsPacket packet, ReadOnlyMemory<byte> line)

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 
 namespace AprsNet.Gateway.Tests;
@@ -80,8 +81,36 @@ public sealed class PartsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => Options(loginSeconds: 0).Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => Options(keepAliveSeconds: 0).Validate());
         Assert.Throws<ArgumentException>(() => Options(software: " ").Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new AprsIsServerOptions { ServerName = "T2TEST", History = TimeSpan.FromSeconds(-1) }.Validate()
+        );
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new AprsIsServerOptions { ServerName = "T2TEST", MaxHistoryPackets = 0 }.Validate()
+        );
         Assert.Throws<ArgumentException>(() => new AprsIsServer(Options(name: "")));
         Assert.Throws<ArgumentNullException>(() => new AprsIsServer(null!));
+    }
+
+    [Fact]
+    public async Task AnUnexpectedFaultEndsOnlyThatSession()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        using var client = new TcpClient();
+        await client.ConnectAsync((IPEndPoint)listener.LocalEndpoint, token);
+        var accepted = await listener.AcceptTcpClientAsync(token);
+        using var session = new ClientSession(
+            accepted,
+            new AprsIsServerOptions { ServerName = "T2TEST" },
+            (_, _) => throw new InvalidOperationException("a fault while joining"),
+            CancellationToken.None
+        );
+
+        var run = session.RunAsync();
+        await client.GetStream().WriteAsync("user N0CALL\r\n"u8.ToArray(), token);
+        await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+        Assert.True(session.Faulted);
     }
 
     [Fact]

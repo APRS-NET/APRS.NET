@@ -27,6 +27,10 @@ public sealed class AprsIsServer : IAsyncDisposable
     private readonly AprsIsServerOptions _options;
     private readonly ConcurrentDictionary<ClientSession, Task> _sessions = new();
     private readonly CancellationTokenSource _stopping = new();
+
+    // Publishing and a client joining take turns, so a joining client gets each packet once: from the history or live.
+    private readonly object _publishing = new();
+    private readonly Queue<(DateTimeOffset At, AprsPacket Packet, byte[] Line)> _history = new();
     private TcpListener? _listener;
     private Task? _accepting;
 
@@ -76,7 +80,8 @@ public sealed class AprsIsServer : IAsyncDisposable
     public void Publish(AprsPacket packet)
     {
         ArgumentNullException.ThrowIfNull(packet);
-        if (_sessions.IsEmpty)
+        var keepHistory = _options.History > TimeSpan.Zero;
+        if (_sessions.IsEmpty && !keepHistory)
         {
             return;
         }
@@ -85,9 +90,41 @@ public sealed class AprsIsServer : IAsyncDisposable
         var line = new byte[raw.Length + 2];
         raw.CopyTo(line);
         "\r\n"u8.CopyTo(line.AsSpan(raw.Length));
-        foreach (var session in _sessions.Keys)
+        lock (_publishing)
         {
-            session.Offer(packet, line);
+            if (keepHistory)
+            {
+                _history.Enqueue((_options.TimeProvider.GetUtcNow(), packet, line));
+                TrimHistory();
+            }
+
+            foreach (var session in _sessions.Keys)
+            {
+                session.Offer(packet, line);
+            }
+        }
+    }
+
+    /// <summary>Starts sending to a client that has logged in, beginning with the history its filter passes.</summary>
+    internal void Join(ClientSession session, LoginLine login)
+    {
+        lock (_publishing)
+        {
+            session.Activate(login);
+            TrimHistory();
+            foreach (var (_, packet, line) in _history)
+            {
+                session.Offer(packet, line);
+            }
+        }
+    }
+
+    private void TrimHistory()
+    {
+        var oldest = _options.TimeProvider.GetUtcNow() - _options.History;
+        while (_history.Count > _options.MaxHistoryPackets || (_history.TryPeek(out var first) && first.At < oldest))
+        {
+            _history.Dequeue();
         }
     }
 
@@ -132,7 +169,7 @@ public sealed class AprsIsServer : IAsyncDisposable
             }
 
             // Registered before it starts, so a session that ends at once still finds itself to remove.
-            var session = new ClientSession(tcp, _options, stopping);
+            var session = new ClientSession(tcp, _options, Join, stopping);
             var run = new Task<Task>(() => RunAsync(session));
             _sessions[session] = run.Unwrap();
             run.Start(TaskScheduler.Default);
