@@ -132,6 +132,21 @@ path.IsHeardDirectly;                         // false: a digipeater repeated it
 path.RemainingHopCount;                       // 1
 ```
 
+`PacketMerger` reads several sources as one stream, naming each packet's source and marking a packet heard again on
+any source within 30 seconds as a duplicate of the first copy:
+
+```csharp
+await using var merger = new PacketMerger();
+var aprsIs = merger.Add("aprs-is", connection.ReadPacketsAsync(token));
+var tnc = merger.Add("tnc", kiss.ReadPacketsAsync(token));   // completes, or faults, when that source ends
+await foreach (var merged in merger.ReadAllAsync(token))
+{
+    Console.WriteLine(merged.IsDuplicate
+        ? $"{merged.Source}: also heard on {merged.DuplicateOf!.Source}"
+        : $"{merged.Source}: {merged.Packet}");
+}
+```
+
 Input a person types (`Callsign.Parse`, `PathEntry.Parse`, `PacketAddress.Parse`) is refused with
 `AprsValidationException`, an `ArgumentException` with a stable `Code` (`AprsValidationErrorCode`) for an app to
 translate, and `Index`/`Character` for the offending character. Codes are never renamed; the English message may be.

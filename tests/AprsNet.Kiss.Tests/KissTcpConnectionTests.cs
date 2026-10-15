@@ -205,6 +205,32 @@ public sealed class KissTcpConnectionTests
         await tnc;
     }
 
+    [Fact]
+    public async Task MergesWithAnAprsIsFeedAndReportsDuplicatesWithTheirSource()
+    {
+        var token = TestContext.Current.CancellationToken;
+        var tnc = new FakeTnc();
+        await using var connection = Connection(_ => Task.FromResult<Stream>(tnc));
+        var aprsIs = Channel.CreateUnbounded<AprsPacket>();
+        await using var merger = new PacketMerger(timeProvider: _time);
+        _ = merger.Add("aprs-is", aprsIs.Reader.ReadAllAsync(token));
+        _ = merger.Add("tnc", connection.ReadPacketsAsync(token));
+        await using var merged = merger.ReadAllAsync(token).GetAsyncEnumerator(token);
+
+        // Heard by the local TNC first, then the same packet arrives from APRS-IS through an IGate.
+        tnc.Send(Kiss("N0CALL>APRS,WIDE1-1:>hello"));
+        Assert.True(await merged.MoveNextAsync().AsTask().WaitAsync(Wait, token));
+        var fromTnc = merged.Current;
+        aprsIs.Writer.TryWrite(AprsPacket.Parse("N0CALL>APRS,WIDE1-1,qAR,IGATE:>hello"));
+        Assert.True(await merged.MoveNextAsync().AsTask().WaitAsync(Wait, token));
+        var fromAprsIs = merged.Current;
+
+        Assert.Equal("tnc", fromTnc.Source);
+        Assert.False(fromTnc.IsDuplicate);
+        Assert.Equal("aprs-is", fromAprsIs.Source);
+        Assert.Equal("tnc", fromAprsIs.DuplicateOf?.Source);
+    }
+
     private static async Task<string> NextAsync(IAsyncEnumerator<AprsPacket> packets)
     {
         Assert.True(await packets.MoveNextAsync().AsTask().WaitAsync(Wait));
