@@ -1,0 +1,14 @@
+#nullable enable
+AprsNet.Filters.AprsFilter
+AprsNet.Filters.AprsFilterContext
+AprsNet.Filters.AprsFilterContext.AprsFilterContext() -> void
+AprsNet.Filters.AprsFilterContext.LastPosition.get -> System.Func<string!, AprsNet.Packets.AprsPosition?>?
+AprsNet.Filters.AprsFilterContext.LastPosition.init -> void
+AprsNet.Filters.AprsFilterContext.MyPosition.get -> AprsNet.Packets.AprsPosition?
+AprsNet.Filters.AprsFilterContext.MyPosition.init -> void
+AprsNet.Filters.AprsFilter.IsEmpty.get -> bool
+AprsNet.Filters.AprsFilter.Matches(AprsNet.Packets.AprsPacket! packet, AprsNet.Filters.AprsFilterContext? context = null) -> bool
+override AprsNet.Filters.AprsFilter.ToString() -> string!
+static AprsNet.Filters.AprsFilter.Empty.get -> AprsNet.Filters.AprsFilter!
+static AprsNet.Filters.AprsFilter.Parse(string! text) -> AprsNet.Filters.AprsFilter!
+static AprsNet.Filters.AprsFilter.TryParse(string? text, out AprsNet.Filters.AprsFilter? filter, out string? error) -> bool
