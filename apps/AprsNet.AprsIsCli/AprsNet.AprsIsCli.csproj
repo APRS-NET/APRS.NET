@@ -8,7 +8,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>aprscli</ToolCommandName>
     <PackageId>AprsNet.AprsIsCli</PackageId>
-    <Description>APRS.NET command-line tool: listen to APRS-IS, parse and replay packets, send as your callsign, and compute passcodes.</Description>
+    <Description>APRS.NET command-line tool: listen to APRS-IS, parse and replay packets, send as your callsign, serve a feed to local APRS-IS clients, and compute passcodes.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AprsNet.AprsIsTcpClient\AprsNet.AprsIsTcpClient.csproj" />
+    <ProjectReference Include="..\..\src\AprsNet.Gateway\AprsNet.Gateway.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Symbols\AprsNet.Symbols.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Kiss\AprsNet.Kiss.csproj" />
   </ItemGroup>

@@ -174,6 +174,31 @@ reconnects as `listen --reconnect` does and carries on waiting.
 The client spreads sends out (5 at once, then one every 6 seconds) and refuses to send on an unverified login, since
 the server would drop the packet. Exit codes are those of `listen`, plus 5 for an undelivered message.
 
+## serve
+
+Relay an APRS-IS feed to APRS clients on this computer or your network. `serve` makes one read-only connection
+upstream with a broad filter, drops duplicates, and serves the packets on a local port that behaves like an APRS-IS
+server: each client logs in as usual and gets its own filter, plus messages to its callsign.
+
+```sh
+aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --history 10m          # on 127.0.0.1:14580
+aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 # for your network
+aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a client
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-c`, `--callsign` | Callsign for the upstream login. Default: `N0CALL`. |
+| `-s`, `--server` | Upstream server as `host[:port]`. Default: `rotate.aprs2.net:14580`. |
+| `-f`, `--filter` | Upstream filter: everything clients can ask for. Required. |
+| `-l`, `--listen` | Address and port to serve on. Default: `127.0.0.1:14580`. |
+| `--name` | Server name clients see. Default: `APRSNET`. |
+| `--history` | Send each client the packets from this long before it connected. Default: off. |
+| `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
+
+The upstream connection always reconnects. Clients are read-only for now: anything they send is ignored. A client
+that falls 1,000 lines behind is disconnected, as on APRS-IS.
+
 ## tnc listen
 
 Print the APRS packets a KISS TNC hears, in the same formats as `listen`. The TNC must serve KISS over TCP, as Dire
