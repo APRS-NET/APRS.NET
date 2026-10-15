@@ -9,7 +9,10 @@ make the libraries more faithful to real APRS traffic are especially welcome.
   APRS.NET did and what you expected. A line from `aprscli listen` or `aprscli parse` is ideal.
 - **Features:** open an issue first for anything larger than a fix, so the design can be agreed before you write it.
   [docs/design/packet-api.md](docs/design/packet-api.md) explains how the packet API is shaped and why.
-- **Security problems:** do not open a public issue; use GitHub's private vulnerability reporting on this repository.
+- **Security problems:** do not open a public issue; use GitHub's private vulnerability reporting on this repository,
+  as [SECURITY.md](SECURITY.md) describes.
+
+Everyone taking part is expected to follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Building and testing
 
