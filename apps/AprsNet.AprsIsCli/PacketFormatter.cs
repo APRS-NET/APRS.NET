@@ -78,6 +78,9 @@ internal static class PacketFormatter
             case CapabilitiesReport capabilities:
                 line.Append("capabilities  ").Append(Capabilities(capabilities));
                 break;
+            case ThirdPartyPayload thirdParty:
+                line.Append("third-party  ").Append(Decoded(thirdParty.Packet));
+                break;
             case UserDefinedPayload user:
                 line.Append("user-defined  ").Append(UserDefined(user));
                 if (user.Data.Length > 0)
@@ -183,6 +186,10 @@ internal static class PacketFormatter
                     WeatherReadings(json, weather.Weather);
                     json.WriteString("comment", weather.Comment);
                     json.WriteEndObject();
+                    break;
+                case ThirdPartyPayload thirdParty:
+                    json.WritePropertyName("thirdParty");
+                    json.WriteRawValue(Json(thirdParty.Packet, received));
                     break;
                 case CapabilitiesReport capabilities:
                     json.WriteStartArray("capabilities");
