@@ -1,17 +1,19 @@
 using System.CommandLine;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.Filters;
 using AprsNet.Gateway;
+using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 
 namespace AprsNet.AprsIsCli;
 
 /// <summary>
-/// The <c>serve</c> command: read packets from APRS-IS and serve them to local APRS-IS clients, each with its own
-/// filter.
+/// The <c>serve</c> command: read packets from APRS-IS, KISS TNCs or both, and serve them to local APRS-IS clients,
+/// each with its own filter. A packet heard on several sources is served once.
 /// </summary>
 internal sealed class ServeCommand(CliEnvironment environment)
 {
@@ -29,12 +31,19 @@ internal sealed class ServeCommand(CliEnvironment environment)
         Description = "Upstream APRS-IS server as host[:port]. Default: rotate.aprs2.net:14580.",
     };
 
-    private readonly Option<string> _filter = new("--filter", "-f")
+    private readonly Option<string?> _filter = new("--filter", "-f")
     {
         Description =
             "Upstream APRS-IS filter: everything local clients can ask for, for example \"r/35/-97/300\". Each "
-            + "client then narrows it with its own filter.",
-        Required = true,
+            + "client then narrows it with its own filter. Without it, only the --tnc sources are served.",
+    };
+
+    private readonly Option<string[]> _tnc = new("--tnc", "-t")
+    {
+        Description =
+            $"Also serve what a KISS TNC hears, as host[:port] (default port {KissTcpClient.DefaultPort}, Dire "
+            + "Wolf's). Repeat for several TNCs. A lost TNC is reconnected.",
+        Arity = ArgumentArity.ZeroOrMore,
     };
 
     private readonly Option<string> _listen = new("--listen", "-l")
@@ -65,9 +74,10 @@ internal sealed class ServeCommand(CliEnvironment environment)
     {
         var command = new Command(
             "serve",
-            "Serve an APRS-IS feed to local APRS-IS clients, each with its own filter. Clients are read-only."
+            "Serve an APRS-IS feed, KISS TNCs or both to local APRS-IS clients, each with its own filter. A packet "
+                + "heard on several sources is served once. Clients are read-only."
         );
-        foreach (var option in new Option[] { _callsign, _server, _filter, _listen, _name, _history, _duration })
+        foreach (var option in new Option[] { _callsign, _server, _filter, _tnc, _listen, _name, _history, _duration })
         {
             command.Options.Add(option);
         }
@@ -88,7 +98,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
         return command;
     }
 
-    private sealed record ServeOptions(AprsIsClientOptions Upstream, AprsIsServerOptions Local, TimeSpan? Duration);
+    private sealed record ServeOptions(
+        AprsIsClientOptions? Upstream,
+        IReadOnlyList<(string Host, int Port)> Tncs,
+        AprsIsServerOptions Local,
+        TimeSpan? Duration
+    );
 
     private bool TryBind(ParseResult parseResult, out ServeOptions options, out string error)
     {
@@ -101,10 +116,36 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        var filter = parseResult.GetValue(_filter)!;
-        if (!AprsFilter.TryParse(filter, out var parsedFilter, out var filterError) || parsedFilter.IsEmpty)
+        var tncs = new List<(string Host, int Port)>();
+        foreach (var text in parseResult.GetValue(_tnc) ?? [])
         {
-            error = $"--filter: {filterError ?? "an upstream filter is required."}";
+            if (!TncCommand.TryParseAddress(text, out var host, out var port))
+            {
+                error = $"--tnc '{text}' is not valid. Use host or host:port, such as localhost:8001.";
+                return false;
+            }
+
+            if (tncs.Contains((host, port)))
+            {
+                error = $"--tnc '{text}' is given twice.";
+                return false;
+            }
+
+            tncs.Add((host, port));
+        }
+
+        AprsFilter? parsedFilter = null;
+        if (parseResult.GetValue(_filter) is { } filter)
+        {
+            if (!AprsFilter.TryParse(filter, out parsedFilter, out var filterError) || parsedFilter.IsEmpty)
+            {
+                error = $"--filter: {filterError ?? "an upstream filter is required."}";
+                return false;
+            }
+        }
+        else if (tncs.Count == 0)
+        {
+            error = "nothing to serve: give --filter for an APRS-IS feed, --tnc for a TNC, or both.";
             return false;
         }
 
@@ -137,15 +178,17 @@ internal sealed class ServeCommand(CliEnvironment environment)
             duration = parsed;
         }
 
-        var upstream = new AprsIsClientOptions
-        {
-            Endpoint = endpoint,
-            Callsign = callsign,
-            Filter = parsedFilter.ToString(),
-            SoftwareName = "aprscli",
-            TimeProvider = environment.TimeProvider,
-            ReconnectDelay = environment.ReconnectDelay,
-        };
+        var upstream = parsedFilter is null
+            ? null
+            : new AprsIsClientOptions
+            {
+                Endpoint = endpoint,
+                Callsign = callsign,
+                Filter = parsedFilter.ToString(),
+                SoftwareName = "aprscli",
+                TimeProvider = environment.TimeProvider,
+                ReconnectDelay = environment.ReconnectDelay,
+            };
         var local = new AprsIsServerOptions
         {
             ServerName = parseResult.GetValue(_name)!,
@@ -156,7 +199,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
         };
         try
         {
-            upstream.Validate();
+            upstream?.Validate();
             local.Validate();
         }
         catch (ArgumentException ex)
@@ -165,7 +208,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, local, duration);
+        options = new ServeOptions(upstream, tncs, local, duration);
         error = "";
         return true;
     }
@@ -190,69 +233,126 @@ internal sealed class ServeCommand(CliEnvironment environment)
         }
 
         var logger = environment.LoggerFactory.CreateLogger("aprscli");
-        await using var connection = environment.CreateConnection(options.Upstream, logger);
-        using var reporter = new ConnectionReporter(connection, environment.Error, options.Upstream.Endpoint, true);
-        try
+        await using var connection = options.Upstream is null
+            ? null
+            : environment.CreateConnection(options.Upstream, logger);
+        using var reporter = connection is null
+            ? null
+            : new ConnectionReporter(connection, environment.Error, options.Upstream!.Endpoint, true);
+        if (connection is not null)
         {
-            await connection.StartAsync(run.Token);
-        }
-        catch (OperationCanceledException) when (run.IsCancellationRequested)
-        {
-            return ExitCodes.Success;
-        }
-        catch (LoginException ex)
-        {
-            await environment.Error.WriteLineAsync(
-                $"aprscli: login failed on {options.Upstream.Endpoint}: {ex.Message}"
-            );
-            return ExitCodes.LoginFailed;
-        }
-        catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
-        {
-            await environment.Error.WriteLineAsync(
-                $"aprscli: could not connect to {options.Upstream.Endpoint}: {ex.Message}"
-            );
-            return ExitCodes.ConnectionFailed;
-        }
-
-        await environment.Error.WriteLineAsync(
-            $"aprscli: serving {options.Upstream.Endpoint} ({options.Upstream.Filter}) on {server.LocalEndPoint} as "
-                + $"{options.Local.ServerName}"
-        );
-
-        var dedupe = new PacketDeduplicator(timeProvider: environment.TimeProvider);
-        long served = 0,
-            duplicates = 0;
-        try
-        {
-            await foreach (var line in connection.ReadLinesAsync(run.Token))
+            try
             {
-                if (line.StartsWith('#'))
-                {
-                    continue;
-                }
-
-                var packet = AprsPacket.Parse(line);
-                if (dedupe.TryAccept(packet))
-                {
-                    server.Publish(packet);
-                    served++;
-                }
-                else
-                {
-                    duplicates++;
-                }
+                await connection.StartAsync(run.Token);
+            }
+            catch (OperationCanceledException) when (run.IsCancellationRequested)
+            {
+                return ExitCodes.Success;
+            }
+            catch (LoginException ex)
+            {
+                await environment.Error.WriteLineAsync(
+                    $"aprscli: login failed on {options.Upstream!.Endpoint}: {ex.Message}"
+                );
+                return ExitCodes.LoginFailed;
+            }
+            catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
+            {
+                await environment.Error.WriteLineAsync(
+                    $"aprscli: could not connect to {options.Upstream!.Endpoint}: {ex.Message}"
+                );
+                return ExitCodes.ConnectionFailed;
             }
         }
-        catch (OperationCanceledException) when (run.IsCancellationRequested)
+
+        await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
+        var sources = new List<Task>();
+        var described = new List<string>();
+        if (connection is not null)
         {
-            // Duration reached or Ctrl+C.
+            sources.Add(feed.AddSource(AprsIsSource, PacketsAsync(connection.ReadLinesAsync(run.Token))));
+            described.Add($"{options.Upstream!.Endpoint} ({options.Upstream.Filter})");
+        }
+
+        var tncs = new List<KissTcpConnection>();
+        try
+        {
+            foreach (var (host, port) in options.Tncs)
+            {
+                var tnc = environment.CreateTncConnection(host, port);
+                tncs.Add(tnc);
+                var name = $"{host}:{port}";
+                tnc.ConnectionLost += (_, e) =>
+                {
+                    var retry = e.RetryIn.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+                    environment.Error.WriteLine(
+                        e.Error is null
+                            ? $"aprscli: the TNC at {name} closed the connection; reconnecting in {retry}s."
+                            : $"aprscli: lost the TNC at {name}: {e.Error.Message}; reconnecting in {retry}s."
+                    );
+                };
+                sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
+                described.Add($"the TNC at {name}");
+            }
+
+            await environment.Error.WriteLineAsync(
+                $"aprscli: serving {string.Join(" and ", described)} on {server.LocalEndPoint} as "
+                    + $"{options.Local.ServerName}"
+            );
+
+            try
+            {
+                // Sources end only when the run does: APRS-IS and the TNCs reconnect on their own.
+                await Task.WhenAll(sources).WaitAsync(run.Token);
+            }
+            catch (OperationCanceledException) when (run.IsCancellationRequested)
+            {
+                // Duration reached or Ctrl+C.
+            }
+
+            await feed.DisposeAsync();
+        }
+        finally
+        {
+            foreach (var tnc in tncs)
+            {
+                await tnc.DisposeAsync();
+            }
         }
 
         await environment.Error.WriteLineAsync(
-            $"aprscli: served {served} packets ({duplicates} duplicates dropped); "
+            $"aprscli: served {feed.Published} packets ({feed.Duplicates} duplicates dropped); "
                 + $"{server.ClientsDroppedForOverflow} clients dropped for falling behind"
         );
+        var counts = feed.GetSourceCounts();
+        if (counts.Count > 1)
+        {
+            await environment.Error.WriteLineAsync(
+                "aprscli: by source: "
+                    + string.Join(
+                        ", ",
+                        counts
+                            .OrderBy(c => c.Key == AprsIsSource ? 0 : 1)
+                            .ThenBy(c => c.Key, StringComparer.Ordinal)
+                            .Select(c => $"{c.Key} {c.Value.Packets} ({c.Value.Duplicates} duplicates)")
+                    )
+            );
+        }
+
         return ExitCodes.Success;
+    }
+
+    private const string AprsIsSource = "aprs-is";
+
+    /// <summary>The packets among APRS-IS lines; server comments such as keepalives are skipped.</summary>
+    private static async IAsyncEnumerable<AprsPacket> PacketsAsync(IAsyncEnumerable<string> lines)
+    {
+        await foreach (var line in lines)
+        {
+            if (!line.StartsWith('#'))
+            {
+                yield return AprsPacket.Parse(line);
+            }
+        }
     }
 }

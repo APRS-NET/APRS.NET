@@ -1,13 +1,18 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using AprsNet.Ax25;
+using AprsNet.Kiss;
+using AprsNet.Packets;
 
 namespace AprsNet.AprsIsCli.Tests;
 
 public class ServeTests
 {
     [Theory]
-    [InlineData(new[] { "serve" }, "Option '--filter' is required.")]
+    [InlineData(new[] { "serve" }, "nothing to serve: give --filter for an APRS-IS feed, --tnc for a TNC, or both.")]
+    [InlineData(new[] { "serve", "--tnc", "tnc:x" }, "--tnc 'tnc:x' is not valid.")]
+    [InlineData(new[] { "serve", "--tnc", "tnc", "--tnc", "tnc:8001" }, "--tnc 'tnc:8001' is given twice.")]
     [InlineData(new[] { "serve", "-f", "r/91/0/10" }, "'91' is not a latitude.")]
     [InlineData(new[] { "serve", "-f", "  " }, "an upstream filter is required.")]
     [InlineData(new[] { "serve", "-f", "p/N0", "--listen", "localhost" }, "--listen 'localhost' is not valid.")]
@@ -82,6 +87,94 @@ public class ServeTests
         );
         Assert.Equal(1, result.ExitCode);
         Assert.Contains($"cannot serve on 127.0.0.1:{port}", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ServesWhatATncHearsWithoutAprsIs()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var tnc = new TcpListener(IPAddress.Loopback, 0);
+        tnc.Start();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var port = FreePort();
+        var harness = new CliHarness();
+        var run = harness.RunAsync(
+            ["serve", "--tnc", $"127.0.0.1:{((IPEndPoint)tnc.LocalEndpoint).Port}", "--listen", $"127.0.0.1:{port}"],
+            stop.Token
+        );
+
+        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var client = await ConnectAsync(port, token);
+        using var reader = await LogInAsync(client, "p/N", token);
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>heard on RF"), token);
+        Assert.Equal("N1ABC>APRS,WIDE1-1:>heard on RF", await reader.ReadLineAsync(token));
+
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Null(harness.ClientOptions);
+        Assert.Contains(
+            $"serving the TNC at 127.0.0.1:{((IPEndPoint)tnc.LocalEndpoint).Port} on 127.0.0.1:{port}",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.Contains("served 1 packets (0 duplicates dropped)", result.Error, StringComparison.Ordinal);
+        Assert.DoesNotContain("by source", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task APacketOnAprsIsAndTheTncIsServedOnce()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var tnc = new TcpListener(IPAddress.Loopback, 0);
+        tnc.Start();
+        var tncAddress = $"127.0.0.1:{((IPEndPoint)tnc.LocalEndpoint).Port}";
+        var harness = new CliHarness().LoginAccepted();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var port = FreePort();
+        var run = harness.RunAsync(
+            ["serve", "-f", "r/39/-95/500", "--tnc", tncAddress, "--listen", $"127.0.0.1:{port}"],
+            stop.Token
+        );
+
+        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var client = await ConnectAsync(port, token);
+        using var reader = await LogInAsync(client, "p/N", token);
+        harness.Transport.Server("N1ABC>APRS,WIDE1-1,qAR,IGATE:>hello");
+        Assert.Equal("N1ABC>APRS,WIDE1-1,qAR,IGATE:>hello", await reader.ReadLineAsync(token));
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>hello"), token);
+        await radio.GetStream().WriteAsync(Kiss("N2ABC>APRS:>only on RF"), token);
+        Assert.Equal("N2ABC>APRS:>only on RF", await reader.ReadLineAsync(token));
+
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(
+            $"(r/39/-95/500) and the TNC at {tncAddress} on 127.0.0.1:{port}",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.Contains("served 2 packets (1 duplicates dropped)", result.Error, StringComparison.Ordinal);
+        Assert.Contains(
+            $"by source: aprs-is 1 (0 duplicates), {tncAddress} 2 (1 duplicates)",
+            result.Error,
+            StringComparison.Ordinal
+        );
+    }
+
+    private static byte[] Kiss(string line) =>
+        KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse(line))).Encode();
+
+    private static async Task<StreamReader> LogInAsync(TcpClient client, string filter, CancellationToken token)
+    {
+        var reader = new StreamReader(client.GetStream(), Encoding.Latin1);
+        await client
+            .GetStream()
+            .WriteAsync(Encoding.Latin1.GetBytes($"user N0CALL pass -1 vers test 1.0 filter {filter}\r\n"), token);
+        Assert.StartsWith("# aprscli", await reader.ReadLineAsync(token));
+        Assert.StartsWith("# logresp N0CALL unverified", await reader.ReadLineAsync(token));
+        Assert.Equal($"# filter {filter} active", await reader.ReadLineAsync(token));
+        return reader;
     }
 
     private static int FreePort()

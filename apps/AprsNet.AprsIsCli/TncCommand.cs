@@ -64,17 +64,7 @@ internal sealed class TncCommand(CliEnvironment environment)
     private async Task<int> ListenAsync(ParseResult parseResult, CancellationToken cancellationToken)
     {
         var text = parseResult.GetValue(_tnc)!.Trim();
-        var colon = text.LastIndexOf(':');
-        var host = colon < 0 ? text : text[..colon];
-        var port = KissTcpClient.DefaultPort;
-        if (
-            host.Length == 0
-            || (
-                colon >= 0
-                && !int.TryParse(text[(colon + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out port)
-            )
-            || port is < 1 or > 65535
-        )
+        if (!TryParseAddress(text, out var host, out var port))
         {
             return await UsageAsync($"--tnc '{text}' is not valid. Use host or host:port, such as localhost:8001.");
         }
@@ -195,6 +185,21 @@ internal sealed class TncCommand(CliEnvironment environment)
         }
 
         return false;
+    }
+
+    /// <summary>Reads a TNC address as host or host:port, the port defaulting to Dire Wolf's KISS port.</summary>
+    internal static bool TryParseAddress(string text, out string host, out int port)
+    {
+        text = text.Trim();
+        var colon = text.LastIndexOf(':');
+        host = colon < 0 ? text : text[..colon];
+        port = KissTcpClient.DefaultPort;
+        return host.Length > 0
+            && (
+                colon < 0
+                || int.TryParse(text[(colon + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out port)
+            )
+            && port is >= 1 and <= 65535;
     }
 
     private async Task<int> UsageAsync(string message)
