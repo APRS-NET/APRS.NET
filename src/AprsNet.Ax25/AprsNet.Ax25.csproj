@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>AX.25 UI frames for APRS: decode and encode the frames a KISS TNC sends, and convert them to and from APRS.NET packets.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Not published yet (phase 2 groundwork). Set to true when the KISS transport is ready to ship with it. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Packets/AprsNet.Packets.csproj" />
+  </ItemGroup>
+</Project>

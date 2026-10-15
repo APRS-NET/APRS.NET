@@ -629,9 +629,31 @@ APRS 1.1 discourages and whose layouts belong to the manufacturers; it throws `N
 A TNC in KISS mode sends AX.25 frames, not TNC2 text: callsigns are shifted 7-byte fields with the SSID and
 has-been-repeated flags in bit fields, and there is no `>`, `,` or `:`. Only the information field is the same bytes.
 
-`AprsNet.Ax25` will decode frames into its own `Ax25Frame` type, which keeps the frame bytes. It converts to an
+`AprsNet.Ax25` decodes frames into its own `Ax25Frame` type, which keeps the frame bytes. It converts to an
 `AprsPacket` by rendering the TNC2 line and parsing it, so `AprsPacket.Raw` always means "the TNC2 line" whatever
 the source. The rendering step is cheap next to radio data rates, and it keeps one parser for every source.
+
+- **Decoding** (`Ax25Frame.TryDecode`) takes a frame without its checksum, as KISS delivers it, and never throws:
+  `Ax25FrameError` says whether it was too short, held an address AX.25 does not allow, or never ended its address
+  list. Non-APRS frames (connected-mode I and S frames) decode too; `IsAprs` picks out UI frames with no layer 3.
+- **The `*`.** AX.25 sets the has-been-repeated bit on every digipeater that passed a frame on; TNC2 text marks only
+  the last (`RELAY,WIDE1-1*,WIDE2-1`). Frame to text marks the last set bit; text to frame sets the bit on every
+  digipeater up to the marked one.
+- **Encoding** (`Ax25Frame.FromAprsPacket`) refuses what AX.25 cannot carry: callsigns over six characters or not
+  upper-case letters and digits, SSIDs above 15, more than eight digipeaters, and APRS-IS q-constructs (a packet
+  heard on APRS-IS goes to RF as third-party traffic). The destination's command bit is set, as for any AX.25 2.0
+  command frame.
+- **SSID 0** has one spelling on the air, so `N0CALL-0` comes back as `N0CALL`.
+- **Round trips.** Every corpus packet whose RF path (before the q-construct) AX.25 can carry, about 47,000, converts
+  to a frame and back to the same packet.
+- The package is not published until the KISS transport ships with it.
+
+`AprsNet.Kiss` frames them for a TNC. `KissFrame.Encode` writes `FEND`, the command byte (port in the high nibble),
+the escaped data and `FEND`. `KissDecoder` reads frames back from a stream that splits them anywhere: it skips noise
+before the first `FEND` and the empty frames TNCs send to resynchronise, and drops (and counts) frames with an invalid
+escape or over `MaxFrameLength`, so line noise never grows its buffer without bound. `KissTcpClient` connects to a
+TNC that serves KISS over TCP (Dire Wolf's port 8001): it reads the frames heard on one radio port, offers the APRS
+ones as packets, and sends packets as KISS data frames. A serial transport comes next.
 
 ## Limits
 
