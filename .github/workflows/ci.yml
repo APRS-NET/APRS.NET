@@ -65,6 +65,14 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet build -c Release
+      - name: Install Dire Wolf for the KISS audio test
+        # KissAudioEndToEndTests turns packets into AFSK audio with gen_packets, plays it into Dire Wolf's standard
+        # input (no sound card) and reads the decoded frames back over KISS TCP.
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends direwolf
+          echo "APRSNET_DIREWOLF_AUDIO=1" >> "$GITHUB_ENV"
       # Ubuntu's test run also collects coverage, so the coverage job needs no build of its own. A test that hangs
       # fails after 5 minutes with a dump, rather than holding all three runners until the 20-minute job limit.
       - run: >-
