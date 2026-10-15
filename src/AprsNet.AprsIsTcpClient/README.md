@@ -5,6 +5,19 @@ Async APRS-IS client.
 > **Alpha pre-release.** APRS.NET packages are versioned `0.x.y-alpha.N` until at least 1.0.0, and the API can change
 > between any two releases. Install with `--prerelease`. Not for production use.
 
+## Receiving
+
+`ReadPacketsAsync` yields each line parsed; `ReadLinesAsync` yields the raw lines instead (use one or the other).
+Parsing never throws, so a malformed packet arrives with its `Outcome` and `Issues`. Every packet is counted in the
+`aprsnet.aprsis.packets.received` metric by `type` and `outcome`; [docs/metrics.md](https://github.com/APRS-NET/APRS.NET/blob/main/docs/metrics.md)
+lists every metric the client records.
+
+```csharp
+await foreach (var packet in client.ReadPacketsAsync())
+    if (packet.Payload is PositionedPayload position)
+        Console.WriteLine($"{packet.Source} at {position.Position.Latitude:0.0000}, {position.Position.Longitude:0.0000}");
+```
+
 ## Server presets
 
 `AprsIsServerPreset.All` lists the aprs2.net rotates for a server picker, worldwide first, each with a stable key to
@@ -36,8 +49,8 @@ await client.SendAsync(address.Create(new StatusReport { Text = "On the air" }))
 using var messenger = new AprsMessenger(address, client.SendAsync);
 _ = Task.Run(async () =>
 {
-    await foreach (var line in client.ReadLinesAsync())
-        if (await messenger.HandleAsync(AprsPacket.Parse(line)) is { } message)
+    await foreach (var packet in client.ReadPacketsAsync())
+        if (await messenger.HandleAsync(packet) is { } message)
             Console.WriteLine($"Message: {message.Text}");
 });
 
@@ -60,8 +73,8 @@ await using var connection = new AprsIsConnection(options, logger);
 connection.StateChanged += (_, e) => Console.WriteLine($"{e.State} {e.RetryIn} {e.Error?.Message}");
 await connection.StartAsync(); // throws if the first login fails, so wrong settings show at once
 
-await foreach (var line in connection.ReadLinesAsync()) // one stream across reconnects
-    Handle(line);
+await foreach (var packet in connection.ReadPacketsAsync()) // one stream across reconnects
+    Handle(packet);
 ```
 
 `SendAsync` waits while the connection is down and sends once it is back; `SetFilterAsync` applies now and on every
