@@ -90,6 +90,7 @@ public sealed class AprsIsServer : IAsyncDisposable
         var line = new byte[raw.Length + 2];
         raw.CopyTo(line);
         "\r\n"u8.CopyTo(line.AsSpan(raw.Length));
+        GatewayMetrics.Published(_options.ServerName);
         lock (_publishing)
         {
             if (keepHistory)
@@ -164,12 +165,14 @@ public sealed class AprsIsServer : IAsyncDisposable
 
             if (_sessions.Count >= _options.MaxClients)
             {
+                GatewayMetrics.Disconnected(_options.ServerName, "server_full", wasConnected: false);
                 await RefuseAsync(tcp).ConfigureAwait(false);
                 continue;
             }
 
             // Registered before it starts, so a session that ends at once still finds itself to remove.
             var session = new ClientSession(tcp, _options, Join, stopping);
+            GatewayMetrics.Connected(_options.ServerName);
             var run = new Task<Task>(() => RunAsync(session));
             _sessions[session] = run.Unwrap();
             run.Start(TaskScheduler.Default);
@@ -190,6 +193,7 @@ public sealed class AprsIsServer : IAsyncDisposable
             }
 
             _sessions.TryRemove(session, out _);
+            GatewayMetrics.Disconnected(_options.ServerName, session.EndReason, wasConnected: true);
             session.Dispose();
         }
     }
