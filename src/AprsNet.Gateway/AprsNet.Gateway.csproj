@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>A local APRS-IS server: serves packets to APRS-IS clients, each with its own filter.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Not published yet (phase 3 groundwork). -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <InternalsVisibleTo Include="AprsNet.Gateway.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
+    <ProjectReference Include="../AprsNet.Filters/AprsNet.Filters.csproj" />
+  </ItemGroup>
+</Project>

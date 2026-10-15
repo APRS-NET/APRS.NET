@@ -1,0 +1,30 @@
+#nullable enable
+AprsNet.Gateway.AprsIsServer
+AprsNet.Gateway.AprsIsServer.AprsIsServer(AprsNet.Gateway.AprsIsServerOptions! options) -> void
+AprsNet.Gateway.AprsIsServer.ClientCount.get -> int
+AprsNet.Gateway.AprsIsServer.ClientsDroppedForOverflow.get -> long
+AprsNet.Gateway.AprsIsServer.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Gateway.AprsIsServer.LocalEndPoint.get -> System.Net.IPEndPoint?
+AprsNet.Gateway.AprsIsServerOptions
+AprsNet.Gateway.AprsIsServerOptions.AprsIsServerOptions() -> void
+AprsNet.Gateway.AprsIsServerOptions.ClientQueueLength.get -> int
+AprsNet.Gateway.AprsIsServerOptions.ClientQueueLength.init -> void
+AprsNet.Gateway.AprsIsServerOptions.EndPoint.get -> System.Net.IPEndPoint!
+AprsNet.Gateway.AprsIsServerOptions.EndPoint.init -> void
+AprsNet.Gateway.AprsIsServerOptions.KeepAliveInterval.get -> System.TimeSpan
+AprsNet.Gateway.AprsIsServerOptions.KeepAliveInterval.init -> void
+AprsNet.Gateway.AprsIsServerOptions.LoginTimeout.get -> System.TimeSpan
+AprsNet.Gateway.AprsIsServerOptions.LoginTimeout.init -> void
+AprsNet.Gateway.AprsIsServerOptions.MaxClients.get -> int
+AprsNet.Gateway.AprsIsServerOptions.MaxClients.init -> void
+AprsNet.Gateway.AprsIsServerOptions.ServerName.get -> string!
+AprsNet.Gateway.AprsIsServerOptions.ServerName.init -> void
+AprsNet.Gateway.AprsIsServerOptions.SoftwareName.get -> string!
+AprsNet.Gateway.AprsIsServerOptions.SoftwareName.init -> void
+AprsNet.Gateway.AprsIsServerOptions.SoftwareVersion.get -> string!
+AprsNet.Gateway.AprsIsServerOptions.SoftwareVersion.init -> void
+AprsNet.Gateway.AprsIsServerOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Gateway.AprsIsServerOptions.TimeProvider.init -> void
+AprsNet.Gateway.AprsIsServerOptions.Validate() -> void
+AprsNet.Gateway.AprsIsServer.Publish(AprsNet.Packets.AprsPacket! packet) -> void
+AprsNet.Gateway.AprsIsServer.Start() -> void
