@@ -26,7 +26,7 @@ public sealed class ClientMetricsTests : IDisposable
                 string? kind = null;
                 foreach (var tag in tags)
                 {
-                    kind = tag.Key == "kind" ? (string?)tag.Value : kind;
+                    kind = tag.Key is "kind" or "reason" ? (string?)tag.Value : kind;
                 }
 
                 lock (_measurements)
@@ -112,5 +112,34 @@ public sealed class ClientMetricsTests : IDisposable
             Measurements("aprsnet.aprsis.bytes.sent").Sum(m => m.Value) >= expected,
             "the login and filter lines should be counted, CR LF included"
         );
+    }
+
+    [Fact]
+    public async Task CountsParseFailuresByReason()
+    {
+        var transport = new FakeAprsTransport();
+        transport.Server("# logresp NZ0P-7 unverified, server T2TEST");
+        await using var client = new AprsIsClient(Options(), transport: transport);
+        await client.ConnectAsync(TestContext.Current.CancellationToken);
+        transport.Server("no header at all");
+        transport.Server("W1AW>APRS,,WIDE1-1:>empty path entry");
+        transport.Server("W1AW>APRS:!4903.50N/0720"); // cut off inside the position
+        transport.Server("W1AW>APRS:!9903.50N/07201.75W>");
+        transport.Server("W1AW>APRS:>fine");
+
+        var read = 0;
+        await foreach (var _ in client.ReadPacketsAsync(TestContext.Current.CancellationToken))
+        {
+            if (++read == 5)
+            {
+                break;
+            }
+        }
+
+        var reasons = Measurements("aprsnet.aprsis.packets.parse_failures").Select(m => m.Kind).ToList();
+        Assert.Contains("bad_header", reasons);
+        Assert.Contains("bad_path", reasons);
+        Assert.Contains("truncated", reasons);
+        Assert.Contains("bad_body", reasons);
     }
 }

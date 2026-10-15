@@ -14,6 +14,7 @@ Every tag value comes from a fixed list below, so no series grows with the traff
 | `aprsnet.aprsis.lines.received` | `{line}` | `kind`: `packet`, `server_comment` | Every line read from the server |
 | `aprsnet.aprsis.packets.received` | `{packet}` | `type`, `outcome` (below) | Every packet read with `ReadPacketsAsync`, after parsing |
 | `aprsnet.aprsis.packets.addressed_to_user` | `{packet}` | `kind`: `message`, `ack`, `rej` | Messages, acknowledgements and rejections addressed to the login callsign (any case, exact SSID), read with `ReadPacketsAsync`; bulletins are not counted |
+| `aprsnet.aprsis.packets.parse_failures` | `{packet}` | `reason`: `empty`, `bad_header`, `bad_path`, `truncated`, `bad_body` | Malformed packets read with `ReadPacketsAsync`, by their first error; the packet's `Issues` hold the detail |
 | `aprsnet.aprsis.packets.dropped` | `{packet}` | `reason`: `queue_full`, `too_long` | Lines discarded before delivery: the bounded queue was full under `OverflowPolicy.DropOldest`, or a line was longer than `MaxLineLength` |
 
 `packets.received` tags:
@@ -58,5 +59,4 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 
 ## Not yet
 
-Planned but not implemented yet: bytes received, parse-failure reasons, the queue length, and seconds since the last
-keepalive.
+Planned but not implemented yet: bytes received, the queue length, and seconds since the last keepalive.
