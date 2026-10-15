@@ -242,16 +242,22 @@ public sealed class AprsIsConnection : IAsyncDisposable
         }
 
         await _shutdown.CancelAsync().ConfigureAwait(false);
-        if (_run is not null)
+        try
         {
-            await _run.ConfigureAwait(false); // the loop catches its own exceptions
+            if (_run is not null)
+            {
+                await _run.ConfigureAwait(false); // the loop catches its own exceptions
+            }
         }
-
-        _connected.TrySetException(new ObjectDisposedException(nameof(AprsIsConnection)));
-        _lines.Writer.TryComplete();
-        SetState(AprsIsConnectionState.Closed);
-        _sendLimiter.Dispose();
-        _shutdown.Dispose();
+        finally
+        {
+            // Even if the loop faulted, end the line stream so no reader waits forever.
+            _connected.TrySetException(new ObjectDisposedException(nameof(AprsIsConnection)));
+            _lines.Writer.TryComplete();
+            SetState(AprsIsConnectionState.Closed);
+            _sendLimiter.Dispose();
+            _shutdown.Dispose();
+        }
     }
 
     private AprsIsClient CreateClient() =>
@@ -298,9 +304,16 @@ public sealed class AprsIsConnection : IAsyncDisposable
                         await client.ConnectAsync(shutdown).ConfigureAwait(false);
                         break;
                     }
-                    catch (Exception ex) when (!shutdown.IsCancellationRequested)
+                    catch (Exception ex)
                     {
                         await client.DisposeAsync().ConfigureAwait(false);
+                        if (shutdown.IsCancellationRequested)
+                        {
+                            // Closing: whatever ended this attempt (a socket error can win the race against the
+                            // cancellation) no longer matters, and must not fault the loop DisposeAsync waits for.
+                            return;
+                        }
+
                         (cause, error) = ("connect_failed", ex);
                     }
                 }
