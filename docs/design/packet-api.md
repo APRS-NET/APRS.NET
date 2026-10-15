@@ -653,7 +653,9 @@ the escaped data and `FEND`. `KissDecoder` reads frames back from a stream that 
 before the first `FEND` and the empty frames TNCs send to resynchronise, and drops (and counts) frames with an invalid
 escape or over `MaxFrameLength`, so line noise never grows its buffer without bound. `KissTcpClient` connects to a
 TNC that serves KISS over TCP (Dire Wolf's port 8001): it reads the frames heard on one radio port, offers the APRS
-ones as packets, and sends packets as KISS data frames. A serial transport comes next.
+ones as packets, and sends packets as KISS data frames. It wraps `KissStreamClient`, which does the same over any
+stream an app opens itself, so a serial or Bluetooth TNC works without this package depending on `System.IO.Ports`.
+Both pass a position and a Mic-E packet byte for byte through a real Dire Wolf (`RealTncTests`, opt-in).
 
 ## Limits
 
