@@ -49,3 +49,21 @@ await using var tnc = new KissTcpConnection("localhost", transmitLimit: limit);
 ```
 
 `KissTransmitLimit.Off` removes the limit, for a channel the app has to itself or a test.
+
+### Sharing a TNC: KissTcpServer
+
+`KissTcpServer` is a KISS TCP service, like Dire Wolf's port 8001: several KISS apps connect at once and each receives
+every frame you publish; the frames they send go to `Transmit`. Put it in front of one TNC so several apps can share
+it, with one transmit limit for all of them:
+
+```csharp
+await using var tnc = new KissTcpConnection("localhost");
+await using var server = new KissTcpServer(new IPEndPoint(IPAddress.Loopback, 8101)) { Transmit = tnc.SendFrameAsync };
+server.Start();
+await foreach (var frame in tnc.ReadFramesAsync())
+    server.Publish(frame);
+```
+
+`PublishFromAprsIs(packet, gateway)` sends a packet heard on APRS-IS to the apps as third-party traffic from your
+callsign (`N0CALL-10>APZNET:}N1ABC>APRS,TCPIP,N0CALL-10*:…`), so apps that only speak KISS see internet traffic too.
+An app that falls 1,000 frames behind is disconnected.

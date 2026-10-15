@@ -80,3 +80,16 @@ AprsNet.Kiss.KissTransmitLimit.IsOn.get -> bool
 AprsNet.Kiss.KissTransmitLimit.KissTransmitLimit(int burst = 3, System.TimeSpan? interval = null, System.TimeProvider? timeProvider = null) -> void
 static AprsNet.Kiss.KissTransmitLimit.Default.get -> AprsNet.Kiss.KissTransmitLimit!
 static AprsNet.Kiss.KissTransmitLimit.Off.get -> AprsNet.Kiss.KissTransmitLimit!
+AprsNet.Kiss.KissTcpServer
+AprsNet.Kiss.KissTcpServer.ClientCount.get -> int
+AprsNet.Kiss.KissTcpServer.ClientsDroppedForOverflow.get -> long
+AprsNet.Kiss.KissTcpServer.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissTcpServer.FramesFromClients.get -> long
+AprsNet.Kiss.KissTcpServer.KissTcpServer(System.Net.IPEndPoint! endPoint, int maxClients = 16, int clientQueueLength = 1000) -> void
+AprsNet.Kiss.KissTcpServer.LocalEndPoint.get -> System.Net.IPEndPoint?
+AprsNet.Kiss.KissTcpServer.Publish(AprsNet.Ax25.Ax25Frame! frame) -> void
+AprsNet.Kiss.KissTcpServer.PublishFromAprsIs(AprsNet.Packets.AprsPacket! packet, AprsNet.Packets.PacketAddress! gateway) -> void
+AprsNet.Kiss.KissTcpServer.Start() -> void
+AprsNet.Kiss.KissTcpServer.TransmitFailures.get -> long
+AprsNet.Kiss.KissTcpServer.Transmit.get -> System.Func<AprsNet.Ax25.Ax25Frame!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask>?
+AprsNet.Kiss.KissTcpServer.Transmit.init -> void
