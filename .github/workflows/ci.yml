@@ -65,10 +65,22 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet build -c Release
-      # Ubuntu's test run also collects coverage, so the coverage job needs no build of its own.
+      # Ubuntu's test run also collects coverage, so the coverage job needs no build of its own. A test that hangs
+      # fails after 5 minutes with a dump, rather than holding all three runners until the 20-minute job limit.
       - run: >-
-          dotnet test -c Release --no-build --logger GitHubActions
-          ${{ matrix.os == 'ubuntu-latest' && '--collect:"XPlat Code Coverage" --results-directory coverage' || '' }}
+          dotnet test -c Release --no-build --logger GitHubActions --logger trx --results-directory test-results
+          --blame-hang-timeout 5m --blame-hang-dump-type mini
+          ${{ matrix.os == 'ubuntu-latest' && '--collect:"XPlat Code Coverage"' || '' }}
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            test-results/**/*.trx
+            test-results/**/*.dmp
+            test-results/**/Sequence_*.xml
+          retention-days: 7
       - name: Pack (with package validation)
         if: matrix.os == 'ubuntu-latest'
         run: dotnet pack -c Release --no-build -o artifacts
@@ -76,7 +88,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         with:
           name: coverage
-          path: coverage/**/coverage.cobertura.xml
+          path: test-results/**/coverage.cobertura.xml
           retention-days: 1
 
   coverage:
@@ -109,8 +121,8 @@ jobs:
           cat coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
       - name: Coverage gate
         env:
-          MIN_LINE: 85 # raise these when coverage improves; do not lower them to get a change through
-          MIN_BRANCH: 80
+          MIN_LINE: 90 # raise these when coverage improves; do not lower them to get a change through
+          MIN_BRANCH: 85
         run: |
           jq -r '.summary | "line \(.linecoverage)%, branch \(.branchcoverage)%"' coverage/report/Summary.json
           jq -e ".summary.linecoverage >= $MIN_LINE" coverage/report/Summary.json > /dev/null \
