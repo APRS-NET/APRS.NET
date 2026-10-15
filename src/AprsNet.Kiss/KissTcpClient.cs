@@ -1,5 +1,4 @@
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using AprsNet.Ax25;
 using AprsNet.Packets;
 
@@ -8,7 +7,7 @@ namespace AprsNet.Kiss;
 /// <summary>
 /// A connection to a KISS TNC over TCP, such as Dire Wolf or a soundmodem on port 8001: reads the AX.25 frames the
 /// TNC hears and sends APRS packets for it to transmit. Single-use: after the TNC closes the connection, create a new
-/// client.
+/// client. For a serial or Bluetooth TNC, open the stream and use <see cref="KissStreamClient"/>.
 /// </summary>
 public sealed class KissTcpClient : IAsyncDisposable
 {
@@ -19,10 +18,8 @@ public sealed class KissTcpClient : IAsyncDisposable
     private readonly int _port;
     private readonly int _tncPort;
     private readonly TimeSpan _connectTimeout;
-    private readonly KissDecoder _decoder = new();
-    private readonly SemaphoreSlim _writeLock = new(1, 1);
     private TcpClient? _client;
-    private NetworkStream? _stream;
+    private KissStreamClient? _kiss;
     private int _disposed;
 
     /// <summary>Creates a client; nothing connects until <see cref="ConnectAsync"/>.</summary>
@@ -45,8 +42,8 @@ public sealed class KissTcpClient : IAsyncDisposable
         _connectTimeout = connectTimeout ?? TimeSpan.FromSeconds(10);
     }
 
-    /// <summary>KISS frames dropped for an invalid escape or for being too long: a sign of a noisy serial link.</summary>
-    public long DroppedFrames => _decoder.DroppedFrames;
+    /// <summary>KISS frames dropped for an invalid escape or for being too long.</summary>
+    public long DroppedFrames => _kiss?.DroppedFrames ?? 0;
 
     /// <summary>Connects to the TNC.</summary>
     /// <exception cref="TimeoutException">The TNC did not accept the connection in time.</exception>
@@ -78,88 +75,44 @@ public sealed class KissTcpClient : IAsyncDisposable
         }
 
         _client = client;
-        _stream = client.GetStream();
+        _kiss = new KissStreamClient(client.GetStream(), _tncPort);
     }
 
-    /// <summary>
-    /// Yields every AX.25 frame the TNC passes on from its radio port, APRS or not, until the TNC closes the
-    /// connection. Frames that are not valid AX.25 are skipped. Intended for a single consumer.
-    /// </summary>
-    public async IAsyncEnumerable<Ax25Frame> ReadFramesAsync(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default
-    )
+    /// <inheritdoc cref="KissStreamClient.ReadFramesAsync"/>
+    public IAsyncEnumerable<Ax25Frame> ReadFramesAsync(CancellationToken cancellationToken = default) =>
+        Connected.ReadFramesAsync(cancellationToken);
+
+    /// <inheritdoc cref="KissStreamClient.ReadPacketsAsync"/>
+    public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken = default) =>
+        Connected.ReadPacketsAsync(cancellationToken);
+
+    /// <inheritdoc cref="KissStreamClient.SendAsync"/>
+    public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
     {
-        var stream = _stream ?? throw new InvalidOperationException("Connect before reading.");
-        var buffer = new byte[4096];
-        while (true)
-        {
-            var read = await stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-            {
-                yield break;
-            }
-
-            foreach (var kiss in _decoder.Decode(buffer.AsSpan(0, read)))
-            {
-                if (kiss.Port == _tncPort && kiss.TryGetAx25(out var frame))
-                {
-                    yield return frame!;
-                }
-            }
-        }
+        ArgumentNullException.ThrowIfNull(packet);
+        return Connected.SendAsync(packet, cancellationToken);
     }
 
-    /// <summary>
-    /// Yields the APRS packets among the frames (<see cref="Ax25Frame.IsAprs"/>), each parsed from its TNC2 line, until
-    /// the TNC closes the connection. Use this or <see cref="ReadFramesAsync"/>, not both.
-    /// </summary>
-    public async IAsyncEnumerable<AprsPacket> ReadPacketsAsync(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default
-    )
-    {
-        await foreach (var frame in ReadFramesAsync(cancellationToken).ConfigureAwait(false))
-        {
-            if (frame.IsAprs)
-            {
-                yield return frame.ToAprsPacket();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Sends <paramref name="packet"/> for the TNC to transmit on its radio port. The TNC handles channel access; it
-    /// may hold the frame until the channel is clear.
-    /// </summary>
-    /// <exception cref="ArgumentException">The packet cannot be sent as AX.25; see <see cref="Ax25Frame.FromAprsPacket"/>.</exception>
-    public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default) =>
-        SendFrameAsync(Ax25Frame.FromAprsPacket(packet), cancellationToken);
-
-    /// <summary>Sends an AX.25 frame for the TNC to transmit on its radio port.</summary>
-    public async ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(frame);
-        var stream = _stream ?? throw new InvalidOperationException("Connect before sending.");
-        var bytes = KissFrame.ForAx25(frame, _tncPort).Encode();
-        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
-        try
-        {
-            await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-        }
-        finally
-        {
-            _writeLock.Release();
-        }
-    }
+    /// <inheritdoc cref="KissStreamClient.SendFrameAsync"/>
+    public ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default) =>
+        Connected.SendFrameAsync(frame, cancellationToken);
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
-            _client?.Dispose();
-            _writeLock.Dispose();
+            return;
         }
 
-        return ValueTask.CompletedTask;
+        if (_kiss is not null)
+        {
+            await _kiss.DisposeAsync().ConfigureAwait(false);
+        }
+
+        _client?.Dispose();
     }
+
+    private KissStreamClient Connected =>
+        _kiss ?? throw new InvalidOperationException("Connect before reading or sending.");
 }
