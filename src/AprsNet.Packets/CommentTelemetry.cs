@@ -133,14 +133,12 @@ internal static class CommentTelemetry
             return false;
         }
 
+        // Two characters from '!' to '{' reach at most 90 × 91 + 90 = 8280, the format's maximum, so no value can be
+        // out of range once the characters are.
         var values = new int[block.Length / 2];
         for (var i = 0; i < values.Length; i++)
         {
             values[i] = ((block[2 * i] - 33) * 91) + (block[(2 * i) + 1] - 33);
-            if (values[i] > MaxValue)
-            {
-                return false;
-            }
         }
 
         // Seven values are the sequence, five analog channels and the digital bits; fewer have no bits.
