@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AprsNet.AprsIsTcpClient\AprsNet.AprsIsTcpClient.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Symbols\AprsNet.Symbols.csproj" />
+    <ProjectReference Include="..\..\src\AprsNet.Kiss\AprsNet.Kiss.csproj" />
   </ItemGroup>
 
   <ItemGroup>
