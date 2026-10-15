@@ -575,3 +575,16 @@ override AprsNet.Packets.WeatherData.GetHashCode() -> int
 override AprsNet.Packets.WeatherData.ToString() -> string!
 static AprsNet.Packets.WeatherData.operator !=(AprsNet.Packets.WeatherData? left, AprsNet.Packets.WeatherData? right) -> bool
 static AprsNet.Packets.WeatherData.operator ==(AprsNet.Packets.WeatherData? left, AprsNet.Packets.WeatherData? right) -> bool
+AprsNet.Packets.TelemetryDefinition.Addressee.init -> void
+AprsNet.Packets.TelemetryDefinition.BitSense.init -> void
+AprsNet.Packets.TelemetryDefinition.Equations.init -> void
+AprsNet.Packets.TelemetryDefinition.Kind.init -> void
+AprsNet.Packets.TelemetryDefinition.Labels.init -> void
+AprsNet.Packets.TelemetryDefinition.ProjectName.init -> void
+AprsNet.Packets.TelemetryDefinition.TelemetryDefinition() -> void
+AprsNet.Packets.TelemetryReport.Analog.init -> void
+AprsNet.Packets.TelemetryReport.Comment.init -> void
+AprsNet.Packets.TelemetryReport.Digital.init -> void
+AprsNet.Packets.TelemetryReport.Sequence.init -> void
+AprsNet.Packets.TelemetryReport.SequenceNumber.init -> void
+AprsNet.Packets.TelemetryReport.TelemetryReport() -> void

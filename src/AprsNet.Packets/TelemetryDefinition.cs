@@ -32,30 +32,40 @@ public readonly record struct TelemetryEquation(double A, double B, double C)
 /// A telemetry definition (APRS101 ch. 13): sent as a message to the telemetry station's own callsign, it names,
 /// labels and scales the channels of that station's <c>T#</c> reports.
 /// </summary>
+/// <remarks>
+/// To send one, set <see cref="Addressee"/> to the telemetry station's callsign, <see cref="Kind"/>, and the
+/// <see cref="Labels"/>, <see cref="Equations"/> or <see cref="BitSense"/> that kind carries; the whole text must fit
+/// in a 67-character message. APRS101 also suggests shorter names for the later channels, which receivers do not
+/// enforce.
+/// </remarks>
 public sealed class TelemetryDefinition : AprsPayload
 {
-    internal TelemetryDefinition() { }
+    /// <summary>Creates a telemetry definition to encode with <see cref="AprsPacket.Create"/>.</summary>
+    public TelemetryDefinition() { }
+
+    /// <summary>The message text as sent, so a parsed definition is rebuilt with its original spelling.</summary>
+    internal ReadOnlyMemory<byte> TextBytes { get; init; }
 
     /// <summary>The station whose telemetry this defines (the message addressee, without padding).</summary>
-    public string Addressee { get; internal init; } = "";
+    public string Addressee { get; init; } = "";
 
     /// <summary>Which definition this is.</summary>
-    public TelemetryDefinitionKind Kind { get; internal init; }
+    public TelemetryDefinitionKind Kind { get; init; }
 
     /// <summary>
     /// Channel names (<c>PARM.</c>) or units (<c>UNIT.</c>) in channel order: up to five analog channels, then up to
     /// eight digital ones. Empty for the other kinds.
     /// </summary>
-    public IReadOnlyList<string> Labels { get; internal init; } = [];
+    public IReadOnlyList<string> Labels { get; init; } = [];
 
     /// <summary>The analog channel equations (<c>EQNS.</c>), in channel order; empty for the other kinds.</summary>
-    public IReadOnlyList<TelemetryEquation> Equations { get; internal init; } = [];
+    public IReadOnlyList<TelemetryEquation> Equations { get; init; } = [];
 
     /// <summary>
     /// For <c>BITS.</c>: eight <c>0</c>/<c>1</c> characters, one per digital channel, giving the state that means "on".
     /// </summary>
-    public string? BitSense { get; internal init; }
+    public string? BitSense { get; init; }
 
     /// <summary>For <c>BITS.</c>: the project name that follows the bit sense.</summary>
-    public string? ProjectName { get; internal init; }
+    public string? ProjectName { get; init; }
 }
