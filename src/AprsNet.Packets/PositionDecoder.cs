@@ -76,7 +76,7 @@ internal static class PositionDecoder
         var info = information.Span;
         if (info.Length < at + 19)
         {
-            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
+            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + Math.Min(at, info.Length)));
             return false;
         }
 
@@ -187,7 +187,7 @@ internal static class PositionDecoder
         var info = information.Span;
         if (info.Length < at + 13)
         {
-            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
+            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + Math.Min(at, info.Length)));
             return false;
         }
 
