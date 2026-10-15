@@ -1,33 +1,12 @@
 name: ci
 
-# Skips changes that cannot affect the build or tests: docs and Markdown (the corpus README stays in, since its
-# table is tested), and repository settings files. Later patterns override earlier ones.
+# Always starts, so the ci-ok job below can be a required check, but the changes job skips the build, tests and
+# format check for changes that cannot affect them: docs and Markdown (the corpus README stays in, since its table is
+# tested) and repository settings files.
 on:
   push:
     branches: [main]
-    paths:
-      - "**"
-      - "!docs/**"
-      - "!**/*.md"
-      - "tests/corpus/**"
-      - "!LICENSE"
-      - "!.release-please-manifest.json"
-      - "!.github/dependabot.yml"
-      - "!.github/workflows/pr-title.yml"
-      - "!.github/workflows/symbols.yml"
-      - "!.github/workflows/packages.yml"
   pull_request:
-    paths:
-      - "**"
-      - "!docs/**"
-      - "!**/*.md"
-      - "tests/corpus/**"
-      - "!LICENSE"
-      - "!.release-please-manifest.json"
-      - "!.github/dependabot.yml"
-      - "!.github/workflows/pr-title.yml"
-      - "!.github/workflows/symbols.yml"
-      - "!.github/workflows/packages.yml"
 
 permissions:
   contents: read
@@ -38,7 +17,40 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: filter
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Without a usable base (a new branch, or history that was rewritten) everything runs.
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2> /dev/null; then
+            echo "No base to compare with: running everything."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$(git merge-base "$BASE" "$GITHUB_SHA")" "$GITHUB_SHA")"
+          ignored='^(docs/|LICENSE$|\.release-please-manifest\.json$|\.github/dependabot\.yml$|\.github/workflows/(pr-title|symbols|packages)\.yml$)|\.md$'
+          code="$(printf '%s\n' "$changed" | grep -v -E "$ignored" | grep -v '^$' || true)"
+          corpus="$(printf '%s\n' "$changed" | grep '^tests/corpus/' || true)"
+          if [ -n "$code$corpus" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only docs or settings changed: skipping the build, tests and format check."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -131,6 +143,8 @@ jobs:
           git push --quiet "$url" HEAD:badges
 
   format:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -140,3 +154,22 @@ jobs:
           global-json-file: global.json
       - run: dotnet tool restore
       - run: dotnet csharpier check .
+
+  ci-ok:
+    # The one check to require on main: it passes when every job above passed, or was skipped for a docs-only change.
+    if: always()
+    needs: [changes, build, coverage, format]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *) echo "::error::A CI job ended with '$result'."; exit 1 ;;
+            esac
+          done
