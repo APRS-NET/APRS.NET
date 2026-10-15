@@ -38,7 +38,7 @@ jobs:
             exit 0
           fi
           changed="$(git diff --name-only "$(git merge-base "$BASE" "$GITHUB_SHA")" "$GITHUB_SHA")"
-          ignored='^(docs/|LICENSE$|\.release-please-manifest\.json$|\.github/dependabot\.yml$|\.github/workflows/(pr-title|symbols|packages)\.yml$)|\.md$'
+          ignored='^(docs/|LICENSE$|\.release-please-manifest\.json$|\.github/dependabot\.yml$|\.github/workflows/(pr-title|symbols|packages|milestone)\.yml$)|\.md$'
           code="$(printf '%s\n' "$changed" | grep -v -E "$ignored" | grep -v '^$' || true)"
           corpus="$(printf '%s\n' "$changed" | grep '^tests/corpus/' || true)"
           if [ -n "$code$corpus" ]; then
