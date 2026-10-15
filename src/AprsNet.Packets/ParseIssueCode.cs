@@ -80,4 +80,10 @@ public enum ParseIssueCode
 
     /// <summary>A user-defined packet (<c>{</c>) is shorter than its user ID and packet type.</summary>
     InvalidUserDefined,
+
+    /// <summary>A third-party packet (<c>}</c>) does not carry a packet with a <c>SOURCE&gt;DESTINATION:</c> header.</summary>
+    InvalidThirdParty,
+
+    /// <summary>Third-party packets are nested more deeply than the parser unwraps.</summary>
+    ThirdPartyTooDeep,
 }
