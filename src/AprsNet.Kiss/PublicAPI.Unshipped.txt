@@ -36,3 +36,13 @@ override AprsNet.Kiss.KissFrame.GetHashCode() -> int
 static AprsNet.Kiss.KissFrame.ForAx25(AprsNet.Ax25.Ax25Frame! frame, int port = 0) -> AprsNet.Kiss.KissFrame
 static AprsNet.Kiss.KissFrame.operator !=(AprsNet.Kiss.KissFrame left, AprsNet.Kiss.KissFrame right) -> bool
 static AprsNet.Kiss.KissFrame.operator ==(AprsNet.Kiss.KissFrame left, AprsNet.Kiss.KissFrame right) -> bool
+AprsNet.Kiss.KissTcpClient
+AprsNet.Kiss.KissTcpClient.ConnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Kiss.KissTcpClient.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissTcpClient.DroppedFrames.get -> long
+AprsNet.Kiss.KissTcpClient.KissTcpClient(string! host, int port = 8001, int tncPort = 0, System.TimeSpan? connectTimeout = null) -> void
+AprsNet.Kiss.KissTcpClient.ReadFramesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Ax25.Ax25Frame!>!
+AprsNet.Kiss.KissTcpClient.ReadPacketsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>!
+AprsNet.Kiss.KissTcpClient.SendAsync(AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissTcpClient.SendFrameAsync(AprsNet.Ax25.Ax25Frame! frame, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+const AprsNet.Kiss.KissTcpClient.DefaultPort = 8001 -> int

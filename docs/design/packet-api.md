@@ -651,8 +651,9 @@ the source. The rendering step is cheap next to radio data rates, and it keeps o
 `AprsNet.Kiss` frames them for a TNC. `KissFrame.Encode` writes `FEND`, the command byte (port in the high nibble),
 the escaped data and `FEND`. `KissDecoder` reads frames back from a stream that splits them anywhere: it skips noise
 before the first `FEND` and the empty frames TNCs send to resynchronise, and drops (and counts) frames with an invalid
-escape or over `MaxFrameLength`, so line noise never grows its buffer without bound. The TCP and serial transports
-come next.
+escape or over `MaxFrameLength`, so line noise never grows its buffer without bound. `KissTcpClient` connects to a
+TNC that serves KISS over TCP (Dire Wolf's port 8001): it reads the frames heard on one radio port, offers the APRS
+ones as packets, and sends packets as KISS data frames. A serial transport comes next.
 
 ## Limits
 
