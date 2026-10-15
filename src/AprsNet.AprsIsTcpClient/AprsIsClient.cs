@@ -119,6 +119,7 @@ public sealed class AprsIsClient : IAsyncDisposable
             Login = result;
             ClientMetrics.Attempt("connected");
             ClientMetrics.Login(result.Status);
+            ClientMetrics.ConnectionActive(+1); // undone when the receive loop ends
             _logger.LoggedIn(result.Status, result.Callsign, result.Server);
             if (result.Status == LoginStatus.Unverified && !_options.IsReadOnly)
             {
@@ -158,7 +159,7 @@ public sealed class AprsIsClient : IAsyncDisposable
     /// <c>aprsnet.aprsis.packets.received</c> metric by type and outcome.
     /// </summary>
     public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken = default) =>
-        PacketStream.ParseAsync(ReadLinesAsync(cancellationToken), cancellationToken);
+        PacketStream.ParseAsync(ReadLinesAsync(cancellationToken), _options.Callsign, cancellationToken);
 
     /// <summary>Changes the server-side filter without reconnecting.</summary>
     public async ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken = default)
@@ -394,6 +395,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         finally
         {
             _connectionEnded = true;
+            ClientMetrics.ConnectionActive(-1);
         }
     }
 
@@ -403,6 +405,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         try
         {
             await _transport.WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
+            ClientMetrics.BytesSent(line.Length + 2); // Latin-1, one byte per character, then CR LF
         }
         finally
         {

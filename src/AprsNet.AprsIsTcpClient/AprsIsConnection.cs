@@ -186,7 +186,7 @@ public sealed class AprsIsConnection : IAsyncDisposable
     /// <c>aprsnet.aprsis.packets.received</c> metric by type and outcome.
     /// </summary>
     public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken = default) =>
-        PacketStream.ParseAsync(ReadLinesAsync(cancellationToken), cancellationToken);
+        PacketStream.ParseAsync(ReadLinesAsync(cancellationToken), _options.Callsign, cancellationToken);
 
     /// <summary>
     /// Sends a packet as <see cref="AprsIsClient.SendAsync"/> does. While the connection is down it waits for the next

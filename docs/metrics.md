@@ -13,6 +13,7 @@ Every tag value comes from a fixed list below, so no series grows with the traff
 | --- | --- | --- | --- |
 | `aprsnet.aprsis.lines.received` | `{line}` | `kind`: `packet`, `server_comment` | Every line read from the server |
 | `aprsnet.aprsis.packets.received` | `{packet}` | `type`, `outcome` (below) | Every packet read with `ReadPacketsAsync`, after parsing |
+| `aprsnet.aprsis.packets.addressed_to_user` | `{packet}` | `kind`: `message`, `ack`, `rej` | Messages, acknowledgements and rejections addressed to the login callsign (any case, exact SSID), read with `ReadPacketsAsync`; bulletins are not counted |
 | `aprsnet.aprsis.packets.dropped` | `{packet}` | `reason`: `queue_full`, `too_long` | Lines discarded before delivery: the bounded queue was full under `OverflowPolicy.DropOldest`, or a line was longer than `MaxLineLength` |
 
 `packets.received` tags:
@@ -30,6 +31,7 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |
 | `aprsnet.aprsis.packets.sent` | `{packet}` | | Packets written to the server by `SendAsync` |
+| `aprsnet.aprsis.bytes.sent` | `By` | | Every byte written: the login, filter commands and packets, CR LF included |
 
 ## Connection
 
@@ -37,6 +39,7 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 | --- | --- | --- | --- |
 | `aprsnet.aprsis.connection.attempts` | `{attempt}` | `outcome`: `connected`, `failed`, `timeout` | Connect and login attempts |
 | `aprsnet.aprsis.login.results` | `{login}` | `result`: `verified`, `unverified`, `rejected` | Server login responses |
+| `aprsnet.aprsis.connection.active` | `{connection}` | | Up-down counter: 1 while a client is logged in and reading, back to 0 when its connection ends |
 | `aprsnet.aprsis.connection.idle_timeouts` | `{timeout}` | | Connections ended because the server sent nothing, not even a keepalive, for `IdleTimeout` |
 | `aprsnet.aprsis.connection.reconnects` | `{reconnect}` | `cause` (below) | Automatic reconnects by `AprsIsConnection` |
 
@@ -55,5 +58,5 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 
 ## Not yet
 
-Planned but not implemented yet: bytes received and sent, parse-failure reasons, messages addressed to the login
-callsign, an active-connection gauge, the queue length, and seconds since the last keepalive.
+Planned but not implemented yet: bytes received, parse-failure reasons, the queue length, and seconds since the last
+keepalive.

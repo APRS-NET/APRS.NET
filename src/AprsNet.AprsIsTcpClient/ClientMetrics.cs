@@ -49,6 +49,41 @@ internal static class ClientMetrics
         );
     }
 
+    private static readonly Counter<long> _addressedToUser = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.packets.addressed_to_user",
+        "{packet}",
+        "Messages, acknowledgements and rejections addressed to the login callsign, read with ReadPacketsAsync."
+    );
+
+    private static readonly UpDownCounter<long> _activeConnections = _meter.CreateUpDownCounter<long>(
+        "aprsnet.aprsis.connection.active",
+        "{connection}",
+        "Connections logged in and reading; 1 while one client is connected."
+    );
+
+    private static readonly Counter<long> _bytesSent = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.bytes.sent",
+        "By",
+        "Bytes written to the server, including the login, filter commands and line endings."
+    );
+
+    /// <summary>A message, ack or rej addressed to the login callsign; <paramref name="kind"/> is message, ack or rej.</summary>
+    public static void AddressedToUser(string kind)
+    {
+        _addressedToUser.Add(1, new KeyValuePair<string, object?>("kind", kind));
+    }
+
+    /// <summary>A connection logged in (+1) or ended (-1).</summary>
+    public static void ConnectionActive(int change)
+    {
+        _activeConnections.Add(change);
+    }
+
+    public static void BytesSent(int count)
+    {
+        _bytesSent.Add(count);
+    }
+
     /// <summary><c>MicE</c> → <c>mic_e</c>, <c>ThirdParty</c> → <c>third_party</c>.</summary>
     private static string Snake(string name) =>
         string.Concat(
