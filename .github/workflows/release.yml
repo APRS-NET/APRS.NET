@@ -9,6 +9,11 @@ on:
 
 permissions: {}
 
+# Pushes to main in quick succession queue rather than run release-please, or pack and publish a release, side by side.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
