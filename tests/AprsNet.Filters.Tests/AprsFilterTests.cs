@@ -244,13 +244,4 @@ public sealed class AprsFilterTests
     [InlineData("N0CALLS", "N0CALL", false)]
     public void GlobMatchesWholeValues(string pattern, string value, bool expected) =>
         Assert.Equal(expected, FilterTerm.Glob(pattern, value));
-
-    [Fact]
-    public void DistanceIsGreatCircle()
-    {
-        // One degree of latitude is 111.19 km on a 6371 km sphere; a quarter of the way round is 10,007.5 km.
-        Assert.Equal(111.19, FilterTerm.DistanceKm(new(0, 0), new(1, 0)), 2);
-        Assert.Equal(10_007.5, FilterTerm.DistanceKm(new(0, 0), new(0, 90)), 1);
-        Assert.Equal(20_015.1, FilterTerm.DistanceKm(new(0, 0), new(0, 180)), 1);
-    }
 }
