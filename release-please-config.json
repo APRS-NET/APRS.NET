@@ -11,7 +11,7 @@
     ".": {
       "package-name": "APRS.NET",
       "changelog-path": "CHANGELOG.md",
-      "exclude-paths": ["tests", "tools", "docs", "apps", ".github"]
+      "exclude-paths": ["tests", "tools", "docs", "apps", "benchmarks", ".github"]
     }
   }
 }

@@ -28,7 +28,8 @@ During the alpha, release-please only increments the alpha number. To start a ne
 Scopes are optional, for example `feat(is): support runtime filter changes`.
 
 Only changes to shipped code count. release-please skips a commit when every file it touches is under `tests/`,
-`tools/`, `docs/`, `apps/` (the CLI is not packaged) or `.github/` (`exclude-paths` in `release-please-config.json`).
+`tools/`, `docs/`, `apps/` (the CLI is not packaged), `benchmarks/` or `.github/` (`exclude-paths` in
+`release-please-config.json`).
 Use `fix:` and `feat:` for the libraries in `src/`; a fix to a tool or test is `test:` or `build:`.
 
 ## Notes
