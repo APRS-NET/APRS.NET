@@ -167,10 +167,40 @@ jobs:
       - run: dotnet tool restore
       - run: dotnet csharpier check .
 
+  tools:
+    # The tools under tools/ are file-based apps outside the solution, so the build above does not compile them; and
+    # docs/spec/coverage is generated from the corpus, so it is checked like the symbol pages in symbols.yml.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Compile every tool
+        run: |
+          for tool in tools/*/*.cs; do
+            echo "::group::$tool"
+            dotnet build "$tool"
+            echo "::endgroup::"
+          done
+      - name: Check the corpus coverage pages are up to date
+        run: |
+          dotnet run tools/corpus/Coverage.cs
+          if [ -n "$(git status --porcelain -- docs/spec/coverage)" ]; then
+            git status --short -- docs/spec/coverage
+            echo "::error::docs/spec/coverage is out of date. Run 'dotnet run tools/corpus/Coverage.cs' and commit the result."
+            exit 1
+          fi
+
   ci-ok:
     # The one check to require on main: it passes when every job above passed, or was skipped for a docs-only change.
     if: always()
-    needs: [changes, build, coverage, format]
+    needs: [changes, build, coverage, format, tools]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
