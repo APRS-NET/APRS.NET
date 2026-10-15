@@ -174,4 +174,17 @@ reconnects as `listen --reconnect` does and carries on waiting.
 The client spreads sends out (5 at once, then one every 6 seconds) and refuses to send on an unverified login, since
 the server would drop the packet. Exit codes are those of `listen`, plus 5 for an undelivered message.
 
+## tnc listen
+
+Print the APRS packets a KISS TNC hears, in the same formats as `listen`. The TNC must serve KISS over TCP, as Dire
+Wolf does on port 8001:
+
+```sh
+aprscli tnc listen --tnc localhost:8001 --format decoded
+aprscli tnc listen --tnc 192.168.1.20 --radio-port 1 -d 1h
+```
+
+`--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
+when the TNC cannot be reached or closes the connection.
+
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

@@ -13,6 +13,7 @@ internal static class AprsCli
         root.Subcommands.Add(new ParseCommand(environment).Build());
         root.Subcommands.Add(new ReplayCommand(environment).Build());
         root.Subcommands.Add(new SendCommand(environment).Build());
+        root.Subcommands.Add(new TncCommand(environment).Build());
         return root;
     }
 
