@@ -284,4 +284,74 @@ public class SendTests
         Assert.Contains(error, result.Error, StringComparison.Ordinal);
         Assert.Equal(0, harness.ConnectionAttempts);
     }
+
+    [Fact]
+    public async Task TelemetrySendsTheDefinitionsBeforeTheReport()
+    {
+        var harness = Verified();
+
+        var result = await harness.RunAsync(
+            [
+                "send",
+                "telemetry",
+                "-c",
+                Callsign,
+                "--seq",
+                "5",
+                "--analog",
+                "199,0,255,73,123",
+                "--digital",
+                "01101001",
+                "--names",
+                "Battery,Temp",
+                "--equations",
+                "0,5.2,0;0,0.53,-32",
+            ],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(
+            [
+                "KD9XYZ-9>APZNET::KD9XYZ-9 :PARM.Battery,Temp",
+                "KD9XYZ-9>APZNET::KD9XYZ-9 :EQNS.0,5.2,0,0,0.53,-32",
+                "KD9XYZ-9>APZNET:T#005,199,000,255,073,123,01101001",
+            ],
+            harness.Transport.Written.Skip(1)
+        );
+    }
+
+    [Fact]
+    public async Task TelemetryWithoutDefinitionsSendsOnlyTheReport()
+    {
+        var harness = new CliHarness();
+
+        var result = await harness.RunAsync(
+            ["send", "telemetry", "-c", Callsign, "-n", "--seq", "12", "--analog", "138,42"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"KD9XYZ-9>APZNET:T#012,138,042{Environment.NewLine}", result.Out);
+    }
+
+    [Theory]
+    [InlineData(new[] { "--analog", "1" }, "--seq is required")]
+    [InlineData(new[] { "--seq", "1" }, "--analog is required")]
+    [InlineData(new[] { "--seq", "1", "--analog", "13.8" }, "whole numbers 0 to 999")]
+    [InlineData(new[] { "--seq", "1", "--analog", "1,2,3,4,5", "--digital", "0101" }, "eight 0s and 1s")]
+    [InlineData(new[] { "--seq", "1", "--analog", "1", "--equations", "1,2" }, "three numbers per channel")]
+    [InlineData(new[] { "--seq", "1", "--analog", "1", "--project", "x" }, "--project goes with --bits")]
+    public async Task TelemetryRefusesWhatItCannotSend(string[] options, string error)
+    {
+        var harness = new CliHarness();
+
+        var result = await harness.RunAsync(
+            ["send", "telemetry", "-c", Callsign, "-n", .. options],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains(error, result.Error, StringComparison.Ordinal);
+    }
 }

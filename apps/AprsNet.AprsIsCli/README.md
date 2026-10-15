@@ -124,7 +124,7 @@ it only for your own licensed callsign. An invalid callsign exits with code 3.
 
 ## send
 
-Send a status report, message, position, object or weather report to APRS-IS as your own callsign. Sending needs a
+Send a status report, message, position, object, weather or telemetry report to APRS-IS as your own callsign. Sending needs a
 verified login: set `APRS_PASSCODE` (or `--passcode`) to the passcode for the callsign. `--dry-run` prints the packet
 without connecting, so you can check it before it goes out:
 
@@ -143,6 +143,16 @@ aprscli send weather --lat 49.05833 --lon -72.02917 --wind-dir 220 --wind-speed 
 `--luminosity` (W/m²). With `--lat` and `--lon` it sends a complete report on the weather station symbol (`/_`);
 without them a positionless report timestamped now, which cannot carry snowfall. Wind, gust and temperature left out
 are sent as unknown (dots); other readings are left out.
+
+`telemetry` sends a `T#` report: `--seq` (0–999) and `--analog` (one to five whole numbers 0–999), with optional
+`--digital` (eight `0`/`1`, after all five analog values) and `--comment`. `--names`, `--units`, `--equations`
+(`a,b,c` per channel, `;` between channels) and `--bits` with `--project` also send the `PARM.`, `UNIT.`, `EQNS.` and
+`BITS.` definitions, addressed to your own callsign, before the report:
+
+```sh
+aprscli send telemetry -c KD9XYZ-11 --seq 5 --analog 199,0,255,73,123 --digital 01101001 \
+  --names Battery,Btemp,ATemp,Pres,Alt --equations "0,5.2,0;0,.53,-32;3,4.39,49;-32,3,18;1,2,3"
+```
 
 `message` waits for the recipient's acknowledgement, resending after 30 s, 1, 2, 4 and 8 minutes. It then keeps
 listening for `--wait-replies` (default 2m; `0` stops at once), acknowledging and printing each reply

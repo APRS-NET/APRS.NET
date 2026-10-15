@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace AprsNet.AprsIsCli;
 
 /// <summary>
-/// The <c>send</c> command: build a status report, message, position, object or weather report and send it to APRS-IS on a verified
+/// The <c>send</c> command: build a status report, message, position, object, weather or telemetry report and send it to APRS-IS on a verified
 /// login. <c>--dry-run</c> prints the packet without connecting.
 /// </summary>
 internal sealed class SendCommand(CliEnvironment environment)
@@ -115,6 +115,44 @@ internal sealed class SendCommand(CliEnvironment environment)
     private readonly Option<double?> _pressure = new("--pressure") { Description = "Barometric pressure, millibars." };
     private readonly Option<int?> _luminosity = new("--luminosity") { Description = "Luminosity, W/m²." };
 
+    private readonly Option<int?> _sequence = new("--seq")
+    {
+        Description = "Telemetry sequence number, 0 to 999. Required.",
+    };
+
+    private readonly Option<string?> _analog = new("--analog")
+    {
+        Description = "One to five raw analog values, whole numbers 0 to 999, comma-separated: 199,0,255,73,123.",
+    };
+
+    private readonly Option<string?> _digital = new("--digital")
+    {
+        Description = "The eight digital channels as 0s and 1s: 01101001. Needs all five analog values.",
+    };
+
+    private readonly Option<string?> _names = new("--names")
+    {
+        Description = "Also send PARM.: channel names, comma-separated, analog then digital.",
+    };
+
+    private readonly Option<string?> _units = new("--units")
+    {
+        Description = "Also send UNIT.: channel units or labels, comma-separated, analog then digital.",
+    };
+
+    private readonly Option<string?> _equations = new("--equations")
+    {
+        Description =
+            "Also send EQNS.: a,b,c per analog channel (reading = a·v² + b·v + c), channels separated by ';'.",
+    };
+
+    private readonly Option<string?> _bits = new("--bits")
+    {
+        Description = "Also send BITS.: the 'on' state of each digital channel as eight 0s and 1s.",
+    };
+
+    private readonly Option<string?> _project = new("--project") { Description = "Project name sent with --bits." };
+
     private readonly Option<double?> _snow = new("--snow")
     {
         Description = "Snowfall in the last 24 hours, inches. Needs --lat and --lon.",
@@ -124,8 +162,8 @@ internal sealed class SendCommand(CliEnvironment environment)
     {
         var command = new Command(
             "send",
-            "Send a status report, message, position, object or weather report to APRS-IS. Needs your callsign and "
-                + "its passcode."
+            "Send a status report, message, position, object, weather or telemetry report to APRS-IS. Needs your "
+                + "callsign and its passcode."
         );
         foreach (var option in new Option[] { _callsign, _passcode, _server, _region, _tocall, _path, _dryRun })
         {
@@ -151,18 +189,13 @@ internal sealed class SendCommand(CliEnvironment environment)
             messageText,
             _waitReplies,
         };
-        message.SetAction(
-            (parseResult, cancellationToken) =>
-                RunAsync(
-                    parseResult,
-                    "message",
-                    new MessagePayload
-                    {
-                        Addressee = parseResult.GetValue(addressee)!,
-                        Text = parseResult.GetValue(messageText)!,
-                    },
-                    cancellationToken
-                )
+        SetAction(
+            message,
+            parseResult => new MessagePayload
+            {
+                Addressee = parseResult.GetValue(addressee)!,
+                Text = parseResult.GetValue(messageText)!,
+            }
         );
 
         var position = new Command("position", "Send a position report.") { _latitude, _longitude, _symbol, _comment };
@@ -223,31 +256,134 @@ internal sealed class SendCommand(CliEnvironment environment)
         };
         SetAction(weather, Weather);
 
+        var telemetry = new Command(
+            "telemetry",
+            "Send a telemetry report (T#), after any PARM./UNIT./EQNS./BITS. definitions given, which go to your "
+                + "own callsign."
+        )
+        {
+            _sequence,
+            _analog,
+            _digital,
+            _comment,
+            _names,
+            _units,
+            _equations,
+            _bits,
+            _project,
+        };
+        SetAction(telemetry, Telemetry);
+
         command.Subcommands.Add(status);
         command.Subcommands.Add(message);
         command.Subcommands.Add(position);
         command.Subcommands.Add(@object);
         command.Subcommands.Add(weather);
+        command.Subcommands.Add(telemetry);
         return command;
     }
 
     private void SetAction(Command command, Func<ParseResult, AprsPayload> payload) =>
-        command.SetAction(
-            async (parseResult, cancellationToken) =>
-            {
-                AprsPayload built;
-                try
-                {
-                    built = payload(parseResult);
-                }
-                catch (ArgumentException ex)
-                {
-                    return await UsageAsync(command.Name, ex.Message);
-                }
+        SetAction(command, (parseResult, _) => [payload(parseResult)]);
 
-                return await RunAsync(parseResult, command.Name, built, cancellationToken);
+    /// <summary>
+    /// Runs a command that sends one or more payloads, built once the sender's address is known (telemetry
+    /// definitions are addressed to the sender). An <see cref="ArgumentException"/> from building is a usage error.
+    /// </summary>
+    private void SetAction(Command command, Func<ParseResult, PacketAddress, IReadOnlyList<AprsPayload>> payloads) =>
+        command.SetAction(
+            (parseResult, cancellationToken) =>
+                RunAsync(parseResult, command.Name, address => payloads(parseResult, address), cancellationToken)
+        );
+
+    /// <summary>The definitions given, in PARM, UNIT, EQNS, BITS order, then the report.</summary>
+    private List<AprsPayload> Telemetry(ParseResult parseResult, PacketAddress address)
+    {
+        var station = address.Source.Value;
+        var payloads = new List<AprsPayload>();
+        if (parseResult.GetValue(_names) is { } names)
+        {
+            payloads.Add(Labels(station, TelemetryDefinitionKind.ParameterNames, names));
+        }
+
+        if (parseResult.GetValue(_units) is { } units)
+        {
+            payloads.Add(Labels(station, TelemetryDefinitionKind.Units, units));
+        }
+
+        if (parseResult.GetValue(_equations) is { } equations)
+        {
+            payloads.Add(
+                new TelemetryDefinition
+                {
+                    Addressee = station,
+                    Kind = TelemetryDefinitionKind.Equations,
+                    Equations = [.. equations.Split(';', StringSplitOptions.TrimEntries).Select(Equation)],
+                }
+            );
+        }
+
+        if (parseResult.GetValue(_bits) is { } bits)
+        {
+            payloads.Add(
+                new TelemetryDefinition
+                {
+                    Addressee = station,
+                    Kind = TelemetryDefinitionKind.BitSense,
+                    BitSense = bits.Trim(),
+                    ProjectName = parseResult.GetValue(_project),
+                }
+            );
+        }
+        else if (parseResult.GetValue(_project) is not null)
+        {
+            throw new ArgumentException("--project goes with --bits.");
+        }
+
+        payloads.Add(
+            new TelemetryReport
+            {
+                SequenceNumber = parseResult.GetValue(_sequence) ?? throw new ArgumentException("--seq is required."),
+                Analog = parseResult.GetValue(_analog) is { } analog
+                    ? [.. analog.Split(',', StringSplitOptions.TrimEntries).Select(Analog)]
+                    : throw new ArgumentException("--analog is required: one to five values, such as 199,0,255."),
+                Digital = parseResult.GetValue(_digital)?.Trim() switch
+                {
+                    null => [],
+                    { Length: 8 } d when d.All(c => c is '0' or '1') => [.. d.Select(c => c == '1')],
+                    _ => throw new ArgumentException("--digital is eight 0s and 1s, such as 01101001."),
+                },
+                Comment = parseResult.GetValue(_comment) ?? "",
             }
         );
+        return payloads;
+
+        static TelemetryDefinition Labels(string station, TelemetryDefinitionKind kind, string text) =>
+            new()
+            {
+                Addressee = station,
+                Kind = kind,
+                Labels = text.Split(',', StringSplitOptions.TrimEntries),
+            };
+
+        static double? Analog(string value) =>
+            value.Length == 0 ? null
+            : double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) ? number
+            : throw new ArgumentException($"--analog value '{value}' is not a number.");
+
+        static TelemetryEquation Equation(string text)
+        {
+            var parts = text.Split(',', StringSplitOptions.TrimEntries);
+            var numbers = parts
+                .Select(p =>
+                    double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) ? n : (double?)null
+                )
+                .ToArray();
+            return numbers is [{ } a, { } b, { } c]
+                ? new TelemetryEquation(a, b, c)
+                : throw new ArgumentException($"--equations needs three numbers per channel, a,b,c; got '{text}'.");
+        }
+    }
 
     private AprsPayload Weather(ParseResult parseResult)
     {
@@ -314,7 +450,7 @@ internal sealed class SendCommand(CliEnvironment environment)
     private async Task<int> RunAsync(
         ParseResult parseResult,
         string commandName,
-        AprsPayload payload,
+        Func<PacketAddress, IReadOnlyList<AprsPayload>> build,
         CancellationToken cancellationToken
     )
     {
@@ -329,7 +465,8 @@ internal sealed class SendCommand(CliEnvironment environment)
         }
 
         PacketAddress address;
-        AprsPacket packet;
+        AprsPacket[] packets;
+        MessagePayload? message;
         try
         {
             address = PacketAddress.Parse(
@@ -339,7 +476,9 @@ internal sealed class SendCommand(CliEnvironment environment)
                     ? path.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                     : []
             );
-            packet = address.Create(payload);
+            var payloads = build(address);
+            packets = [.. payloads.Select(address.Create)];
+            message = payloads is [MessagePayload single] ? single : null;
         }
         catch (ArgumentException ex)
         {
@@ -348,12 +487,16 @@ internal sealed class SendCommand(CliEnvironment environment)
 
         if (parseResult.GetValue(_dryRun))
         {
-            await environment.Out.WriteLineAsync(packet.ToString());
+            foreach (var packet in packets)
+            {
+                await environment.Out.WriteLineAsync(packet.ToString());
+            }
+
             return ExitCodes.Success;
         }
 
         var waitReplies = TimeSpan.Zero;
-        if (payload is MessagePayload)
+        if (message is not null)
         {
             var waitText = parseResult.GetValue(_waitReplies)!.Trim();
             if (waitText != "0" && !DurationParser.TryParse(waitText, out waitReplies))
@@ -382,7 +525,7 @@ internal sealed class SendCommand(CliEnvironment environment)
             Callsign = callsign,
             Passcode = passcode,
             // Messages addressed to us, so acknowledgements reach the messenger.
-            Filter = payload is MessagePayload ? "g/" + callsign : null,
+            Filter = message is not null ? "g/" + callsign : null,
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
         };
@@ -401,10 +544,15 @@ internal sealed class SendCommand(CliEnvironment environment)
                 return ExitCodes.LoginFailed;
             }
 
-            if (payload is not MessagePayload message)
+            if (message is null)
             {
-                await connection.SendAsync(packet, run.Token);
-                await environment.Out.WriteLineAsync(packet.ToString());
+                // Sent in order and spread out by the connection's rate limit: definitions before the report.
+                foreach (var packet in packets)
+                {
+                    await connection.SendAsync(packet, run.Token);
+                    await environment.Out.WriteLineAsync(packet.ToString());
+                }
+
                 return ExitCodes.Success;
             }
 
