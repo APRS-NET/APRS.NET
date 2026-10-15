@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.16](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.15...v0.1.0-alpha.16) (2026-10-15)
+
+
+### Features
+
+* **aprs-is:** send packets and messages on a verified login ([9207d0e](https://github.com/APRS-NET/APRS.NET/commit/9207d0e0e835f31b68852369e7e07b09dbcfd93c))
+* **aprs-is:** send packets and messages on a verified login ([ac4546c](https://github.com/APRS-NET/APRS.NET/commit/ac4546c72ce23789183f6247adccbacbc0db33f3))
+
 ## [0.1.0-alpha.15](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.14...v0.1.0-alpha.15) (2026-10-14)
 
 
