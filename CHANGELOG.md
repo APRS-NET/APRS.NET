@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.2.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.2.0-alpha.1...v0.2.0-alpha.2) (2026-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **packets:** MicEReport.Device is an AprsDevice (vendor, model, class, operating system, features) instead of a model name string. The CLI prints it as vendor and model, such as "Yaesu FTM-400DR".
+
+### Features
+
+* **deviceid:** move device identification into AprsNet.DeviceId ([f50646d](https://github.com/APRS-NET/APRS.NET/commit/f50646d22ae1b885040bbc4f01dc60461dcbc68d))
+* **deviceid:** move device identification into AprsNet.DeviceId ([4b5669c](https://github.com/APRS-NET/APRS.NET/commit/4b5669cf97cadf1b9c1e7bd9c9d1362eb7249e15)), closes [#119](https://github.com/APRS-NET/APRS.NET/issues/119)
+* **filters:** build APRS-IS filters from typed terms ([95196f2](https://github.com/APRS-NET/APRS.NET/commit/95196f2e3d2119de3071e17690ebf18ddbbd4dc5))
+* **filters:** build APRS-IS filters from typed terms ([77fd742](https://github.com/APRS-NET/APRS.NET/commit/77fd742467c0b8d85959c12933ad4eab2a290f5c)), closes [#117](https://github.com/APRS-NET/APRS.NET/issues/117)
+* **filters:** publish AprsNet.Filters ([2eec7b0](https://github.com/APRS-NET/APRS.NET/commit/2eec7b0de0badb5bec4542c42daade256f158b8d))
+* **filters:** publish AprsNet.Filters ([5ca6567](https://github.com/APRS-NET/APRS.NET/commit/5ca65678ba7dff3ba6d5b1a37448980ad4e758a8))
+* **packets:** add geodesy and unit conversions ([5f29f04](https://github.com/APRS-NET/APRS.NET/commit/5f29f04fbb94b22336e83be8df6dd93053585e60))
+* **packets:** add geodesy and unit conversions ([66deffb](https://github.com/APRS-NET/APRS.NET/commit/66deffb169131b5dd79454b7808e99c83927ec2f)), closes [#120](https://github.com/APRS-NET/APRS.NET/issues/120)
+* **packets:** analyse how a packet travelled from its path ([55531d1](https://github.com/APRS-NET/APRS.NET/commit/55531d150f8357a32b827433c5382a32f5d3c088))
+* **packets:** analyse how a packet travelled from its path ([1650f8a](https://github.com/APRS-NET/APRS.NET/commit/1650f8a2ef9301c7d48a2925ea5d3ceb5b5e5ab5)), closes [#121](https://github.com/APRS-NET/APRS.NET/issues/121)
+* **packets:** detect duplicate packets ([3f8e5ca](https://github.com/APRS-NET/APRS.NET/commit/3f8e5ca72b441d7cbc49de14259a1466801c10b2)), closes [#118](https://github.com/APRS-NET/APRS.NET/issues/118)
+* **packets:** identify devices from the aprs-deviceid list ([cf127ea](https://github.com/APRS-NET/APRS.NET/commit/cf127ea4f07d17e6883e5ebb66bffd6f723cbdf6)), closes [#119](https://github.com/APRS-NET/APRS.NET/issues/119)
+* **packets:** merge packet sources and report duplicates by source ([ec4b956](https://github.com/APRS-NET/APRS.NET/commit/ec4b9561ef5b0a660c2fdd6b23c0152424fe9495))
+* **packets:** merge packet sources and report duplicates by source ([5d14e32](https://github.com/APRS-NET/APRS.NET/commit/5d14e325c4d375850568e4eb7fb71bf868761462)), closes [#125](https://github.com/APRS-NET/APRS.NET/issues/125)
+
 ## [0.2.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.17...v0.2.0-alpha.1) (2026-10-15)
 
 
