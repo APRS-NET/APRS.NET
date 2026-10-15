@@ -42,8 +42,8 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 Also captured: Overland Park, KS (`r/38.98/-94.67/20`), San Francisco (`r/37.77/-122.42/30`) and Kuala Lumpur
 (`r/3.14/101.69/50`, picked for the active Malaysian network seen in the message capture),
 and on 2026-10-14 Seoul, Taipei, Manila, Perth, Bengaluru, Bangkok, Jakarta, Moscow, Warsaw, Milan, Madrid and Tel
-Aviv, and on 2026-10-15 Brisbane, Hong Kong, Singapore, Sapporo, Stockholm, Helsinki, Vienna and
-Budapest. `d/RS0ISS*` (packets digipeated by the ISS) got nothing in 6 hours; retry when the ISS digipeater is active.
+Aviv, and on 2026-10-15 Brisbane, Hong Kong, Singapore, Sapporo, Stockholm, Helsinki, Vienna,
+Budapest, Shanghai, Beijing, Istanbul and Bucharest. `d/RS0ISS*` (packets digipeated by the ISS) got nothing in 6 hours; retry when the ISS digipeater is active.
 
 If only a few: Rhine-Ruhr, Tokyo, London, Sydney and Denver cover the most callsign formats, quadrants and encodings.
 
