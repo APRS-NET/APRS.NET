@@ -1,0 +1,100 @@
+name: deviceid
+
+# Keeps AprsNet.DeviceId's device table in step with the aprs-deviceid list. Nightly, it fetches the list as the APRS
+# Foundation publishes it; when an entry was added, removed or changed it opens a pull request from
+# automation/deviceid, or updates the one already open, listing each change. Nothing merges without review.
+#
+# A pull request opened with the workflow token does not start other workflows, so this one starts CI on the branch
+# with workflow_dispatch; its checks then show on the pull request.
+
+on:
+  schedule:
+    # The list's maintainers ask for fetches at a random time rather than on the hour.
+    - cron: "37 4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deviceid
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'APRS-NET/APRS.NET'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # push automation/deviceid
+      pull-requests: write # open or update its pull request
+      actions: write # start CI on the branch
+    env:
+      BRANCH: automation/deviceid
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Fetch the list and regenerate the table
+        id: update
+        run: |
+          status=0
+          dotnet run tools/deviceid/Generate.cs -- --update "$RUNNER_TEMP/summary.md" || status=$?
+          if [ "$status" = 2 ]; then
+            echo "::notice::The published list is mid-update; the next run will pick it up."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          [ "$status" = 0 ] || exit "$status"
+          if git diff --quiet -- tools/deviceid src/AprsNet.DeviceId; then
+            echo "The device list is up to date."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the pull request
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          read -r commit generated < tools/deviceid/tocalls.version
+          date="${generated%%T*}"
+          short="${commit:0:7}"
+
+          # Nothing to push when the open pull request already holds this version of the list.
+          if git fetch -q origin "$BRANCH" 2> /dev/null \
+            && git diff --quiet "origin/$BRANCH" -- tools/deviceid src/AprsNet.DeviceId; then
+            echo "$BRANCH already has aprs-deviceid $short."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$BRANCH"
+          git add tools/deviceid src/AprsNet.DeviceId/AprsDevices.Generated.cs
+          git commit -q -F - <<MESSAGE
+          feat(deviceid): update the device list to aprs-deviceid $short
+
+          The aprs-deviceid list changed (commit $commit, published $generated).
+          The pull request lists each entry added, removed or changed.
+          MESSAGE
+          git push -q --force origin "$BRANCH"
+
+          {
+            echo "The nightly \`deviceid\` workflow found changes in the [aprs-deviceid](https://github.com/aprsorg/aprs-deviceid) list: commit [\`$short\`](https://github.com/aprsorg/aprs-deviceid/commit/$commit), published $generated."
+            echo
+            cat "$RUNNER_TEMP/summary.md"
+            echo
+            echo "Check the entries read sensibly, then rebase-merge. If a new device class stops the generator, add it to \`AprsDeviceClass\` and to \`tools/deviceid/Generate.cs\` on this branch."
+          } > "$RUNNER_TEMP/body.md"
+
+          title="feat(deviceid): update the device list to aprs-deviceid $short ($date)"
+          if gh pr view "$BRANCH" --json state --jq .state 2> /dev/null | grep -q OPEN; then
+            gh pr edit "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          else
+            gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$RUNNER_TEMP/body.md"
+          fi
+          gh workflow run ci.yml --ref "$BRANCH"
