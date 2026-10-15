@@ -9,7 +9,8 @@ Async APRS-IS client.
 
 `ReadPacketsAsync` yields each line parsed; `ReadLinesAsync` yields the raw lines instead (use one or the other).
 Parsing never throws, so a malformed packet arrives with its `Outcome` and `Issues`. Every packet is counted in the
-`aprsnet.aprsis.packets.received` metric by `type` and `outcome`.
+`aprsnet.aprsis.packets.received` metric by `type` and `outcome`; [docs/metrics.md](https://github.com/APRS-NET/APRS.NET/blob/main/docs/metrics.md)
+lists every metric the client records.
 
 ```csharp
 await foreach (var packet in client.ReadPacketsAsync())

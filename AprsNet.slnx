@@ -35,6 +35,7 @@
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/benchmarks.md" />
+    <File Path="docs/metrics.md" />
     <File Path="docs/public-api.md" />
     <File Path="docs/versioning.md" />
   </Folder>
