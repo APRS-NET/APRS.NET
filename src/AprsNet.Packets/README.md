@@ -49,6 +49,9 @@ if (packet.Payload is PositionedPayload report) // a position report, object, it
 }
 ```
 
+[docs/packet-types.md](https://github.com/APRS-NET/APRS.NET/blob/main/docs/packet-types.md) lists every APRS data type, whether it
+decodes and builds, and how much of the test corpus it covers.
+
 `AprsPacket.Create` builds packets from payloads, the reverse of `Parse`, for every payload type it decodes except raw
 weather station data. Mic-E reports replace the destination with their latitude:
 

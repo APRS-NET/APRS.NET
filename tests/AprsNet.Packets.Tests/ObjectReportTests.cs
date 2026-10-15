@@ -55,13 +55,55 @@ public class ObjectReportTests
     [InlineData(";LEADER   *092345z")]
     [InlineData(";LEADER   *0923")]
     [InlineData(";LEADER   X092345z4903.50N/07201.75W>")]
-    [InlineData(";SHORT*092345z4903.50N/07201.75W>")]
+    [InlineData(";SHORT*0923454903.50N/07201.75W>")] // unpadded, and no valid timestamp after the marker
+    [InlineData(";SHORT*092345zno position here")]
     public void RejectsMalformedObjects(string information)
     {
         var packet = AprsPacket.Parse("N0CALL>APRS:" + information);
 
         Assert.Equal(ParseOutcome.Malformed, packet.Outcome);
         Assert.Null(packet.Payload);
+    }
+
+    [Theory]
+    [InlineData(";EL-N0CAL*092345z4903.50N/07201.75W>", "EL-N0CAL", true)] // SvxLink's 8-character names
+    [InlineData(";SHORT_092345z4903.50N/07201.75W>", "SHORT", false)]
+    [InlineData(";A*092345z4903.50N/07201.75W>", "A", true)]
+    public void ReadsAnUnpaddedNameWithAWarning(string information, string name, bool isLive)
+    {
+        var packet = AprsPacket.Parse("N0CALL>APRS:" + information);
+
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
+        var report = (ObjectReport)packet.Payload!;
+        Assert.Equal((name, isLive), (report.Name, report.IsLive));
+        Assert.Equal(AprsTimestamp.DayHourMinute(9, 23, 45), report.Timestamp);
+        Assert.Equal(49.0583, report.Position.Latitude, 4);
+        Assert.Equal(
+            [new ParseIssue(ParseIssueCode.UnpaddedObjectName, ParseIssueSeverity.Warning, 13)],
+            packet.Issues
+        );
+    }
+
+    [Fact]
+    public void PrefersTheLongestNameThatFits()
+    {
+        // A '*' inside the name is allowed; the marker is the one a timestamp and position follow.
+        var packet = AprsPacket.Parse("N0CALL>APRS:;A*B*092345z4903.50N/07201.75W>");
+
+        Assert.Equal("A*B", ((ObjectReport)packet.Payload!).Name);
+    }
+
+    [Fact]
+    public void AnUnpaddedObjectRebuildsWithItsNamePadded()
+    {
+        var parsed = AprsPacket.Parse("N0CALL>APRS:;EL-N0CAL*092345z4903.50N/07201.75W>");
+
+        var rebuilt = AprsPacket.Create(parsed.Source!, parsed.Destination!, parsed.Path!, parsed.Payload!);
+
+        Assert.Equal(
+            ";EL-N0CAL *092345z4903.50N/07201.75W>",
+            System.Text.Encoding.Latin1.GetString(rebuilt.Information.Span)
+        );
     }
 
     [Fact]

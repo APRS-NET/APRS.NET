@@ -27,6 +27,7 @@ internal static class AprsEncoder
             TelemetryDefinition definition => TelemetryEncoder.Encode(definition),
             CapabilitiesReport capabilities => Capabilities(capabilities),
             UserDefinedPayload userDefined => UserDefined(userDefined),
+            ThirdPartyPayload thirdParty => ThirdParty(thirdParty),
             _ => throw new NotSupportedException(
                 $"Encoding {payload.GetType().Name} is not supported; raw weather station data is only decoded."
             ),
@@ -56,6 +57,9 @@ internal static class AprsEncoder
             (TelemetryDefinition e, TelemetryDefinition a) => TelemetryEncoder.Mismatch(e, a),
             (CapabilitiesReport e, CapabilitiesReport a) => !e.Capabilities.SequenceEqual(a.Capabilities)
                 ? "the capabilities do not survive encoding"
+                : null,
+            (ThirdPartyPayload e, ThirdPartyPayload a) => !e.Packet.Raw.Span.SequenceEqual(a.Packet.Raw.Span)
+                ? "the carried packet does not survive encoding"
                 : null,
             (UserDefinedPayload e, UserDefinedPayload a) => e.UserId != a.UserId || e.UserPacketType != a.UserPacketType
                 ? "the user ID or packet type does not survive encoding"
@@ -96,6 +100,23 @@ internal static class AprsEncoder
         }
 
         return [(byte)'<', .. TextBytes(ReadOnlyMemory<byte>.Empty, string.Join(',', entries), "capabilities")];
+    }
+
+    /// <summary><c>}</c> and the carried packet exactly as it is held.</summary>
+    private static byte[] ThirdParty(ThirdPartyPayload payload)
+    {
+        var packet = payload.Packet;
+        if (!packet.HasHeader)
+        {
+            throw new ArgumentException("A third-party packet carries a packet with a SOURCE>DESTINATION: header.");
+        }
+
+        if (packet.Raw.Span.IndexOfAny((byte)'\r', (byte)'\n', (byte)0) >= 0)
+        {
+            throw new ArgumentException("The carried packet must not contain CR, LF or NUL.");
+        }
+
+        return [(byte)'}', .. packet.Raw.Span];
     }
 
     /// <summary><c>{</c>, the user ID, the packet type and the data.</summary>
