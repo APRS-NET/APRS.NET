@@ -1,7 +1,7 @@
 #:property TargetFramework=net10.0
 #:property PublishAot=false
 
-// Writes src/AprsNet.Packets/AprsDevices.Generated.cs from the pinned copy of the aprs-deviceid list
+// Writes src/AprsNet.DeviceId/AprsDevices.Generated.cs from the pinned copy of the aprs-deviceid list
 // (tools/deviceid/tocalls.yaml, with its commit and date in tocalls.version), so identifying a device needs no file
 // or network access at run time.
 //
@@ -15,7 +15,7 @@ using System.Text;
 
 const string yamlPath = "tools/deviceid/tocalls.yaml";
 const string versionPath = "tools/deviceid/tocalls.version";
-const string outPath = "src/AprsNet.Packets/AprsDevices.Generated.cs";
+const string outPath = "src/AprsNet.DeviceId/AprsDevices.Generated.cs";
 
 if (!File.Exists(yamlPath))
 {
@@ -148,7 +148,7 @@ code.AppendLine(
 
     #nullable enable
 
-    namespace AprsNet.Packets;
+    namespace AprsNet.DeviceId;
 
     public static partial class AprsDevices
     {

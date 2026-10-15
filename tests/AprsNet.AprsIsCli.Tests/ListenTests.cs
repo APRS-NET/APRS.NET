@@ -484,7 +484,7 @@ public class ListenTests
                 )
         ).Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.StartsWith("N0CALL>T4SQZZ  Mic-E position 44.51667 -112.11667", decoded[0], StringComparison.Ordinal);
-        Assert.Contains("In Service  Yaesu FTM-400DR  messaging", decoded[0], StringComparison.Ordinal);
+        Assert.Contains("In Service  FTM-400DR  messaging", decoded[0], StringComparison.Ordinal);
         Assert.Contains("Emergency", decoded[1], StringComparison.Ordinal);
         Assert.DoesNotContain("messaging", decoded[1], StringComparison.Ordinal);
 
@@ -499,7 +499,7 @@ public class ListenTests
             .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement.GetProperty("micE"))
             .ToList();
         Assert.Equal("inService", json[0].GetProperty("message").GetString());
-        Assert.Equal("Yaesu FTM-400DR", json[0].GetProperty("device").GetString());
+        Assert.Equal("FTM-400DR", json[0].GetProperty("device").GetString());
         Assert.True(json[0].GetProperty("currentFix").GetBoolean());
         Assert.True(json[0].GetProperty("messaging").GetBoolean());
         Assert.Equal(200.1, json[0].GetProperty("altitudeFeet").GetDouble(), 1);
@@ -513,7 +513,7 @@ public class ListenTests
                 )
         ).Out.Split(Environment.NewLine + Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
         Assert.Contains("Mic-E     In Service", pretty[0], StringComparison.Ordinal);
-        Assert.Contains("device    Yaesu FTM-400DR", pretty[0], StringComparison.Ordinal);
+        Assert.Contains("device    FTM-400DR", pretty[0], StringComparison.Ordinal);
         Assert.Contains("fix       current", pretty[0], StringComparison.Ordinal);
         Assert.Contains("Mic-E     Emergency", pretty[1], StringComparison.Ordinal);
         Assert.Contains("device    not identified", pretty[1], StringComparison.Ordinal);

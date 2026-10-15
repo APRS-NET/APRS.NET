@@ -1,4 +1,4 @@
-namespace AprsNet.Packets;
+namespace AprsNet.DeviceId;
 
 /// <summary>
 /// A device or program that sends APRS packets, as the aprs-deviceid list describes it. Any part the list leaves out

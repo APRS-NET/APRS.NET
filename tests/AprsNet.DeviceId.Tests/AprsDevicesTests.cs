@@ -1,4 +1,6 @@
-namespace AprsNet.Packets.Tests;
+using AprsNet.Packets;
+
+namespace AprsNet.DeviceId.Tests;
 
 public class AprsDevicesTests
 {
@@ -61,13 +63,26 @@ public class AprsDevicesTests
         // Mic-E: the destination is the latitude; the device comes from the comment's codes.
         var micE = AprsPacket.Parse("N0CALL-9>S32UVT:`(_fn\"Oj/`Hello _%");
         Assert.Equal("FTM-400DR", AprsDevices.Identify(micE)?.Model);
-        Assert.Same(((MicEReport)micE.Payload!).Device, AprsDevices.Identify(micE));
         Assert.Null(AprsDevices.Identify(AprsPacket.Parse("N0CALL-9>S32UVT:`(_fn\"Oj/`Hello")));
+        Assert.Null(AprsDevices.Identify(AprsPacket.Parse("N0CALL-9>S32UVT:`(_fn\"Oj/ Hello _%")));
+        Assert.Null(AprsDevices.Identify(AprsPacket.Parse("N0CALL-9>S32UVT:`(_fn\"O")));
 
         Assert.Null(AprsDevices.Identify(AprsPacket.Parse("no header")));
         Assert.Throws<ArgumentNullException>(() => AprsDevices.Identify(null!));
         Assert.Throws<ArgumentNullException>(() => AprsDevices.FromTocall(null!));
     }
+
+    // Codes the APRS 1.2 table in AprsNet.Packets does not know, and the legacy Kenwood forms.
+    [Theory]
+    [InlineData("`(_fn\"Oj/`Tracking[1", "APRSdroid")]
+    [InlineData("'(_fn\"Oj/'Hello|3", "TinyTrak3")]
+    [InlineData("`(_fn\"Oj/>Hello&", "TH-D75")]
+    [InlineData("`(_fn\"Oj/>Hello^", "TH-D74")]
+    [InlineData("`(_fn\"Oj/>Hello", "TH-D7A")]
+    [InlineData("`(_fn\"Oj/]Hello=", "TM-D710")]
+    [InlineData("`(_fn\"Oj/]", "TM-D700")]
+    public void IdentifiesMicEDevices(string information, string model) =>
+        Assert.Equal(model, AprsDevices.Identify(AprsPacket.Parse("N0CALL-9>S32UVT:" + information))?.Model);
 
     [Fact]
     public void RecordsTheListVersion()

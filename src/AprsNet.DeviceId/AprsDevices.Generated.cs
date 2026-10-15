@@ -8,7 +8,7 @@
 
 #nullable enable
 
-namespace AprsNet.Packets;
+namespace AprsNet.DeviceId;
 
 public static partial class AprsDevices
 {
