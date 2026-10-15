@@ -43,6 +43,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 | `-n`, `--count` / `-d`, `--duration` | Stop after N packets / after `90s`, `10m`, `2h`, `1d`. Ctrl+C also stops cleanly. |
 | `--reconnect` | If the connection drops or the server sends nothing for 90 s, reconnect (wait about 5 s, doubling to 60 s, varied by up to 20% so dropped clients do not all return at once) and carry on; `--count` spans connections. Only after the first login succeeds, and never after a rejected login. Use it for long captures. |
 | `--max-silence <duration\|off>` | Treat the connection as failed after this long with **no packets**, even if keepalives continue (the server's own feed can stall while it still answers). Default `10m` with `--reconnect`, otherwise off. Raise it or use `off` for filters over quiet areas. |
+| `--stats <duration>` | Every so often (`1m`, `10m`) and at the end, print a summary to stderr: packets by type, how many were malformed or unsupported, and messages to your callsign. Handy during long captures. |
 
 APRS-IS servers send a `#` keepalive about every 20 s, so 90 s of silence means the link is dead even if TCP has not noticed. A server can also keep sending keepalives after its feed has stalled; `--max-silence` catches that, and its message reports how many keepalives arrived in the gap so you can tell the two apart. Without `--reconnect` either one ends the run with exit code 2.
 

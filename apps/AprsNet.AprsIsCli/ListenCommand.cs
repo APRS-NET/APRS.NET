@@ -100,6 +100,13 @@ internal sealed class ListenCommand
             + "otherwise off. Use 'off' to disable.",
     };
 
+    private readonly Option<string?> _stats = new("--stats")
+    {
+        Description =
+            "Print a summary to standard error this often, for example 1m, and once at the end: packets by type, "
+            + "malformed, unsupported and messages to your callsign.",
+    };
+
     private readonly Option<string> _format = new("--format")
     {
         Description =
@@ -146,6 +153,7 @@ internal sealed class ListenCommand
                 _duration,
                 _reconnect,
                 _maxSilence,
+                _stats,
                 _format,
                 _color,
             }
@@ -236,6 +244,18 @@ internal sealed class ListenCommand
             maxSilence = parsedSilence;
         }
 
+        TimeSpan? statsInterval = null;
+        if (parseResult.GetValue(_stats) is { } statsText)
+        {
+            if (!DurationParser.TryParse(statsText, out var parsedStats))
+            {
+                error = $"--stats '{statsText}' is not valid. Use a duration such as 30s or 5m.";
+                return false;
+            }
+
+            statsInterval = parsedStats;
+        }
+
         var capture = parseResult.GetValue(_capture);
         if (capture is not null && string.IsNullOrWhiteSpace(capture))
         {
@@ -300,6 +320,7 @@ internal sealed class ListenCommand
             Duration = duration,
             Reconnect = reconnect,
             MaxSilence = maxSilence,
+            StatsInterval = statsInterval,
         };
         error = "";
         return true;

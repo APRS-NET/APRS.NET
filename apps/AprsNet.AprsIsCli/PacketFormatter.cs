@@ -879,6 +879,9 @@ internal static class PacketFormatter
             _ => "Peet Bros U-II",
         };
 
+    /// <summary>The packet type as the JSON format names it: <c>position</c>, <c>micE</c>, <c>thirdParty</c>.</summary>
+    internal static string TypeName(PacketType type) => Name(type);
+
     private static string Name<T>(T value)
         where T : struct, Enum => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
 }
