@@ -87,6 +87,7 @@ internal static class TelemetryDecoder
 
         return new TelemetryReport
         {
+            ValuesBytes = information[2..^body.Length],
             Sequence = sequence,
             SequenceNumber = number,
             Analog = analog,

@@ -13,13 +13,18 @@ public sealed class WeatherReport : AprsPayload
     /// </summary>
     public WeatherReport() { }
 
-    /// <summary>When the readings were taken, in the <see cref="AprsTimestampFormat.MonthDayHourMinute"/> format.</summary>
-    public AprsTimestamp Timestamp { get; init; }
+    /// <summary>
+    /// When the readings were taken, in the <see cref="AprsTimestampFormat.MonthDayHourMinute"/> format. Required when
+    /// encoding. <see langword="null"/> when the station sent a time that cannot be read, such as the
+    /// <c>00000000</c> of a station without a clock; the readings are still decoded, with an
+    /// <see cref="ParseIssueCode.InvalidTimestamp"/> warning.
+    /// </summary>
+    public AprsTimestamp? Timestamp { get; init; }
 
     /// <summary>The readings.</summary>
     public WeatherData Weather { get; init; } = new();
 
-    /// <summary>The readings as sent, so a parsed report is rebuilt with their original spelling.</summary>
+    /// <summary>The timestamp and readings as sent, so a parsed report is rebuilt with their original spelling.</summary>
     internal ReadOnlyMemory<byte>? ReadingsBytes { get; init; }
 
     /// <summary>

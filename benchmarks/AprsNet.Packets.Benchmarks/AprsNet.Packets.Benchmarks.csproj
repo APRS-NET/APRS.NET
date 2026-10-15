@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- BenchmarkDotNet needs optimized code and generates its own projects; this one only hosts the benchmarks. -->
+    <Optimize>true</Optimize>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/AprsNet.Packets/AprsNet.Packets.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The anonymized captures, for the whole-corpus benchmark. -->
+    <None Include="../../tests/corpus/aprs-is/*.log" LinkBase="corpus" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -143,6 +143,12 @@ internal static class PositionEncoder
         }
 
         info.AddRange(comment);
+
+        // Comment telemetry ends the comment (APRS 1.2), so a receiver finds it as the last |…| block.
+        if (payload.CommentBytes.IsEmpty && payload.Telemetry is { } telemetry)
+        {
+            info.AddRange(Encoding.ASCII.GetBytes(CommentTelemetry.Encode(telemetry)));
+        }
     }
 
     /// <summary>

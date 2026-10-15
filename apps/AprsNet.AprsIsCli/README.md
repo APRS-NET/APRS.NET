@@ -5,13 +5,14 @@ The `aprscli` command-line tool for APRS.NET.
 > **Alpha.** Like the rest of APRS.NET, the tool can change between any two releases until at least 1.0.0. Not for
 > production use.
 
-It is not published as a package yet. Run it from the repository root:
+Install it as a .NET tool (it needs the .NET 10 runtime):
 
 ```sh
-dotnet run --project apps/AprsNet.AprsIsCli -- listen --help
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+aprscli listen --help
 ```
 
-The examples below use `aprscli` for short.
+Or run it from a clone of the repository with `dotnet run --project apps/AprsNet.AprsIsCli -- listen --help`.
 
 ## listen
 
@@ -43,6 +44,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 | `-n`, `--count` / `-d`, `--duration` | Stop after N packets / after `90s`, `10m`, `2h`, `1d`. Ctrl+C also stops cleanly. |
 | `--reconnect` | If the connection drops or the server sends nothing for 90 s, reconnect (wait about 5 s, doubling to 60 s, varied by up to 20% so dropped clients do not all return at once) and carry on; `--count` spans connections. Only after the first login succeeds, and never after a rejected login. Use it for long captures. |
 | `--max-silence <duration\|off>` | Treat the connection as failed after this long with **no packets**, even if keepalives continue (the server's own feed can stall while it still answers). Default `10m` with `--reconnect`, otherwise off. Raise it or use `off` for filters over quiet areas. |
+| `--stats <duration>` | Every so often (`1m`, `10m`) and at the end, print a summary to stderr: packets by type, how many were malformed or unsupported, and messages to your callsign. Handy during long captures. |
 
 APRS-IS servers send a `#` keepalive about every 20 s, so 90 s of silence means the link is dead even if TCP has not noticed. A server can also keep sending keepalives after its feed has stalled; `--max-silence` catches that, and its message reports how many keepalives arrived in the gap so you can tell the two apart. Without `--reconnect` either one ends the run with exit code 2.
 
@@ -124,9 +126,9 @@ it only for your own licensed callsign. An invalid callsign exits with code 3.
 
 ## send
 
-Send a status report, message, position or object to APRS-IS as your own callsign. Sending needs a verified login:
-set `APRS_PASSCODE` (or `--passcode`) to the passcode for the callsign. `--dry-run` prints the packet without
-connecting, so you can check it before it goes out:
+Send a status report, message, position, object, weather or telemetry report to APRS-IS as your own callsign. Sending needs a
+verified login: set `APRS_PASSCODE` (or `--passcode`) to the passcode for the callsign. `--dry-run` prints the packet
+without connecting, so you can check it before it goes out:
 
 ```sh
 export APRS_PASSCODE=$(aprscli passcode KD9XYZ)
@@ -135,6 +137,23 @@ aprscli send status "Testing APRS.NET" -c KD9XYZ-9
 aprscli send position --lat 49.05833 --lon -72.02917 --symbol "/>" --comment "On the road" -c KD9XYZ-9
 aprscli send object LEADER --lat 49.05833 --lon -72.02917 -c KD9XYZ-9          # --kill removes it
 aprscli send message WU2Z "Hello there" -c KD9XYZ-9
+aprscli send weather --lat 49.05833 --lon -72.02917 --wind-dir 220 --wind-speed 4 --temp 77 --humidity 50 -c KD9XYZ-9
+```
+
+`weather` takes the readings in APRS's units: `--wind-dir` (degrees), `--wind-speed` and `--gust` (mph), `--temp`
+(°F), `--rain-1h`, `--rain-24h`, `--rain-midnight` and `--snow` (inches), `--humidity` (%), `--pressure` (mb) and
+`--luminosity` (W/m²). With `--lat` and `--lon` it sends a complete report on the weather station symbol (`/_`);
+without them a positionless report timestamped now, which cannot carry snowfall. Wind, gust and temperature left out
+are sent as unknown (dots); other readings are left out.
+
+`telemetry` sends a `T#` report: `--seq` (0–999) and `--analog` (one to five whole numbers 0–999), with optional
+`--digital` (eight `0`/`1`, after all five analog values) and `--comment`. `--names`, `--units`, `--equations`
+(`a,b,c` per channel, `;` between channels) and `--bits` with `--project` also send the `PARM.`, `UNIT.`, `EQNS.` and
+`BITS.` definitions, addressed to your own callsign, before the report:
+
+```sh
+aprscli send telemetry -c KD9XYZ-11 --seq 5 --analog 199,0,255,73,123 --digital 01101001 \
+  --names Battery,Btemp,ATemp,Pres,Alt --equations "0,5.2,0;0,.53,-32;3,4.39,49;-32,3,18;1,2,3"
 ```
 
 `message` waits for the recipient's acknowledgement, resending after 30 s, 1, 2, 4 and 8 minutes. It then keeps

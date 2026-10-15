@@ -1,5 +1,4 @@
 #:property TargetFramework=net10.0
-#:property TargetFrameworks=
 #:property PublishAot=false
 // Turns `dotnet list package --format json` output into the markdown package report that CI posts to the run summary
 // and to pull requests.

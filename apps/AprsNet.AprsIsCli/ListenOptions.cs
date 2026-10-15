@@ -38,5 +38,8 @@ internal sealed record ListenOptions
     /// <summary>Treat the connection as failed after this long without a packet, even if keepalives continue. Null disables.</summary>
     public TimeSpan? MaxSilence { get; init; }
 
+    /// <summary>Print a summary to standard error this often, and once at the end. Null turns statistics off.</summary>
+    public TimeSpan? StatsInterval { get; init; }
+
     public override string ToString() => $"{Callsign}@{Endpoint}"; // no passcode, even by accident
 }

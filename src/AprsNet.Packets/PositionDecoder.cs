@@ -76,7 +76,7 @@ internal static class PositionDecoder
         var info = information.Span;
         if (info.Length < at + 19)
         {
-            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
+            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + Math.Min(at, info.Length)));
             return false;
         }
 
@@ -149,7 +149,9 @@ internal static class PositionDecoder
 
         var commentStart = at + 19 + used;
         var comment = information[commentStart..];
-        var (position, datum, text) = ApplyDao(new AprsPosition(latitude, longitude, ambiguity), comment.Span);
+        // Telemetry first: its base-91 bytes can look like a !DAO! token.
+        var withoutTelemetry = CommentTelemetry.Strip(comment.Span, out var telemetry);
+        var (position, datum, text) = ApplyDao(new AprsPosition(latitude, longitude, ambiguity), withoutTelemetry);
         if (
             area is not null
             && area.Kind == AreaShapeKind.Line
@@ -170,6 +172,7 @@ internal static class PositionDecoder
         target.DirectionFinding = df;
         target.Area = area;
         target.Datum = datum;
+        target.Telemetry = telemetry;
         target.CommentBytes = comment;
         target.Comment = text;
         target.ExtensionBytes = information.Slice(at + 19, used);
@@ -187,7 +190,7 @@ internal static class PositionDecoder
         var info = information.Span;
         if (info.Length < at + 13)
         {
-            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + at));
+            issues.Add(Error(ParseIssueCode.PositionTooShort, offset + Math.Min(at, info.Length)));
             return false;
         }
 
@@ -248,7 +251,8 @@ internal static class PositionDecoder
         target.AltitudeFeet = altitude ?? CommentAltitude(comment.Span);
         target.CompressionType = type;
         target.CommentBytes = comment;
-        target.Comment = Text(comment.Span);
+        target.Comment = Text(CommentTelemetry.Strip(comment.Span, out var telemetry));
+        target.Telemetry = telemetry;
         target.ExtensionBytes = information.Slice(at + 10, 3);
         return true;
     }
