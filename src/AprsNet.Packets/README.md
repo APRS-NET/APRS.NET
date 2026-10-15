@@ -50,7 +50,7 @@ if (packet.Payload is PositionedPayload report) // a position report, object, it
 ```
 
 `AprsPacket.Create` builds packets from payloads, the reverse of `Parse`. Status reports, messages, position reports,
-Mic-E reports (whose latitude replaces the destination), objects and items are supported so far:
+Mic-E reports (whose latitude replaces the destination), objects, items and weather reports are supported so far:
 
 ```csharp
 var packet = AprsPacket.Create(
@@ -69,6 +69,14 @@ var beacon = new PositionReport
     Comment = "On the road",
 };
 // payload: !4903.50N/07201.75W>088/036On the road
+
+var weather = new PositionReport
+{
+    Position = new AprsPosition(49.05833, -72.02917),
+    Symbol = new AprsSymbol('/', '_'),
+    Weather = new WeatherData { WindDirection = 220, WindSpeedMph = 4, TemperatureF = 77, HumidityPercent = 50 },
+};
+// payload: !4903.50N/07201.75W_220/004g...t077h50
 ```
 
 An app sends as one station, so `PacketAddress` holds its source, TOCALL and default path, checked once:

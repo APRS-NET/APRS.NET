@@ -525,9 +525,53 @@ address.Create(new ObjectReport
 - **Round trips.** All 6,540 objects and items in the corpus with a usable timestamp rebuild byte for byte, and a
   second corpus test rebuilds them from their values alone.
 
+### Sending weather
+
+`WeatherData` is a record of readings, each `null` when not sent, so a station can keep one and send
+`readings with { TemperatureF = 71 }`. It goes on a position, object or item with the weather station symbol (the
+complete format APRS 1.1 recommends), or in a positionless `WeatherReport`.
+
+```csharp
+var readings = new WeatherData
+{
+    WindDirection = 220, WindSpeedMph = 4, WindGustMph = 5, TemperatureF = 77,
+    RainLastHourInches = 0, HumidityPercent = 50, PressureMillibars = 990,
+};
+
+address.Create(new PositionReport
+{
+    Position = new AprsPosition(49.05833, -72.02917),
+    Symbol = new AprsSymbol('/', '_'),
+    Weather = readings,
+}); // !4903.50N/07201.75W_220/004g005t077r000h50b09900
+
+address.Create(new WeatherReport
+{
+    Timestamp = AprsTimestamp.FromDateTimeOffset(DateTimeOffset.UtcNow, AprsTimestampFormat.MonthDayHourMinute),
+    Weather = readings,
+}); // _10090556c220s004g005t077r000h50b09900
+```
+
+- **Wind is the course and speed.** In the complete format the wind is the `DIR/SPD` extension (or the compressed
+  course and speed), taken from `WindDirection` and `WindSpeedMph`. Setting `Course` or `SpeedKnots` as well is
+  allowed when they agree; when they differ, `Create` throws.
+- **Required fields as dots.** APRS101 puts wind, gust and temperature in every report, so they are written as dots
+  when unknown (`.../...g...t...`). The other fields are written only when set, in APRS101 order:
+  `r p P h b L/l s #`.
+- **Units.** Values are rounded to whole degrees, mph and °F, hundredths of an inch of rain, tenths of a millibar and
+  whole W/m². Snowfall keeps one decimal below 10 inches (`s1.5`). Humidity is 1 to 100, as `h00` means 100%.
+- **Readings lead the comment.** A receiver reads fields from the first byte after the extension, so the readings
+  come first, then a `/A=` altitude, then the comment. A comment that would itself read as a field (`h45 in the
+  shade`) is refused.
+- **Positionless reports** need a `MonthDayHourMinute` timestamp and cannot carry snowfall, since their `s` is the wind
+  speed. APRS 1.1 discourages them; prefer the complete format.
+- **The weather symbol is required.** Readings on any other symbol, or on a Mic-E report, throw.
+- **Round trips.** All 5,527 weather packets in the corpus (with and without a position) rebuild byte for byte: parsed
+  readings keep their spelling and order. Second corpus tests rebuild them from their values alone, in canonical order.
+
 Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects and items.
-Other payload types (telemetry, weather without a position, capabilities, queries, user-defined data) throw
+bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects, items and
+weather. Other payload types (telemetry, raw weather station data, capabilities, queries, user-defined data) throw
 `NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)

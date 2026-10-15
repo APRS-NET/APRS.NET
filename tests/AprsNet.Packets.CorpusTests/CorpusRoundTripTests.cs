@@ -12,6 +12,7 @@ public class CorpusRoundTripTests
         var checkedPackets = 0;
         var micE = 0;
         var objectsAndItems = 0;
+        var weather = 0;
         var failures = new List<string>();
         foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
         {
@@ -29,6 +30,7 @@ public class CorpusRoundTripTests
                                 or MicEReport
                                 or ObjectReport
                                 or ItemReport
+                                or WeatherReport
                         }
                     || packet.Payload is MicEReport { Message: MicEMessage.Unknown } or ObjectReport { Timestamp: null }
                 )
@@ -41,6 +43,7 @@ public class CorpusRoundTripTests
                 checkedPackets++;
                 micE += packet.Payload is MicEReport ? 1 : 0;
                 objectsAndItems += packet.Payload is ObjectReport or ItemReport ? 1 : 0;
+                weather += packet.Payload is WeatherReport or PositionedPayload { Weather: not null } ? 1 : 0;
                 try
                 {
                     var rebuilt = AprsPacket.Create(packet.Source, packet.Destination, packet.Path, packet.Payload);
@@ -80,6 +83,7 @@ public class CorpusRoundTripTests
         Assert.True(checkedPackets > 30_000, $"only {checkedPackets} packets");
         Assert.True(micE > 2_500, $"only {micE} Mic-E packets");
         Assert.True(objectsAndItems > 5_000, $"only {objectsAndItems} objects and items");
+        Assert.True(weather > 5_000, $"only {weather} weather reports");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
@@ -101,7 +105,6 @@ public class CorpusRoundTripTests
                 var packet = AprsPacket.Parse(bytes);
                 if (
                     packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: PositionReport parsed }
-                    || parsed.Weather is not null
                     || parsed.Datum is not null
                     || parsed.Area is not null
                     || parsed.DirectionFinding is not null
@@ -125,6 +128,7 @@ public class CorpusRoundTripTests
                     PowerHeightGain = parsed.PowerHeightGain,
                     RangeMiles = parsed.RangeMiles,
                     DirectionFindingStrength = parsed.DirectionFindingStrength,
+                    Weather = parsed.Weather,
                     Comment = parsed.Comment,
                 };
                 try
@@ -213,7 +217,6 @@ public class CorpusRoundTripTests
                 if (
                     packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: PositionedPayload parsed }
                     || parsed is not (ObjectReport { Timestamp: not null } or ItemReport)
-                    || parsed.Weather is not null
                     || parsed.Datum is not null
                     || parsed.Area is not null
                     || parsed.DirectionFinding is not null
@@ -240,6 +243,7 @@ public class CorpusRoundTripTests
                         PowerHeightGain = o.PowerHeightGain,
                         RangeMiles = o.RangeMiles,
                         DirectionFindingStrength = o.DirectionFindingStrength,
+                        Weather = o.Weather,
                         Comment = o.Comment,
                     },
                     ItemReport i => new ItemReport
@@ -255,6 +259,7 @@ public class CorpusRoundTripTests
                         PowerHeightGain = i.PowerHeightGain,
                         RangeMiles = i.RangeMiles,
                         DirectionFindingStrength = i.DirectionFindingStrength,
+                        Weather = i.Weather,
                         Comment = i.Comment,
                     },
                     _ => throw new InvalidOperationException(),
@@ -271,6 +276,55 @@ public class CorpusRoundTripTests
         }
 
         Assert.True(checkedPackets > 3_000, $"only {checkedPackets} packets");
+        Assert.True(
+            failures.Count == 0,
+            $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
+        );
+    }
+
+    [Fact]
+    public void WeatherReportsRebuiltFromTheirValuesDecodeTheSame()
+    {
+        // Positionless reports, written in the canonical field order from the values alone.
+        var checkedPackets = 0;
+        var failures = new List<string>();
+        foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in CorpusParsingTests.Packets(file))
+            {
+                var packet = AprsPacket.Parse(bytes);
+                if (
+                    packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: WeatherReport parsed }
+                    || parsed.Weather.SnowLast24HoursInches is not null
+                    || parsed.Comment.Any(char.IsControl)
+                    || parsed.Comment.StartsWith('.')
+                )
+                {
+                    // Snowfall a positionless report cannot carry, control bytes refused in new text, or a comment
+                    // whose leading dots would join the dotted field written before it (a station that leaves out
+                    // the wind sends ".../...g..." as its comment).
+                    continue;
+                }
+
+                checkedPackets++;
+                var copy = new WeatherReport
+                {
+                    Timestamp = parsed.Timestamp,
+                    Weather = parsed.Weather,
+                    Comment = parsed.Comment,
+                };
+                try
+                {
+                    AprsPacket.Create(packet.Source, packet.Destination, packet.Path, copy);
+                }
+                catch (ArgumentException ex)
+                {
+                    failures.Add($"{file}:{lineNumber} {ex.Message} {packet}");
+                }
+            }
+        }
+
+        Assert.True(checkedPackets > 50, $"only {checkedPackets} packets");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))

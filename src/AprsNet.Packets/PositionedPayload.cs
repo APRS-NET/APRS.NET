@@ -94,9 +94,10 @@ public abstract class PositionedPayload : AprsPayload
     /// <summary>
     /// Weather readings from a weather station symbol (<c>_</c>, any table): wind from <see cref="Course"/> and
     /// <see cref="SpeedKnots"/> and the other readings from the start of the comment (APRS101 ch. 12).
-    /// <see langword="null"/> for other symbols, or when the comment holds no readings.
+    /// <see langword="null"/> for other symbols, or when the comment holds no readings. When set on a payload to
+    /// encode, the wind is sent as the course and speed and the other readings at the start of the comment.
     /// </summary>
-    public WeatherData? Weather { get; internal init; }
+    public WeatherData? Weather { get; init; }
 
     /// <summary>The datum named by a <c>!DAO!</c> token (APRS 1.2), for example <c>W</c> for WGS84.</summary>
     public char? Datum { get; internal init; }

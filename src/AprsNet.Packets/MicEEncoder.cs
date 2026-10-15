@@ -205,6 +205,13 @@ internal static class MicEEncoder
             throw new ArgumentException("A Mic-E report carries course and speed, not PHG, range or DF strength.");
         }
 
+        if (report.Weather is not null)
+        {
+            throw new ArgumentException(
+                "A Mic-E report carries no weather readings; send a position with the weather station symbol."
+            );
+        }
+
         if (report.Course is < 0 or > 360)
         {
             throw new ArgumentException("Course must be 0 to 360 degrees.");

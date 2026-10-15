@@ -34,19 +34,20 @@ internal static class WeatherDecoder
         // Positionless reports start with the wind: cDDD direction and sSSS speed in mph.
         if (TryField(body.Span, (byte)'c', 3, ref at, out var direction))
         {
-            weather.WindDirection = (int?)direction;
+            weather = weather with { WindDirection = (int?)direction };
             if (TryField(body.Span, (byte)'s', 3, ref at, out var speed))
             {
-                weather.WindSpeedMph = speed;
+                weather = weather with { WindSpeedMph = speed };
             }
         }
 
-        at += ReadFields(body.Span[at..], weather, out _);
+        at += ReadFields(body.Span[at..], ref weather, out _);
         var comment = body[at..];
         return new WeatherReport
         {
             Timestamp = timestamp,
             Weather = weather,
+            ReadingsBytes = body[..at],
             CommentBytes = comment,
             Comment = AprsText.Decode(comment.Span),
         };
@@ -94,10 +95,11 @@ internal static class WeatherDecoder
         // Some LoRa iGates send a compressed position with no course and speed, then DIR/SPD in the comment.
         if (!wind && target.IsCompressed && PositionDecoder.TryCourseSpeed(text, out var direction, out var speed))
         {
-            (weather.WindDirection, weather.WindSpeedMph, used, wind) = (direction, speed, 7, true);
+            weather = weather with { WindDirection = direction, WindSpeedMph = speed };
+            (used, wind) = (7, true);
         }
 
-        used += ReadFields(text[used..], weather, out var fields);
+        used += ReadFields(text[used..], ref weather, out var fields);
         if (fields == 0 && !wind)
         {
             return;
@@ -108,7 +110,7 @@ internal static class WeatherDecoder
     }
 
     /// <summary>Reads fields until a byte that does not start one; returns the bytes used.</summary>
-    private static int ReadFields(ReadOnlySpan<byte> text, WeatherData weather, out int fields)
+    private static int ReadFields(ReadOnlySpan<byte> text, ref WeatherData weather, out int fields)
     {
         var at = 0;
         fields = 0;
@@ -143,37 +145,37 @@ internal static class WeatherDecoder
             switch (letter)
             {
                 case (byte)'g':
-                    weather.WindGustMph = (int?)value;
+                    weather = weather with { WindGustMph = (int?)value };
                     break;
                 case (byte)'t':
-                    weather.TemperatureF = (int?)value;
+                    weather = weather with { TemperatureF = (int?)value };
                     break;
                 case (byte)'r':
-                    weather.RainLastHourInches = value / 100;
+                    weather = weather with { RainLastHourInches = value / 100 };
                     break;
                 case (byte)'p':
-                    weather.RainLast24HoursInches = value / 100;
+                    weather = weather with { RainLast24HoursInches = value / 100 };
                     break;
                 case (byte)'P':
-                    weather.RainSinceMidnightInches = value / 100;
+                    weather = weather with { RainSinceMidnightInches = value / 100 };
                     break;
                 case (byte)'h':
-                    weather.HumidityPercent = value == 0 ? 100 : (int?)value;
+                    weather = weather with { HumidityPercent = value == 0 ? 100 : (int?)value };
                     break;
                 case (byte)'b':
-                    weather.PressureMillibars = value / 10;
+                    weather = weather with { PressureMillibars = value / 10 };
                     break;
                 case (byte)'L':
-                    weather.LuminosityWattsPerSquareMeter = (int?)value;
+                    weather = weather with { LuminosityWattsPerSquareMeter = (int?)value };
                     break;
                 case (byte)'l':
-                    weather.LuminosityWattsPerSquareMeter = (int?)value + 1000;
+                    weather = weather with { LuminosityWattsPerSquareMeter = (int?)value + 1000 };
                     break;
                 case (byte)'s':
-                    weather.SnowLast24HoursInches = value;
+                    weather = weather with { SnowLast24HoursInches = value };
                     break;
                 default:
-                    weather.RainCounter = (int?)value;
+                    weather = weather with { RainCounter = (int?)value };
                     break;
             }
         }
