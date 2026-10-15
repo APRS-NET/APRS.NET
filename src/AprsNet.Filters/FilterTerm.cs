@@ -58,20 +58,10 @@ internal abstract class FilterTerm
     private static string? TryParseDistance(string text, out double km) =>
         AprsFilter.TryParseNumber(text, 0, 20_038, out km) ? null : $"'{text}' is not a distance in km.";
 
-    /// <summary>Great-circle distance in km on a sphere of the Earth's mean radius, as APRS-IS servers measure it.</summary>
-    internal static double DistanceKm(AprsPosition a, AprsPosition b)
-    {
-        const double earthRadiusKm = 6371.0;
-        var lat1 = double.DegreesToRadians(a.Latitude);
-        var lat2 = double.DegreesToRadians(b.Latitude);
-        var dLat = lat2 - lat1;
-        var dLon = double.DegreesToRadians(b.Longitude - a.Longitude);
-        var h = Math.Pow(Math.Sin(dLat / 2), 2) + (Math.Cos(lat1) * Math.Cos(lat2) * Math.Pow(Math.Sin(dLon / 2), 2));
-        return 2 * earthRadiusKm * Math.Asin(Math.Min(1, Math.Sqrt(h)));
-    }
-
     private static bool Within(PacketFacts packet, AprsPosition? centre, double km) =>
-        packet.Positioned is { } positioned && centre is { } from && DistanceKm(from, positioned.Position) <= km;
+        packet.Positioned is { } positioned
+        && centre is { } from
+        && Geodesy.DistanceKm(from, positioned.Position) <= km;
 
     /// <summary>Whether any pattern matches <paramref name="value"/>; a loop, as this runs for every packet.</summary>
     private static bool AnyGlob(string[] patterns, string value)
