@@ -120,6 +120,18 @@ AprsUnits.Convert(weather.TemperatureF!.Value, TemperatureUnit.Fahrenheit, Tempe
 AprsUnits.Convert(weather.PressureMillibars!.Value, PressureUnit.Millibars, PressureUnit.InchesOfMercury);
 ```
 
+`PathAnalysis` reads how a packet travelled from its path:
+
+```csharp
+var path = PathAnalysis.FromPacket(packet);  // N0CALL>APRS,N1ABC-1*,WIDE2-1,qAR,N2ABC-10:...
+path.QConstruct;                              // qAR
+path.EntryStation;                            // N2ABC-10, the IGate
+path.Digipeaters;                             // [N1ABC-1]
+path.IsGatedFromRadio;                        // true
+path.IsHeardDirectly;                         // false: a digipeater repeated it
+path.RemainingHopCount;                       // 1
+```
+
 Input a person types (`Callsign.Parse`, `PathEntry.Parse`, `PacketAddress.Parse`) is refused with
 `AprsValidationException`, an `ArgumentException` with a stable `Code` (`AprsValidationErrorCode`) for an app to
 translate, and `Index`/`Character` for the offending character. Codes are never renamed; the English message may be.

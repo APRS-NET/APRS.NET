@@ -654,3 +654,16 @@ static AprsNet.Packets.Geodesy.InitialBearing(AprsNet.Packets.AprsPosition from,
 static AprsNet.Packets.Geodesy.Interpolate(AprsNet.Packets.AprsPosition from, AprsNet.Packets.AprsPosition to, double fraction) -> AprsNet.Packets.AprsPosition
 static AprsNet.Packets.Geodesy.PointsAlong(AprsNet.Packets.AprsPosition from, AprsNet.Packets.AprsPosition to, int segments) -> AprsNet.Packets.AprsPosition[]!
 static AprsNet.Packets.Geodesy.RadioHorizonMiles(double heightFeet) -> double
+AprsNet.Packets.PathAnalysis
+AprsNet.Packets.PathAnalysis.AprsIsPath.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>!
+AprsNet.Packets.PathAnalysis.Digipeaters.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.Callsign!>!
+AprsNet.Packets.PathAnalysis.EntryStation.get -> AprsNet.Packets.Callsign?
+AprsNet.Packets.PathAnalysis.IsFromInternet.get -> bool
+AprsNet.Packets.PathAnalysis.IsGatedFromRadio.get -> bool
+AprsNet.Packets.PathAnalysis.IsHeardDirectly.get -> bool
+AprsNet.Packets.PathAnalysis.IsNoGate.get -> bool
+AprsNet.Packets.PathAnalysis.QConstruct.get -> string?
+AprsNet.Packets.PathAnalysis.RemainingHopCount.get -> int
+AprsNet.Packets.PathAnalysis.UsedHops.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>!
+static AprsNet.Packets.PathAnalysis.FromPacket(AprsNet.Packets.AprsPacket! packet) -> AprsNet.Packets.PathAnalysis!
+static AprsNet.Packets.PathAnalysis.FromPath(System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>? path) -> AprsNet.Packets.PathAnalysis!

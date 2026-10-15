@@ -239,6 +239,36 @@ public class CorpusParsingTests
     }
 
     /// <summary>The packet bytes of each line, after the "&lt;timestamp&gt; " prefix.</summary>
+    [Fact]
+    public void EveryPathAnalysesConsistently()
+    {
+        var paths = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => PathAnalysis.FromPacket(AprsPacket.Parse(p.Bytes)))
+            .ToList();
+
+        Assert.All(
+            paths,
+            p =>
+            {
+                Assert.False(p.IsGatedFromRadio && p.IsFromInternet);
+                Assert.False(p.IsHeardDirectly && p.UsedHops.Count > 0);
+                Assert.Equal(
+                    p.Digipeaters,
+                    p.UsedHops.Where(e => e.Kind == PathEntryKind.Station).Select(e => e.Station)
+                );
+                Assert.Equal(p.EntryStation, p.AprsIsPath.Count > 0 ? p.AprsIsPath[0].Station : null);
+            }
+        );
+
+        // Everything here came through APRS-IS, so every packet has a q-construct, and the corpus has a broad mix.
+        Assert.All(paths, p => Assert.NotNull(p.QConstruct));
+        Assert.True(paths.Count(p => p.IsGatedFromRadio) > 10_000, "too few packets gated from radio");
+        Assert.True(paths.Count(p => p.IsFromInternet) > 10_000, "too few packets from the internet");
+        Assert.True(paths.Count(p => p.IsHeardDirectly) > 1_000, "too few packets heard directly");
+        Assert.True(paths.Count(p => p.Digipeaters.Count > 0) > 1_000, "too few digipeated packets");
+    }
+
     internal static IEnumerable<(int LineNumber, byte[] Bytes)> Packets(string file)
     {
         var lines = File.ReadAllBytes(Path.Combine(_directory, file)).AsMemory();
