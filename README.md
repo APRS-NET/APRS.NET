@@ -27,8 +27,11 @@ dotnet add package AprsNet.AprsIsTcpClient --prerelease
 dotnet add package AprsNet.Symbols --prerelease
 ```
 
-The `aprscli` command-line tool is not published as a package yet; run it from source with
-`dotnet run --project apps/AprsNet.AprsIsCli -- listen --help`.
+The `aprscli` command-line tool is a .NET tool:
+
+```sh
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+```
 
 Each [GitHub release](https://github.com/APRS-NET/APRS.NET/releases) also carries the same packages, and is marked as a
 pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are chosen.

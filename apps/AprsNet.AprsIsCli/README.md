@@ -5,13 +5,14 @@ The `aprscli` command-line tool for APRS.NET.
 > **Alpha.** Like the rest of APRS.NET, the tool can change between any two releases until at least 1.0.0. Not for
 > production use.
 
-It is not published as a package yet. Run it from the repository root:
+Install it as a .NET tool (it needs the .NET 10 runtime):
 
 ```sh
-dotnet run --project apps/AprsNet.AprsIsCli -- listen --help
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+aprscli listen --help
 ```
 
-The examples below use `aprscli` for short.
+Or run it from a clone of the repository with `dotnet run --project apps/AprsNet.AprsIsCli -- listen --help`.
 
 ## listen
 
