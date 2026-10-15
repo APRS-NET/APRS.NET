@@ -75,8 +75,8 @@ change through.
 
 ## Package checks
 
-The `packages` workflow (`.github/workflows/packages.yml`) runs on every push to `main`, on pull requests and every
-Monday. It lists vulnerable NuGet packages (direct and transitive) and available updates for direct packages, posts
+The `packages` workflow (`.github/workflows/packages.yml`) runs when a change can affect dependencies (a project
+file, `Directory.Packages.props`, `Directory.Build.props`, `global.json` or the tool manifest) and every Monday. It lists vulnerable NuGet packages (direct and transitive) and available updates for direct packages, posts
 the report to the run summary, keeps a single report comment up to date on pull requests from this repository, and
 fails if any package has a known vulnerability. To run the same check locally:
 
