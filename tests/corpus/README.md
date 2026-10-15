@@ -50,6 +50,10 @@ capture). [CAPTURE-PLAN.md](CAPTURE-PLAN.md) lists the areas still to capture.
 | `aprs-is/2026-10-14-milan-r50km.log` | APRS-IS, read-only login, filter `r/45.46/9.19/50` (50 km around Milan), 2 h from 09:37 UTC (Wednesday late morning local time) | 2,606 |
 | `aprs-is/2026-10-14-madrid-r50km.log` | APRS-IS, read-only login, filter `r/40.42/-3.70/50` (50 km around Madrid), 2 h from 09:37 UTC (Wednesday late morning local time) | 2,645 |
 | `aprs-is/2026-10-14-telaviv-r50km.log` | APRS-IS, read-only login, filter `r/32.08/34.78/50` (50 km around Tel Aviv), 2 h from 09:37 UTC (Wednesday midday local time) | 106 |
+| `aprs-is/2026-10-15-brisbane-r50km.log` | APRS-IS, read-only login, filter `r/-27.47/153.03/50` (50 km around Brisbane), 2 h from 04:31 UTC (Thursday afternoon local time) | 604 |
+| `aprs-is/2026-10-15-hongkong-r50km.log` | APRS-IS, read-only login, filter `r/22.32/114.17/50` (50 km around Hong Kong), 2 h from 04:31 UTC (Thursday midday local time) | 731 |
+| `aprs-is/2026-10-15-singapore-r40km.log` | APRS-IS, read-only login, filter `r/1.35/103.82/40` (40 km around Singapore, which also reaches Johor Bahru), 2 h from 04:31 UTC (Thursday midday local time) | 1,060 |
+| `aprs-is/2026-10-15-sapporo-r50km.log` | APRS-IS, read-only login, filter `r/43.06/141.35/50` (50 km around Sapporo), 2 h from 04:31 UTC (Thursday afternoon local time) | 188 |
 | `aprs-is/2026-10-14-type-status.log` | APRS-IS, read-only login, filter `t/s` (status reports worldwide), 1 h from 05:34 UTC. Sampled to one line per sender and per distinct text (digits ignored), keeping every timestamped, Maidenhead, beam-heading and non-ASCII status and every second plain one (25,510 dropped) | 2,547 |
 | `aprs-is/2026-10-14-type-telemetry.log` | APRS-IS, read-only login, filter `t/t` (telemetry worldwide), 1 h from 07:36 UTC. Sampled to the first odd `T#` report of every sender and, for every fifth sender, its first `T#` report and first `PARM.`/`UNIT.`/`EQNS.`/`BITS.` (38,288 dropped) | 2,330 |
 
@@ -108,6 +112,12 @@ objects. The worldwide status sample adds Chinese FMO network status in UTF-8, T
 Maidenhead-locator status; the telemetry sample adds SvxLink `RXTLM-1` reports from `EL-`, `ER-` and `RRF-` nodes,
 `T#` reports with non-numeric or missing fields, and a `BITS.` line with only a title.
 
+The 2026-10-15 captures add Brisbane, Hong Kong, Singapore and Sapporo. Brisbane has fire-service incident objects
+(`FIRE STRUCTURE - <suburb> - Going`) and a busy club network; Hong Kong has FMO network stations whose comments carry
+long base64 certificates and UTF-8 Chinese text, and hilltop digis; the Singapore radius mostly hears Johor Bahru, with a
+dense Malaysian LoRa APRS network, a MeshCore gateway and `WXMY` weather; Sapporo adds `JA8` calls and a dual-speed
+(1200 and 9600 baud) IGate.
+
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
 software tag. Beacons repeat, so there are far fewer distinct packets than lines; dedupe when building test cases.
@@ -126,7 +136,7 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
   APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
 - **E-mail addresses** are masked (`x` for letters, `0` for digits; in the 2026-10-13 user-defined capture this also
   changed a few bytes of opaque base-91 `{{B` data that looked like an address), and personal names in comments (one in San Francisco,
-  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and about 90 in the 2026-10-14 captures,
+  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and about 90 in the 2026-10-14 captures and four in the 2026-10-15 captures,
   with a street address, a few phone numbers and a few IP addresses; names in Chinese status text became
   `某` ("so-and-so"), which keeps the byte length) were replaced with same-length `Xxxx` words.
 - **Leaked KISS frames** (a gateway passing binary AX.25 frames into the information field, often re-encoded as UTF-8)
