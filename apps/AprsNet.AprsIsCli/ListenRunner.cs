@@ -10,6 +10,9 @@ namespace AprsNet.AprsIsCli;
 /// <summary>Runs <c>aprscli listen</c>: connect, stream lines to the console and an optional capture file, stop on count, duration or Ctrl+C.</summary>
 internal static class ListenRunner
 {
+    private static readonly TimeSpan _maxReconnectDelay = new AprsIsClientOptions().MaxReconnectDelay;
+    private static readonly TimeSpan _noRetryDelay = TimeSpan.FromHours(1);
+
     public static async Task<int> RunAsync(
         ListenOptions options,
         CliEnvironment environment,
@@ -25,7 +28,10 @@ internal static class ListenRunner
             Filter = options.Filter,
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
-            ReconnectDelay = environment.ReconnectDelay,
+            // Without --reconnect the reporter closes the connection at its first drop. A first retry as late as the
+            // longest backoff makes sure no reconnect attempt can start before that close lands.
+            ReconnectDelay = options.Reconnect ? environment.ReconnectDelay : _noRetryDelay,
+            MaxReconnectDelay = options.Reconnect ? _maxReconnectDelay : _noRetryDelay,
             MaxPacketSilence = options.MaxSilence,
         };
 
