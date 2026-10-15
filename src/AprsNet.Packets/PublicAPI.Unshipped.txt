@@ -602,3 +602,4 @@ AprsNet.Packets.ParseIssueCode.ThirdPartyTooDeep = 24 -> AprsNet.Packets.ParseIs
 AprsNet.Packets.ThirdPartyPayload
 AprsNet.Packets.ThirdPartyPayload.Packet.get -> AprsNet.Packets.AprsPacket!
 AprsNet.Packets.ThirdPartyPayload.ThirdPartyPayload(AprsNet.Packets.AprsPacket! packet) -> void
+AprsNet.Packets.ParseIssueCode.UnpaddedObjectName = 25 -> AprsNet.Packets.ParseIssueCode

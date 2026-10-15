@@ -86,4 +86,10 @@ public enum ParseIssueCode
 
     /// <summary>Third-party packets are nested more deeply than the parser unwraps.</summary>
     ThirdPartyTooDeep,
+
+    /// <summary>
+    /// An object name shorter than 9 characters is not padded with spaces before its <c>*</c> or <c>_</c> (SvxLink's
+    /// <c>EL-</c> nodes); the object is still read.
+    /// </summary>
+    UnpaddedObjectName,
 }
