@@ -45,7 +45,13 @@ internal static class GatewayMetrics
     private static readonly Counter<long> _duplicates = _meter.CreateCounter<long>(
         "aprsnet.gateway.packets.duplicates",
         "{packet}",
-        "Packets a PacketDeduplicator dropped as duplicates."
+        "Packets a PacketDeduplicator or GatewayFeed dropped as duplicates; a GatewayFeed tags them with its source."
+    );
+
+    private static readonly Counter<long> _received = _meter.CreateCounter<long>(
+        "aprsnet.gateway.packets.received",
+        "{packet}",
+        "Packets a GatewayFeed read, by source, duplicates included."
     );
 
     public static void Connected(string server) => _connected.Add(1, Server(server));
@@ -74,5 +80,11 @@ internal static class GatewayMetrics
 
     public static void Duplicate() => _duplicates.Add(1);
 
+    public static void Duplicate(string server, string source) => _duplicates.Add(1, Server(server), Source(source));
+
+    public static void Received(string server, string source) => _received.Add(1, Server(server), Source(source));
+
     private static KeyValuePair<string, object?> Server(string server) => new("server", server);
+
+    private static KeyValuePair<string, object?> Source(string source) => new("source", source);
 }

@@ -65,3 +65,27 @@ override AprsNet.Gateway.StationState.GetHashCode() -> int
 override AprsNet.Gateway.StationState.ToString() -> string!
 static AprsNet.Gateway.StationState.operator !=(AprsNet.Gateway.StationState? left, AprsNet.Gateway.StationState? right) -> bool
 static AprsNet.Gateway.StationState.operator ==(AprsNet.Gateway.StationState? left, AprsNet.Gateway.StationState? right) -> bool
+AprsNet.Gateway.GatewayFeed
+AprsNet.Gateway.GatewayFeed.AddSource(string! name, System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>! packets) -> System.Threading.Tasks.Task!
+AprsNet.Gateway.GatewayFeed.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Gateway.GatewayFeed.Duplicates.get -> long
+AprsNet.Gateway.GatewayFeed.GatewayFeed(AprsNet.Gateway.AprsIsServer! server, System.TimeSpan? duplicateWindow = null, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Gateway.GatewayFeed.GetSourceCounts() -> System.Collections.Generic.IReadOnlyDictionary<string!, AprsNet.Gateway.GatewaySourceCounts>!
+AprsNet.Gateway.GatewayFeed.Published.get -> long
+AprsNet.Gateway.GatewayFeed.RemoveSourceAsync(string! name) -> System.Threading.Tasks.Task<bool>!
+AprsNet.Gateway.GatewayFeed.Sources.get -> System.Collections.Generic.IReadOnlyCollection<string!>!
+AprsNet.Gateway.GatewaySourceCounts
+AprsNet.Gateway.GatewaySourceCounts.Deconstruct(out long Packets, out long Duplicates) -> void
+AprsNet.Gateway.GatewaySourceCounts.Duplicates.get -> long
+AprsNet.Gateway.GatewaySourceCounts.Duplicates.init -> void
+AprsNet.Gateway.GatewaySourceCounts.Equals(AprsNet.Gateway.GatewaySourceCounts other) -> bool
+AprsNet.Gateway.GatewaySourceCounts.GatewaySourceCounts(long Packets, long Duplicates) -> void
+AprsNet.Gateway.GatewaySourceCounts.GatewaySourceCounts() -> void
+AprsNet.Gateway.GatewaySourceCounts.Packets.get -> long
+AprsNet.Gateway.GatewaySourceCounts.Packets.init -> void
+AprsNet.Gateway.GatewaySourceCounts.Published.get -> long
+~override AprsNet.Gateway.GatewaySourceCounts.Equals(object obj) -> bool
+override AprsNet.Gateway.GatewaySourceCounts.GetHashCode() -> int
+~override AprsNet.Gateway.GatewaySourceCounts.ToString() -> string
+static AprsNet.Gateway.GatewaySourceCounts.operator !=(AprsNet.Gateway.GatewaySourceCounts left, AprsNet.Gateway.GatewaySourceCounts right) -> bool
+static AprsNet.Gateway.GatewaySourceCounts.operator ==(AprsNet.Gateway.GatewaySourceCounts left, AprsNet.Gateway.GatewaySourceCounts right) -> bool
