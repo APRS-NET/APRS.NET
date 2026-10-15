@@ -33,6 +33,8 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.UnpaddedAddressee =>
                 "The message addressee is not padded to 9 characters; it is still read.",
             ParseIssueCode.InvalidUserDefined => "The user-defined packet has no user ID and packet type after '{'.",
+            ParseIssueCode.InvalidThirdParty => "The third-party packet after '}' has no SOURCE>DESTINATION: header.",
+            ParseIssueCode.ThirdPartyTooDeep => "Third-party packets are nested too deeply to unwrap.",
             _ => code.ToString(),
         };
 }

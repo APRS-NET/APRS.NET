@@ -621,6 +621,17 @@ printable user ID (`{` for experimental), a printable packet type and the data. 
 every other text field, as UTF-8 when valid and Latin-1 otherwise, so a WinAPRS `DX=…(12.5mi 241°)` reads the same
 after a round trip. All 1,433 of both in the corpus rebuild byte for byte and from their values alone.
 
+### Third-party traffic
+
+`}` carries a whole packet that a gateway passes on from another network: `}W1AW>APRS,TCPIP,N0CALL*:>Status`.
+`ThirdPartyPayload.Packet` is that packet, parsed like any other line, so it has its own header, payload and issues; a
+broken carried packet does not make the wrapper malformed. The wrapper is malformed (`InvalidThirdParty`) only when
+the text after `}` has no `SOURCE>DESTINATION:` header. Nesting is unwrapped to three levels (`ThirdPartyTooDeep`
+beyond that), and the carried packet is never cut at the 512-byte information limit, since its own header counts
+toward it. `new ThirdPartyPayload(packet)` wraps a packet for `Create`, which writes `}` and the packet's raw bytes.
+IGates unwrap third-party traffic before it reaches APRS-IS, so the corpus has none; it is tested from APRS101's
+examples.
+
 Supported: every payload the parser decodes, apart from raw weather station data (`!!`, `$ULTW`, `#`, `*`), which
 APRS 1.1 discourages and whose layouts belong to the manufacturers; it throws `NotSupportedException`.
 

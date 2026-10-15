@@ -17,6 +17,9 @@ public sealed partial class AprsPacket
     /// <summary>Information bytes beyond this many are not decoded; APRS-IS servers accept 512-byte lines.</summary>
     internal const int MaxInformationLength = 512;
 
+    /// <summary>How deep third-party packets may nest inside each other before the parser stops unwrapping them.</summary>
+    internal const int MaxThirdPartyDepth = 3;
+
     private readonly byte[] _raw;
     private string? _text;
 
@@ -125,7 +128,7 @@ public sealed partial class AprsPacket
     /// </param>
     /// <param name="path">Digipeater aliases such as <c>WIDE1-1</c>, or none for APRS-IS.</param>
     /// <param name="payload">
-    /// The payload to encode. Status reports, messages, position reports and Mic-E reports are supported so far.
+    /// The payload to encode: any payload type the parser decodes, apart from <see cref="RawWeatherReport"/>.
     /// </param>
     /// <exception cref="ArgumentException">A value cannot be encoded, or would not decode back to the same payload.</exception>
     /// <exception cref="NotSupportedException">The payload type cannot be encoded yet.</exception>
@@ -190,7 +193,7 @@ public sealed partial class AprsPacket
         : end.Length > 0 && end[^1] is '\r' or '\n' ? 1
         : 0;
 
-    private static AprsPacket Build(byte[] raw)
+    private static AprsPacket Build(byte[] raw, int depth = 0)
     {
         var issues = new List<ParseIssue>();
         var span = raw.AsSpan();
@@ -263,8 +266,10 @@ public sealed partial class AprsPacket
         }
 
         var type = TypeOf(information.Span);
-        var payload = issues.Any(i => i.Severity == ParseIssueSeverity.Error)
-            ? null
+        var payload =
+            issues.Any(i => i.Severity == ParseIssueSeverity.Error) ? null
+            // A third-party packet's own header counts toward the limit, so it is never cut short.
+            : type == PacketType.ThirdParty ? ThirdParty(information, colon + 1, depth, issues)
             : Decode(
                 type,
                 information[..Math.Min(information.Length, MaxInformationLength)],
@@ -298,6 +303,30 @@ public sealed partial class AprsPacket
             PacketType.UserDefined => UserDefinedDecoder.Decode(information, offset, issues),
             _ => null,
         };
+
+    /// <summary>Parses the packet after <c>}</c> as a line of its own.</summary>
+    private static ThirdPartyPayload? ThirdParty(
+        ReadOnlyMemory<byte> information,
+        int offset,
+        int depth,
+        List<ParseIssue> issues
+    )
+    {
+        if (depth >= MaxThirdPartyDepth)
+        {
+            issues.Add(new ParseIssue(ParseIssueCode.ThirdPartyTooDeep, ParseIssueSeverity.Error, offset));
+            return null;
+        }
+
+        var inner = Build(information[1..].ToArray(), depth + 1);
+        if (!inner.HasHeader)
+        {
+            issues.Add(Error(ParseIssueCode.InvalidThirdParty, offset + 1));
+            return null;
+        }
+
+        return new ThirdPartyPayload(inner);
+    }
 
     private static ParseIssue Error(ParseIssueCode code, int offset) => new(code, ParseIssueSeverity.Error, offset);
 

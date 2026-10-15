@@ -597,3 +597,8 @@ AprsNet.Packets.UserDefinedPayload.UserDefinedPayload() -> void
 AprsNet.Packets.UserDefinedPayload.UserId.init -> void
 AprsNet.Packets.UserDefinedPayload.UserPacketType.init -> void
 static AprsNet.Packets.CapabilitiesReport.ForIGate(int? messageCount, int? localStationCount) -> AprsNet.Packets.CapabilitiesReport!
+AprsNet.Packets.ParseIssueCode.InvalidThirdParty = 23 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.ThirdPartyTooDeep = 24 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ThirdPartyPayload
+AprsNet.Packets.ThirdPartyPayload.Packet.get -> AprsNet.Packets.AprsPacket!
+AprsNet.Packets.ThirdPartyPayload.ThirdPartyPayload(AprsNet.Packets.AprsPacket! packet) -> void
