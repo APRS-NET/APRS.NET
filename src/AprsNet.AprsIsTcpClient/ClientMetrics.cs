@@ -54,6 +54,17 @@ internal static class ClientMetrics
         _idleTimeouts.Add(1);
     }
 
+    private static readonly Counter<long> _packetsSent = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.packets.sent",
+        "{packet}",
+        "Packets written to the server."
+    );
+
+    public static void PacketSent()
+    {
+        _packetsSent.Add(1);
+    }
+
     public static void Attempt(string outcome)
     {
         _connectionAttempts.Add(1, new KeyValuePair<string, object?>("outcome", outcome));

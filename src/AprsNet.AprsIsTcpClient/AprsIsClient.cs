@@ -6,7 +6,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace AprsNet.AprsIsTcpClient;
 
 /// <summary>
-/// Connects to APRS-IS, logs in, and exposes the incoming packet lines as an async stream.
+/// Connects to APRS-IS, logs in, exposes the incoming packet lines as an async stream, and sends packets on a verified
+/// login (<see cref="SendAsync"/>).
 /// A client is single-use: connect once, read until the stream ends, then dispose.
 /// Lines are raw APRS text (<c>SRC&gt;DEST,PATH:body</c>); server comments (<c>#</c>) are counted but not delivered.
 /// If the server sends nothing for <see cref="AprsIsClientOptions.IdleTimeout"/>, the stream ends with a
@@ -20,6 +21,9 @@ public sealed class AprsIsClient : IAsyncDisposable
     private readonly Channel<string> _channel;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly CancellationTokenSource _shutdown = new();
+    private readonly SendRateLimiter _sendLimiter;
+    private volatile bool _connectionEnded;
+    private long _packetsSent;
     private Task? _receiveLoop;
     private int _started;
     private int _disposed;
@@ -33,6 +37,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         options.Validate();
 
         _options = options;
+        _sendLimiter = new SendRateLimiter(options.SendBurst, options.SendInterval, options.TimeProvider);
         _logger = logger ?? NullLogger.Instance;
         _transport =
             transport ?? new TcpAprsTransport(options.Endpoint, options.ConnectTimeout, options.MaxLineLength, _logger);
@@ -64,6 +69,9 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     /// <summary>Server comment lines (<c>#</c>) read so far.</summary>
     public long ServerCommentsReceived => Interlocked.Read(ref _serverCommentsReceived);
+
+    /// <summary>Packets written by <see cref="SendAsync"/> so far.</summary>
+    public long PacketsSent => Interlocked.Read(ref _packetsSent);
 
     /// <summary>Connects, sends the login line, waits for the server's response, and starts receiving.</summary>
     /// <exception cref="LoginRejectedException">The server refused the login, for example <c># Login by user not allowed</c>.</exception>
@@ -143,6 +151,85 @@ public sealed class AprsIsClient : IAsyncDisposable
         _logger.FilterSet(filter);
     }
 
+    /// <summary>
+    /// Sends a packet, for example one built with <see cref="PacketAddress.Create(AprsPayload)"/>. The server adds its
+    /// <c>qAC</c> q-construct and passes the packet on. Sends are spread out by <see cref="AprsIsClientOptions.SendBurst"/>
+    /// and <see cref="AprsIsClientOptions.SendInterval"/>: when the burst is used up this waits for its turn.
+    /// </summary>
+    /// <remarks>
+    /// APRS-IS has no acknowledgement for a sent packet: when this returns, the line has been written to the
+    /// connection, not necessarily delivered. Messages are acknowledged by their recipient, see
+    /// <see cref="AprsMessenger"/>.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// The client is not connected, the connection has ended, or the login is not verified: the server drops packets
+    /// from an unverified login, so they are refused here rather than lost silently.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// The packet has no header, holds a line break or NUL byte, is longer than an APRS-IS line (510 bytes), or
+    /// already carries a q-construct (it was received from APRS-IS, and sending it again would loop it).
+    /// </exception>
+    public async ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(packet);
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        CheckSendable(packet);
+        var login = Login ?? throw new InvalidOperationException("Connect before sending.");
+        if (login.Status != LoginStatus.Verified)
+        {
+            throw new InvalidOperationException(
+                "The login is not verified, so the server would drop the packet. Log in with the passcode for "
+                    + "the callsign (AprsIsPasscode.Compute)."
+            );
+        }
+
+        await _sendLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (_connectionEnded)
+        {
+            throw new InvalidOperationException("The connection has ended. Connect a new client to send.");
+        }
+
+        var line = packet.ToString(); // Latin-1, one character per byte: the transport writes the same bytes back
+        await WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
+        Interlocked.Increment(ref _packetsSent);
+        ClientMetrics.PacketSent();
+        _logger.PacketSent(line);
+    }
+
+    private static void CheckSendable(AprsPacket packet)
+    {
+        if (!packet.HasHeader)
+        {
+            throw new ArgumentException("The packet has no SOURCE>DESTINATION header.", nameof(packet));
+        }
+
+        var raw = packet.Raw.Span;
+        if (raw.IndexOfAny("\r\n\0"u8) >= 0)
+        {
+            throw new ArgumentException("The packet holds a line break or NUL byte.", nameof(packet));
+        }
+
+        if (raw.Length > MaxLineLength)
+        {
+            throw new ArgumentException(
+                $"The packet is {raw.Length} bytes; an APRS-IS line holds at most {MaxLineLength}.",
+                nameof(packet)
+            );
+        }
+
+        if (packet.Path is { } path && path.Any(entry => entry.Kind is PathEntryKind.QConstruct))
+        {
+            throw new ArgumentException(
+                "The packet already carries an APRS-IS q-construct, so it came from APRS-IS; sending it again would "
+                    + "loop it. Send packets as their originator builds them.",
+                nameof(packet)
+            );
+        }
+    }
+
+    /// <summary>APRS-IS lines are at most 512 bytes including the CR LF.</summary>
+    private const int MaxLineLength = 510;
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
@@ -160,6 +247,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         _channel.Writer.TryComplete();
         await _transport.DisposeAsync().ConfigureAwait(false);
         _writeLock.Dispose();
+        _sendLimiter.Dispose();
         _shutdown.Dispose();
     }
 
@@ -272,6 +360,10 @@ public sealed class AprsIsClient : IAsyncDisposable
         {
             _logger.ReceiveFailed(ex);
             _channel.Writer.TryComplete(ex);
+        }
+        finally
+        {
+            _connectionEnded = true;
         }
     }
 

@@ -15,6 +15,9 @@ internal static class ExitCodes
     /// <summary>Bad or conflicting options.</summary>
     public const int Usage = 3;
 
-    /// <summary>The login was rejected or timed out.</summary>
+    /// <summary>The login was rejected or timed out, or <c>send</c> was not given a verified login.</summary>
     public const int LoginFailed = 4;
+
+    /// <summary><c>send message</c>: the recipient rejected the message or never acknowledged it.</summary>
+    public const int NotDelivered = 5;
 }

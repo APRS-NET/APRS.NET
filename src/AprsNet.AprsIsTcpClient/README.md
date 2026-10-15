@@ -18,6 +18,35 @@ if (AprsIsServerPreset.TryFind("euro.aprs2.net:14580", out var region))
     Console.WriteLine(region.Name); // Europe and Africa
 ```
 
+## Sending
+
+On a verified login (the passcode for the callsign, from `AprsIsPasscode.Compute`), `SendAsync` sends a packet built
+with `PacketAddress`. Sends are spread out, 5 at once and then one every 6 seconds by default (`SendBurst`,
+`SendInterval`); a sender waits for its turn rather than failing. Unverified logins, packets received from APRS-IS
+(they carry a q-construct) and lines APRS-IS cannot carry are refused.
+
+`AprsMessenger` handles messages: it gives each one an ID, resends it until the recipient acknowledges or rejects
+it (after 30 s, 1, 2, 4 and 8 minutes by default), and acknowledges messages sent to this station. Pass it every
+received packet:
+
+```csharp
+var address = PacketAddress.Parse("N0CALL-9", "APZ123", []);
+await client.SendAsync(address.Create(new StatusReport { Text = "On the air" }));
+
+using var messenger = new AprsMessenger(address, client.SendAsync);
+_ = Task.Run(async () =>
+{
+    await foreach (var line in client.ReadLinesAsync())
+        if (await messenger.HandleAsync(AprsPacket.Parse(line)) is { } message)
+            Console.WriteLine($"Message: {message.Text}");
+});
+
+var delivery = await messenger.SendAsync("WU2Z", "Hello there");
+Console.WriteLine(delivery.Status); // Acknowledged, Rejected or NotAcknowledged
+```
+
+A login filter of `g/<callsign>` makes sure messages and acknowledgements addressed to the station reach it.
+
 ## Errors in the user's language
 
 Settings a person types (callsign, software name and version, filter, server address, passcode callsign) are refused
