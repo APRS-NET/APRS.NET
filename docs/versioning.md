@@ -25,7 +25,8 @@ pre-release.
 | `docs:`, `test:`, `chore:`, `ci:`, `build:`, `refactor:` | hidden | none | none |
 
 During the alpha, release-please only increments the alpha number. To start a new milestone, add a footer such as
-`Release-As: 0.2.0-alpha.1` to a commit.
+`Release-As: 0.2.0-alpha.1` to a commit. The commit must change a file outside `exclude-paths`: release-please sorts
+commits by the files they touch, so an empty commit, or one touching only excluded paths, is never read.
 
 Scopes are optional, for example `feat(is): support runtime filter changes`.
 
