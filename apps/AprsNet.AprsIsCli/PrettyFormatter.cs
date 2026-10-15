@@ -55,7 +55,7 @@ internal static class PrettyFormatter
                 );
                 break;
             case WeatherReport weather:
-                fields.Add(("weather", Time(weather.Timestamp, received)));
+                fields.Add(("weather", weather.Timestamp is { } taken ? Time(taken, received) : "time unknown"));
                 fields.AddRange(PacketFormatter.WeatherFields(weather.Weather));
                 if (weather.Comment.Trim().Length > 0)
                 {

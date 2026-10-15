@@ -409,7 +409,7 @@ AprsNet.Packets.WeatherData.WindSpeedMph.get -> double?
 AprsNet.Packets.WeatherReport
 AprsNet.Packets.WeatherReport.CommentBytes.get -> System.ReadOnlyMemory<byte>
 AprsNet.Packets.WeatherReport.Comment.get -> string!
-AprsNet.Packets.WeatherReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp
+AprsNet.Packets.WeatherReport.Timestamp.get -> AprsNet.Packets.AprsTimestamp?
 AprsNet.Packets.WeatherReport.Weather.get -> AprsNet.Packets.WeatherData!
 AprsNet.Packets.ParseIssueCode.UnpaddedAddressee = 21 -> AprsNet.Packets.ParseIssueCode
 AprsNet.Packets.CapabilitiesReport

@@ -17,22 +17,23 @@ internal static class WeatherEncoder
     /// </summary>
     public static byte[] Encode(WeatherReport report)
     {
-        if (report.Timestamp.Format != AprsTimestampFormat.MonthDayHourMinute)
-        {
-            throw new ArgumentException(
-                "A positionless weather report's timestamp is MMDDHHMM: use AprsTimestampFormat.MonthDayHourMinute."
-            );
-        }
-
         var info = new List<byte>(64) { (byte)'_' };
-        info.AddRange(Encoding.ASCII.GetBytes(report.Timestamp.ToString()));
         if (report.ReadingsBytes is { } readings)
         {
-            // Parsed: the readings and comment as they arrived, in their original order and spelling.
+            // Parsed: the timestamp, readings and comment as they arrived, an unreadable timestamp included.
             info.AddRange(readings.Span);
             info.AddRange(report.CommentBytes.Span);
             return [.. info];
         }
+
+        if (report.Timestamp is not { Format: AprsTimestampFormat.MonthDayHourMinute } timestamp)
+        {
+            throw new ArgumentException(
+                "A positionless weather report needs a MMDDHHMM timestamp: use AprsTimestampFormat.MonthDayHourMinute."
+            );
+        }
+
+        info.AddRange(Encoding.ASCII.GetBytes(timestamp.ToString()));
 
         var weather = report.Weather ?? throw new ArgumentException("A weather report needs its readings.");
         if (weather.SnowLast24HoursInches is not null)
