@@ -271,10 +271,13 @@ internal sealed class SendCommand(CliEnvironment environment)
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
         };
-        await using var client = environment.CreateClient(options, logger);
+        // A message waits minutes for its acknowledgement, so a dropped connection is reconnected rather than fatal.
+        await using var connection = environment.CreateConnection(options, logger);
+        using var reporter = new ConnectionReporter(connection, environment.Error, endpoint, reconnect: true);
+        using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, reporter.Stopped);
         try
         {
-            var login = await client.ConnectAsync(cancellationToken);
+            var login = await connection.StartAsync(cancellationToken);
             if (login.Status != LoginStatus.Verified)
             {
                 await environment.Error.WriteLineAsync(
@@ -285,12 +288,12 @@ internal sealed class SendCommand(CliEnvironment environment)
 
             if (payload is not MessagePayload message)
             {
-                await client.SendAsync(packet, cancellationToken);
+                await connection.SendAsync(packet, run.Token);
                 await environment.Out.WriteLineAsync(packet.ToString());
                 return ExitCodes.Success;
             }
 
-            return await SendMessageAsync(client, address, message, waitReplies, cancellationToken);
+            return await SendMessageAsync(connection, address, message, waitReplies, run.Token);
         }
         catch (LoginException ex)
         {
@@ -302,6 +305,10 @@ internal sealed class SendCommand(CliEnvironment environment)
             await environment.Error.WriteLineAsync($"aprscli: connection failed: {ex.Message}");
             return ExitCodes.ConnectionFailed;
         }
+        catch (OperationCanceledException) when (reporter.Stopped.IsCancellationRequested)
+        {
+            return reporter.ExitCode!.Value; // the reporter has said why
+        }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             await environment.Error.WriteLineAsync("aprscli: cancelled.");
@@ -310,7 +317,7 @@ internal sealed class SendCommand(CliEnvironment environment)
     }
 
     private async Task<int> SendMessageAsync(
-        AprsIsClient client,
+        AprsIsConnection connection,
         PacketAddress address,
         MessagePayload message,
         TimeSpan waitReplies,
@@ -321,7 +328,7 @@ internal sealed class SendCommand(CliEnvironment environment)
             address,
             async (packet, token) =>
             {
-                await client.SendAsync(packet, token);
+                await connection.SendAsync(packet, token);
                 await environment.Out.WriteLineAsync(packet.ToString());
             },
             environment.TimeProvider
@@ -332,7 +339,7 @@ internal sealed class SendCommand(CliEnvironment environment)
         var reading = Task.Run(
             async () =>
             {
-                await foreach (var line in client.ReadLinesAsync(stopReading.Token))
+                await foreach (var line in connection.ReadLinesAsync(stopReading.Token))
                 {
                     var packet = AprsPacket.Parse(line);
                     if (await messenger.HandleAsync(packet, stopReading.Token) is { } reply)

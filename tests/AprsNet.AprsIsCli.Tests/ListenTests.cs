@@ -914,7 +914,7 @@ public class ListenTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains(
-            "no packets from T2TEST for 2s (server keepalives in that time: 2)",
+            "connection lost: No packets from T2TEST for 2s (server keepalives in that time: 2).",
             result.Error,
             StringComparison.Ordinal
         );
@@ -933,7 +933,7 @@ public class ListenTests
         );
 
         Assert.Equal(2, result.ExitCode);
-        Assert.Contains("no packets from T2TEST for 0.2s", result.Error, StringComparison.Ordinal);
+        Assert.Contains("connection lost: No packets from T2TEST for 0.2s", result.Error, StringComparison.Ordinal);
     }
 
     [Fact]

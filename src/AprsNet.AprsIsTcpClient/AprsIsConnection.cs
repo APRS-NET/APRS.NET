@@ -323,6 +323,7 @@ public sealed class AprsIsConnection : IAsyncDisposable
         using var silence = new CancellationTokenSource(Timeout.InfiniteTimeSpan, _options.TimeProvider);
         using var read = CancellationTokenSource.CreateLinkedTokenSource(shutdown, silence.Token);
         var maxSilence = _options.MaxPacketSilence;
+        var keepalivesAtLastPacket = client.ServerCommentsReceived;
         try
         {
             if (maxSilence is { } armed)
@@ -335,6 +336,7 @@ public sealed class AprsIsConnection : IAsyncDisposable
                 if (maxSilence is { } rearm)
                 {
                     silence.CancelAfter(rearm); // restart the wait for the next packet
+                    keepalivesAtLastPacket = client.ServerCommentsReceived;
                 }
 
                 await _lines.Writer.WriteAsync(line, shutdown).ConfigureAwait(false);
@@ -348,7 +350,17 @@ public sealed class AprsIsConnection : IAsyncDisposable
         }
         catch (OperationCanceledException) when (silence.IsCancellationRequested)
         {
-            return ("packet_silence", new TimeoutException($"No packets for {maxSilence!.Value.TotalSeconds:0.#}s."));
+            // Keepalives in the gap tell the two failures apart: some means the server's feed stalled while the link
+            // stayed up, none means the link itself died.
+            var keepalives = client.ServerCommentsReceived - keepalivesAtLastPacket;
+            var server = client.Login?.Server ?? _options.Endpoint.ToString();
+            return (
+                "packet_silence",
+                new TimeoutException(
+                    $"No packets from {server} for {maxSilence!.Value.TotalSeconds:0.#}s "
+                        + $"(server keepalives in that time: {keepalives})."
+                )
+            );
         }
         catch (TimeoutException ex)
         {

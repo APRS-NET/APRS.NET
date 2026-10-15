@@ -1,4 +1,5 @@
 using AprsNet.AprsIsTcpClient;
+using AprsNet.AprsIsTcpClient.Tests;
 
 namespace AprsNet.AprsIsCli.Tests;
 
@@ -96,6 +97,32 @@ public class SendTests
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Acknowledged by WU2Z after 1 attempt.", result.Out, StringComparison.Ordinal);
         Assert.Equal($"g/{Callsign}", harness.ClientOptions!.Filter);
+    }
+
+    [Fact]
+    public async Task AMessageOutlastsADroppedConnection()
+    {
+        var harness = Verified();
+
+        var run = harness.RunAsync(
+            ["send", "message", "WU2Z", "Hello there", "-c", Callsign, "--wait-replies", "0"],
+            TestContext.Current.CancellationToken
+        );
+        var written = await WaitForWritten(harness, 2);
+        var second = new FakeAprsTransport();
+        second.Server($"# logresp {Callsign} verified, server T2OTHER");
+        second.Server(
+            $"WU2Z>APRS,TCPIP*,qAC,T2OTHER::{Callsign} :ack{written[1][(written[1].LastIndexOf('{') + 1)..]}"
+        );
+        harness.Reconnects.Enqueue(second);
+        harness.Transport.Close();
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Acknowledged by WU2Z after 1 attempt.", result.Out, StringComparison.Ordinal);
+        Assert.Contains("closed the connection", result.Error, StringComparison.Ordinal);
+        Assert.Contains("reconnecting to rotate.aprs2.net:14580", result.Error, StringComparison.Ordinal);
+        Assert.Equal(2, harness.ConnectionAttempts);
     }
 
     [Fact]

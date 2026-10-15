@@ -262,7 +262,11 @@ public sealed class AprsIsConnectionTests : IAsyncDisposable
 
         var reconnecting = States.First(s => s.State == AprsIsConnectionState.Reconnecting);
         Assert.IsType<TimeoutException>(reconnecting.Error);
-        Assert.Contains("No packets", reconnecting.Error!.Message, StringComparison.Ordinal);
+        Assert.StartsWith(
+            "No packets from T2TEST1 for 600s (server keepalives in that time:",
+            reconnecting.Error!.Message,
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]

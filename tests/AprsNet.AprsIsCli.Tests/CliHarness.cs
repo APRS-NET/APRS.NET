@@ -39,7 +39,7 @@ internal sealed class CliHarness
     /// </summary>
     public Queue<FakeAprsTransport> Reconnects { get; } = new();
 
-    /// <summary>How many clients the CLI created, which is one per connection attempt.</summary>
+    /// <summary>How many transports the connection asked for, which is one per connection attempt.</summary>
     public int ConnectionAttempts { get; private set; }
 
     /// <summary>Queues a later connection whose login succeeds and which then sends <paramref name="lines" />.</summary>
@@ -75,23 +75,25 @@ internal sealed class CliHarness
             TimeProvider = Time,
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
-            CreateClient = (options, logger) =>
+            CreateConnection = (options, logger) =>
             {
                 ClientOptions = options;
-                IAprsTransport transport = ++ConnectionAttempts switch
-                {
-                    1 when ConnectFailure is not null => new FailingTransport(ConnectFailure),
-                    1 => Transport,
-                    _ when Reconnects.TryDequeue(out var next) => next,
-                    _ => new FailingTransport(SocketFailures.Refused()),
-                };
-                return new AprsIsClient(options, logger, transport);
+                return new AprsIsConnection(options, logger, NextTransport);
             },
         };
 
         var code = await AprsCli.RunAsync(args, environment, cancellationToken);
         return new CliResult(code, output.ToString(), error.ToString());
     }
+
+    private IAprsTransport NextTransport() =>
+        ++ConnectionAttempts switch
+        {
+            1 when ConnectFailure is not null => new FailingTransport(ConnectFailure),
+            1 => Transport,
+            _ when Reconnects.TryDequeue(out var next) => next,
+            _ => new FailingTransport(SocketFailures.Refused()),
+        };
 
     private sealed class FailingTransport(Exception failure) : IAprsTransport
     {
