@@ -71,7 +71,21 @@ internal abstract class FilterTerm
     }
 
     private static bool Within(PacketFacts packet, AprsPosition? centre, double km) =>
-        packet.Position is { } position && centre is { } from && DistanceKm(from, position) <= km;
+        packet.Positioned is { } positioned && centre is { } from && DistanceKm(from, positioned.Position) <= km;
+
+    /// <summary>Whether any pattern matches <paramref name="value"/>; a loop, as this runs for every packet.</summary>
+    private static bool AnyGlob(string[] patterns, string value)
+    {
+        foreach (var pattern in patterns)
+        {
+            if (Glob(pattern, value))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>Case-insensitive match where <c>*</c> stands for any run of characters, including none.</summary>
     internal static bool Glob(string pattern, string value)
@@ -177,7 +191,7 @@ internal abstract class FilterTerm
         }
 
         public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            packet.Position is { } p
+            packet.Positioned?.Position is { } p
             && p.Latitude <= north
             && p.Latitude >= south
             && p.Longitude >= west
@@ -187,23 +201,48 @@ internal abstract class FilterTerm
     /// <summary><c>p/aa/bb</c>: source callsigns starting with any of the prefixes.</summary>
     private sealed class PrefixTerm(string[] prefixes) : FilterTerm
     {
-        public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            packet.Packet.Source?.Value is { } source
-            && prefixes.Any(prefix => source.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        public override bool Matches(PacketFacts packet, AprsFilterContext? context)
+        {
+            if (packet.Packet.Source?.Value is not { } source)
+            {
+                return false;
+            }
+
+            foreach (var prefix in prefixes)
+            {
+                if (source.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary><c>b/</c>, <c>o/</c>, <c>e/</c>, <c>g/</c> and <c>u/</c>: one value of the packet against patterns.</summary>
     private sealed class PatternTerm(string[] patterns, Func<PacketFacts, string?> select) : FilterTerm
     {
         public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            select(packet) is { } value && patterns.Any(pattern => Glob(pattern, value));
+            select(packet) is { } value && AnyGlob(patterns, value);
     }
 
     /// <summary><c>d/digi1/digi2</c>: packets repeated by any of the digipeaters.</summary>
     private sealed class DigipeaterTerm(string[] patterns) : FilterTerm
     {
-        public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            packet.Digipeaters.Any(digi => patterns.Any(pattern => Glob(pattern, digi)));
+        public override bool Matches(PacketFacts packet, AprsFilterContext? context)
+        {
+            var path = packet.Packet.Path;
+            for (var i = 0; i < packet.DigipeaterCount; i++)
+            {
+                if (AnyGlob(patterns, path![i].Station.Value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary><c>t/poimqstunw</c> and <c>t/poimqstunw/call/km</c>: packets of the given types.</summary>
@@ -236,9 +275,18 @@ internal abstract class FilterTerm
             return error;
         }
 
-        public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            types.Any(letter => IsType(packet.Packet, letter))
-            && (call is null || Within(packet, context?.LastPosition?.Invoke(call), km));
+        public override bool Matches(PacketFacts packet, AprsFilterContext? context)
+        {
+            foreach (var letter in types)
+            {
+                if (IsType(packet.Packet, letter))
+                {
+                    return call is null || Within(packet, context?.LastPosition?.Invoke(call), km);
+                }
+            }
+
+            return false;
+        }
 
         private static bool IsType(AprsPacket packet, char letter) =>
             letter switch
@@ -282,7 +330,7 @@ internal abstract class FilterTerm
         }
 
         public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            packet.Symbol is { } symbol
+            packet.Positioned?.Symbol is { } symbol
             && (
                 symbol.IsPrimary
                     ? primary.Contains(symbol.Code, StringComparison.Ordinal)

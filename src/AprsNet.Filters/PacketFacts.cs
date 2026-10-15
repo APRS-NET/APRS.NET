@@ -2,65 +2,67 @@ using AprsNet.Packets;
 
 namespace AprsNet.Filters;
 
-/// <summary>What filter terms ask about a packet, worked out once per packet.</summary>
-internal sealed class PacketFacts
+/// <summary>
+/// What filter terms ask about a packet. Each fact is worked out on first use, since most filters ask about few.
+/// </summary>
+internal sealed class PacketFacts(AprsPacket packet)
 {
-    public PacketFacts(AprsPacket packet)
+    private bool _pathRead;
+    private bool _positionRead;
+    private PositionedPayload? _positioned;
+    private char? _qConstruct;
+    private string? _entryStation;
+    private int _digipeaterCount;
+
+    public AprsPacket Packet { get; } = packet;
+
+    /// <summary>The positioned payload, unless the packet has none or the sender marked its position unknown.</summary>
+    public PositionedPayload? Positioned
     {
-        Packet = packet;
-        if (packet.Payload is PositionedPayload { IsPositionUnknown: false } positioned)
+        get
         {
-            Position = positioned.Position;
-            Symbol = positioned.Symbol;
-        }
-
-        var path = packet.Path ?? [];
-        var qIndex = -1;
-        for (var i = 0; i < path.Count; i++)
-        {
-            if (path[i].Kind == PathEntryKind.QConstruct)
+            if (!_positionRead)
             {
-                qIndex = i;
-                break;
+                _positionRead = true;
+                _positioned = Packet.Payload is PositionedPayload { IsPositionUnknown: false } p ? p : null;
             }
-        }
 
-        if (qIndex >= 0)
-        {
-            var value = path[qIndex].Station.Value;
-            QConstruct = value[^1];
-            EntryStation = qIndex + 1 < path.Count ? path[qIndex + 1].Station.Value : null;
+            return _positioned;
         }
-
-        // TNC2 marks only the last digipeater that repeated the packet; every entry before it was used too.
-        var radioPath = qIndex >= 0 ? qIndex : path.Count;
-        var lastRepeated = -1;
-        for (var i = 0; i < radioPath; i++)
-        {
-            if (path[i].HasBeenRepeated)
-            {
-                lastRepeated = i;
-            }
-        }
-
-        Digipeaters = [.. path.Take(lastRepeated + 1).Select(entry => entry.Station.Value)];
     }
 
-    public AprsPacket Packet { get; }
-
-    /// <summary>The position the packet reports, unless it has none or the sender marked it unknown.</summary>
-    public AprsPosition? Position { get; }
-
-    public AprsSymbol? Symbol { get; }
-
     /// <summary>The letter of the <c>qA?</c> construct, such as <c>C</c> for <c>qAC</c>.</summary>
-    public char? QConstruct { get; }
+    public char? QConstruct
+    {
+        get
+        {
+            ReadPath();
+            return _qConstruct;
+        }
+    }
 
     /// <summary>The station after the q-construct: the IGate or server that brought the packet into APRS-IS.</summary>
-    public string? EntryStation { get; }
+    public string? EntryStation
+    {
+        get
+        {
+            ReadPath();
+            return _entryStation;
+        }
+    }
 
-    /// <summary>The digipeaters that repeated the packet, in order.</summary>
-    public IReadOnlyList<string> Digipeaters { get; }
+    /// <summary>
+    /// How many path entries, from the first, repeated the packet. TNC2 marks only the last digipeater that did; every
+    /// entry before it was used too.
+    /// </summary>
+    public int DigipeaterCount
+    {
+        get
+        {
+            ReadPath();
+            return _digipeaterCount;
+        }
+    }
 
     /// <summary>The object or item name, without the padding objects carry.</summary>
     public string? ObjectName =>
@@ -70,4 +72,39 @@ internal sealed class PacketFacts
             ItemReport i => i.Name,
             _ => null,
         };
+
+    private void ReadPath()
+    {
+        if (_pathRead)
+        {
+            return;
+        }
+
+        _pathRead = true;
+        var path = Packet.Path;
+        if (path is null)
+        {
+            return;
+        }
+
+        var radioPath = path.Count;
+        for (var i = 0; i < path.Count; i++)
+        {
+            if (path[i].Kind == PathEntryKind.QConstruct)
+            {
+                _qConstruct = path[i].Station.Value[^1];
+                _entryStation = i + 1 < path.Count ? path[i + 1].Station.Value : null;
+                radioPath = i;
+                break;
+            }
+        }
+
+        for (var i = 0; i < radioPath; i++)
+        {
+            if (path[i].HasBeenRepeated)
+            {
+                _digipeaterCount = i + 1;
+            }
+        }
+    }
 }

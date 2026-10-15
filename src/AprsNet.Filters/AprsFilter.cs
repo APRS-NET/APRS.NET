@@ -100,8 +100,21 @@ public sealed class AprsFilter
     {
         ArgumentNullException.ThrowIfNull(packet);
         var facts = new PacketFacts(packet);
-        return _include.Any(term => term.Matches(facts, context))
-            && !_exclude.Any(term => term.Matches(facts, context));
+        return AnyMatches(_include, facts, context) && !AnyMatches(_exclude, facts, context);
+    }
+
+    // A loop rather than Any(), which would allocate a closure for every packet.
+    private static bool AnyMatches(FilterTerm[] terms, PacketFacts facts, AprsFilterContext? context)
+    {
+        foreach (var term in terms)
+        {
+            if (term.Matches(facts, context))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>The filter's terms, separated by single spaces.</summary>
