@@ -93,10 +93,10 @@ public sealed class MicEReport : PositionedPayload
     public bool IsMessagingCapable { get; init; }
 
     /// <summary>
-    /// The radio or tracker, from the type byte and the trailing manufacturer code (APRS 1.2), such as <c>TH-D74</c>
-    /// or <c>FTM-400DR</c>; <see langword="null"/> when not recognised.
+    /// The radio or tracker, from the type byte and the trailing device code (APRS 1.2) looked up in the aprs-deviceid
+    /// list, such as the Kenwood TH-D74 or the Yaesu FTM-400DR; <see langword="null"/> when not recognised.
     /// </summary>
-    public string? Device { get; internal init; }
+    public AprsDevice? Device { get; internal init; }
 
     /// <summary>A Maidenhead locator that opens the status text, such as <c>IO91SX</c>, in upper case.</summary>
     public string? MaidenheadLocator { get; internal init; }

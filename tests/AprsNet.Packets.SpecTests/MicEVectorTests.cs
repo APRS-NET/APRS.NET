@@ -49,7 +49,8 @@ public class MicEVectorTests
                     Assert.Equal(e.GetString(), Name(report.Message));
                     break;
                 case "device":
-                    Assert.Equal(e.GetString(), report.Device);
+                    // APRS101 calls the TH-D7 what the aprs-deviceid list calls the TH-D7A.
+                    Assert.StartsWith(e.GetString()!, report.Device?.Model ?? "", StringComparison.Ordinal);
                     break;
                 case "statusText":
                     Assert.Equal(e.GetString(), report.Comment);
