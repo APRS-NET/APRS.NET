@@ -1,5 +1,4 @@
 #:property TargetFramework=net10.0
-#:property TargetFrameworks=
 #:property PublishAot=false
 
 // Writes docs/spec/coverage/: which APRS101 test vectors (tests/AprsNet.Packets.SpecTests/Vectors) have also been seen in

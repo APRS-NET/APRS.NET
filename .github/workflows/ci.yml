@@ -28,9 +28,6 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-          dotnet-version: |
-            8.0.x
-            10.0.x
       - run: dotnet build -c Release
       - run: dotnet test -c Release --no-build --logger GitHubActions
       - name: Pack (with package validation)
@@ -54,9 +51,6 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
-          dotnet-version: |
-            8.0.x
-            10.0.x
       - run: dotnet build -c Release
       - run: dotnet test -c Release --no-build --logger GitHubActions --collect:"XPlat Code Coverage" --results-directory coverage
       - name: Coverage report

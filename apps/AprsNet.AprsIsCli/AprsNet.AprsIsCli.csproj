@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks />
-    <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>aprscli</AssemblyName>
     <RootNamespace>AprsNet.AprsIsCli</RootNamespace>
     <!-- Not published yet: the tool is mainly used to capture test traffic. To publish it as a .NET tool later, set
