@@ -27,14 +27,16 @@ public sealed partial class CorpusFilterTests(ITestOutputHelper output)
     {
         var filter = AprsFilter.Parse(ReadmeFilter(file));
         var positioned = Packets(file).Where(p => p.Payload is PositionedPayload { IsPositionUnknown: false }).ToList();
-        var outside = positioned.Where(p => !filter.Matches(p)).ToList();
+        // The server also passes packets by their sender's last position, so a station heard inside the circle can
+        // send one from outside it: a mobile that has just left, or a tracker that sometimes sends a garbage position.
+        // Those are fine. Of the rest, a position with ambiguity on the edge can fall either side: a handful in all.
+        var inside = positioned.Where(p => filter.Matches(p)).Select(p => p.Source!.Value).ToHashSet();
+        var outside = positioned.Where(p => !filter.Matches(p) && !inside.Contains(p.Source!.Value)).ToList();
         foreach (var packet in outside.Take(5))
         {
             output.WriteLine(packet.ToString());
         }
 
-        // The server also passes packets by their sender's last position, so a mobile that has just left arrives from
-        // outside the circle, and a position with ambiguity on the edge can fall either side: six packets in the whole corpus.
         Assert.True(
             outside.Count <= positioned.Count / 100,
             $"{outside.Count} of {positioned.Count} positions are outside {filter}."
