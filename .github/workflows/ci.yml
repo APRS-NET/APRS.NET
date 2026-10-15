@@ -1,33 +1,12 @@
 name: ci
 
-# Skips changes that cannot affect the build or tests: docs and Markdown (the corpus README stays in, since its
-# table is tested), and repository settings files. Later patterns override earlier ones.
+# Always starts, so the ci-ok job below can be a required check, but the changes job skips the build, tests and
+# format check for changes that cannot affect them: docs and Markdown (the corpus README stays in, since its table is
+# tested) and repository settings files.
 on:
   push:
     branches: [main]
-    paths:
-      - "**"
-      - "!docs/**"
-      - "!**/*.md"
-      - "tests/corpus/**"
-      - "!LICENSE"
-      - "!.release-please-manifest.json"
-      - "!.github/dependabot.yml"
-      - "!.github/workflows/pr-title.yml"
-      - "!.github/workflows/symbols.yml"
-      - "!.github/workflows/packages.yml"
   pull_request:
-    paths:
-      - "**"
-      - "!docs/**"
-      - "!**/*.md"
-      - "tests/corpus/**"
-      - "!LICENSE"
-      - "!.release-please-manifest.json"
-      - "!.github/dependabot.yml"
-      - "!.github/workflows/pr-title.yml"
-      - "!.github/workflows/symbols.yml"
-      - "!.github/workflows/packages.yml"
 
 permissions:
   contents: read
@@ -38,7 +17,40 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: filter
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Without a usable base (a new branch, or history that was rewritten) everything runs.
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2> /dev/null; then
+            echo "No base to compare with: running everything."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$(git merge-base "$BASE" "$GITHUB_SHA")" "$GITHUB_SHA")"
+          ignored='^(docs/|LICENSE$|\.release-please-manifest\.json$|\.github/dependabot\.yml$|\.github/workflows/(pr-title|symbols|packages)\.yml$)|\.md$'
+          code="$(printf '%s\n' "$changed" | grep -v -E "$ignored" | grep -v '^$' || true)"
+          corpus="$(printf '%s\n' "$changed" | grep '^tests/corpus/' || true)"
+          if [ -n "$code$corpus" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only docs or settings changed: skipping the build, tests and format check."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -53,10 +65,30 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet build -c Release
-      # Ubuntu's test run also collects coverage, so the coverage job needs no build of its own.
+      - name: Install Dire Wolf for the KISS audio test
+        # KissAudioEndToEndTests turns packets into AFSK audio with gen_packets, plays it into Dire Wolf's standard
+        # input (no sound card) and reads the decoded frames back over KISS TCP.
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends direwolf
+          echo "APRSNET_DIREWOLF_AUDIO=1" >> "$GITHUB_ENV"
+      # Ubuntu's test run also collects coverage, so the coverage job needs no build of its own. A test that hangs
+      # fails after 5 minutes with a dump, rather than holding all three runners until the 20-minute job limit.
       - run: >-
-          dotnet test -c Release --no-build --logger GitHubActions
-          ${{ matrix.os == 'ubuntu-latest' && '--collect:"XPlat Code Coverage" --results-directory coverage' || '' }}
+          dotnet test -c Release --no-build --logger GitHubActions --logger trx --results-directory test-results
+          --blame-hang-timeout 5m --blame-hang-dump-type mini
+          ${{ matrix.os == 'ubuntu-latest' && '--collect:"XPlat Code Coverage"' || '' }}
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            test-results/**/*.trx
+            test-results/**/*.dmp
+            test-results/**/Sequence_*.xml
+          retention-days: 7
       - name: Pack (with package validation)
         if: matrix.os == 'ubuntu-latest'
         run: dotnet pack -c Release --no-build -o artifacts
@@ -64,7 +96,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         with:
           name: coverage
-          path: coverage/**/coverage.cobertura.xml
+          path: test-results/**/coverage.cobertura.xml
           retention-days: 1
 
   coverage:
@@ -97,8 +129,8 @@ jobs:
           cat coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
       - name: Coverage gate
         env:
-          MIN_LINE: 85 # raise these when coverage improves; do not lower them to get a change through
-          MIN_BRANCH: 80
+          MIN_LINE: 90 # raise these when coverage improves; do not lower them to get a change through
+          MIN_BRANCH: 85
         run: |
           jq -r '.summary | "line \(.linecoverage)%, branch \(.branchcoverage)%"' coverage/report/Summary.json
           jq -e ".summary.linecoverage >= $MIN_LINE" coverage/report/Summary.json > /dev/null \
@@ -131,6 +163,8 @@ jobs:
           git push --quiet "$url" HEAD:badges
 
   format:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -140,3 +174,52 @@ jobs:
           global-json-file: global.json
       - run: dotnet tool restore
       - run: dotnet csharpier check .
+
+  tools:
+    # The tools under tools/ are file-based apps outside the solution, so the build above does not compile them; and
+    # docs/spec/coverage is generated from the corpus, so it is checked like the symbol pages in symbols.yml.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - name: Compile every tool
+        run: |
+          for tool in tools/*/*.cs; do
+            echo "::group::$tool"
+            dotnet build "$tool"
+            echo "::endgroup::"
+          done
+      - name: Check the corpus coverage pages are up to date
+        run: |
+          dotnet run tools/corpus/Coverage.cs
+          if [ -n "$(git status --porcelain -- docs/spec/coverage)" ]; then
+            git status --short -- docs/spec/coverage
+            echo "::error::docs/spec/coverage is out of date. Run 'dotnet run tools/corpus/Coverage.cs' and commit the result."
+            exit 1
+          fi
+
+  ci-ok:
+    # The one check to require on main: it passes when every job above passed, or was skipped for a docs-only change.
+    if: always()
+    needs: [changes, build, coverage, format, tools]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *) echo "::error::A CI job ended with '$result'."; exit 1 ;;
+            esac
+          done
