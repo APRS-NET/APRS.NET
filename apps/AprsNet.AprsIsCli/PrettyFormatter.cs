@@ -34,6 +34,23 @@ internal static class PrettyFormatter
         }
 
         var fields = new List<(string Label, string Value)>();
+        Fields(fields, packet, received, style);
+        foreach (var (label, value) in fields)
+        {
+            block.AppendLine().Append(_indent).Append(style.Cyan(label.PadRight(_labelWidth))).Append(value);
+        }
+
+        return block.ToString();
+    }
+
+    /// <summary>The labelled fields of one packet, its issues last; a third-party packet's carried packet follows it.</summary>
+    private static void Fields(
+        List<(string Label, string Value)> fields,
+        AprsPacket packet,
+        DateTimeOffset received,
+        Style style
+    )
+    {
         switch (packet.Payload)
         {
             case PositionedPayload report:
@@ -76,6 +93,23 @@ internal static class PrettyFormatter
                     fields.Add(("comment", style.Green($"\"{Safe(telemetry.Comment.Trim())}\"")));
                 }
 
+                break;
+            case ThirdPartyPayload thirdParty:
+                var carried = thirdParty.Packet;
+                fields.Add(
+                    (
+                        "carries",
+                        style.Bold(Safe(carried.Source!.Value))
+                            + " → "
+                            + Safe(carried.Destination!.Value)
+                            + (
+                                carried.Path!.Count > 0
+                                    ? style.Dim("  via " + Safe(string.Join(",", carried.Path)))
+                                    : ""
+                            )
+                    )
+                );
+                Fields(fields, carried, received, style);
                 break;
             case CapabilitiesReport capabilities:
                 fields.Add(("abilities", style.Bold(Safe(PacketFormatter.Capabilities(capabilities)))));
@@ -123,13 +157,6 @@ internal static class PrettyFormatter
                     : ("warning", style.Yellow(text))
             );
         }
-
-        foreach (var (label, value) in fields)
-        {
-            block.AppendLine().Append(_indent).Append(style.Cyan(label.PadRight(_labelWidth))).Append(value);
-        }
-
-        return block.ToString();
     }
 
     private static void Position(
