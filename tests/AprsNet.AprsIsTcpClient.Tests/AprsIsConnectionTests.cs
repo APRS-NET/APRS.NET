@@ -360,6 +360,69 @@ public sealed class AprsIsConnectionTests : IAsyncDisposable
         Assert.Throws<ArgumentOutOfRangeException>(() => Validate(o => o.MaxPacketSilence = TimeSpan.Zero));
     }
 
+    [Fact]
+    public async Task ClosingWhileAReconnectAttemptFailsEndsTheStreamCleanly()
+    {
+        var first = Server();
+        var attempt = new FailsOnceClosingTransport();
+        _transports.Enqueue(attempt);
+        var connection = Connection();
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+        using var reading = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var lines = Task.Run(
+            async () =>
+            {
+                var count = 0;
+                await foreach (var _ in connection.ReadLinesAsync(reading.Token))
+                {
+                    count++;
+                }
+
+                return count;
+            },
+            TestContext.Current.CancellationToken
+        );
+        first.Close();
+        await AdvanceUntil(() => attempt.Connecting);
+
+        // The attempt fails with a socket error only once closing has begun, as a slow network can make it.
+        await connection
+            .DisposeAsync()
+            .AsTask()
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, await lines); // the stream ended rather than waiting forever
+        Assert.Equal(AprsIsConnectionState.Closed, connection.State);
+    }
+
+    /// <summary>Waits in ConnectAsync until the attempt is cancelled, then fails with a socket error anyway.</summary>
+    private sealed class FailsOnceClosingTransport : IAprsTransport
+    {
+        private volatile bool _connecting;
+
+        public bool Connecting => _connecting;
+
+        public async ValueTask ConnectAsync(CancellationToken cancellationToken)
+        {
+            _connecting = true;
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            catch (OperationCanceledException) { }
+
+            throw new SocketException((int)SocketError.NetworkUnreachable);
+        }
+
+        public ValueTask<string?> ReadLineAsync(CancellationToken cancellationToken) =>
+            throw new InvalidOperationException();
+
+        public ValueTask WriteLineAsync(string line, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException();
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
     private sealed class UnreachableTransport : IAprsTransport
     {
         public ValueTask ConnectAsync(CancellationToken cancellationToken) =>
