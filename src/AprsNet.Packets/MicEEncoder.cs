@@ -121,6 +121,11 @@ internal static class MicEEncoder
         }
 
         info.AddRange(Encoding.UTF8.GetBytes(report.Comment));
+        if (report.Telemetry is { } telemetry)
+        {
+            info.AddRange(Encoding.ASCII.GetBytes(CommentTelemetry.Encode(telemetry)));
+        }
+
         return [.. info];
     }
 
@@ -150,6 +155,7 @@ internal static class MicEEncoder
             : e.Device != a.Device
                 ? parsed ? "the device does not survive encoding"
                     : $"the end of the comment would be read as the {a.Device} device code"
+            : CommentTelemetry.Mismatch(e.Telemetry, a.Telemetry) is { } telemetry ? telemetry
             : e.Comment != a.Comment ? "the comment does not survive encoding"
             : null;
     }

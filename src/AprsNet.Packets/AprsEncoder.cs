@@ -237,6 +237,7 @@ internal static class AprsEncoder
             : (e.Weather is null) != (a.Weather is null) ? "the comment would be read as weather readings"
             : e.Weather is { } sent && a.Weather is { } read && WeatherEncoder.Mismatch(sent, read) is { } weather
                 ? weather
+            : CommentTelemetry.Mismatch(e.Telemetry, a.Telemetry) is { } telemetry ? telemetry
             : PositionEncoder.ExpectedComment(e) != a.Comment ? "the comment does not survive encoding"
             : null;
 

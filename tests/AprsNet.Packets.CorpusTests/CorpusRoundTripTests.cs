@@ -136,6 +136,7 @@ public class CorpusRoundTripTests
                     RangeMiles = parsed.RangeMiles,
                     DirectionFindingStrength = parsed.DirectionFindingStrength,
                     Weather = parsed.Weather,
+                    Telemetry = parsed.Telemetry,
                     Comment = parsed.Comment,
                 };
                 try
@@ -190,6 +191,7 @@ public class CorpusRoundTripTests
                     Course = parsed.Course,
                     SpeedKnots = parsed.SpeedKnots,
                     AltitudeFeet = parsed.AltitudeFeet,
+                    Telemetry = parsed.Telemetry,
                     Comment = parsed.Comment,
                 };
                 try
@@ -251,6 +253,7 @@ public class CorpusRoundTripTests
                         RangeMiles = o.RangeMiles,
                         DirectionFindingStrength = o.DirectionFindingStrength,
                         Weather = o.Weather,
+                        Telemetry = o.Telemetry,
                         Comment = o.Comment,
                     },
                     ItemReport i => new ItemReport
@@ -267,6 +270,7 @@ public class CorpusRoundTripTests
                         RangeMiles = i.RangeMiles,
                         DirectionFindingStrength = i.DirectionFindingStrength,
                         Weather = i.Weather,
+                        Telemetry = i.Telemetry,
                         Comment = i.Comment,
                     },
                     _ => throw new InvalidOperationException(),

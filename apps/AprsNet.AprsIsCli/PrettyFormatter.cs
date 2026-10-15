@@ -251,6 +251,15 @@ internal static class PrettyFormatter
             fields.Add(("datum", datum is 'W' or 'w' ? "WGS84 (extra precision)" : $"{datum} (extra precision)"));
         }
 
+        if (report.Telemetry is { } telemetry)
+        {
+            fields.Add(("telemetry", $"#{telemetry.Sequence}  {PacketFormatter.Analog(telemetry)}"));
+            if (telemetry.Digital.Count > 0)
+            {
+                fields.Add(("digital", PacketFormatter.Bits(telemetry)));
+            }
+        }
+
         if (report.Area is { } area)
         {
             fields.Add(("area", PacketFormatter.AreaText(area)));

@@ -27,6 +27,7 @@ public abstract class PositionedPayload : AprsPayload
         Signpost = fields.Signpost;
         Weather = fields.Weather;
         Datum = fields.Datum;
+        Telemetry = fields.Telemetry;
         CommentBytes = fields.CommentBytes;
         Comment = fields.Comment;
         ExtensionBytes = fields.ExtensionBytes;
@@ -102,11 +103,19 @@ public abstract class PositionedPayload : AprsPayload
     /// <summary>The datum named by a <c>!DAO!</c> token (APRS 1.2), for example <c>W</c> for WGS84.</summary>
     public char? Datum { get; internal init; }
 
+    /// <summary>
+    /// Base-91 comment telemetry (APRS 1.2): <c>|SSAABB…|</c> at the end of the comment, read into a sequence number,
+    /// one to five analog values (0 to 8280) and, after all five, the eight digital channels. The station's
+    /// <c>PARM.</c>, <c>UNIT.</c> and <c>EQNS.</c> definitions apply as they do to <c>T#</c> reports. Not part of
+    /// <see cref="Comment"/>. When set on a payload to encode, it is written after the comment.
+    /// </summary>
+    public TelemetryReport? Telemetry { get; init; }
+
     /// <summary>The comment exactly as sent: every byte after the position and data extension.</summary>
     public ReadOnlyMemory<byte> CommentBytes { get; internal init; }
 
     /// <summary>
-    /// The comment as text, without a <c>!DAO!</c> token or the <see cref="Weather"/> readings: decoded as UTF-8 when the bytes are valid UTF-8, otherwise
+    /// The comment as text, without a <c>!DAO!</c> token, <see cref="Telemetry"/> or the <see cref="Weather"/> readings: decoded as UTF-8 when the bytes are valid UTF-8, otherwise
     /// one character per byte (Latin-1). APRS has no text encoding, so this is a best guess.
     /// </summary>
     public string Comment { get; init; } = "";
