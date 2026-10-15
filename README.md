@@ -43,6 +43,8 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 
 ## Build
 
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ```sh
 dotnet tool restore
 dotnet build
