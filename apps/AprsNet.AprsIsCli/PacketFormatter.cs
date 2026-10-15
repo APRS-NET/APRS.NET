@@ -597,6 +597,12 @@ internal static class PacketFormatter
             line.Append("  messaging");
         }
 
+        if (report.Telemetry is { } telemetry)
+        {
+            line.Append("  ");
+            Telemetry(line, telemetry);
+        }
+
         if (report.Comment.Length > 0)
         {
             line.Append("  \"").Append(report.Comment.Trim()).Append('"');
@@ -735,6 +741,12 @@ internal static class PacketFormatter
             json.WriteStartObject("weather");
             WeatherReadings(json, weather);
             json.WriteEndObject();
+        }
+
+        if (report.Telemetry is { } telemetry)
+        {
+            json.WritePropertyName("telemetry");
+            Telemetry(json, telemetry);
         }
 
         json.WriteString("comment", report.Comment);
