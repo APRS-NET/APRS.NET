@@ -162,4 +162,92 @@ public class CommentTelemetryTests
         var ex = Assert.Throws<ArgumentException>(() => _address.Create(report));
         Assert.Contains("read as telemetry", ex.Message, StringComparison.Ordinal);
     }
+
+    private static void Rejects(TelemetryReport telemetry, string reason)
+    {
+        var report = new PositionReport
+        {
+            Position = new AprsPosition(10, 10),
+            Symbol = new AprsSymbol('/', '-'),
+            Telemetry = telemetry,
+        };
+
+        var ex = Assert.Throws<ArgumentException>(() => _address.Create(report));
+        Assert.Contains(reason, ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TakesTheSequenceFromItsTextToo()
+    {
+        var report = new PositionReport
+        {
+            Position = new AprsPosition(10, 10),
+            Symbol = new AprsSymbol('/', '-'),
+            Telemetry = new TelemetryReport { Sequence = "12", Analog = [5] },
+        };
+
+        Assert.Equal(12, ((PositionReport)_address.Create(report).Payload!).Telemetry!.SequenceNumber);
+    }
+
+    [Fact]
+    public void RefusesTelemetryWithoutASequence()
+    {
+        Rejects(new TelemetryReport { Analog = [1] }, "needs a SequenceNumber");
+    }
+
+    [Fact]
+    public void RefusesSixAnalogValues()
+    {
+        Rejects(new TelemetryReport { SequenceNumber = 1, Analog = [1, 2, 3, 4, 5, 6] }, "one to five analog values");
+    }
+
+    [Fact]
+    public void RefusesTheWrongNumberOfDigitalChannels()
+    {
+        Rejects(
+            new TelemetryReport
+            {
+                SequenceNumber = 1,
+                Analog = [1, 2, 3, 4, 5],
+                Digital = [true],
+            },
+            "all eight digital channels or none"
+        );
+    }
+
+    [Fact]
+    public void RefusesDigitalChannelsWithoutAllFiveAnalogValues()
+    {
+        Rejects(
+            new TelemetryReport
+            {
+                SequenceNumber = 1,
+                Analog = [1],
+                Digital = [.. Enumerable.Repeat(true, 8)],
+            },
+            "follow all five analog values"
+        );
+    }
+
+    [Fact]
+    public void RefusesACommentOfItsOwn()
+    {
+        Rejects(
+            new TelemetryReport
+            {
+                SequenceNumber = 1,
+                Analog = [1],
+                Comment = "x",
+            },
+            "no comment of its own"
+        );
+    }
+
+    [Theory]
+    [InlineData(1.5)]
+    [InlineData(null)]
+    public void RefusesFractionalOrMissingValues(double? value)
+    {
+        Rejects(new TelemetryReport { SequenceNumber = 1, Analog = [value] }, "whole numbers 0 to 8280, none missing");
+    }
 }
