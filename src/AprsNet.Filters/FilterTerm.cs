@@ -222,10 +222,9 @@ internal abstract class FilterTerm
     {
         public override bool Matches(PacketFacts packet, AprsFilterContext? context)
         {
-            var path = packet.Packet.Path;
-            for (var i = 0; i < packet.DigipeaterCount; i++)
+            foreach (var hop in packet.Path.UsedHops)
             {
-                if (AnyGlob(patterns, path![i].Station.Value))
+                if (AnyGlob(patterns, hop.Station.Value))
                 {
                     return true;
                 }
