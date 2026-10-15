@@ -172,6 +172,31 @@ public class CorpusParsingTests
     }
 
     [Fact]
+    public void CommentTelemetryIsReadAndLeftOutOfTheComment()
+    {
+        var positions = CorpusFiles()
+            .SelectMany(row => Packets(row.Data))
+            .Select(p => AprsPacket.Parse(p.Bytes).Payload)
+            .OfType<PositionedPayload>()
+            .Where(p => p.Telemetry is not null)
+            .ToList();
+
+        Assert.True(positions.Count > 300, $"only {positions.Count} positions with comment telemetry");
+        Assert.Contains(positions, p => p is MicEReport);
+        Assert.Contains(positions, p => p.IsCompressed);
+        Assert.Contains(positions, p => p.Telemetry!.Digital.Count == 8);
+        Assert.All(
+            positions,
+            p =>
+            {
+                Assert.InRange(p.Telemetry!.Analog.Count, 1, 5);
+                Assert.All(p.Telemetry.Analog, v => Assert.InRange(v!.Value, 0, 8280));
+                Assert.True(p.Comment.Length < p.CommentBytes.Length, "the block stays in the comment");
+            }
+        );
+    }
+
+    [Fact]
     public void MostWeatherStationsReportWeather()
     {
         var stations = CorpusFiles()

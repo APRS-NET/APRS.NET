@@ -602,6 +602,12 @@ address.Create(new TelemetryDefinition
 - **Definitions.** `PARM.` and `UNIT.` take 1 to 13 labels without commas; `EQNS.` one to five equations, written in
   the shortest form that reads back exactly; `BITS.` eight `0`/`1` characters and an optional project name. The text
   must fit a 67-character message. A new definition is addressed to a callsign; a parsed one keeps its addressee.
+- **Comment telemetry.** Trackers also append base-91 telemetry to a position comment (APRS 1.2): `|SS11223344|`,
+  two characters each for the sequence and one to five values 0 to 8280, then the eight digital channels as one value
+  after all five. It decodes into `PositionedPayload.Telemetry`, a `TelemetryReport`, so the station's definitions
+  apply to it, and is left out of `Comment`. The last valid block wins, and it is read before the `!DAO!` search
+  because its bytes can look like a DAO token. Setting `Telemetry` on a position, object, item or Mic-E report writes
+  the block after the comment; a comment that would itself read as a block is refused.
 - **Round trips.** All 7,708 telemetry reports and definitions in the corpus rebuild byte for byte. A second corpus
   test rebuilds them from their values alone, leaving out what the encoder refuses in new payloads: decimal or
   negative values, and SvxLink's 69-character `UNIT.` definitions.

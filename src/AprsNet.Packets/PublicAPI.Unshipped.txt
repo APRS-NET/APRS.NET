@@ -588,3 +588,5 @@ AprsNet.Packets.TelemetryReport.Digital.init -> void
 AprsNet.Packets.TelemetryReport.Sequence.init -> void
 AprsNet.Packets.TelemetryReport.SequenceNumber.init -> void
 AprsNet.Packets.TelemetryReport.TelemetryReport() -> void
+AprsNet.Packets.PositionedPayload.Telemetry.get -> AprsNet.Packets.TelemetryReport?
+AprsNet.Packets.PositionedPayload.Telemetry.init -> void

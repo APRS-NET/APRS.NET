@@ -149,7 +149,9 @@ internal static class PositionDecoder
 
         var commentStart = at + 19 + used;
         var comment = information[commentStart..];
-        var (position, datum, text) = ApplyDao(new AprsPosition(latitude, longitude, ambiguity), comment.Span);
+        // Telemetry first: its base-91 bytes can look like a !DAO! token.
+        var withoutTelemetry = CommentTelemetry.Strip(comment.Span, out var telemetry);
+        var (position, datum, text) = ApplyDao(new AprsPosition(latitude, longitude, ambiguity), withoutTelemetry);
         if (
             area is not null
             && area.Kind == AreaShapeKind.Line
@@ -170,6 +172,7 @@ internal static class PositionDecoder
         target.DirectionFinding = df;
         target.Area = area;
         target.Datum = datum;
+        target.Telemetry = telemetry;
         target.CommentBytes = comment;
         target.Comment = text;
         target.ExtensionBytes = information.Slice(at + 19, used);
@@ -248,7 +251,8 @@ internal static class PositionDecoder
         target.AltitudeFeet = altitude ?? CommentAltitude(comment.Span);
         target.CompressionType = type;
         target.CommentBytes = comment;
-        target.Comment = Text(comment.Span);
+        target.Comment = Text(CommentTelemetry.Strip(comment.Span, out var telemetry));
+        target.Telemetry = telemetry;
         target.ExtensionBytes = information.Slice(at + 10, 3);
         return true;
     }

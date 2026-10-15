@@ -84,7 +84,7 @@ internal static class MicEDecoder
         var device = Device(type, ref status);
         var (position, datum, comment) = PositionDecoder.ApplyDao(
             new AprsPosition(fields.Latitude, longitude, fields.Ambiguity),
-            status.Span
+            CommentTelemetry.Strip(status.Span, out var telemetry)
         );
         var locator = StatusDecoder.TryLocator(status.Span, out _)?.Locator;
 
@@ -96,6 +96,7 @@ internal static class MicEDecoder
             SpeedKnots = speed,
             AltitudeFeet = altitudeFeet ?? PositionDecoder.CommentAltitude(status.Span),
             Datum = datum,
+            Telemetry = telemetry,
             ExtensionBytes = information[..7],
             CommentBytes = text,
             Comment = comment,
