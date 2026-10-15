@@ -35,12 +35,14 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
+    <Project Path="src/AprsNet.Ax25/AprsNet.Ax25.csproj" />
     <Project Path="src/AprsNet.Packets/AprsNet.Packets.csproj" />
     <Project Path="src/AprsNet.Symbols/AprsNet.Symbols.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/AprsNet.AprsIsCli.Tests/AprsNet.AprsIsCli.Tests.csproj" />
     <Project Path="tests/AprsNet.AprsIsTcpClient.Tests/AprsNet.AprsIsTcpClient.Tests.csproj" />
+    <Project Path="tests/AprsNet.Ax25.Tests/AprsNet.Ax25.Tests.csproj" />
     <Project Path="tests/AprsNet.Packets.CorpusTests/AprsNet.Packets.CorpusTests.csproj" />
     <Project Path="tests/AprsNet.Packets.SpecTests/AprsNet.Packets.SpecTests.csproj" />
     <Project Path="tests/AprsNet.Packets.Tests/AprsNet.Packets.Tests.csproj" />

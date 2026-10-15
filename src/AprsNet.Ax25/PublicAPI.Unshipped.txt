@@ -1,0 +1,36 @@
+#nullable enable
+AprsNet.Ax25.Ax25Address
+AprsNet.Ax25.Ax25Address.Ax25Address(string! callsign, int ssid, bool flag) -> void
+AprsNet.Ax25.Ax25Address.Ax25Address() -> void
+AprsNet.Ax25.Ax25Address.Callsign.get -> string!
+AprsNet.Ax25.Ax25Address.Equals(AprsNet.Ax25.Ax25Address other) -> bool
+AprsNet.Ax25.Ax25Address.Flag.get -> bool
+AprsNet.Ax25.Ax25Address.Ssid.get -> int
+AprsNet.Ax25.Ax25Frame
+AprsNet.Ax25.Ax25Frame.Control.get -> byte
+AprsNet.Ax25.Ax25Frame.Destination.get -> AprsNet.Ax25.Ax25Address
+AprsNet.Ax25.Ax25Frame.Digipeaters.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Ax25.Ax25Address>!
+AprsNet.Ax25.Ax25FrameError
+AprsNet.Ax25.Ax25FrameError.AddressNotTerminated = 2 -> AprsNet.Ax25.Ax25FrameError
+AprsNet.Ax25.Ax25FrameError.InvalidAddress = 1 -> AprsNet.Ax25.Ax25FrameError
+AprsNet.Ax25.Ax25FrameError.TooShort = 0 -> AprsNet.Ax25.Ax25FrameError
+AprsNet.Ax25.Ax25Frame.GetBytes() -> byte[]!
+AprsNet.Ax25.Ax25Frame.Information.get -> System.ReadOnlyMemory<byte>
+AprsNet.Ax25.Ax25Frame.IsAprs.get -> bool
+AprsNet.Ax25.Ax25Frame.Protocol.get -> byte?
+AprsNet.Ax25.Ax25Frame.Raw.get -> System.ReadOnlyMemory<byte>
+AprsNet.Ax25.Ax25Frame.Source.get -> AprsNet.Ax25.Ax25Address
+AprsNet.Ax25.Ax25Frame.ToAprsPacket() -> AprsNet.Packets.AprsPacket!
+AprsNet.Ax25.Ax25Frame.ToTnc2() -> string!
+const AprsNet.Ax25.Ax25Frame.MaxDigipeaters = 8 -> int
+const AprsNet.Ax25.Ax25Frame.NoLayer3Protocol = 240 -> byte
+const AprsNet.Ax25.Ax25Frame.UiControl = 3 -> byte
+~override AprsNet.Ax25.Ax25Address.Equals(object obj) -> bool
+override AprsNet.Ax25.Ax25Address.GetHashCode() -> int
+override AprsNet.Ax25.Ax25Address.ToString() -> string!
+override AprsNet.Ax25.Ax25Frame.ToString() -> string!
+static AprsNet.Ax25.Ax25Address.operator !=(AprsNet.Ax25.Ax25Address left, AprsNet.Ax25.Ax25Address right) -> bool
+static AprsNet.Ax25.Ax25Address.operator ==(AprsNet.Ax25.Ax25Address left, AprsNet.Ax25.Ax25Address right) -> bool
+static AprsNet.Ax25.Ax25Address.TryParse(string? text, out AprsNet.Ax25.Ax25Address address) -> bool
+static AprsNet.Ax25.Ax25Frame.FromAprsPacket(AprsNet.Packets.AprsPacket! packet) -> AprsNet.Ax25.Ax25Frame!
+static AprsNet.Ax25.Ax25Frame.TryDecode(System.ReadOnlySpan<byte> frame, out AprsNet.Ax25.Ax25Frame? result, out AprsNet.Ax25.Ax25FrameError error) -> bool
