@@ -32,6 +32,24 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Server: {Line}")]
     public static partial void ServerLine(this ILogger logger, string line);
 
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Connection to {Endpoint} ended ({Cause}); reconnecting in {Seconds:0.#}s"
+    )]
+    public static partial void Reconnecting(
+        this ILogger logger,
+        AprsIsEndpoint endpoint,
+        string cause,
+        double seconds,
+        Exception? exception
+    );
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reconnected to {Endpoint} after {Attempts} attempts")]
+    public static partial void Reconnected(this ILogger logger, AprsIsEndpoint endpoint, int attempts);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "A StateChanged handler threw")]
+    public static partial void StateHandlerFailed(this ILogger logger, Exception exception);
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "Sent: {Line}")]
     public static partial void PacketSent(this ILogger logger, string line);
 

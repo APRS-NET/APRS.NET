@@ -22,6 +22,7 @@ public sealed class AprsIsClient : IAsyncDisposable
     private readonly SemaphoreSlim _writeLock = new(1, 1);
     private readonly CancellationTokenSource _shutdown = new();
     private readonly SendRateLimiter _sendLimiter;
+    private readonly bool _ownsSendLimiter;
     private volatile bool _connectionEnded;
     private long _packetsSent;
     private Task? _receiveLoop;
@@ -32,12 +33,26 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     /// <summary>Creates a client. Pass <paramref name="transport"/> to replace TCP, for example in tests.</summary>
     public AprsIsClient(AprsIsClientOptions options, ILogger? logger = null, IAprsTransport? transport = null)
+        : this(options, logger, transport, sendLimiter: null) { }
+
+    /// <summary>
+    /// Creates a client that shares <paramref name="sendLimiter"/> with others, so an <see cref="AprsIsConnection"/>
+    /// keeps one rate limit across reconnects. The client does not dispose a shared limiter.
+    /// </summary>
+    internal AprsIsClient(
+        AprsIsClientOptions options,
+        ILogger? logger,
+        IAprsTransport? transport,
+        SendRateLimiter? sendLimiter
+    )
     {
         ArgumentNullException.ThrowIfNull(options);
         options.Validate();
 
         _options = options;
-        _sendLimiter = new SendRateLimiter(options.SendBurst, options.SendInterval, options.TimeProvider);
+        _ownsSendLimiter = sendLimiter is null;
+        _sendLimiter =
+            sendLimiter ?? new SendRateLimiter(options.SendBurst, options.SendInterval, options.TimeProvider);
         _logger = logger ?? NullLogger.Instance;
         _transport =
             transport ?? new TcpAprsTransport(options.Endpoint, options.ConnectTimeout, options.MaxLineLength, _logger);
@@ -69,6 +84,9 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     /// <summary>Server comment lines (<c>#</c>) read so far.</summary>
     public long ServerCommentsReceived => Interlocked.Read(ref _serverCommentsReceived);
+
+    /// <summary>Whether the receive loop has ended: the server closed, the link failed or went silent.</summary>
+    internal bool IsConnectionEnded => _connectionEnded;
 
     /// <summary>Packets written by <see cref="SendAsync"/> so far.</summary>
     public long PacketsSent => Interlocked.Read(ref _packetsSent);
@@ -247,7 +265,10 @@ public sealed class AprsIsClient : IAsyncDisposable
         _channel.Writer.TryComplete();
         await _transport.DisposeAsync().ConfigureAwait(false);
         _writeLock.Dispose();
-        _sendLimiter.Dispose();
+        if (_ownsSendLimiter)
+        {
+            _sendLimiter.Dispose();
+        }
         _shutdown.Dispose();
     }
 

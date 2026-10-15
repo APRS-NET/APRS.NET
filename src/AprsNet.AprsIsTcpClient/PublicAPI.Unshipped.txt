@@ -143,3 +143,31 @@ override AprsNet.AprsIsTcpClient.MessageDelivery.GetHashCode() -> int
 override AprsNet.AprsIsTcpClient.MessageDelivery.ToString() -> string!
 static AprsNet.AprsIsTcpClient.MessageDelivery.operator !=(AprsNet.AprsIsTcpClient.MessageDelivery? left, AprsNet.AprsIsTcpClient.MessageDelivery? right) -> bool
 static AprsNet.AprsIsTcpClient.MessageDelivery.operator ==(AprsNet.AprsIsTcpClient.MessageDelivery? left, AprsNet.AprsIsTcpClient.MessageDelivery? right) -> bool
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxPacketSilence.get -> System.TimeSpan?
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxPacketSilence.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxReconnectDelay.get -> System.TimeSpan
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxReconnectDelay.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ReconnectDelay.get -> System.TimeSpan
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ReconnectDelay.set -> void
+AprsNet.AprsIsTcpClient.AprsIsConnection
+AprsNet.AprsIsTcpClient.AprsIsConnection.AprsIsConnection(AprsNet.AprsIsTcpClient.AprsIsClientOptions! options, Microsoft.Extensions.Logging.ILogger? logger = null, System.Func<AprsNet.AprsIsTcpClient.IAprsTransport!>? transportFactory = null) -> void
+AprsNet.AprsIsTcpClient.AprsIsConnection.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.AprsIsConnection.Login.get -> AprsNet.AprsIsTcpClient.LoginResult?
+AprsNet.AprsIsTcpClient.AprsIsConnection.ReadLinesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<string!>!
+AprsNet.AprsIsTcpClient.AprsIsConnection.Reconnects.get -> int
+AprsNet.AprsIsTcpClient.AprsIsConnection.SendAsync(AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.AprsIsConnection.SetFilterAsync(string! filter, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.AprsIsConnection.StartAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<AprsNet.AprsIsTcpClient.LoginResult!>!
+AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnectionStateChangedEventArgs
+AprsNet.AprsIsTcpClient.AprsIsConnectionStateChangedEventArgs.Error.get -> System.Exception?
+AprsNet.AprsIsTcpClient.AprsIsConnectionStateChangedEventArgs.Login.get -> AprsNet.AprsIsTcpClient.LoginResult?
+AprsNet.AprsIsTcpClient.AprsIsConnectionStateChangedEventArgs.RetryIn.get -> System.TimeSpan?
+AprsNet.AprsIsTcpClient.AprsIsConnectionStateChangedEventArgs.State.get -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnection.StateChanged -> System.EventHandler<AprsNet.AprsIsTcpClient.AprsIsConnectionStateChangedEventArgs!>?
+AprsNet.AprsIsTcpClient.AprsIsConnectionState.Closed = 4 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnectionState.Connected = 2 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnectionState.Connecting = 1 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnection.State.get -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnectionState.NotStarted = 0 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
+AprsNet.AprsIsTcpClient.AprsIsConnectionState.Reconnecting = 3 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState

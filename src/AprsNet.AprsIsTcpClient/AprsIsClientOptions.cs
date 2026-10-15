@@ -64,6 +64,26 @@ public sealed class AprsIsClientOptions
     /// </summary>
     public TimeSpan SendInterval { get; set; } = TimeSpan.FromSeconds(6);
 
+    /// <summary>
+    /// <see cref="AprsIsConnection"/>: how long to wait before the first reconnect. Each failed attempt doubles it, up
+    /// to <see cref="MaxReconnectDelay"/>, and every wait varies by up to 20% so many clients do not retry in step.
+    /// Defaults to 5 seconds.
+    /// </summary>
+    public TimeSpan ReconnectDelay { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <summary>
+    /// <see cref="AprsIsConnection"/>: the longest wait between reconnect attempts. A connection that stayed up at
+    /// least this long starts again from <see cref="ReconnectDelay"/>. Defaults to 60 seconds.
+    /// </summary>
+    public TimeSpan MaxReconnectDelay { get; set; } = TimeSpan.FromSeconds(60);
+
+    /// <summary>
+    /// <see cref="AprsIsConnection"/>: reconnect when no packet has arrived for this long, even if the server still
+    /// sends <c>#</c> keepalives (its feed may have stalled). <see langword="null"/>, the default, turns it off: a
+    /// narrow filter can be quiet for hours.
+    /// </summary>
+    public TimeSpan? MaxPacketSilence { get; set; }
+
     /// <summary>What to do when the receive queue is full.</summary>
     public OverflowPolicy OverflowPolicy { get; set; } = OverflowPolicy.Block;
 
@@ -120,6 +140,20 @@ public sealed class AprsIsClientOptions
         ArgumentOutOfRangeException.ThrowIfLessThan(ChannelCapacity, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(SendBurst, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(SendInterval, TimeSpan.Zero);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ReconnectDelay, TimeSpan.Zero);
+        ArgumentOutOfRangeException.ThrowIfLessThan(MaxReconnectDelay, ReconnectDelay);
+        if (MaxPacketSilence is { } silence)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(silence, TimeSpan.Zero, nameof(MaxPacketSilence));
+        }
+    }
+
+    /// <summary>A copy with another filter, for each connection of an <see cref="AprsIsConnection"/>.</summary>
+    internal AprsIsClientOptions WithFilter(string? filter)
+    {
+        var copy = (AprsIsClientOptions)MemberwiseClone();
+        copy.Filter = filter;
+        return copy;
     }
 
     private const string CallsignMessage = "Callsign must be 1 to 9 letters, digits or '-'.";
