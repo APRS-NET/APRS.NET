@@ -20,6 +20,10 @@ internal static class PacketStream
             // Lines are read as Latin-1, one character per byte, which is what Parse(string) expects.
             var packet = AprsPacket.Parse(line);
             ClientMetrics.PacketParsed(packet.Type, packet.Outcome);
+            if (packet.Outcome == ParseOutcome.Malformed)
+            {
+                ClientMetrics.ParseFailure(packet.Issues.First(i => i.Severity == ParseIssueSeverity.Error).Code);
+            }
             if (
                 packet.Payload is MessagePayload message
                 && message.Addressee.Equals(callsign, StringComparison.OrdinalIgnoreCase)

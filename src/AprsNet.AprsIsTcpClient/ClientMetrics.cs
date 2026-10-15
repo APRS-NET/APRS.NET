@@ -67,6 +67,36 @@ internal static class ClientMetrics
         "Bytes written to the server, including the login, filter commands and line endings."
     );
 
+    private static readonly Counter<long> _parseFailures = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.packets.parse_failures",
+        "{packet}",
+        "Packets read with ReadPacketsAsync that could not be decoded, by the kind of fault."
+    );
+
+    /// <summary>
+    /// A malformed packet, with a reason from its first error: <c>empty</c>, <c>bad_header</c>, <c>bad_path</c>,
+    /// <c>truncated</c> or <c>bad_body</c>.
+    /// </summary>
+    public static void ParseFailure(Packets.ParseIssueCode firstError)
+    {
+        _parseFailures.Add(
+            1,
+            new KeyValuePair<string, object?>(
+                "reason",
+                firstError switch
+                {
+                    Packets.ParseIssueCode.EmptyInformation => "empty",
+                    Packets.ParseIssueCode.MissingHeader
+                    or Packets.ParseIssueCode.EmptySource
+                    or Packets.ParseIssueCode.EmptyDestination => "bad_header",
+                    Packets.ParseIssueCode.EmptyPathEntry or Packets.ParseIssueCode.TooManyPathEntries => "bad_path",
+                    Packets.ParseIssueCode.PositionTooShort => "truncated",
+                    _ => "bad_body",
+                }
+            )
+        );
+    }
+
     /// <summary>A message, ack or rej addressed to the login callsign; <paramref name="kind"/> is message, ack or rej.</summary>
     public static void AddressedToUser(string kind)
     {
