@@ -605,6 +605,10 @@ All input is hostile. `Parse` rejects nothing for being long, but:
 
 - [x] Should `Callsign` also be usable on its own for building packets? **Decided: yes,** `Callsign.Parse` and
   `TryParse` (see Building packets).
-- [ ] Is 512 the right decoding cap? APRS-IS servers accept 512-byte lines; AX.25 allows a 256-byte information field.
+- [x] Is 512 the right decoding cap? APRS-IS servers accept 512-byte lines; AX.25 allows a 256-byte information field.
+  **Decided: 512,** from real traffic. In a 10-minute full-feed capture (54,468 packets) and the corpus (57,456), no
+  information field is longer than 468 bytes, but 170 and 314 packets (about 0.3–0.5%) are longer than 256. Those are
+  APRS-IS-only traffic, such as FMO network certificates in comments. A 256-byte cap would cut them off; 512 loses
+  nothing.
 - [ ] Should `PacketType` follow APRS101 chapter names (useful in docs) or the C# payload type names (useful in code)?
   The metrics plan asks the same question for the `type` tag.
