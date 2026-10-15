@@ -23,9 +23,11 @@ internal static class AprsEncoder
             ObjectReport report => PositionEncoder.Encode(report),
             ItemReport item => PositionEncoder.Encode(item),
             WeatherReport weather => WeatherEncoder.Encode(weather),
+            TelemetryReport telemetry => TelemetryEncoder.Encode(telemetry),
+            TelemetryDefinition definition => TelemetryEncoder.Encode(definition),
             _ => throw new NotSupportedException(
                 $"Encoding {payload.GetType().Name} is not supported yet; status reports, messages, position "
-                    + "reports, Mic-E reports, objects, items and weather reports are."
+                    + "reports, Mic-E reports, objects, items, weather and telemetry are."
             ),
         };
 
@@ -49,6 +51,8 @@ internal static class AprsEncoder
             : e.IsLive != a.IsLive ? "the live or killed flag does not survive encoding"
             : PositionMismatch(e, a),
             (WeatherReport e, WeatherReport a) => WeatherMismatch(e, a),
+            (TelemetryReport e, TelemetryReport a) => TelemetryEncoder.Mismatch(e, a),
+            (TelemetryDefinition e, TelemetryDefinition a) => TelemetryEncoder.Mismatch(e, a),
             _ => $"it decodes as {actual?.GetType().Name ?? "nothing"}, not {expected.GetType().Name}",
         };
 

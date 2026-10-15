@@ -50,7 +50,7 @@ if (packet.Payload is PositionedPayload report) // a position report, object, it
 ```
 
 `AprsPacket.Create` builds packets from payloads, the reverse of `Parse`. Status reports, messages, position reports,
-Mic-E reports (whose latitude replaces the destination), objects, items and weather reports are supported so far:
+Mic-E reports (whose latitude replaces the destination), objects, items, weather and telemetry are supported so far:
 
 ```csharp
 var packet = AprsPacket.Create(

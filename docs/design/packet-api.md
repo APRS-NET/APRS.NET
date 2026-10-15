@@ -569,9 +569,46 @@ address.Create(new WeatherReport
 - **Round trips.** All 5,527 weather packets in the corpus (with and without a position) rebuild byte for byte: parsed
   readings keep their spelling and order. Second corpus tests rebuild them from their values alone, in canonical order.
 
+### Telemetry
+
+A station sends raw channel values in `T#` reports, and tells receivers how to read them with four definitions, each a
+message addressed to the station's own callsign.
+
+```csharp
+var address = PacketAddress.Parse("N0QBF-11", "APZ123", []);
+address.Create(new TelemetryReport
+{
+    SequenceNumber = 5,
+    Analog = [199, 0, 255, 73, 123],
+    Digital = [false, true, true, false, true, false, false, true],
+}); // T#005,199,000,255,073,123,01101001
+
+address.Create(new TelemetryDefinition
+{
+    Addressee = "N0QBF-11",
+    Kind = TelemetryDefinitionKind.Equations,
+    Equations = [new(0, 5.2, 0), new(0, 0.53, -32), new(3, 4.39, 49), new(-32, 3, 18), new(1, 2, 3)],
+}); // :N0QBF-11 :EQNS.0,5.2,0,0,0.53,-32,3,4.39,49,-32,3,18,1,2,3
+```
+
+- **Raw values, scaled by EQNS.** New reports carry whole numbers 0 to 999 (APRS 1.2 widened APRS101's 0 to 255), as
+  three digits. A reading such as 13.8 V is sent as a raw value with an equation that scales it; decimals and
+  negatives are refused. Parsed reports keep whatever their station sent.
+- **Shape.** One to five analog values; a missing one is an empty field. The eight digital channels need all five
+  analog values in front of them, and a comment needs the digital channels, because a receiver reads anything after
+  a short list of values as another value.
+- **Sequence.** `SequenceNumber` 0 to 999, written as three digits; wrap it with `% 1000`. `Sequence = "MIC"` writes
+  the Mic-E form.
+- **Definitions.** `PARM.` and `UNIT.` take 1 to 13 labels without commas; `EQNS.` one to five equations, written in
+  the shortest form that reads back exactly; `BITS.` eight `0`/`1` characters and an optional project name. The text
+  must fit a 67-character message. A new definition is addressed to a callsign; a parsed one keeps its addressee.
+- **Round trips.** All 7,708 telemetry reports and definitions in the corpus rebuild byte for byte. A second corpus
+  test rebuilds them from their values alone, leaving out what the encoder refuses in new payloads: decimal or
+  negative values, and SvxLink's 69-character `UNIT.` definitions.
+
 Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects, items and
-weather. Other payload types (telemetry, raw weather station data, capabilities, queries, user-defined data) throw
+bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects, items, weather
+and telemetry. Other payload types (raw weather station data, capabilities, user-defined data) throw
 `NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)
