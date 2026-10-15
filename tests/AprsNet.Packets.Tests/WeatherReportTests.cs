@@ -30,7 +30,7 @@ public class WeatherReportTests
     {
         var report = Positionless("_10090556c220s004g005t077r001p002P003h50b09900wRSW");
 
-        Assert.Equal(AprsTimestampFormat.MonthDayHourMinute, report.Timestamp.Format);
+        Assert.Equal(AprsTimestampFormat.MonthDayHourMinute, report.Timestamp!.Value.Format);
         Assert.Equal("10090556", report.Timestamp.ToString());
         var w = report.Weather;
         Assert.Equal(220, w.WindDirection);
@@ -66,15 +66,25 @@ public class WeatherReportTests
     }
 
     [Theory]
-    [InlineData("_1009055")]
     [InlineData("_13090556c220")]
     [InlineData("_10320556c220")]
     [InlineData("_10092456c220")]
     [InlineData("_10090560c220")]
     [InlineData("_1009x556c220")]
-    public void APositionlessReportNeedsAValidTimestamp(string information)
+    public void AnInvalidTimestampBeforeReadingsIsAWarning(string information)
     {
         var packet = Parse(information);
+
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
+        Assert.Null(((WeatherReport)packet.Payload!).Timestamp);
+        Assert.Equal(220, ((WeatherReport)packet.Payload!).Weather.WindDirection);
+        Assert.Equal([new ParseIssue(ParseIssueCode.InvalidTimestamp, ParseIssueSeverity.Warning, 13)], packet.Issues);
+    }
+
+    [Fact]
+    public void APositionlessReportTooShortForATimestampIsMalformed()
+    {
+        var packet = Parse("_1009055");
 
         Assert.Equal(ParseOutcome.Malformed, packet.Outcome);
         Assert.Equal([new ParseIssue(ParseIssueCode.InvalidTimestamp, ParseIssueSeverity.Error, 13)], packet.Issues);
@@ -126,15 +136,15 @@ public class WeatherReportTests
 
         Assert.Equal(
             new DateTimeOffset(2025, 12, 31, 23, 55, 0, TimeSpan.Zero),
-            Positionless("_12312355t077").Timestamp.ToDateTimeOffset(received)
+            Positionless("_12312355t077").Timestamp!.Value.ToDateTimeOffset(received)
         );
         Assert.Equal(
             new DateTimeOffset(2026, 1, 1, 0, 20, 0, TimeSpan.Zero),
-            Positionless("_01010020t077").Timestamp.ToDateTimeOffset(received)
+            Positionless("_01010020t077").Timestamp!.Value.ToDateTimeOffset(received)
         );
         // 29 February is in neither 2026 nor 2025.
-        Assert.Null(Positionless("_02291200t077").Timestamp.ToDateTimeOffset(received));
-        Assert.Equal(2, Positionless("_02291200t077").Timestamp.Month);
+        Assert.Null(Positionless("_02291200t077").Timestamp!.Value.ToDateTimeOffset(received));
+        Assert.Equal(2, Positionless("_02291200t077").Timestamp!.Value.Month);
     }
 
     [Fact]
@@ -284,5 +294,38 @@ public class WeatherReportTests
         var packet = Parse(";BRENDA   *092345z4903.50N/07201.75W_220/004g005t077");
 
         Assert.Equal(77, Assert.IsType<ObjectReport>(packet.Payload).Weather!.TemperatureF);
+    }
+
+    [Theory]
+    [InlineData("_00000000c...s...g...t087r...p...P...h40b09130")] // ESP32 stations without a clock
+    [InlineData("_99999999t050")]
+    public void AnUnreadableTimestampLosesOnlyTheTime(string information)
+    {
+        var packet = AprsPacket.Parse("N0CALL-13>APRS:" + information);
+
+        Assert.Equal(ParseOutcome.Parsed, packet.Outcome);
+        var report = (WeatherReport)packet.Payload!;
+        Assert.Null(report.Timestamp);
+        Assert.NotNull(report.Weather.TemperatureF);
+        Assert.Equal([new ParseIssue(ParseIssueCode.InvalidTimestamp, ParseIssueSeverity.Warning, 16)], packet.Issues);
+    }
+
+    [Fact]
+    public void AnUnreadableTimestampWithoutReadingsIsMalformed()
+    {
+        var packet = AprsPacket.Parse("N0CALL-13>APRS:_00000000hello");
+
+        Assert.Equal(ParseOutcome.Malformed, packet.Outcome);
+        Assert.Contains(new ParseIssue(ParseIssueCode.InvalidTimestamp, ParseIssueSeverity.Error, 16), packet.Issues);
+    }
+
+    [Fact]
+    public void AReportWithAnUnreadableTimestampRebuildsByteForByte()
+    {
+        var parsed = AprsPacket.Parse("N0CALL-13>APRS:_00000000c...s...g...t087h40b09130");
+
+        var rebuilt = AprsPacket.Create(parsed.Source!, parsed.Destination!, parsed.Path!, parsed.Payload!);
+
+        Assert.Equal(parsed.Information.ToArray(), rebuilt.Information.ToArray());
     }
 }

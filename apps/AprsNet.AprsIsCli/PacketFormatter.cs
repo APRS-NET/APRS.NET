@@ -67,7 +67,7 @@ internal static class PacketFormatter
                 Telemetry(line, telemetry);
                 break;
             case WeatherReport weather:
-                line.Append("weather at ").Append(weather.Timestamp);
+                line.Append("weather at ").Append(weather.Timestamp?.ToString() ?? "an unknown time");
                 Weather(line, weather.Weather);
                 if (weather.Comment.Trim().Length > 0)
                 {
@@ -597,6 +597,12 @@ internal static class PacketFormatter
             line.Append("  messaging");
         }
 
+        if (report.Telemetry is { } telemetry)
+        {
+            line.Append("  ");
+            Telemetry(line, telemetry);
+        }
+
         if (report.Comment.Length > 0)
         {
             line.Append("  \"").Append(report.Comment.Trim()).Append('"');
@@ -735,6 +741,12 @@ internal static class PacketFormatter
             json.WriteStartObject("weather");
             WeatherReadings(json, weather);
             json.WriteEndObject();
+        }
+
+        if (report.Telemetry is { } telemetry)
+        {
+            json.WritePropertyName("telemetry");
+            Telemetry(json, telemetry);
         }
 
         json.WriteString("comment", report.Comment);
@@ -878,6 +890,9 @@ internal static class PacketFormatter
             RawWeatherFormat.UltimeterPacket => "Ultimeter 2000 (packet mode)",
             _ => "Peet Bros U-II",
         };
+
+    /// <summary>The packet type as the JSON format names it: <c>position</c>, <c>micE</c>, <c>thirdParty</c>.</summary>
+    internal static string TypeName(PacketType type) => Name(type);
 
     private static string Name<T>(T value)
         where T : struct, Enum => JsonNamingPolicy.CamelCase.ConvertName(value.ToString());

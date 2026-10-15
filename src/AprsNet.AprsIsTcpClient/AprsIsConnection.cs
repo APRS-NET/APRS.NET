@@ -83,7 +83,7 @@ public sealed class AprsIsConnection : IAsyncDisposable
     private readonly Channel<string> _lines;
     private readonly SendRateLimiter _sendLimiter;
     private readonly CancellationTokenSource _shutdown = new();
-    private readonly object _stateLock = new();
+    private readonly Lock _stateLock = new();
     private TaskCompletionSource<AprsIsClient> _connected = NewConnectedSignal();
     private AprsIsClient? _client;
     private string? _filter;

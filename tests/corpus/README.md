@@ -179,4 +179,9 @@ dotnet run tools/corpus/Anonymize.cs -- --map mappings/aprs-corpus-map.json --ou
 
 The mapping file is the key to undo the anonymization, so it must **never be committed**. Keep it in `mappings/`, which is listed in `.git/info/exclude` (a local, per-clone ignore; add the same line in any new clone). Reusing it keeps
 pseudonyms stable across captures. Its `Literals` section holds extra same-length replacements (such as personal
-names spotted in comments); review the free text of every new capture for those before committing.
+names spotted in comments); review the free text of every new capture for those before committing. This prints
+each distinct stretch of text with the station that sent it:
+
+```sh
+dotnet run tools/corpus/FreeText.cs -- tests/corpus/aprs-is/<name>.log
+```

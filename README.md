@@ -8,7 +8,9 @@
 An async-first, dependency-light .NET library family for APRS: parse and build packets, connect to APRS-IS, and later
 bridge radios and clients through KISS, TCP and WebSocket services.
 
-Status: early scaffolding (M0).
+Status: alpha. Parsing and building every common APRS packet type, the APRS-IS client with verified sending,
+messaging and automatic reconnects, and the `aprscli` tool all work; the 0.1 prerelease (docs, benchmarks, tool
+publishing) is next, then KISS and AX.25 for radios.
 
 > [!WARNING]
 > **Alpha software.** Every APRS.NET package is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. APIs,
@@ -25,8 +27,11 @@ dotnet add package AprsNet.AprsIsTcpClient --prerelease
 dotnet add package AprsNet.Symbols --prerelease
 ```
 
-The `aprscli` command-line tool is not published as a package yet; run it from source with
-`dotnet run --project apps/AprsNet.AprsIsCli -- listen --help`.
+The `aprscli` command-line tool is a .NET tool:
+
+```sh
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+```
 
 Each [GitHub release](https://github.com/APRS-NET/APRS.NET/releases) also carries the same packages, and is marked as a
 pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are chosen.
@@ -42,6 +47,8 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `tests/`                      | Unit tests and the packet corpus                                          |
 
 ## Build
+
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ```sh
 dotnet tool restore
@@ -75,8 +82,8 @@ change through.
 
 ## Package checks
 
-The `packages` workflow (`.github/workflows/packages.yml`) runs on every push to `main`, on pull requests and every
-Monday. It lists vulnerable NuGet packages (direct and transitive) and available updates for direct packages, posts
+The `packages` workflow (`.github/workflows/packages.yml`) runs when a change can affect dependencies (a project
+file, `Directory.Packages.props`, `Directory.Build.props`, `global.json` or the tool manifest) and every Monday. It lists vulnerable NuGet packages (direct and transitive) and available updates for direct packages, posts
 the report to the run summary, keeps a single report comment up to date on pull requests from this repository, and
 fails if any package has a known vulnerability. To run the same check locally:
 

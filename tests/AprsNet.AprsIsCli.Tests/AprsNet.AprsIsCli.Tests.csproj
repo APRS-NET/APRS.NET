@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- the CLI targets net10.0 only -->
-    <TargetFrameworks />
-    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <!-- xUnit v3 test projects are executables. xunit.v3.mtp-off keeps the VSTest runner for dotnet test. -->

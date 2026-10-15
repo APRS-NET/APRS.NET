@@ -569,10 +569,60 @@ address.Create(new WeatherReport
 - **Round trips.** All 5,527 weather packets in the corpus (with and without a position) rebuild byte for byte: parsed
   readings keep their spelling and order. Second corpus tests rebuild them from their values alone, in canonical order.
 
-Supported so far: status reports, messages (text, acknowledgements, rejections, bulletins, announcements, NWS
-bulletins and directed queries), position reports (uncompressed and compressed), Mic-E reports, objects, items and
-weather. Other payload types (telemetry, raw weather station data, capabilities, queries, user-defined data) throw
-`NotSupportedException`.
+### Telemetry
+
+A station sends raw channel values in `T#` reports, and tells receivers how to read them with four definitions, each a
+message addressed to the station's own callsign.
+
+```csharp
+var address = PacketAddress.Parse("N0QBF-11", "APZ123", []);
+address.Create(new TelemetryReport
+{
+    SequenceNumber = 5,
+    Analog = [199, 0, 255, 73, 123],
+    Digital = [false, true, true, false, true, false, false, true],
+}); // T#005,199,000,255,073,123,01101001
+
+address.Create(new TelemetryDefinition
+{
+    Addressee = "N0QBF-11",
+    Kind = TelemetryDefinitionKind.Equations,
+    Equations = [new(0, 5.2, 0), new(0, 0.53, -32), new(3, 4.39, 49), new(-32, 3, 18), new(1, 2, 3)],
+}); // :N0QBF-11 :EQNS.0,5.2,0,0,0.53,-32,3,4.39,49,-32,3,18,1,2,3
+```
+
+- **Raw values, scaled by EQNS.** New reports carry whole numbers 0 to 999 (APRS 1.2 widened APRS101's 0 to 255), as
+  three digits. A reading such as 13.8 V is sent as a raw value with an equation that scales it; decimals and
+  negatives are refused. Parsed reports keep whatever their station sent.
+- **Shape.** One to five analog values; a missing one is an empty field. The eight digital channels need all five
+  analog values in front of them, and a comment needs the digital channels, because a receiver reads anything after
+  a short list of values as another value.
+- **Sequence.** `SequenceNumber` 0 to 999, written as three digits; wrap it with `% 1000`. `Sequence = "MIC"` writes
+  the Mic-E form.
+- **Definitions.** `PARM.` and `UNIT.` take 1 to 13 labels without commas; `EQNS.` one to five equations, written in
+  the shortest form that reads back exactly; `BITS.` eight `0`/`1` characters and an optional project name. The text
+  must fit a 67-character message. A new definition is addressed to a callsign; a parsed one keeps its addressee.
+- **Comment telemetry.** Trackers also append base-91 telemetry to a position comment (APRS 1.2): `|SS11223344|`,
+  two characters each for the sequence and one to five values 0 to 8280, then the eight digital channels as one value
+  after all five. It decodes into `PositionedPayload.Telemetry`, a `TelemetryReport`, so the station's definitions
+  apply to it, and is left out of `Comment`. The last valid block wins, and it is read before the `!DAO!` search
+  because its bytes can look like a DAO token. Setting `Telemetry` on a position, object, item or Mic-E report writes
+  the block after the comment; a comment that would itself read as a block is refused.
+- **Round trips.** All 7,708 telemetry reports and definitions in the corpus rebuild byte for byte. A second corpus
+  test rebuilds them from their values alone, leaving out what the encoder refuses in new payloads: decimal or
+  negative values, and SvxLink's 69-character `UNIT.` definitions.
+
+### Capabilities and user-defined data
+
+`CapabilitiesReport.ForIGate(messageCount, localStationCount)` builds the `<IGATE,MSG_CNT=n,LOC_CNT=n` an IGate
+announces; any other list of tokens can be set on `Capabilities`. Tokens and values cannot contain commas (tokens no
+`=`, neither surrounding spaces), since the receiver splits and trims on them. `UserDefinedPayload` writes `{`, a
+printable user ID (`{` for experimental), a printable packet type and the data. Capabilities text now decodes like
+every other text field, as UTF-8 when valid and Latin-1 otherwise, so a WinAPRS `DX=…(12.5mi 241°)` reads the same
+after a round trip. All 1,433 of both in the corpus rebuild byte for byte and from their values alone.
+
+Supported: every payload the parser decodes, apart from raw weather station data (`!!`, `$ULTW`, `#`, `*`), which
+APRS 1.1 discourages and whose layouts belong to the manufacturers; it throws `NotSupportedException`.
 
 ## AX.25 and KISS (phase 2)
 
@@ -605,6 +655,10 @@ All input is hostile. `Parse` rejects nothing for being long, but:
 
 - [x] Should `Callsign` also be usable on its own for building packets? **Decided: yes,** `Callsign.Parse` and
   `TryParse` (see Building packets).
-- [ ] Is 512 the right decoding cap? APRS-IS servers accept 512-byte lines; AX.25 allows a 256-byte information field.
+- [x] Is 512 the right decoding cap? APRS-IS servers accept 512-byte lines; AX.25 allows a 256-byte information field.
+  **Decided: 512,** from real traffic. In a 10-minute full-feed capture (54,468 packets) and the corpus (57,456), no
+  information field is longer than 468 bytes, but 170 and 314 packets (about 0.3–0.5%) are longer than 256. Those are
+  APRS-IS-only traffic, such as FMO network certificates in comments. A 256-byte cap would cut them off; 512 loses
+  nothing.
 - [ ] Should `PacketType` follow APRS101 chapter names (useful in docs) or the C# payload type names (useful in code)?
   The metrics plan asks the same question for the `type` tag.

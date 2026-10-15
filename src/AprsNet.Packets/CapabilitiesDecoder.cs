@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace AprsNet.Packets;
 
 /// <summary>Decodes station capabilities (APRS101 ch. 15). A list of tokens cannot be malformed, so decoding never fails.</summary>
@@ -8,7 +6,7 @@ internal static class CapabilitiesDecoder
     public static CapabilitiesReport Decode(ReadOnlyMemory<byte> information)
     {
         var capabilities = new List<KeyValuePair<string, string?>>();
-        foreach (var entry in Encoding.Latin1.GetString(information.Span[1..]).Split(','))
+        foreach (var entry in AprsText.Decode(information.Span[1..]).Split(','))
         {
             var equals = entry.IndexOf('=', StringComparison.Ordinal);
             var token = (equals < 0 ? entry : entry[..equals]).Trim();
@@ -20,6 +18,6 @@ internal static class CapabilitiesDecoder
             capabilities.Add(new(token, equals < 0 ? null : entry[(equals + 1)..].Trim()));
         }
 
-        return new CapabilitiesReport { Capabilities = capabilities };
+        return new CapabilitiesReport { Capabilities = capabilities, TextBytes = information[1..] };
     }
 }
