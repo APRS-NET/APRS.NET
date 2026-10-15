@@ -124,9 +124,9 @@ it only for your own licensed callsign. An invalid callsign exits with code 3.
 
 ## send
 
-Send a status report, message, position or object to APRS-IS as your own callsign. Sending needs a verified login:
-set `APRS_PASSCODE` (or `--passcode`) to the passcode for the callsign. `--dry-run` prints the packet without
-connecting, so you can check it before it goes out:
+Send a status report, message, position, object or weather report to APRS-IS as your own callsign. Sending needs a
+verified login: set `APRS_PASSCODE` (or `--passcode`) to the passcode for the callsign. `--dry-run` prints the packet
+without connecting, so you can check it before it goes out:
 
 ```sh
 export APRS_PASSCODE=$(aprscli passcode KD9XYZ)
@@ -135,7 +135,14 @@ aprscli send status "Testing APRS.NET" -c KD9XYZ-9
 aprscli send position --lat 49.05833 --lon -72.02917 --symbol "/>" --comment "On the road" -c KD9XYZ-9
 aprscli send object LEADER --lat 49.05833 --lon -72.02917 -c KD9XYZ-9          # --kill removes it
 aprscli send message WU2Z "Hello there" -c KD9XYZ-9
+aprscli send weather --lat 49.05833 --lon -72.02917 --wind-dir 220 --wind-speed 4 --temp 77 --humidity 50 -c KD9XYZ-9
 ```
+
+`weather` takes the readings in APRS's units: `--wind-dir` (degrees), `--wind-speed` and `--gust` (mph), `--temp`
+(°F), `--rain-1h`, `--rain-24h`, `--rain-midnight` and `--snow` (inches), `--humidity` (%), `--pressure` (mb) and
+`--luminosity` (W/m²). With `--lat` and `--lon` it sends a complete report on the weather station symbol (`/_`);
+without them a positionless report timestamped now, which cannot carry snowfall. Wind, gust and temperature left out
+are sent as unknown (dots); other readings are left out.
 
 `message` waits for the recipient's acknowledgement, resending after 30 s, 1, 2, 4 and 8 minutes. It then keeps
 listening for `--wait-replies` (default 2m; `0` stops at once), acknowledging and printing each reply

@@ -218,4 +218,70 @@ public class SendTests
         Assert.Contains("APRS_PASSCODE", result.Error, StringComparison.Ordinal);
         Assert.Equal(0, harness.ConnectionAttempts);
     }
+
+    [Fact]
+    public async Task WeatherWithAPositionIsACompleteReport()
+    {
+        var harness = Verified();
+
+        var result = await harness.RunAsync(
+            [
+                "send",
+                "weather",
+                "--lat",
+                "49.05833",
+                "--lon",
+                "-72.02917",
+                "--wind-dir",
+                "220",
+                "--wind-speed",
+                "4",
+                "--temp",
+                "77",
+                "--humidity",
+                "50",
+                "--pressure",
+                "1013.2",
+                "-c",
+                Callsign,
+            ],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("KD9XYZ-9>APZNET:!4903.50N/07201.75W_220/004g...t077h50b10132", harness.Transport.Written[1]);
+    }
+
+    [Fact]
+    public async Task WeatherWithoutAPositionIsPositionlessAndTimestampedNow()
+    {
+        var harness = new CliHarness();
+
+        var result = await harness.RunAsync(
+            ["send", "weather", "--temp", "-7", "--rain-1h", "0.12", "--comment", "wRSW", "-c", Callsign, "-n"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"KD9XYZ-9>APZNET:_10111200c...s...g...t-07r012wRSW{Environment.NewLine}", result.Out);
+    }
+
+    [Theory]
+    [InlineData(new[] { "--lat", "49", "--temp", "60" }, "--lat and --lon go together")]
+    [InlineData(new string[0], "Give at least one reading")]
+    [InlineData(new[] { "--snow", "2" }, "cannot carry snowfall")]
+    [InlineData(new[] { "--lat", "49", "--lon", "-72", "--temp", "60", "--symbol", "/>" }, "weather station symbol")]
+    public async Task WeatherRefusesWhatItCannotSend(string[] options, string error)
+    {
+        var harness = new CliHarness();
+
+        var result = await harness.RunAsync(
+            ["send", "weather", "-c", Callsign, "-n", .. options],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains(error, result.Error, StringComparison.Ordinal);
+        Assert.Equal(0, harness.ConnectionAttempts);
+    }
 }
