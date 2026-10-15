@@ -1,0 +1,4 @@
+#nullable enable
+Microsoft.Extensions.DependencyInjection.AprsIsServiceCollectionExtensions
+static Microsoft.Extensions.DependencyInjection.AprsIsServiceCollectionExtensions.AddAprsIsConnection(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, Microsoft.Extensions.Configuration.IConfiguration! configuration) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Microsoft.Extensions.DependencyInjection.AprsIsServiceCollectionExtensions.AddAprsIsConnection(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<AprsNet.AprsIsTcpClient.AprsIsClientOptions!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

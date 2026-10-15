@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Registers an APRS.NET APRS-IS connection and its options with Microsoft.Extensions.DependencyInjection and configuration.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Not published yet: planned for 0.1. Set to true when it is reviewed. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
+  </ItemGroup>
+</Project>
