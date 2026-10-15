@@ -88,9 +88,10 @@ public class AprsDevicesTests
     public void RecordsTheListVersion()
     {
         var version = File.ReadAllText(Path.Combine(_deviceIdDirectory, "tocalls.version")).Trim().Split(' ');
+        var generated = DateTimeOffset.Parse(version[1], System.Globalization.CultureInfo.InvariantCulture);
 
         Assert.Equal(version[0], AprsDevices.ListCommit);
-        Assert.Equal(DateOnly.ParseExact(version[1], "yyyy-MM-dd"), AprsDevices.ListDate);
+        Assert.Equal(DateOnly.FromDateTime(generated.UtcDateTime), AprsDevices.ListDate);
     }
 
     [Fact]
@@ -98,20 +99,32 @@ public class AprsDevicesTests
     {
         // The generator's output against its input: every exact TOCALL finds its own model, and every pattern finds a
         // device when filled in (perhaps a more specific one).
-        var entries = File.ReadLines(Path.Combine(_deviceIdDirectory, "tocalls.yaml"))
-            .SkipWhile(line => line != "tocalls:")
-            .Select(line => line.Trim())
-            .Where(line => line.StartsWith("- tocall: ", StringComparison.Ordinal))
-            .Select(line => line["- tocall: ".Length..].Trim('"'))
-            .ToList();
+        using var list = System.Text.Json.JsonDocument.Parse(
+            File.ReadAllText(Path.Combine(_deviceIdDirectory, "tocalls.json"))
+        );
+        var entries = list.RootElement.GetProperty("tocalls").EnumerateObject().ToList();
 
         Assert.True(entries.Count > 400, $"only {entries.Count} TOCALLs read");
-        foreach (var tocall in entries)
+        foreach (var entry in entries)
         {
+            var tocall = entry.Name;
             var filled = tocall.Replace('n', '0').Replace('?', 'Q').Replace("*", "", StringComparison.Ordinal);
-            Assert.True(AprsDevices.FromTocall(filled) is not null, $"{tocall} ({filled}) did not resolve");
+            var device = AprsDevices.FromTocall(filled);
+            Assert.True(device is not null, $"{tocall} ({filled}) did not resolve");
+            if (filled == tocall && entry.Value.TryGetProperty("model", out var model))
+            {
+                Assert.Equal(model.GetString(), device.Model);
+            }
         }
     }
+
+    [Fact]
+    public void ThePinnedListHasNoContactAddresses() =>
+        Assert.DoesNotContain(
+            "\"contact\"",
+            File.ReadAllText(Path.Combine(_deviceIdDirectory, "tocalls.json")),
+            StringComparison.Ordinal
+        );
 
     private static string RepositoryRoot()
     {

@@ -2,34 +2,62 @@
 #:property PublishAot=false
 
 // Writes src/AprsNet.DeviceId/AprsDevices.Generated.cs from the pinned copy of the aprs-deviceid list
-// (tools/deviceid/tocalls.yaml, with its commit and date in tocalls.version), so identifying a device needs no file
-// or network access at run time.
+// (tools/deviceid/tocalls.json, with the list's commit and generation time in tocalls.version), so identifying a device
+// needs no file or network access at run time.
 //
-//   dotnet run tools/deviceid/Generate.cs          (from the repository root)
+//   dotnet run tools/deviceid/Generate.cs                        regenerate from the pinned copy
+//   dotnet run tools/deviceid/Generate.cs -- --update [summary]  fetch the published list first and, if it changed,
+//                                                                write a Markdown summary of the changes to [summary]
 //
-// The YAML has a fixed, simple shape, so it is read line by line here rather than with a YAML library, and anything
-// unexpected stops the tool. The contact field is not copied.
+// --update reads tocalls.pretty.json from aprs-deviceid.aprsfoundation.org, where the list's own workflow publishes it
+// on every change, and asks the GitHub API which commit last changed tocalls.yaml. The published tocalls.yaml must
+// match that commit's, so the pinned copy and its commit always agree; while a publish is still in progress the tool
+// stops and the next run tries again. The pinned copy is normalized (keys sorted, contact addresses left out) because
+// the published JSON's key order changes every time it is generated: a diff of the pinned copy shows only real changes.
 
 using System.Globalization;
+using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
-const string yamlPath = "tools/deviceid/tocalls.yaml";
+const string listPath = "tools/deviceid/tocalls.json";
 const string versionPath = "tools/deviceid/tocalls.version";
 const string outPath = "src/AprsNet.DeviceId/AprsDevices.Generated.cs";
 
-if (!File.Exists(yamlPath))
+if (!Directory.Exists("tools/deviceid"))
 {
-    Console.Error.WriteLine($"Run from the repository root: {yamlPath} not found.");
+    Console.Error.WriteLine("Run from the repository root.");
+    return 1;
+}
+
+if (args is ["--update", ..])
+{
+    var updated = await Updater.UpdateAsync(listPath, versionPath, args.ElementAtOrDefault(1));
+    if (updated != 0)
+    {
+        return updated;
+    }
+}
+else if (args.Length > 0)
+{
+    Console.Error.WriteLine("Usage: dotnet run tools/deviceid/Generate.cs [-- --update [summary.md]]");
     return 1;
 }
 
 var version = File.ReadAllText(versionPath).Trim().Split(' ');
-if (version is not [{ Length: 40 } commit, var date] || !DateOnly.TryParseExact(date, "yyyy-MM-dd", out _))
+if (
+    version is not [{ Length: 40 } commit, var generated]
+    || !DateTimeOffset.TryParse(generated, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var time)
+)
 {
-    Console.Error.WriteLine($"{versionPath} must hold the commit hash and date, such as '<40 hex digits> 2026-09-18'.");
+    Console.Error.WriteLine($"{versionPath} must hold the commit hash and the list's generation time.");
     return 1;
 }
 
+var list = JsonNode.Parse(File.ReadAllText(listPath))!.AsObject();
 var classes = new Dictionary<string, string>
 {
     ["wx"] = "Weather",
@@ -49,87 +77,11 @@ var classes = new Dictionary<string, string>
 };
 var features = new Dictionary<string, string> { ["messaging"] = "Messaging", ["item-in-msg"] = "ItemInMessage" };
 
-// Sections of items, each item a map of keys to a value or, for features, a list.
-var sections = new Dictionary<string, List<Dictionary<string, object>>>();
-List<Dictionary<string, object>>? section = null;
-Dictionary<string, object>? item = null;
-string? listKey = null;
-var lineNumber = 0;
-foreach (var raw in File.ReadLines(yamlPath))
+foreach (var (name, _) in Section("classes"))
 {
-    lineNumber++;
-    var line = raw.TrimEnd();
-    var trimmed = line.TrimStart();
-    if (trimmed.Length == 0 || trimmed.StartsWith('#') || line == "---")
+    if (!classes.TryGetValue(name, out _))
     {
-        continue;
-    }
-
-    if (!char.IsWhiteSpace(line[0]))
-    {
-        if (!line.EndsWith(':'))
-        {
-            return Fail("expected a section name");
-        }
-
-        section = sections[line[..^1]] = [];
-        item = null;
-        continue;
-    }
-
-    if (section is null)
-    {
-        return Fail("an entry before any section");
-    }
-
-    if (listKey is not null && trimmed.StartsWith("- ", StringComparison.Ordinal) && Indent(line) > 3)
-    {
-        ((List<string>)item![listKey]).Add(Value(trimmed[2..]));
-        continue;
-    }
-
-    listKey = null;
-    if (trimmed.StartsWith("- ", StringComparison.Ordinal))
-    {
-        item = [];
-        section.Add(item);
-        trimmed = trimmed[2..];
-    }
-
-    var colon = trimmed.IndexOf(':');
-    if (item is null || colon <= 0)
-    {
-        return Fail("expected 'key: value'");
-    }
-
-    var key = trimmed[..colon];
-    var rest = trimmed[(colon + 1)..].Trim();
-    if (rest.Length == 0)
-    {
-        item[key] = new List<string>();
-        listKey = key;
-    }
-    else
-    {
-        item[key] = Value(rest);
-    }
-}
-
-if (
-    !sections.TryGetValue("classes", out var classList)
-    || !sections.TryGetValue("tocalls", out var tocalls)
-    || !sections.TryGetValue("mice", out var mice)
-    || !sections.TryGetValue("micelegacy", out var miceLegacy)
-)
-{
-    return Fail("a section is missing: classes, mice, micelegacy and tocalls are expected");
-}
-
-foreach (var c in classList)
-{
-    if (!classes.TryGetValue((string)c["class"], out _))
-    {
-        Console.Error.WriteLine($"New device class '{c["class"]}': add it to AprsDeviceClass and to this tool.");
+        Console.Error.WriteLine($"New device class '{name}': add it to AprsDeviceClass and to this tool.");
         return 1;
     }
 }
@@ -140,7 +92,10 @@ code.AppendLine(
     $$"""
     // <auto-generated>
     // Generated by tools/deviceid/Generate.cs from the aprs-deviceid list (https://github.com/aprsorg/aprs-deviceid),
-    // commit {{commit}} of {{date}}. Do not edit; update tools/deviceid and run the tool again.
+    // commit {{commit}}, generated {{time.ToString(
+        "yyyy-MM-dd",
+        CultureInfo.InvariantCulture
+    )}}. Do not edit; run the tool again.
     //
     // The device data below is adapted from that list, maintained by Heikki Hannikainen, OH7LZB, and its
     // contributors, and is licensed under CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0/).
@@ -154,22 +109,17 @@ code.AppendLine(
     {
         private const string _listCommit = "{{commit}}";
 
-        private static readonly DateOnly _listDate = new({{date[..4]}}, {{int.Parse(
-        date[5..7],
-        CultureInfo.InvariantCulture
-    )}}, {{int.Parse(date[8..], CultureInfo.InvariantCulture)}});
+        private static readonly DateOnly _listDate = new({{time.Year}}, {{time.Month}}, {{time.Day}});
 
     """
 );
 
 // Exact TOCALLs go in a dictionary; patterns are tried in order, the most specific first: more literal characters,
-// then a fixed length before a trailing '*', then the order of the list.
+// then a fixed length before a trailing '*', then ordinal order, so the output does not depend on the list's order.
 var exact = new List<(string Tocall, string Device)>();
-var patterns = new List<(string Pattern, string Device, int Order)>();
-var order = 0;
-foreach (var t in tocalls)
+var patterns = new List<(string Pattern, string Device)>();
+foreach (var (tocall, entry) in Section("tocalls"))
 {
-    var tocall = (string)t["tocall"];
     if (tocall.IndexOf('*') is var star && star >= 0 && star != tocall.Length - 1)
     {
         return Fail($"'{tocall}': '*' is only supported at the end");
@@ -180,22 +130,14 @@ foreach (var t in tocalls)
         return Fail($"'{tocall}' has a character other than A-Z, 0-9, n, ? or *");
     }
 
-    var device = Device(t);
-    if (tocall.Any(ch => ch is 'n' or '?' or '*'))
-    {
-        patterns.Add((tocall, device, order++));
-    }
-    else
-    {
-        exact.Add((tocall, device));
-    }
+    (tocall.Any(ch => ch is 'n' or '?' or '*') ? patterns : exact).Add((tocall, Device(entry)));
 }
 
 patterns.Sort(
     (a, b) =>
         Literals(b.Pattern).CompareTo(Literals(a.Pattern)) is not 0 and var byLiterals ? byLiterals
         : a.Pattern.EndsWith('*').CompareTo(b.Pattern.EndsWith('*')) is not 0 and var byStar ? byStar
-        : a.Order.CompareTo(b.Order)
+        : string.CompareOrdinal(a.Pattern, b.Pattern)
 );
 
 code.AppendLine("    private static readonly Dictionary<string, AprsDevice> _tocalls = new(StringComparer.Ordinal)");
@@ -209,7 +151,7 @@ code.AppendLine("    };");
 code.AppendLine();
 code.AppendLine("    private static readonly (string Pattern, AprsDevice Device)[] _tocallPatterns =");
 code.AppendLine("    [");
-foreach (var (pattern, device, _) in patterns)
+foreach (var (pattern, device) in patterns)
 {
     code.AppendLine(CultureInfo.InvariantCulture, $"        ({Literal(pattern)}, {device}),");
 }
@@ -218,15 +160,14 @@ code.AppendLine("    ];");
 code.AppendLine();
 code.AppendLine("    private static readonly Dictionary<string, AprsDevice> _micE = new(StringComparer.Ordinal)");
 code.AppendLine("    {");
-foreach (var m in mice)
+foreach (var (suffix, entry) in Section("mice"))
 {
-    var suffix = (string)m["suffix"];
     if (suffix.Length != 2)
     {
         return Fail($"Mic-E suffix '{suffix}' is not 2 characters");
     }
 
-    code.AppendLine(CultureInfo.InvariantCulture, $"        [{Literal(suffix)}] = {Device(m)},");
+    code.AppendLine(CultureInfo.InvariantCulture, $"        [{Literal(suffix)}] = {Device(entry)},");
 }
 
 code.AppendLine("    };");
@@ -236,10 +177,10 @@ code.AppendLine(
 );
 code.AppendLine("    private static readonly (char Prefix, char? Suffix, AprsDevice Device)[] _micELegacy =");
 code.AppendLine("    [");
-foreach (var m in miceLegacy.OrderBy(m => m.ContainsKey("suffix") ? 0 : 1))
+foreach (var (_, entry) in Section("micelegacy").OrderBy(e => e.Value["suffix"] is null ? 1 : 0))
 {
-    var prefix = (string)m["prefix"];
-    var suffix = m.TryGetValue("suffix", out var s) ? (string)s : null;
+    var prefix = (string)entry["prefix"]!;
+    var suffix = (string?)entry["suffix"];
     if (prefix.Length != 1 || suffix is { Length: not 1 })
     {
         return Fail("a legacy Mic-E prefix or suffix is not 1 character");
@@ -247,7 +188,7 @@ foreach (var m in miceLegacy.OrderBy(m => m.ContainsKey("suffix") ? 0 : 1))
 
     code.AppendLine(
         CultureInfo.InvariantCulture,
-        $"        ({CharLiteral(prefix[0])}, {(suffix is null ? "null" : CharLiteral(suffix[0]))}, {Device(m)}),"
+        $"        ({CharLiteral(prefix[0])}, {(suffix is null ? "null" : CharLiteral(suffix[0]))}, {Device(entry)}),"
     );
 }
 
@@ -266,49 +207,33 @@ else
 }
 
 Console.WriteLine(
-    $"{exact.Count} TOCALLs, {patterns.Count} patterns, {mice.Count} Mic-E codes, "
-        + $"{miceLegacy.Count} legacy Mic-E devices"
+    $"{exact.Count} TOCALLs, {patterns.Count} patterns, {Section("mice").Count()} Mic-E codes, "
+        + $"{Section("micelegacy").Count()} legacy Mic-E devices"
 );
 return 0;
 
-int Fail(string message)
-{
-    Console.Error.WriteLine($"{yamlPath}:{lineNumber}: {message}");
-    return 1;
-}
+// The entries of a section, in ordinal key order.
+IEnumerable<(string Key, JsonObject Value)> Section(string name) =>
+    list[name] is JsonObject section
+        ? section.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => (p.Key, p.Value!.AsObject()))
+        : throw new InvalidDataException($"{listPath} has no '{name}' section.");
 
-static int Indent(string line) => line.Length - line.TrimStart().Length;
-
-static int Literals(string pattern) => pattern.Count(ch => ch is not ('n' or '?' or '*'));
-
-static string Value(string text)
-{
-    if (text.Length >= 2 && text[0] == '"' && text[^1] == '"')
-    {
-        return text[1..^1]
-            .Replace("\\\"", "\"", StringComparison.Ordinal)
-            .Replace("\\\\", "\\", StringComparison.Ordinal);
-    }
-
-    return text;
-}
-
-string Device(Dictionary<string, object> entry)
+string Device(JsonObject entry)
 {
     var parts = new List<string>();
-    if (entry.TryGetValue("vendor", out var vendor))
+    if ((string?)entry["vendor"] is { } vendor)
     {
-        parts.Add($"Vendor = {Literal((string)vendor)}");
+        parts.Add($"Vendor = {Literal(vendor)}");
     }
 
-    if (entry.TryGetValue("model", out var model))
+    if ((string?)entry["model"] is { } model)
     {
-        parts.Add($"Model = {Literal((string)model)}");
+        parts.Add($"Model = {Literal(model)}");
     }
 
-    if (entry.TryGetValue("class", out var cls))
+    if ((string?)entry["class"] is { } cls)
     {
-        if (!classes.TryGetValue((string)cls, out var name))
+        if (!classes.TryGetValue(cls, out var name))
         {
             throw new InvalidDataException($"unknown class '{cls}'");
         }
@@ -316,23 +241,31 @@ string Device(Dictionary<string, object> entry)
         parts.Add($"Class = AprsDeviceClass.{name}");
     }
 
-    if (entry.TryGetValue("os", out var os))
+    if ((string?)entry["os"] is { } os)
     {
-        parts.Add($"OperatingSystem = {Literal((string)os)}");
+        parts.Add($"OperatingSystem = {Literal(os)}");
     }
 
-    if (entry.TryGetValue("features", out var list))
+    if (entry["features"] is JsonArray flags)
     {
-        var flags = ((List<string>)list).Select(f =>
-            features.TryGetValue(f, out var flag)
+        var names = flags.Select(f =>
+            features.TryGetValue((string)f!, out var flag)
                 ? $"AprsDeviceFeatures.{flag}"
                 : throw new InvalidDataException($"unknown feature '{f}'")
         );
-        parts.Add($"Features = {string.Join(" | ", flags)}");
+        parts.Add($"Features = {string.Join(" | ", names)}");
     }
 
     return parts.Count == 0 ? "new()" : $"new() {{ {string.Join(", ", parts)} }}";
 }
+
+int Fail(string message)
+{
+    Console.Error.WriteLine($"{listPath}: {message}");
+    return 1;
+}
+
+static int Literals(string pattern) => pattern.Count(ch => ch is not ('n' or '?' or '*'));
 
 static string Literal(string value)
 {
@@ -360,3 +293,159 @@ static string CharLiteral(char ch) =>
         '\\' => "'\\\\'",
         _ => $"'{ch}'",
     };
+
+/// <summary>Fetches the published list, checks it against its commit, and writes the pinned copy and a summary.</summary>
+internal static class Updater
+{
+    private const string Published = "https://aprs-deviceid.aprsfoundation.org/";
+    private const string Repository = "aprsorg/aprs-deviceid";
+
+    private static readonly string[] _described = ["vendor", "model", "class", "os", "shown"];
+
+    private static readonly JsonSerializerOptions _json = new()
+    {
+        WriteIndented = true,
+        NewLine = "\n",
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    public static async Task<int> UpdateAsync(string listPath, string versionPath, string? summaryPath)
+    {
+        // The token, when there is one, only goes to the GitHub API.
+        using var api = Client();
+        if (Environment.GetEnvironmentVariable("GH_TOKEN") is { Length: > 0 } token)
+        {
+            api.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        using var web = Client();
+        var commits = JsonNode.Parse(
+            await api.GetStringAsync(
+                new Uri($"https://api.github.com/repos/{Repository}/commits?path=tocalls.yaml&per_page=1")
+            )
+        )!;
+        var commit = (string)commits[0]!["sha"]!;
+
+        var publishedYaml = await web.GetByteArrayAsync(new Uri(Published + "tocalls.yaml"));
+        var committedYaml = await web.GetByteArrayAsync(
+            new Uri($"https://raw.githubusercontent.com/{Repository}/{commit}/tocalls.yaml")
+        );
+        if (!SHA256.HashData(publishedYaml).AsSpan().SequenceEqual(SHA256.HashData(committedYaml)))
+        {
+            Console.Error.WriteLine(
+                $"The published list does not match commit {commit[..7]} yet (a publish may be in progress); "
+                    + "the next run will try again."
+            );
+            return 2;
+        }
+
+        var latest = JsonNode.Parse(await web.GetStringAsync(new Uri(Published + "tocalls.pretty.json")))!.AsObject();
+        var generatedAt = (string)latest["meta"]!["generation_time"]!;
+        latest.Remove("meta");
+        Strip(latest, "contact");
+        var normalized = Normalize(latest)!.AsObject();
+        var json = JsonSerializer.Serialize(normalized, _json) + "\n";
+
+        var previous = File.Exists(listPath) ? File.ReadAllText(listPath) : "{}";
+        if (previous == json)
+        {
+            Console.WriteLine($"The list has not changed (commit {commit[..7]}).");
+            return 0;
+        }
+
+        await File.WriteAllTextAsync(listPath, json);
+        await File.WriteAllTextAsync(versionPath, $"{commit} {generatedAt}\n");
+        Console.WriteLine($"Updated {listPath} to commit {commit[..7]}, generated {generatedAt}.");
+        if (summaryPath is not null)
+        {
+            await File.WriteAllTextAsync(summaryPath, Summary(JsonNode.Parse(previous)!.AsObject(), normalized));
+        }
+
+        return 0;
+    }
+
+    private static HttpClient Client()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("APRS.NET-deviceid-update", "1.0"));
+        return client;
+    }
+
+    /// <summary>One Markdown line per entry added, removed or changed.</summary>
+    private static string Summary(JsonObject before, JsonObject after)
+    {
+        var summary = new StringBuilder();
+        foreach (var section in new[] { "tocalls", "mice", "micelegacy", "classes" })
+        {
+            var old = before[section] as JsonObject ?? [];
+            var current = after[section] as JsonObject ?? [];
+            var keys = old.Select(p => p.Key).Union(current.Select(p => p.Key)).Order(StringComparer.Ordinal);
+            foreach (var key in keys)
+            {
+                var (was, now) = (old[key], current[key]);
+                var line =
+                    was is null ? $"- Added {Name(section, key)}: {Describe(now!)}"
+                    : now is null ? $"- Removed {Name(section, key)}: {Describe(was)}"
+                    : !JsonNode.DeepEquals(was, now)
+                        ? $"- Changed {Name(section, key)}: {Describe(was)} → {Describe(now)}"
+                    : null;
+                if (line is not null)
+                {
+                    summary.AppendLine(line);
+                }
+            }
+        }
+
+        return summary.Length > 0 ? summary.ToString() : "- Formatting only; no entries changed.\n";
+    }
+
+    private static string Name(string section, string key) =>
+        section switch
+        {
+            "tocalls" => $"TOCALL `{key}`",
+            "mice" => $"Mic-E code `{key}`",
+            "micelegacy" => $"legacy Mic-E code `{key}`",
+            _ => $"class `{key}`",
+        };
+
+    private static string Describe(JsonNode entry)
+    {
+        var parts = _described.Select(k => entry[k]?.GetValue<string>()).Where(v => v is not null);
+        var features = entry["features"] is JsonArray list ? $" ({string.Join(", ", list)})" : "";
+        return string.Join(", ", parts) + features;
+    }
+
+    private static void Strip(JsonNode? node, string key)
+    {
+        switch (node)
+        {
+            case JsonObject obj:
+                obj.Remove(key);
+                foreach (var (_, child) in obj)
+                {
+                    Strip(child, key);
+                }
+
+                break;
+            case JsonArray array:
+                foreach (var child in array)
+                {
+                    Strip(child, key);
+                }
+
+                break;
+        }
+    }
+
+    // The same JSON with every object's keys in ordinal order.
+    private static JsonNode? Normalize(JsonNode? node) =>
+        node switch
+        {
+            JsonObject obj => new JsonObject(
+                obj.OrderBy(p => p.Key, StringComparer.Ordinal)
+                    .Select(p => KeyValuePair.Create(p.Key, Normalize(p.Value)))
+            ),
+            JsonArray array => new JsonArray(array.Select(Normalize).ToArray()),
+            _ => node?.DeepClone(),
+        };
+}

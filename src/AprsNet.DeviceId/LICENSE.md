@@ -36,5 +36,5 @@ The device table compiled into this package (`AprsDevices.Generated.cs` in the s
 [aprs-deviceid](https://github.com/aprsorg/aprs-deviceid) list, maintained by Heikki Hannikainen, OH7LZB, and
 contributors, and licensed under the
 [Creative Commons Attribution-ShareAlike 2.0 Generic](https://creativecommons.org/licenses/by-sa/2.0/) licence.
-The adaptation converts the list's `tocalls.yaml` to C# and leaves out its contact addresses; the source commit is in
-`AprsDevices.ListCommit`. The device table is licensed under the same CC BY-SA 2.0 licence.
+The adaptation converts the published list (`tocalls.pretty.json`) to C# and leaves out its contact addresses; the
+source commit is in `AprsDevices.ListCommit`. The device table is licensed under the same CC BY-SA 2.0 licence.
