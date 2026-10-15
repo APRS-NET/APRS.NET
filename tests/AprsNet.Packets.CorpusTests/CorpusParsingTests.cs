@@ -139,13 +139,23 @@ public class CorpusParsingTests
 
         Assert.True(reports.Count > 800, $"only {reports.Count} Mic-E reports in the corpus");
         // One Prague tracker's packets reach APRS-IS with a 7-character destination (UP0P413) after a bad digipeater.
+        // A few radios garble the data instead: in Helsinki one drops a speed byte and another sends '"' as its
+        // symbol table. Each failure is reported as an error.
+        var broken = reports.Where(p => p.Payload is null).ToList();
         Assert.All(
-            reports.Where(p => p.Payload is null),
+            broken,
             p =>
-            {
-                Assert.NotEqual(6, p.Destination!.Value.Split('-')[0].Length);
-                Assert.Contains(p.Issues, i => i.Code == ParseIssueCode.InvalidMicEDestination);
-            }
+                Assert.Contains(
+                    p.Issues,
+                    i =>
+                        p.Destination!.Value.Split('-')[0].Length == 6
+                            ? i.Severity == ParseIssueSeverity.Error
+                            : i.Code == ParseIssueCode.InvalidMicEDestination
+                )
+        );
+        Assert.True(
+            broken.Count(p => p.Destination!.Value.Split('-')[0].Length == 6) <= 5,
+            "more Mic-E reports with a good destination fail than the few garbled ones known"
         );
         Assert.DoesNotContain(reports, p => p.Payload is not null && p.Issues.Count > 0);
         Assert.Contains(reports, p => p.Payload is MicEReport { Device: "TM-D710" });
