@@ -9,6 +9,8 @@ make the libraries more faithful to real APRS traffic are especially welcome.
   APRS.NET did and what you expected. A line from `aprscli listen` or `aprscli parse` is ideal.
 - **Features:** open an issue first for anything larger than a fix, so the design can be agreed before you write it.
   [docs/design/packet-api.md](docs/design/packet-api.md) explains how the packet API is shaped and why.
+- **Planned work:** each release has a [milestone](https://github.com/APRS-NET/APRS.NET/milestones). Its goals are
+  issues labelled `capability`, and the work for each goal is that issue's sub-issues. Pick one, or ask on it first.
 - **Security problems:** do not open a public issue; use GitHub's private vulnerability reporting on this repository,
   as [SECURITY.md](SECURITY.md) describes.
 
@@ -68,6 +70,11 @@ focused, with its own type. The type decides the release, so pick it by what shi
 
 Only `src/` changes produce a release; [docs/versioning.md](docs/versioning.md) has the details. Explain in the body
 why the change is needed and anything a reviewer should check, and keep unrelated changes in separate pull requests.
+
+Link the work to its issue. In the pull request description write `Closes #N` for the issue it finishes, or
+`Part of #N` when it is one step of several. The `milestone` workflow then gives the pull request that issue's
+milestone. In commits, add a footer such as `Refs: #N`, so the commit appears on the issue. Keep `Closes` in the pull
+request rather than a commit, so an issue that takes several pull requests closes with the last one.
 
 ## Code style
 
