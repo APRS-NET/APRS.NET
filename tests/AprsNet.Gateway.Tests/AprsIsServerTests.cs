@@ -365,6 +365,39 @@ public sealed class AprsIsServerTests : IAsyncLifetime
         Assert.Equal("N1ABC>APRS:>after", await client.ReadAsync());
     }
 
+    [Fact]
+    public async Task MyRangeAndFriendRangeMeasureFromWhereStationsWereHeard()
+    {
+        await using var server = new AprsIsServer(
+            new AprsIsServerOptions
+            {
+                ServerName = "T2TEST",
+                EndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+                TimeProvider = _time,
+                Stations = new StationStore(timeProvider: _time),
+            }
+        );
+        server.Start();
+        await using var client = await Client.ConnectAsync(server);
+        await client.ReadAsync();
+        await client.WriteAsync($"{Login} filter m/20 f/VK2ABC/10");
+        await client.ReadAsync();
+        await client.ReadAsync();
+
+        // Nothing is known about where N0CALL or VK2ABC are yet.
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:=3902.50N/09435.00W-near home"));
+        server.Publish(AprsPacket.Parse("N0CALL>APRS:!3858.80N/09440.20W>home"));
+        server.Publish(AprsPacket.Parse("VK2ABC>APRS:!3352.20S/15112.60E-Sydney"));
+        server.Publish(AprsPacket.Parse("VK2XYZ>APRS:!3352.00S/15112.00E-near the friend"));
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:=3902.50N/09435.00W-near home again"));
+        server.Publish(AprsPacket.Parse("N2FAR>APRS:=4000.00N/10000.00W-far away"));
+
+        Assert.Equal("N0CALL>APRS:!3858.80N/09440.20W>home", await client.ReadAsync());
+        Assert.Equal("VK2ABC>APRS:!3352.20S/15112.60E-Sydney", await client.ReadAsync());
+        Assert.Equal("VK2XYZ>APRS:!3352.00S/15112.00E-near the friend", await client.ReadAsync());
+        Assert.Equal("N1ABC>APRS:=3902.50N/09435.00W-near home again", await client.ReadAsync());
+    }
+
     private void Publish(string line) => _server.Publish(AprsPacket.Parse(line));
 
     private async Task<Client> LoggedInAsync(string filter)

@@ -38,3 +38,30 @@ AprsNet.Gateway.PacketDeduplicator.PacketDeduplicator(System.TimeSpan? window = 
 AprsNet.Gateway.PacketDeduplicator.TryAccept(AprsNet.Packets.AprsPacket! packet) -> bool
 AprsNet.Gateway.PacketDeduplicator.Window.get -> System.TimeSpan
 static readonly AprsNet.Gateway.PacketDeduplicator.DefaultWindow -> System.TimeSpan
+AprsNet.Gateway.AprsIsServerOptions.Stations.get -> AprsNet.Gateway.StationStore?
+AprsNet.Gateway.AprsIsServerOptions.Stations.init -> void
+AprsNet.Gateway.StationState
+AprsNet.Gateway.StationState.Callsign.get -> string!
+AprsNet.Gateway.StationState.Callsign.init -> void
+AprsNet.Gateway.StationState.<Clone>$() -> AprsNet.Gateway.StationState!
+AprsNet.Gateway.StationState.Deconstruct(out string! Callsign, out System.DateTimeOffset LastHeard, out AprsNet.Packets.AprsPosition? Position, out System.DateTimeOffset? PositionTime) -> void
+AprsNet.Gateway.StationState.Equals(AprsNet.Gateway.StationState? other) -> bool
+AprsNet.Gateway.StationState.LastHeard.get -> System.DateTimeOffset
+AprsNet.Gateway.StationState.LastHeard.init -> void
+AprsNet.Gateway.StationState.Position.get -> AprsNet.Packets.AprsPosition?
+AprsNet.Gateway.StationState.Position.init -> void
+AprsNet.Gateway.StationState.PositionTime.get -> System.DateTimeOffset?
+AprsNet.Gateway.StationState.PositionTime.init -> void
+AprsNet.Gateway.StationState.StationState(string! Callsign, System.DateTimeOffset LastHeard, AprsNet.Packets.AprsPosition? Position, System.DateTimeOffset? PositionTime) -> void
+AprsNet.Gateway.StationStore
+AprsNet.Gateway.StationStore.Capacity.get -> int
+AprsNet.Gateway.StationStore.Count.get -> int
+AprsNet.Gateway.StationStore.Find(string! callsign) -> AprsNet.Gateway.StationState?
+AprsNet.Gateway.StationStore.LastPosition(string! callsign) -> AprsNet.Packets.AprsPosition?
+AprsNet.Gateway.StationStore.Observe(AprsNet.Packets.AprsPacket! packet) -> void
+AprsNet.Gateway.StationStore.StationStore(int capacity = 100000, System.TimeProvider? timeProvider = null) -> void
+override AprsNet.Gateway.StationState.Equals(object? obj) -> bool
+override AprsNet.Gateway.StationState.GetHashCode() -> int
+override AprsNet.Gateway.StationState.ToString() -> string!
+static AprsNet.Gateway.StationState.operator !=(AprsNet.Gateway.StationState? left, AprsNet.Gateway.StationState? right) -> bool
+static AprsNet.Gateway.StationState.operator ==(AprsNet.Gateway.StationState? left, AprsNet.Gateway.StationState? right) -> bool
