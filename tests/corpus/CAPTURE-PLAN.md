@@ -42,9 +42,26 @@ Then anonymize the capture into `aprs-is/` (see [README.md](README.md)) and list
 Also captured: Overland Park, KS (`r/38.98/-94.67/20`), San Francisco (`r/37.77/-122.42/30`) and Kuala Lumpur
 (`r/3.14/101.69/50`, picked for the active Malaysian network seen in the message capture),
 and on 2026-10-14 Seoul, Taipei, Manila, Perth, Bengaluru, Bangkok, Jakarta, Moscow, Warsaw, Milan, Madrid and Tel
-Aviv, and on 2026-10-15 Brisbane, Hong Kong, Singapore and Sapporo. `d/RS0ISS*` (packets digipeated by the ISS) got nothing in 6 hours; retry when the ISS digipeater is active.
+Aviv, and on 2026-10-15 Brisbane, Hong Kong, Singapore, Sapporo, Stockholm, Helsinki, Vienna and
+Budapest. `d/RS0ISS*` (packets digipeated by the ISS) got nothing in 6 hours; retry when the ISS digipeater is active.
 
 If only a few: Rhine-Ruhr, Tokyo, London, Sydney and Denver cover the most callsign formats, quadrants and encodings.
+
+### Next
+
+Areas no capture covers yet, best taken in local daytime:
+
+| Area | Filter | What it adds | When (UTC) |
+| --- | --- | --- | --- |
+| Chicago | `r/41.88/-87.63/50` | A dense US Midwest network, `K9`/`W9` calls | 14:00–23:00 |
+| Toronto | `r/43.65/-79.38/50` | `VE3`/`VA3` calls, Canadian objects | 14:00–23:00 |
+| Mexico City | `r/19.43/-99.13/50` | `XE` calls, Spanish text, high altitude | 15:00–00:00 |
+| Buenos Aires | `r/-34.60/-58.38/50` | `LU` calls, south-west quadrant | 12:00–21:00 |
+| Santiago | `r/-33.45/-70.67/50` | `CE` calls, Andes digis with long paths | 12:00–21:00 |
+| New York | `r/40.71/-74.01/50` | Very high volume, many weather stations | 13:00–23:00 |
+
+`t/3` (third-party) is not worth retrying: a 3-hour capture on 2026-10-15 heard none, as IGates unwrap third-party
+traffic before APRS-IS. The 10-minute full feed (port 10152) found two.
 
 ## Notes
 

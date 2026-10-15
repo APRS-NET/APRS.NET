@@ -54,6 +54,11 @@ capture). [CAPTURE-PLAN.md](CAPTURE-PLAN.md) lists the areas still to capture.
 | `aprs-is/2026-10-15-hongkong-r50km.log` | APRS-IS, read-only login, filter `r/22.32/114.17/50` (50 km around Hong Kong), 2 h from 04:31 UTC (Thursday midday local time) | 731 |
 | `aprs-is/2026-10-15-singapore-r40km.log` | APRS-IS, read-only login, filter `r/1.35/103.82/40` (40 km around Singapore, which also reaches Johor Bahru), 2 h from 04:31 UTC (Thursday midday local time) | 1,060 |
 | `aprs-is/2026-10-15-sapporo-r50km.log` | APRS-IS, read-only login, filter `r/43.06/141.35/50` (50 km around Sapporo), 2 h from 04:31 UTC (Thursday afternoon local time) | 188 |
+| `aprs-is/2026-10-15-stockholm-r50km.log` | APRS-IS, read-only login, filter `r/59.33/18.07/50` (50 km around Stockholm), 2 h from 06:51 UTC (Thursday morning local time) | 550 |
+| `aprs-is/2026-10-15-helsinki-r50km.log` | APRS-IS, read-only login, filter `r/60.17/24.94/50` (50 km around Helsinki), 2 h from 06:51 UTC (Thursday morning local time) | 880 |
+| `aprs-is/2026-10-15-vienna-r40km.log` | APRS-IS, read-only login, filter `r/48.21/16.37/40` (40 km around Vienna), 2 h from 06:51 UTC (Thursday morning local time) | 3,039 |
+| `aprs-is/2026-10-15-budapest-r40km.log` | APRS-IS, read-only login, filter `r/47.50/19.04/40` (40 km around Budapest), 2 h from 06:51 UTC (Thursday morning local time) | 911 |
+| `aprs-is/2026-10-15-type-thirdparty.log` | APRS-IS full feed (port 10152), read-only login, 10 min from 04:44 UTC: the only third-party (`}`) packets among 54,468. A 3-hour `t/3` capture received none | 2 |
 | `aprs-is/2026-10-14-type-status.log` | APRS-IS, read-only login, filter `t/s` (status reports worldwide), 1 h from 05:34 UTC. Sampled to one line per sender and per distinct text (digits ignored), keeping every timestamped, Maidenhead, beam-heading and non-ASCII status and every second plain one (25,510 dropped) | 2,547 |
 | `aprs-is/2026-10-14-type-telemetry.log` | APRS-IS, read-only login, filter `t/t` (telemetry worldwide), 1 h from 07:36 UTC. Sampled to the first odd `T#` report of every sender and, for every fifth sender, its first `T#` report and first `PARM.`/`UNIT.`/`EQNS.`/`BITS.` (38,288 dropped) | 2,330 |
 
@@ -118,6 +123,12 @@ long base64 certificates and UTF-8 Chinese text, and hilltop digis; the Singapor
 dense Malaysian LoRa APRS network, a MeshCore gateway and `WXMY` weather; Sapporo adds `JA8` calls and a dual-speed
 (1200 and 9600 baud) IGate.
 
+The 2026-10-15 morning captures add Stockholm, Helsinki, Vienna and Budapest. Vienna is the busiest: a dense LoRa
+APRS and MeshCom network, TETRA and SvxLink gateways, HAMNET-linked IGates, Geiger-counter telemetry and German text.
+Helsinki adds Finnish text and weather stations reporting through telemetry; Stockholm adds Winlink and BBS nodes;
+Budapest adds `HA` calls and its own LoRa network. The third-party file holds a real gated weather report and a LoRa
+packet that is noise after a `}`.
+
 Deliberately kept negative cases: one IGate inserts `" <UI>:"` or `" <<UI>>:"` before the data type, so those
 packets start with a space; a lower-case source callsign; Mic-E with control bytes; and weather with a trailing
 software tag. Beacons repeat, so there are far fewer distinct packets than lines; dedupe when building test cases.
@@ -136,7 +147,7 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
   APRS-IS servers (`T2…`, `FIRST`…`TENTH`, `APRSFI`) and simulators (`DEMO`, `MARSQ`) are kept.
 - **E-mail addresses** are masked (`x` for letters, `0` for digits; in the 2026-10-13 user-defined capture this also
   changed a few bytes of opaque base-91 `{{B` data that looked like an address), and personal names in comments (one in San Francisco,
-  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and about 90 in the 2026-10-14 captures and four in the 2026-10-15 captures,
+  13 first names in Rhine-Ruhr, four in Sydney, Denver and Los Angeles, about 60 across the 2026-10-13 captures and about 90 in the 2026-10-14 captures and about 30 in the 2026-10-15 captures (with a car's licence plate),
   with a street address, a few phone numbers and a few IP addresses; names in Chinese status text became
   `某` ("so-and-so"), which keeps the byte length) were replaced with same-length `Xxxx` words.
 - **Leaked KISS frames** (a gateway passing binary AX.25 frames into the information field, often re-encoded as UTF-8)
