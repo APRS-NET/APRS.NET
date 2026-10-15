@@ -75,6 +75,56 @@ public sealed class TncTests : IDisposable
         Assert.Contains("closed the connection", result.Error, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task WithReconnectListeningCarriesOnAfterTheTncCloses()
+    {
+        var run = new CliHarness().RunAsync(
+            ["tnc", "listen", "--tnc", Address, "--reconnect", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+        await Hear("N0CALL>APRS:>First connection");
+        await Hear("N0CALL>APRS:>Second connection");
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(
+            $"N0CALL>APRS:>First connection{Environment.NewLine}N0CALL>APRS:>Second connection{Environment.NewLine}",
+            result.Out
+        );
+        Assert.Contains("closed the connection; reconnecting in 0s.", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithReconnectATncThatIsNotUpYetIsWaitedFor()
+    {
+        var port = ((IPEndPoint)_tnc.LocalEndpoint).Port;
+        var address = Address;
+        _tnc.Stop();
+        var run = new CliHarness().RunAsync(
+            ["tnc", "listen", "--tnc", address, "--reconnect", "-n", "1"],
+            TestContext.Current.CancellationToken
+        );
+        await Task.Delay(100, TestContext.Current.CancellationToken);
+        using var late = new TcpListener(IPAddress.Loopback, port);
+        late.Start();
+        using (
+            var tnc = await late.AcceptTcpClientAsync(TestContext.Current.CancellationToken)
+                .AsTask()
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)
+        )
+        {
+            await tnc.GetStream()
+                .WriteAsync(
+                    KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse("N0CALL>APRS:>At last"))).Encode(),
+                    TestContext.Current.CancellationToken
+                );
+            var result = await run;
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal($"N0CALL>APRS:>At last{Environment.NewLine}", result.Out);
+            Assert.Contains("Connection refused", result.Error, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     [Theory]
     [InlineData(":8001", "is not valid")]
     [InlineData("tnc:99999", "is not valid")]

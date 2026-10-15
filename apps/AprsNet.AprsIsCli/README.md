@@ -182,9 +182,11 @@ Wolf does on port 8001:
 ```sh
 aprscli tnc listen --tnc localhost:8001 --format decoded
 aprscli tnc listen --tnc 192.168.1.20 --radio-port 1 -d 1h
+aprscli tnc listen --tnc localhost --reconnect      # survives Dire Wolf restarts
 ```
 
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
-when the TNC cannot be reached or closes the connection.
+when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
+(waiting 5 s, doubling to 60 s), says so on stderr, and carries on when the TNC is back.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

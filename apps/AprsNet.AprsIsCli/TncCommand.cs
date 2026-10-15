@@ -32,6 +32,13 @@ internal sealed class TncCommand(CliEnvironment environment)
 
     private readonly Option<int?> _count = new("--count", "-n") { Description = "Stop after this many packets." };
 
+    private readonly Option<bool> _reconnect = new("--reconnect")
+    {
+        Description =
+            "If the TNC closes the connection or cannot be reached, keep trying (waiting 5s, doubling to 60s) until "
+            + "--count, --duration or Ctrl+C. Without it, the first loss ends the command.",
+    };
+
     private readonly Option<string?> _duration = new("--duration", "-d")
     {
         Description = "Stop after this long, for example 90s, 10m, 2h or 1d.",
@@ -47,6 +54,7 @@ internal sealed class TncCommand(CliEnvironment environment)
             _format,
             _count,
             _duration,
+            _reconnect,
         };
         listen.SetAction(ListenAsync);
         var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf.") { listen };
@@ -88,10 +96,41 @@ internal sealed class TncCommand(CliEnvironment environment)
         }
 
         var format = Enum.Parse<OutputFormat>(parseResult.GetValue(_format)!, ignoreCase: true);
+        var count = parseResult.GetValue(_count);
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (duration is { } limit)
         {
             run.CancelAfter(limit);
+        }
+
+        if (parseResult.GetValue(_reconnect))
+        {
+            await using var connection = new KissTcpConnection(
+                host,
+                port,
+                parseResult.GetValue(_radioPort),
+                environment.ReconnectDelay,
+                timeProvider: environment.TimeProvider
+            );
+            connection.ConnectionLost += (_, e) =>
+            {
+                var retry = e.RetryIn.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+                environment.Error.WriteLine(
+                    e.Error is null
+                        ? $"aprscli: the TNC at {host}:{port} closed the connection; reconnecting in {retry}s."
+                        : $"aprscli: lost the TNC at {host}:{port}: {e.Error.Message}; reconnecting in {retry}s."
+                );
+            };
+            try
+            {
+                await PrintAsync(connection.ReadPacketsAsync(run.Token), format, count);
+            }
+            catch (OperationCanceledException) when (run.IsCancellationRequested)
+            {
+                // Duration reached or Ctrl+C.
+            }
+
+            return ExitCodes.Success;
         }
 
         await using var client = new KissTcpClient(host, port, parseResult.GetValue(_radioPort));
@@ -111,26 +150,11 @@ internal sealed class TncCommand(CliEnvironment environment)
             return ExitCodes.ConnectionFailed;
         }
 
-        var received = 0;
         try
         {
-            await foreach (var packet in client.ReadPacketsAsync(run.Token))
+            if (await PrintAsync(client.ReadPacketsAsync(run.Token), format, count))
             {
-                var receivedAt = environment.TimeProvider.GetUtcNow();
-                await environment.Out.WriteLineAsync(
-                    format switch
-                    {
-                        OutputFormat.Decoded => LineFormatter.EscapeForConsole(PacketFormatter.Decoded(packet)),
-                        OutputFormat.Json => PacketFormatter.Json(packet, receivedAt),
-                        OutputFormat.Pretty => PrettyFormatter.Format(packet, receivedAt, color: false)
-                            + Environment.NewLine,
-                        _ => LineFormatter.EscapeForConsole(packet.ToString()),
-                    }
-                );
-                if (parseResult.GetValue(_count) is { } count && ++received >= count)
-                {
-                    return ExitCodes.Success;
-                }
+                return ExitCodes.Success;
             }
         }
         catch (OperationCanceledException) when (run.IsCancellationRequested)
@@ -145,6 +169,32 @@ internal sealed class TncCommand(CliEnvironment environment)
 
         await environment.Error.WriteLineAsync($"aprscli: the TNC at {host}:{port} closed the connection.");
         return ExitCodes.ConnectionFailed;
+    }
+
+    /// <summary>Prints packets until the stream ends (false) or <paramref name="count"/> is reached (true).</summary>
+    private async Task<bool> PrintAsync(IAsyncEnumerable<AprsPacket> packets, OutputFormat format, int? count)
+    {
+        var received = 0;
+        await foreach (var packet in packets)
+        {
+            var receivedAt = environment.TimeProvider.GetUtcNow();
+            await environment.Out.WriteLineAsync(
+                format switch
+                {
+                    OutputFormat.Decoded => LineFormatter.EscapeForConsole(PacketFormatter.Decoded(packet)),
+                    OutputFormat.Json => PacketFormatter.Json(packet, receivedAt),
+                    OutputFormat.Pretty => PrettyFormatter.Format(packet, receivedAt, color: false)
+                        + Environment.NewLine,
+                    _ => LineFormatter.EscapeForConsole(packet.ToString()),
+                }
+            );
+            if (count is { } limit && ++received >= limit)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task<int> UsageAsync(string message)
