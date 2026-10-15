@@ -10,11 +10,6 @@ namespace AprsNet.AprsIsCli;
 /// <summary>Runs <c>aprscli listen</c>: connect, stream lines to the console and an optional capture file, stop on count, duration or Ctrl+C.</summary>
 internal static class ListenRunner
 {
-    /// <summary>Not an exit code: <see cref="ConnectAsync"/> succeeded.</summary>
-    private const int _connected = -1;
-
-    private static readonly TimeSpan _maxReconnectDelay = TimeSpan.FromSeconds(60);
-
     public static async Task<int> RunAsync(
         ListenOptions options,
         CliEnvironment environment,
@@ -30,6 +25,8 @@ internal static class ListenRunner
             Filter = options.Filter,
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
+            ReconnectDelay = environment.ReconnectDelay,
+            MaxPacketSilence = options.MaxSilence,
         };
 
         StreamWriter? capture = null;
@@ -56,47 +53,23 @@ internal static class ListenRunner
         }
 
         var packetLog = options.LogPackets ? environment.LoggerFactory.CreateLogger(Logging.PacketCategory) : null;
-        var progress = new Progress();
-        var connectedOnce = false;
-        var delay = environment.ReconnectDelay;
-
         try
         {
-            while (true)
+            await using var connection = environment.CreateConnection(clientOptions, logger);
+            using var reporter = new ConnectionReporter(
+                connection,
+                environment.Error,
+                options.Endpoint,
+                options.Reconnect
+            );
+            if (await StartAsync(connection, options, environment, run.Token) is { } failed)
             {
-                int code;
-                await using (var client = environment.CreateClient(clientOptions, logger))
-                {
-                    code = await ConnectAsync(client, options, environment, connectedOnce, run.Token);
-                    if (code == _connected)
-                    {
-                        connectedOnce = true;
-                        delay = environment.ReconnectDelay;
-                        code = await StreamAsync(client, options, environment, capture, packetLog, progress, run.Token);
-                    }
-                }
-
-                // Only a dropped or unreachable server is retried, and only after the first login worked, so a
-                // wrong server or callsign still fails fast.
-                if (code != ExitCodes.ConnectionFailed || !options.Reconnect || !connectedOnce)
-                {
-                    return code;
-                }
-
-                await environment.Error.WriteLineAsync(
-                    $"aprscli: reconnecting to {options.Endpoint} in {delay.TotalSeconds:0.#}s."
-                );
-                try
-                {
-                    await Task.Delay(delay, environment.TimeProvider, run.Token);
-                }
-                catch (OperationCanceledException) when (run.IsCancellationRequested)
-                {
-                    return ExitCodes.Success;
-                }
-
-                delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, _maxReconnectDelay.Ticks));
+                return failed;
             }
+
+            var code = await StreamAsync(connection, options, environment, capture, packetLog, run.Token);
+            await reporter.Closing;
+            return reporter.ExitCode ?? code;
         }
         finally
         {
@@ -107,19 +80,18 @@ internal static class ListenRunner
         }
     }
 
-    /// <summary>Connects and logs in. Returns <see cref="_connected"/> on success, otherwise the exit code.</summary>
-    private static async Task<int> ConnectAsync(
-        AprsIsClient client,
+    /// <summary>Connects and logs in for the first time. Returns null on success, otherwise the exit code.</summary>
+    private static async Task<int?> StartAsync(
+        AprsIsConnection connection,
         ListenOptions options,
         CliEnvironment environment,
-        bool reconnecting,
         CancellationToken cancellationToken
     )
     {
         try
         {
-            await client.ConnectAsync(cancellationToken);
-            return _connected;
+            await connection.StartAsync(cancellationToken);
+            return null;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -143,9 +115,7 @@ internal static class ListenRunner
         catch (LoginException ex)
         {
             await environment.Error.WriteLineAsync($"aprscli: login failed on {options.Endpoint}: {ex.Message}");
-
-            // A login that times out or is cut off after an earlier success is a flaky server, not bad settings.
-            return reconnecting ? ExitCodes.ConnectionFailed : ExitCodes.LoginFailed;
+            return ExitCodes.LoginFailed;
         }
         catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
         {
@@ -154,37 +124,26 @@ internal static class ListenRunner
         }
     }
 
+    /// <summary>
+    /// Prints lines until the count, duration or Ctrl+C. Drops are the <see cref="ConnectionReporter"/>'s: with
+    /// <c>--reconnect</c> the stream carries on, otherwise it ends after the lines already received.
+    /// </summary>
     private static async Task<int> StreamAsync(
-        AprsIsClient client,
+        AprsIsConnection connection,
         ListenOptions options,
         CliEnvironment environment,
         StreamWriter? capture,
         ILogger? packetLog,
-        Progress progress,
         CancellationToken cancellationToken
     )
     {
-        // Packet watchdog for --max-silence. It is separate from the client's idle timeout because a server can keep
-        // sending '#' keepalives after its own feed has stalled, so the connection looks alive but delivers nothing.
-        using var silence = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var keepalivesAtLastPacket = client.ServerCommentsReceived;
+        var received = 0;
         try
         {
-            if (options.MaxSilence is { } armed)
+            await foreach (var line in connection.ReadLinesAsync(cancellationToken))
             {
-                silence.CancelAfter(armed);
-            }
-
-            await foreach (var line in client.ReadLinesAsync(silence.Token))
-            {
-                if (options.MaxSilence is { } maxSilence)
-                {
-                    silence.CancelAfter(maxSilence); // restart the wait for the next packet
-                }
-
-                keepalivesAtLastPacket = client.ServerCommentsReceived;
-                var received = environment.TimeProvider.GetUtcNow();
-                var stamp = LineFormatter.Timestamp(received);
+                var receivedAt = environment.TimeProvider.GetUtcNow();
+                var stamp = LineFormatter.Timestamp(receivedAt);
 
                 if (capture is not null)
                 {
@@ -204,10 +163,10 @@ internal static class ListenRunner
                             OutputFormat.Decoded => LineFormatter.EscapeForConsole(
                                 PacketFormatter.Decoded(AprsPacket.Parse(line))
                             ),
-                            OutputFormat.Json => PacketFormatter.Json(AprsPacket.Parse(line), received),
+                            OutputFormat.Json => PacketFormatter.Json(AprsPacket.Parse(line), receivedAt),
                             OutputFormat.Pretty => PrettyFormatter.Format(
                                 AprsPacket.Parse(line),
-                                received,
+                                receivedAt,
                                 options.Color
                             ) + Environment.NewLine,
                             _ => LineFormatter.EscapeForConsole(line),
@@ -226,7 +185,7 @@ internal static class ListenRunner
                     }
                 }
 
-                if (options.Count is { } count && ++progress.Received >= count)
+                if (options.Count is { } count && ++received >= count)
                 {
                     return ExitCodes.Success;
                 }
@@ -236,25 +195,8 @@ internal static class ListenRunner
         {
             return ExitCodes.Success;
         }
-        catch (OperationCanceledException) when (silence.IsCancellationRequested)
-        {
-            // Keepalives in the gap tell the two failures apart: some means the server's feed stalled, none means
-            // the link itself died (which the client's idle timeout normally reports first).
-            var keepalives = client.ServerCommentsReceived - keepalivesAtLastPacket;
-            await environment.Error.WriteLineAsync(
-                $"aprscli: no packets from {client.Login?.Server ?? options.Endpoint.ToString()} for "
-                    + $"{DurationParser.Format(options.MaxSilence!.Value)} "
-                    + $"(server keepalives in that time: {keepalives})."
-            );
-            return ExitCodes.ConnectionFailed;
-        }
-        catch (Exception ex) when (ex is SocketException or IOException or TimeoutException)
-        {
-            await environment.Error.WriteLineAsync($"aprscli: connection lost: {ex.Message}");
-            return ExitCodes.ConnectionFailed;
-        }
 
-        await environment.Error.WriteLineAsync($"aprscli: {options.Endpoint} closed the connection.");
+        // The line stream only ends when the connection closes, which the reporter does after a failure.
         return ExitCodes.ConnectionFailed;
     }
 
@@ -278,12 +220,6 @@ internal static class ListenRunner
         // Latin-1 writes every byte of the raw line back out unchanged. AutoFlush keeps an interrupted capture intact.
         return new StreamWriter(stream, Encoding.Latin1) { AutoFlush = true };
     }
-}
-
-/// <summary>Packets delivered across every connection of one run, so <c>--count</c> spans reconnects.</summary>
-internal sealed class Progress
-{
-    public int Received;
 }
 
 internal static partial class PacketLog

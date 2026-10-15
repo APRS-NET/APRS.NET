@@ -25,9 +25,9 @@ internal sealed class CliEnvironment
     /// <summary>Whether <see cref="Out"/> is an interactive terminal (not a pipe or file), for <c>--color auto</c>.</summary>
     public bool OutIsTerminal { get; init; }
 
-    /// <summary>First wait before <c>--reconnect</c> tries again; it doubles up to a minute.</summary>
+    /// <summary>First wait before reconnecting; it doubles up to a minute.</summary>
     public TimeSpan ReconnectDelay { get; init; } = TimeSpan.FromSeconds(5);
 
-    public Func<AprsIsClientOptions, ILogger, AprsIsClient> CreateClient { get; init; } =
-        (options, logger) => new AprsIsClient(options, logger);
+    public Func<AprsIsClientOptions, ILogger, AprsIsConnection> CreateConnection { get; init; } =
+        (options, logger) => new AprsIsConnection(options, logger);
 }
