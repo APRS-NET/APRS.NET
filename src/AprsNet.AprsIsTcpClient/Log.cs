@@ -32,6 +32,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Debug, Message = "Server: {Line}")]
     public static partial void ServerLine(this ILogger logger, string line);
 
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Sent: {Line}")]
+    public static partial void PacketSent(this ILogger logger, string line);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Filter set: {Filter}")]
     public static partial void FilterSet(this ILogger logger, string filter);
 

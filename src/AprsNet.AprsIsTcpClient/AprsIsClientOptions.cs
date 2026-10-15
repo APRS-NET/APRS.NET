@@ -51,6 +51,19 @@ public sealed class AprsIsClientOptions
     /// <summary>Capacity of the bounded receive queue, in lines.</summary>
     public int ChannelCapacity { get; set; } = 1024;
 
+    /// <summary>
+    /// How many packets <see cref="AprsIsClient.SendAsync"/> sends at once before <see cref="SendInterval"/> applies.
+    /// Defaults to 5.
+    /// </summary>
+    public int SendBurst { get; set; } = 5;
+
+    /// <summary>
+    /// After a burst of <see cref="SendBurst"/> packets, how long <see cref="AprsIsClient.SendAsync"/> waits between
+    /// packets; a sender waits rather than fails. Defaults to 6 seconds (10 packets a minute), which keeps a runaway
+    /// beacon loop from flooding APRS-IS. <see cref="TimeSpan.Zero"/> turns the limit off.
+    /// </summary>
+    public TimeSpan SendInterval { get; set; } = TimeSpan.FromSeconds(6);
+
     /// <summary>What to do when the receive queue is full.</summary>
     public OverflowPolicy OverflowPolicy { get; set; } = OverflowPolicy.Block;
 
@@ -105,6 +118,8 @@ public sealed class AprsIsClientOptions
 
         ArgumentOutOfRangeException.ThrowIfLessThan(MaxLineLength, 64);
         ArgumentOutOfRangeException.ThrowIfLessThan(ChannelCapacity, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(SendBurst, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(SendInterval, TimeSpan.Zero);
     }
 
     private const string CallsignMessage = "Callsign must be 1 to 9 letters, digits or '-'.";

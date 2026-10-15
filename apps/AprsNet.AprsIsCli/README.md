@@ -56,7 +56,8 @@ Packets go to stdout and logs and errors to stderr, so output pipes cleanly. Con
 | 1 | Unexpected error |
 | 2 | Connection failed, dropped or went silent (without `--reconnect`) |
 | 3 | Usage error |
-| 4 | Login rejected or timed out |
+| 4 | Login rejected or timed out; for `send`, the passcode was not accepted |
+| 5 | `send message`: rejected or never acknowledged |
 
 ### OpenTelemetry
 
@@ -120,5 +121,37 @@ export APRS_PASSCODE=$(aprscli passcode N0CALL)
 
 The passcode is a public hash of the callsign, not a secret; it only stops people from transmitting by mistake. Use
 it only for your own licensed callsign. An invalid callsign exits with code 3.
+
+## send
+
+Send a status report, message, position or object to APRS-IS as your own callsign. Sending needs a verified login:
+set `APRS_PASSCODE` (or `--passcode`) to the passcode for the callsign. `--dry-run` prints the packet without
+connecting, so you can check it before it goes out:
+
+```sh
+export APRS_PASSCODE=$(aprscli passcode KD9XYZ)
+aprscli send status "Testing APRS.NET" -c KD9XYZ-9 --dry-run   # KD9XYZ-9>APZNET:>Testing APRS.NET
+aprscli send status "Testing APRS.NET" -c KD9XYZ-9
+aprscli send position --lat 49.05833 --lon -72.02917 --symbol "/>" --comment "On the road" -c KD9XYZ-9
+aprscli send object LEADER --lat 49.05833 --lon -72.02917 -c KD9XYZ-9          # --kill removes it
+aprscli send message WU2Z "Hello there" -c KD9XYZ-9
+```
+
+`message` waits for the recipient's acknowledgement, resending after 30 s, 1, 2, 4 and 8 minutes. It then keeps
+listening for `--wait-replies` (default 2m; `0` stops at once), acknowledging and printing each reply
+(`Reply from WU2Z: Received`), so the other station is not left resending its answer. It exits 0 when the message
+was acknowledged and 5 when it was rejected or never acknowledged.
+
+| Option | Meaning |
+| --- | --- |
+| `-c`, `--callsign` | Your callsign, with optional SSID. Required; `N0CALL` is refused. |
+| `--passcode` | Passcode for the callsign; prefer `APRS_PASSCODE`. |
+| `-s`, `--server`, `-r`, `--region` | Server, as for `listen`. Default: `rotate.aprs2.net:14580`. |
+| `--tocall` | Destination TOCALL. Default: `APZNET` (the experimental `APZ` range). |
+| `--path` | Digipeater path, comma-separated. Default: none, for APRS-IS only. |
+| `-n`, `--dry-run` | Print the packet without connecting. |
+
+The client spreads sends out (5 at once, then one every 6 seconds) and refuses to send on an unverified login, since
+the server would drop the packet. Exit codes are those of `listen`, plus 5 for an undelivered message.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>
