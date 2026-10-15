@@ -667,3 +667,22 @@ AprsNet.Packets.PathAnalysis.RemainingHopCount.get -> int
 AprsNet.Packets.PathAnalysis.UsedHops.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>!
 static AprsNet.Packets.PathAnalysis.FromPacket(AprsNet.Packets.AprsPacket! packet) -> AprsNet.Packets.PathAnalysis!
 static AprsNet.Packets.PathAnalysis.FromPath(System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>? path) -> AprsNet.Packets.PathAnalysis!
+AprsNet.Packets.DuplicateFilter
+AprsNet.Packets.DuplicateFilter.Capacity.get -> int
+AprsNet.Packets.DuplicateFilter.Count.get -> int
+AprsNet.Packets.DuplicateFilter.DuplicateFilter(System.TimeSpan? window = null, int capacity = 100000, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Packets.DuplicateFilter.IsDuplicate(AprsNet.Packets.AprsPacket! packet) -> bool
+AprsNet.Packets.DuplicateFilter.TryAccept(AprsNet.Packets.AprsPacket! packet) -> bool
+AprsNet.Packets.DuplicateFilter.Window.get -> System.TimeSpan
+AprsNet.Packets.PacketIdentity
+AprsNet.Packets.PacketIdentity.Equals(AprsNet.Packets.PacketIdentity other) -> bool
+AprsNet.Packets.PacketIdentity.PacketIdentity() -> void
+AprsNet.Packets.PacketIdentity.Value.get -> string!
+const AprsNet.Packets.DuplicateFilter.DefaultCapacity = 100000 -> int
+~override AprsNet.Packets.PacketIdentity.Equals(object obj) -> bool
+override AprsNet.Packets.PacketIdentity.GetHashCode() -> int
+override AprsNet.Packets.PacketIdentity.ToString() -> string!
+static AprsNet.Packets.PacketIdentity.Of(AprsNet.Packets.AprsPacket! packet) -> AprsNet.Packets.PacketIdentity
+static AprsNet.Packets.PacketIdentity.operator !=(AprsNet.Packets.PacketIdentity left, AprsNet.Packets.PacketIdentity right) -> bool
+static AprsNet.Packets.PacketIdentity.operator ==(AprsNet.Packets.PacketIdentity left, AprsNet.Packets.PacketIdentity right) -> bool
+static readonly AprsNet.Packets.DuplicateFilter.DefaultWindow -> System.TimeSpan
