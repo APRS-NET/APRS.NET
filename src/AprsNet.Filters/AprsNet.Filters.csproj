@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>APRS-IS filter expressions (r/, b/, t/, …) evaluated locally against APRS.NET packets.</Description>
+    <Description>APRS-IS filter expressions (r/, b/, t/, …): built from typed terms, and evaluated locally against APRS.NET packets.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Not published yet (phase 3 groundwork). Set to true when the gateway that serves filters is ready. -->
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
