@@ -35,3 +35,17 @@ using var serial = new SerialPort("/dev/ttyUSB0", 9600);
 serial.Open();
 await using var tnc = new KissStreamClient(serial.BaseStream);
 ```
+
+### Transmit limit
+
+Every client limits how fast it sends frames for the TNC to transmit, so a bug or a loop cannot flood a shared radio
+channel: 3 frames at once, then one every 10 seconds. A send waits for its turn rather than fails; cancel it with its
+token. `KissTcpConnection` keeps one limit across reconnects. To change it, or share one limit between clients on the
+same TNC, pass a `KissTransmitLimit`:
+
+```csharp
+var limit = new KissTransmitLimit(burst: 1, interval: TimeSpan.FromSeconds(30));
+await using var tnc = new KissTcpConnection("localhost", transmitLimit: limit);
+```
+
+`KissTransmitLimit.Off` removes the limit, for a channel the app has to itself or a test.

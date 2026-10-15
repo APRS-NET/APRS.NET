@@ -29,7 +29,16 @@ public sealed class KissTcpClient : IAsyncDisposable
     /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
     /// </param>
     /// <param name="connectTimeout">How long to wait for the connection; 10 seconds when not given.</param>
-    public KissTcpClient(string host, int port = DefaultPort, int tncPort = 0, TimeSpan? connectTimeout = null)
+    /// <param name="transmitLimit">
+    /// How fast frames may be sent; a new <see cref="KissTransmitLimit"/> with the default settings when not given.
+    /// </param>
+    public KissTcpClient(
+        string host,
+        int port = DefaultPort,
+        int tncPort = 0,
+        TimeSpan? connectTimeout = null,
+        KissTransmitLimit? transmitLimit = null
+    )
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(host);
         ArgumentOutOfRangeException.ThrowIfLessThan(port, 1);
@@ -40,7 +49,11 @@ public sealed class KissTcpClient : IAsyncDisposable
         _port = port;
         _tncPort = tncPort;
         _connectTimeout = connectTimeout ?? TimeSpan.FromSeconds(10);
+        TransmitLimit = transmitLimit ?? KissTransmitLimit.Default;
     }
+
+    /// <inheritdoc cref="KissStreamClient.TransmitLimit"/>
+    public KissTransmitLimit TransmitLimit { get; }
 
     /// <summary>KISS frames dropped for an invalid escape or for being too long.</summary>
     public long DroppedFrames => _kiss?.DroppedFrames ?? 0;
@@ -75,7 +88,7 @@ public sealed class KissTcpClient : IAsyncDisposable
         }
 
         _client = client;
-        _kiss = new KissStreamClient(client.GetStream(), _tncPort);
+        _kiss = new KissStreamClient(client.GetStream(), _tncPort, transmitLimit: TransmitLimit);
     }
 
     /// <inheritdoc cref="KissStreamClient.ReadFramesAsync"/>

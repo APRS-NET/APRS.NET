@@ -28,15 +28,20 @@ public sealed class KissTcpConnection : IAsyncDisposable
     /// <param name="reconnectDelay">The first wait before reconnecting; 5 seconds when not given.</param>
     /// <param name="maxReconnectDelay">The longest wait between attempts; 60 seconds when not given.</param>
     /// <param name="timeProvider">The clock for the waits.</param>
+    /// <param name="transmitLimit">
+    /// How fast frames may be sent, across reconnects; a new <see cref="KissTransmitLimit"/> with the default settings
+    /// and <paramref name="timeProvider"/> when not given.
+    /// </param>
     public KissTcpConnection(
         string host,
         int port = KissTcpClient.DefaultPort,
         int tncPort = 0,
         TimeSpan? reconnectDelay = null,
         TimeSpan? maxReconnectDelay = null,
-        TimeProvider? timeProvider = null
+        TimeProvider? timeProvider = null,
+        KissTransmitLimit? transmitLimit = null
     )
-        : this(ConnectTcp(host, port), tncPort, reconnectDelay, maxReconnectDelay, timeProvider)
+        : this(ConnectTcp(host, port), tncPort, reconnectDelay, maxReconnectDelay, timeProvider, transmitLimit)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(host);
         ArgumentOutOfRangeException.ThrowIfLessThan(port, 1);
@@ -48,7 +53,8 @@ public sealed class KissTcpConnection : IAsyncDisposable
         int tncPort,
         TimeSpan? reconnectDelay,
         TimeSpan? maxReconnectDelay,
-        TimeProvider? timeProvider
+        TimeProvider? timeProvider,
+        KissTransmitLimit? transmitLimit = null
     )
     {
         ArgumentOutOfRangeException.ThrowIfNegative(tncPort);
@@ -60,7 +66,11 @@ public sealed class KissTcpConnection : IAsyncDisposable
         _connect = connect;
         _tncPort = tncPort;
         _timeProvider = timeProvider ?? TimeProvider.System;
+        TransmitLimit = transmitLimit ?? new KissTransmitLimit(timeProvider: _timeProvider);
     }
+
+    /// <summary>How fast frames may be sent; one limit covers every connection, and a send waits for its turn.</summary>
+    public KissTransmitLimit TransmitLimit { get; }
 
     private bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
@@ -110,7 +120,12 @@ public sealed class KissTcpConnection : IAsyncDisposable
                 KissStreamClient? client = null;
                 try
                 {
-                    client = new KissStreamClient(await _connect(token).ConfigureAwait(false), _tncPort);
+                    // This connection applies the limit itself, so it holds across reconnects.
+                    client = new KissStreamClient(
+                        await _connect(token).ConfigureAwait(false),
+                        _tncPort,
+                        transmitLimit: KissTransmitLimit.Off
+                    );
                 }
                 catch (Exception e) when (e is SocketException or IOException or TimeoutException)
                 {
@@ -210,7 +225,7 @@ public sealed class KissTcpConnection : IAsyncDisposable
         }
     }
 
-    /// <summary>Sends <paramref name="packet"/> for the TNC to transmit.</summary>
+    /// <summary>Sends <paramref name="packet"/> for the TNC to transmit, once <see cref="TransmitLimit"/> allows.</summary>
     /// <exception cref="InvalidOperationException">The TNC is not connected now; nothing was sent.</exception>
     /// <exception cref="ArgumentException">The packet cannot be sent as AX.25; see <see cref="Ax25Frame.FromAprsPacket"/>.</exception>
     public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
@@ -219,17 +234,23 @@ public sealed class KissTcpConnection : IAsyncDisposable
         return SendFrameAsync(Ax25Frame.FromAprsPacket(packet), cancellationToken);
     }
 
-    /// <summary>Sends an AX.25 frame for the TNC to transmit.</summary>
-    /// <exception cref="InvalidOperationException">The TNC is not connected now; nothing was sent.</exception>
-    public ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default)
+    /// <summary>Sends an AX.25 frame for the TNC to transmit, once <see cref="TransmitLimit"/> allows.</summary>
+    /// <exception cref="InvalidOperationException">
+    /// The TNC is not connected now; nothing was sent. Checked before and after waiting for the limit.
+    /// </exception>
+    public async ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
         ObjectDisposedException.ThrowIf(IsDisposed, this);
-        var client =
-            Volatile.Read(ref _current)
-            ?? throw new InvalidOperationException("The TNC is not connected; start reading to connect.");
-        return client.SendFrameAsync(frame, cancellationToken);
+        _ = Connected;
+        await TransmitLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        await Connected.SendFrameAsync(frame, cancellationToken).ConfigureAwait(false);
     }
+
+    private KissStreamClient Connected =>
+        Volatile.Read(ref _current)
+        ?? throw new InvalidOperationException("The TNC is not connected; start reading to connect.");
 
     /// <summary>Ends any read and closes the connection.</summary>
     public async ValueTask DisposeAsync()
