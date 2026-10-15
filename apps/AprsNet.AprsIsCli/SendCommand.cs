@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace AprsNet.AprsIsCli;
 
 /// <summary>
-/// The <c>send</c> command: build a status report, message, position or object and send it to APRS-IS on a verified
+/// The <c>send</c> command: build a status report, message, position, object or weather report and send it to APRS-IS on a verified
 /// login. <c>--dry-run</c> prints the packet without connecting.
 /// </summary>
 internal sealed class SendCommand(CliEnvironment environment)
@@ -83,11 +83,49 @@ internal sealed class SendCommand(CliEnvironment environment)
 
     private readonly Option<bool> _kill = new("--kill") { Description = "Send the object as killed, to remove it." };
 
+    private readonly Option<double?> _weatherLatitude = new("--lat")
+    {
+        Description = "Station latitude. With --lon, sends a complete report; without, a positionless one.",
+    };
+
+    private readonly Option<double?> _weatherLongitude = new("--lon") { Description = "Station longitude." };
+
+    private readonly Option<string> _weatherSymbol = new("--symbol")
+    {
+        Description = "Weather station symbol, /_ or \\_ with an overlay. Default: /_ .",
+        DefaultValueFactory = _ => "/_",
+    };
+
+    private readonly Option<int?> _windDirection = new("--wind-dir") { Description = "Wind direction, degrees." };
+    private readonly Option<double?> _windSpeed = new("--wind-speed") { Description = "Sustained wind speed, mph." };
+    private readonly Option<int?> _gust = new("--gust") { Description = "Peak wind in the last 5 minutes, mph." };
+    private readonly Option<int?> _temperature = new("--temp") { Description = "Temperature, °F." };
+    private readonly Option<double?> _rainHour = new("--rain-1h") { Description = "Rain in the last hour, inches." };
+    private readonly Option<double?> _rainDay = new("--rain-24h")
+    {
+        Description = "Rain in the last 24 hours, inches.",
+    };
+
+    private readonly Option<double?> _rainMidnight = new("--rain-midnight")
+    {
+        Description = "Rain since local midnight, inches.",
+    };
+
+    private readonly Option<int?> _humidity = new("--humidity") { Description = "Relative humidity, 1 to 100 %." };
+    private readonly Option<double?> _pressure = new("--pressure") { Description = "Barometric pressure, millibars." };
+    private readonly Option<int?> _luminosity = new("--luminosity") { Description = "Luminosity, W/m²." };
+
+    private readonly Option<double?> _snow = new("--snow")
+    {
+        Description = "Snowfall in the last 24 hours, inches. Needs --lat and --lon.",
+    };
+
     public Command Build()
     {
         var command = new Command(
             "send",
-            "Send a status report, message, position or object to APRS-IS. Needs your callsign and its passcode."
+            "Send a status report, message, position, object or weather report to APRS-IS. Needs your callsign and "
+                + "its passcode."
         );
         foreach (var option in new Option[] { _callsign, _passcode, _server, _region, _tocall, _path, _dryRun })
         {
@@ -161,10 +199,35 @@ internal sealed class SendCommand(CliEnvironment environment)
             }
         );
 
+        var weather = new Command(
+            "weather",
+            "Send weather readings: a complete report with --lat and --lon, otherwise a positionless one. Readings "
+                + "left out are sent as unknown (wind, gust, temperature) or not at all."
+        )
+        {
+            _weatherLatitude,
+            _weatherLongitude,
+            _weatherSymbol,
+            _windDirection,
+            _windSpeed,
+            _gust,
+            _temperature,
+            _rainHour,
+            _rainDay,
+            _rainMidnight,
+            _humidity,
+            _pressure,
+            _luminosity,
+            _snow,
+            _comment,
+        };
+        SetAction(weather, Weather);
+
         command.Subcommands.Add(status);
         command.Subcommands.Add(message);
         command.Subcommands.Add(position);
         command.Subcommands.Add(@object);
+        command.Subcommands.Add(weather);
         return command;
     }
 
@@ -185,6 +248,58 @@ internal sealed class SendCommand(CliEnvironment environment)
                 return await RunAsync(parseResult, command.Name, built, cancellationToken);
             }
         );
+
+    private AprsPayload Weather(ParseResult parseResult)
+    {
+        var readings = new WeatherData
+        {
+            WindDirection = parseResult.GetValue(_windDirection),
+            WindSpeedMph = parseResult.GetValue(_windSpeed),
+            WindGustMph = parseResult.GetValue(_gust),
+            TemperatureF = parseResult.GetValue(_temperature),
+            RainLastHourInches = parseResult.GetValue(_rainHour),
+            RainLast24HoursInches = parseResult.GetValue(_rainDay),
+            RainSinceMidnightInches = parseResult.GetValue(_rainMidnight),
+            HumidityPercent = parseResult.GetValue(_humidity),
+            PressureMillibars = parseResult.GetValue(_pressure),
+            LuminosityWattsPerSquareMeter = parseResult.GetValue(_luminosity),
+            SnowLast24HoursInches = parseResult.GetValue(_snow),
+        };
+        if (readings == new WeatherData())
+        {
+            throw new ArgumentException("Give at least one reading, for example --temp 68.");
+        }
+
+        var comment = parseResult.GetValue(_comment) ?? "";
+        var (latitude, longitude) = (parseResult.GetValue(_weatherLatitude), parseResult.GetValue(_weatherLongitude));
+        if (latitude is null && longitude is null)
+        {
+            return new WeatherReport
+            {
+                Timestamp = AprsTimestamp.FromDateTimeOffset(
+                    environment.TimeProvider.GetUtcNow(),
+                    AprsTimestampFormat.MonthDayHourMinute
+                ),
+                Weather = readings,
+                Comment = comment,
+            };
+        }
+
+        return new PositionReport
+        {
+            Position =
+                latitude is { } lat && longitude is { } lon
+                    ? new AprsPosition(lat, lon)
+                    : throw new ArgumentException("--lat and --lon go together."),
+            Symbol =
+                parseResult.GetValue(_weatherSymbol) is [var table, var code]
+                && AprsSymbol.TryCreate(table, code, out var symbol)
+                    ? symbol
+                    : throw new ArgumentException("--symbol must be a table and a code, for example /_."),
+            Weather = readings,
+            Comment = comment,
+        };
+    }
 
     private AprsPosition Position(ParseResult parseResult) =>
         parseResult.GetValue(_latitude) is { } latitude && parseResult.GetValue(_longitude) is { } longitude
