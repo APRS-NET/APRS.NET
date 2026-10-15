@@ -65,6 +65,21 @@ internal static class ClientMetrics
         _packetsSent.Add(1);
     }
 
+    private static readonly Counter<long> _reconnects = _meter.CreateCounter<long>(
+        "aprsnet.aprsis.connection.reconnects",
+        "{reconnect}",
+        "Automatic reconnects by AprsIsConnection, by what ended the previous connection."
+    );
+
+    /// <summary>
+    /// <paramref name="cause"/> is one of <c>server_closed</c>, <c>socket_error</c>, <c>keepalive_timeout</c>,
+    /// <c>packet_silence</c> or <c>connect_failed</c>.
+    /// </summary>
+    public static void Reconnect(string cause)
+    {
+        _reconnects.Add(1, new KeyValuePair<string, object?>("cause", cause));
+    }
+
     public static void Attempt(string outcome)
     {
         _connectionAttempts.Add(1, new KeyValuePair<string, object?>("outcome", outcome));

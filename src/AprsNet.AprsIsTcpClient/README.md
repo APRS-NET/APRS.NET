@@ -47,6 +47,27 @@ Console.WriteLine(delivery.Status); // Acknowledged, Rejected or NotAcknowledged
 
 A login filter of `g/<callsign>` makes sure messages and acknowledgements addressed to the station reach it.
 
+## Staying connected
+
+`AprsIsClient` is single-use: when its connection ends, so does its stream. For an app that should stay online, use
+`AprsIsConnection`, which reconnects by itself after the first login: it waits `ReconnectDelay` (5 s), doubling up to
+`MaxReconnectDelay` (60 s) with ±20% jitter, and starts the backoff again after a connection that held. It reconnects
+when the server closes, the link fails, the server sends nothing for `IdleTimeout` (90 s; APRS-IS sends a keepalive
+about every 20 s), or, if set, no packet arrives for `MaxPacketSilence`.
+
+```csharp
+await using var connection = new AprsIsConnection(options, logger);
+connection.StateChanged += (_, e) => Console.WriteLine($"{e.State} {e.RetryIn} {e.Error?.Message}");
+await connection.StartAsync(); // throws if the first login fails, so wrong settings show at once
+
+await foreach (var line in connection.ReadLinesAsync()) // one stream across reconnects
+    Handle(line);
+```
+
+`SendAsync` waits while the connection is down and sends once it is back; `SetFilterAsync` applies now and on every
+later login; one send rate limit covers every connection. `AprsMessenger` works with it the same way
+(`new AprsMessenger(address, connection.SendAsync)`).
+
 ## Errors in the user's language
 
 Settings a person types (callsign, software name and version, filter, server address, passcode callsign) are refused
