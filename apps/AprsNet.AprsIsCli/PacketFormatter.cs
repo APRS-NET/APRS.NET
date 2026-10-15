@@ -67,7 +67,7 @@ internal static class PacketFormatter
                 Telemetry(line, telemetry);
                 break;
             case WeatherReport weather:
-                line.Append("weather at ").Append(weather.Timestamp);
+                line.Append("weather at ").Append(weather.Timestamp?.ToString() ?? "an unknown time");
                 Weather(line, weather.Weather);
                 if (weather.Comment.Trim().Length > 0)
                 {

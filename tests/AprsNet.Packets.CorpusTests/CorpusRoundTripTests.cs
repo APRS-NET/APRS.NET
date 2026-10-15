@@ -295,12 +295,14 @@ public class CorpusRoundTripTests
                 var packet = AprsPacket.Parse(bytes);
                 if (
                     packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: WeatherReport parsed }
+                    || parsed.Timestamp is null
                     || parsed.Weather.SnowLast24HoursInches is not null
                     || parsed.Comment.Any(char.IsControl)
                     || parsed.Comment.StartsWith('.')
                 )
                 {
-                    // Snowfall a positionless report cannot carry, control bytes refused in new text, or a comment
+                    // No readable timestamp (a new report needs one), snowfall a positionless report cannot carry,
+                    // control bytes refused in new text, or a comment
                     // whose leading dots would join the dotted field written before it (a station that leaves out
                     // the wind sends ".../...g..." as its comment).
                     continue;
