@@ -22,9 +22,10 @@ internal static class AprsEncoder
             MicEReport micE => MicEEncoder.Encode(micE),
             ObjectReport report => PositionEncoder.Encode(report),
             ItemReport item => PositionEncoder.Encode(item),
+            WeatherReport weather => WeatherEncoder.Encode(weather),
             _ => throw new NotSupportedException(
                 $"Encoding {payload.GetType().Name} is not supported yet; status reports, messages, position "
-                    + "reports, Mic-E reports, objects and items are."
+                    + "reports, Mic-E reports, objects, items and weather reports are."
             ),
         };
 
@@ -47,6 +48,7 @@ internal static class AprsEncoder
             (ItemReport e, ItemReport a) => e.Name != a.Name ? "the name does not survive encoding"
             : e.IsLive != a.IsLive ? "the live or killed flag does not survive encoding"
             : PositionMismatch(e, a),
+            (WeatherReport e, WeatherReport a) => WeatherMismatch(e, a),
             _ => $"it decodes as {actual?.GetType().Name ?? "nothing"}, not {expected.GetType().Name}",
         };
 
@@ -188,7 +190,7 @@ internal static class AprsEncoder
         id is not null && id.Length >= minimum && id.Length <= 5 && id.All(char.IsAsciiLetterOrDigit);
 
     /// <summary>The parser's original bytes when the payload came from it, otherwise the text as UTF-8.</summary>
-    private static ReadOnlySpan<byte> TextBytes(ReadOnlyMemory<byte> parsed, string text, string what)
+    internal static ReadOnlySpan<byte> TextBytes(ReadOnlyMemory<byte> parsed, string text, string what)
     {
         if (!parsed.IsEmpty)
         {
@@ -220,7 +222,8 @@ internal static class AprsEncoder
             : Math.Abs(e.Position.Latitude - a.Position.Latitude) > latitudeStep + datumSlack + 1e-9
             || Math.Abs(e.Position.Longitude - a.Position.Longitude) > longitudeStep + datumSlack + 1e-9
                 ? "the position does not survive encoding"
-            : (e.Course is null) != (a.Course is null) || (e.SpeedKnots is null) != (a.SpeedKnots is null)
+            : (PositionEncoder.CourseOf(e) is null) != (a.Course is null)
+            || (PositionEncoder.SpeedOf(e) is null) != (a.SpeedKnots is null)
                 ? "the course and speed do not survive encoding"
             : (e.PowerHeightGain is null) != (a.PowerHeightGain is null)
             || (e.RangeMiles is null) != (a.RangeMiles is null)
@@ -228,6 +231,8 @@ internal static class AprsEncoder
                 ? "the data extension does not survive encoding"
             : (e.AltitudeFeet is null) != (a.AltitudeFeet is null) ? "the altitude does not survive encoding"
             : (e.Weather is null) != (a.Weather is null) ? "the comment would be read as weather readings"
+            : e.Weather is { } sent && a.Weather is { } read && WeatherEncoder.Mismatch(sent, read) is { } weather
+                ? weather
             : PositionEncoder.ExpectedComment(e) != a.Comment ? "the comment does not survive encoding"
             : null;
 
@@ -241,6 +246,15 @@ internal static class AprsEncoder
                 _ => 1.0,
             };
     }
+
+    private static string? WeatherMismatch(WeatherReport e, WeatherReport a) =>
+        e.Timestamp != a.Timestamp ? "the timestamp does not survive encoding"
+        : (e.Weather.WindDirection is null) != (a.Weather.WindDirection is null)
+        || (e.Weather.WindSpeedMph is null) != (a.Weather.WindSpeedMph is null)
+            ? "the wind does not survive encoding"
+        : WeatherEncoder.Mismatch(e.Weather, a.Weather) is { } weather ? weather
+        : e.Comment != a.Comment ? "the comment would be read as weather readings, or does not survive encoding"
+        : null;
 
     private static string? StatusMismatch(StatusReport e, StatusReport a) =>
         e.Timestamp != a.Timestamp ? "the text would be read as a timestamp"

@@ -121,9 +121,21 @@ internal static class PositionEncoder
             throw new ArgumentException("A position needs a symbol.");
         }
 
+        if (payload.Weather is not null && payload.Symbol.Code != '_')
+        {
+            throw new ArgumentException("Weather readings need the weather station symbol, '_' in either table.");
+        }
+
         var altitudeInComment = payload.IsCompressed
             ? WriteCompressed(info, payload)
             : WriteUncompressed(info, payload);
+
+        // The readings lead the comment, ahead of an altitude, since a receiver reads them from its first byte.
+        if (NewWeather(payload) is { } weather)
+        {
+            info.AddRange(Encoding.ASCII.GetBytes(WeatherEncoder.Readings(weather)));
+        }
+
         var comment = CommentBytes(payload);
         if (altitudeInComment && payload.AltitudeFeet is { } feet && !HasAltitude(comment))
         {
@@ -131,6 +143,32 @@ internal static class PositionEncoder
         }
 
         info.AddRange(comment);
+    }
+
+    /// <summary>
+    /// Readings a caller set, to write. A parsed payload's readings are already at the start of its comment bytes.
+    /// </summary>
+    private static WeatherData? NewWeather(PositionedPayload payload) =>
+        payload.CommentBytes.IsEmpty ? payload.Weather : null;
+
+    /// <summary>The course to send: the course, or for a weather station the wind direction.</summary>
+    internal static int? CourseOf(PositionedPayload payload)
+    {
+        var wind = payload.Weather?.WindDirection;
+        return payload.Course is { } course && wind is { } direction && course != direction
+            ? throw new ArgumentException(
+                "Course and wind direction differ; a weather station sends the wind as its course."
+            )
+            : payload.Course ?? wind;
+    }
+
+    /// <summary>The speed to send: the speed, or for a weather station the wind speed in mph.</summary>
+    internal static double? SpeedOf(PositionedPayload payload)
+    {
+        var wind = payload.Weather?.WindSpeedMph;
+        return payload.SpeedKnots is { } speed && wind is { } mph && Math.Abs(speed - mph) > 1e-9
+            ? throw new ArgumentException("Speed and wind speed differ; a weather station sends the wind as its speed.")
+            : payload.SpeedKnots ?? wind;
     }
 
     /// <summary>
@@ -200,7 +238,10 @@ internal static class PositionEncoder
     /// <summary>The one data extension after an uncompressed position, or nothing.</summary>
     private static string Extension(PositionedPayload payload)
     {
-        var courseSpeed = payload.Course is not null || payload.SpeedKnots is not null;
+        var (courseValue, speedValue) = (CourseOf(payload), SpeedOf(payload));
+
+        // APRS101 makes wind part of every complete weather report, as dots when there is no wind sensor.
+        var courseSpeed = courseValue is not null || speedValue is not null || NewWeather(payload) is not null;
         var count =
             (courseSpeed ? 1 : 0)
             + (payload.PowerHeightGain is null ? 0 : 1)
@@ -224,13 +265,13 @@ internal static class PositionEncoder
 
         if (courseSpeed)
         {
-            var course = payload.Course switch
+            var course = courseValue switch
             {
                 null => "...",
                 < 0 or > 360 => throw new ArgumentException("Course must be 0 to 360 degrees."),
                 { } c => c.ToString("000", CultureInfo.InvariantCulture),
             };
-            var speed = payload.SpeedKnots switch
+            var speed = speedValue switch
             {
                 null => "...",
                 { } s when s < 0 || Math.Round(s) > 999 => throw new ArgumentException("Speed must be 0 to 999 knots."),
@@ -320,7 +361,7 @@ internal static class PositionEncoder
     /// that does not fit goes into the comment as <c>/A=</c>.
     /// </summary>
     private static CompressedData CompressedCarries(PositionedPayload payload) =>
-        payload.Course is not null || payload.SpeedKnots is not null ? CompressedData.CourseSpeed
+        CourseOf(payload) is not null || SpeedOf(payload) is not null ? CompressedData.CourseSpeed
         : payload.RangeMiles is not null ? CompressedData.Range
         : payload.AltitudeFeet is >= 1 && !CommentHasAltitude(payload) ? CompressedData.Altitude
         : CompressedData.None;
@@ -362,14 +403,14 @@ internal static class PositionEncoder
         switch (carries)
         {
             case CompressedData.CourseSpeed:
-                var course = payload.Course ?? 0;
+                var course = CourseOf(payload) ?? 0;
                 if (course is < 0 or > 360)
                 {
                     throw new ArgumentException("Course must be 0 to 360 degrees.");
                 }
 
                 info.Add((byte)(33 + (course % 360 / 4)));
-                info.Add(CompressedSpeed(Math.Log((payload.SpeedKnots ?? 0) + 1, 1.08)));
+                info.Add(CompressedSpeed(Math.Log((SpeedOf(payload) ?? 0) + 1, 1.08)));
                 info.Add(
                     TypeByte(
                         type with

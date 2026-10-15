@@ -550,3 +550,28 @@ AprsNet.Packets.AprsValidationException.Character.get -> char?
 AprsNet.Packets.AprsValidationException.Code.get -> AprsNet.Packets.AprsValidationErrorCode
 AprsNet.Packets.AprsValidationException.Index.get -> int?
 AprsNet.Packets.AprsValidationException.Value.get -> string?
+AprsNet.Packets.PositionedPayload.Weather.init -> void
+AprsNet.Packets.WeatherData.<Clone>$() -> AprsNet.Packets.WeatherData!
+AprsNet.Packets.WeatherData.Equals(AprsNet.Packets.WeatherData? other) -> bool
+AprsNet.Packets.WeatherData.HumidityPercent.init -> void
+AprsNet.Packets.WeatherData.LuminosityWattsPerSquareMeter.init -> void
+AprsNet.Packets.WeatherData.PressureMillibars.init -> void
+AprsNet.Packets.WeatherData.RainCounter.init -> void
+AprsNet.Packets.WeatherData.RainLast24HoursInches.init -> void
+AprsNet.Packets.WeatherData.RainLastHourInches.init -> void
+AprsNet.Packets.WeatherData.RainSinceMidnightInches.init -> void
+AprsNet.Packets.WeatherData.SnowLast24HoursInches.init -> void
+AprsNet.Packets.WeatherData.TemperatureF.init -> void
+AprsNet.Packets.WeatherData.WeatherData() -> void
+AprsNet.Packets.WeatherData.WindDirection.init -> void
+AprsNet.Packets.WeatherData.WindGustMph.init -> void
+AprsNet.Packets.WeatherData.WindSpeedMph.init -> void
+AprsNet.Packets.WeatherReport.Comment.init -> void
+AprsNet.Packets.WeatherReport.Timestamp.init -> void
+AprsNet.Packets.WeatherReport.Weather.init -> void
+AprsNet.Packets.WeatherReport.WeatherReport() -> void
+override AprsNet.Packets.WeatherData.Equals(object? obj) -> bool
+override AprsNet.Packets.WeatherData.GetHashCode() -> int
+override AprsNet.Packets.WeatherData.ToString() -> string!
+static AprsNet.Packets.WeatherData.operator !=(AprsNet.Packets.WeatherData? left, AprsNet.Packets.WeatherData? right) -> bool
+static AprsNet.Packets.WeatherData.operator ==(AprsNet.Packets.WeatherData? left, AprsNet.Packets.WeatherData? right) -> bool
