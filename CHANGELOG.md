@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.17](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.16...v0.1.0-alpha.17) (2026-10-15)
+
+
+### Features
+
+* **aprs-is:** reconnect automatically with AprsIsConnection ([b332851](https://github.com/APRS-NET/APRS.NET/commit/b332851748e80a76f3dced23fb08bcb082b33bad))
+* **aprs-is:** reconnect automatically with AprsIsConnection ([63263c3](https://github.com/APRS-NET/APRS.NET/commit/63263c3e1d87f0f766908be8efd21242e128cf4f))
+
 ## [0.1.0-alpha.16](https://github.com/APRS-NET/APRS.NET/compare/v0.1.0-alpha.15...v0.1.0-alpha.16) (2026-10-15)
 
 
