@@ -10,6 +10,9 @@ namespace AprsNet.AprsIsCli;
 /// <summary>Runs <c>aprscli listen</c>: connect, stream lines to the console and an optional capture file, stop on count, duration or Ctrl+C.</summary>
 internal static class ListenRunner
 {
+    private static readonly TimeSpan _maxReconnectDelay = new AprsIsClientOptions().MaxReconnectDelay;
+    private static readonly TimeSpan _noRetryDelay = TimeSpan.FromHours(1);
+
     public static async Task<int> RunAsync(
         ListenOptions options,
         CliEnvironment environment,
@@ -25,7 +28,10 @@ internal static class ListenRunner
             Filter = options.Filter,
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
-            ReconnectDelay = environment.ReconnectDelay,
+            // Without --reconnect the reporter closes the connection at its first drop. A first retry as late as the
+            // longest backoff makes sure no reconnect attempt can start before that close lands.
+            ReconnectDelay = options.Reconnect ? environment.ReconnectDelay : _noRetryDelay,
+            MaxReconnectDelay = options.Reconnect ? _maxReconnectDelay : _noRetryDelay,
             MaxPacketSilence = options.MaxSilence,
         };
 
@@ -67,8 +73,16 @@ internal static class ListenRunner
                 return failed;
             }
 
-            var code = await StreamAsync(connection, options, environment, capture, packetLog, run.Token);
+            var stats = options.StatsInterval is null ? null : new ListenStats(options.Callsign);
+            var started = environment.TimeProvider.GetTimestamp();
+            var code = await StreamAsync(connection, options, environment, capture, packetLog, stats, run.Token);
             await reporter.Closing;
+            if (stats is not null)
+            {
+                var elapsed = environment.TimeProvider.GetElapsedTime(started);
+                await environment.Error.WriteLineAsync($"aprscli: {stats.Summary(elapsed)}");
+            }
+
             return reporter.ExitCode ?? code;
         }
         finally
@@ -134,16 +148,30 @@ internal static class ListenRunner
         CliEnvironment environment,
         StreamWriter? capture,
         ILogger? packetLog,
+        ListenStats? stats,
         CancellationToken cancellationToken
     )
     {
         var received = 0;
+        var started = environment.TimeProvider.GetTimestamp();
+        var nextSummary = options.StatsInterval;
         try
         {
             await foreach (var line in connection.ReadLinesAsync(cancellationToken))
             {
                 var receivedAt = environment.TimeProvider.GetUtcNow();
                 var stamp = LineFormatter.Timestamp(receivedAt);
+                if (stats is not null)
+                {
+                    // Checked as packets arrive, so a summary needs no timer of its own; a silent feed prints none.
+                    stats.Add(AprsPacket.Parse(line));
+                    var elapsed = environment.TimeProvider.GetElapsedTime(started);
+                    if (elapsed >= nextSummary)
+                    {
+                        await environment.Error.WriteLineAsync($"aprscli: {stats.Summary(elapsed)}");
+                        nextSummary = elapsed + options.StatsInterval;
+                    }
+                }
 
                 if (capture is not null)
                 {

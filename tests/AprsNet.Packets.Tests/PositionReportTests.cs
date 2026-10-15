@@ -144,6 +144,8 @@ public class PositionReportTests
     [Theory]
     [InlineData("!4903.50N/07201.75", ParseIssueCode.PositionTooShort, 1)]
     [InlineData("=/5L!!<*e7", ParseIssueCode.PositionTooShort, 1)]
+    [InlineData("@1222", ParseIssueCode.PositionTooShort, 5)] // cut inside the timestamp: the end, not past it
+    [InlineData("/092345z", ParseIssueCode.PositionTooShort, 8)]
     [InlineData("!9103.50N/07201.75W-", ParseIssueCode.InvalidLatitude, 1)]
     [InlineData("!4960.00N/07201.75W-", ParseIssueCode.InvalidLatitude, 1)]
     [InlineData("!4903,50N/07201.75W-", ParseIssueCode.InvalidLatitude, 1)]

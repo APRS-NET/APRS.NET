@@ -56,11 +56,12 @@ public class AprsPacketCreateTests
     }
 
     [Fact]
-    public void PayloadTypesWithoutAnEncoderAreNotSupportedYet()
+    public void RawWeatherStationDataIsNotSupported()
     {
-        var packet = AprsPacket.Parse("N0CALL>APRS:<IGATE,MSG_CNT=0");
+        var packet = AprsPacket.Parse("N0CALL>APRS:!!00000066013D000028710166--------0158053201200210");
 
-        Assert.Throws<NotSupportedException>(() => Create(packet.Payload!));
+        var ex = Assert.Throws<NotSupportedException>(() => Create(packet.Payload!));
+        Assert.Contains("raw weather station data", ex.Message, StringComparison.Ordinal);
     }
 
     // Callsigns and path entries

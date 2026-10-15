@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace AprsNet.Packets.CorpusTests;
 
 /// <summary>
@@ -13,6 +15,7 @@ public class CorpusRoundTripTests
         var micE = 0;
         var objectsAndItems = 0;
         var weather = 0;
+        var telemetry = 0;
         var failures = new List<string>();
         foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
         {
@@ -31,6 +34,10 @@ public class CorpusRoundTripTests
                                 or ObjectReport
                                 or ItemReport
                                 or WeatherReport
+                                or TelemetryReport
+                                or TelemetryDefinition
+                                or CapabilitiesReport
+                                or UserDefinedPayload
                         }
                     || packet.Payload is MicEReport { Message: MicEMessage.Unknown } or ObjectReport { Timestamp: null }
                 )
@@ -44,6 +51,7 @@ public class CorpusRoundTripTests
                 micE += packet.Payload is MicEReport ? 1 : 0;
                 objectsAndItems += packet.Payload is ObjectReport or ItemReport ? 1 : 0;
                 weather += packet.Payload is WeatherReport or PositionedPayload { Weather: not null } ? 1 : 0;
+                telemetry += packet.Payload is TelemetryReport or TelemetryDefinition ? 1 : 0;
                 try
                 {
                     var rebuilt = AprsPacket.Create(packet.Source, packet.Destination, packet.Path, packet.Payload);
@@ -84,6 +92,7 @@ public class CorpusRoundTripTests
         Assert.True(micE > 2_500, $"only {micE} Mic-E packets");
         Assert.True(objectsAndItems > 5_000, $"only {objectsAndItems} objects and items");
         Assert.True(weather > 5_000, $"only {weather} weather reports");
+        Assert.True(telemetry > 7_000, $"only {telemetry} telemetry reports and definitions");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
@@ -129,6 +138,7 @@ public class CorpusRoundTripTests
                     RangeMiles = parsed.RangeMiles,
                     DirectionFindingStrength = parsed.DirectionFindingStrength,
                     Weather = parsed.Weather,
+                    Telemetry = parsed.Telemetry,
                     Comment = parsed.Comment,
                 };
                 try
@@ -183,6 +193,7 @@ public class CorpusRoundTripTests
                     Course = parsed.Course,
                     SpeedKnots = parsed.SpeedKnots,
                     AltitudeFeet = parsed.AltitudeFeet,
+                    Telemetry = parsed.Telemetry,
                     Comment = parsed.Comment,
                 };
                 try
@@ -244,6 +255,7 @@ public class CorpusRoundTripTests
                         RangeMiles = o.RangeMiles,
                         DirectionFindingStrength = o.DirectionFindingStrength,
                         Weather = o.Weather,
+                        Telemetry = o.Telemetry,
                         Comment = o.Comment,
                     },
                     ItemReport i => new ItemReport
@@ -260,6 +272,7 @@ public class CorpusRoundTripTests
                         RangeMiles = i.RangeMiles,
                         DirectionFindingStrength = i.DirectionFindingStrength,
                         Weather = i.Weather,
+                        Telemetry = i.Telemetry,
                         Comment = i.Comment,
                     },
                     _ => throw new InvalidOperationException(),
@@ -295,12 +308,14 @@ public class CorpusRoundTripTests
                 var packet = AprsPacket.Parse(bytes);
                 if (
                     packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: WeatherReport parsed }
+                    || parsed.Timestamp is null
                     || parsed.Weather.SnowLast24HoursInches is not null
                     || parsed.Comment.Any(char.IsControl)
                     || parsed.Comment.StartsWith('.')
                 )
                 {
-                    // Snowfall a positionless report cannot carry, control bytes refused in new text, or a comment
+                    // No readable timestamp (a new report needs one), snowfall a positionless report cannot carry,
+                    // control bytes refused in new text, or a comment
                     // whose leading dots would join the dotted field written before it (a station that leaves out
                     // the wind sends ".../...g..." as its comment).
                     continue;
@@ -325,6 +340,134 @@ public class CorpusRoundTripTests
         }
 
         Assert.True(checkedPackets > 50, $"only {checkedPackets} packets");
+        Assert.True(
+            failures.Count == 0,
+            $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))
+        );
+    }
+
+    [Fact]
+    public void TelemetryRebuiltFromItsValuesDecodesTheSame()
+    {
+        // Reports and definitions written in APRS101's form from the values alone. Left out are what the encoder
+        // refuses in new payloads: analog values APRS101 does not allow (decimals, negatives, above 999), definitions
+        // over the 67-character message limit (SvxLink sends 69), and addressees that are not callsigns.
+        var reports = 0;
+        var definitions = 0;
+        var failures = new List<string>();
+        foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in CorpusParsingTests.Packets(file))
+            {
+                var packet = AprsPacket.Parse(bytes);
+                if (packet is not { HasHeader: true, Outcome: ParseOutcome.Parsed })
+                {
+                    continue;
+                }
+
+                AprsPayload copy;
+                switch (packet.Payload)
+                {
+                    case TelemetryReport report
+                        when report.Analog.All(v => v is not { } n || (n is >= 0 and <= 999 && n == Math.Floor(n)))
+                            && (report.Analog.Count == 5 || report.Digital.Count == 0)
+                            && (report.Digital.Count == 8 || report.Comment.Length == 0)
+                            && !report.Comment.Any(char.IsControl):
+                        reports++;
+                        copy = new TelemetryReport
+                        {
+                            Sequence = report.Sequence,
+                            Analog = report.Analog,
+                            Digital = report.Digital,
+                            Comment = report.Comment,
+                        };
+                        break;
+                    case TelemetryDefinition definition
+                        when !packet.Issues.Any(i => i.Code == ParseIssueCode.InvalidTelemetryDefinition)
+                            && definition.Addressee is { Length: > 0 } addressee
+                            && addressee.All(c => char.IsAsciiLetterOrDigit(c) || c == '-')
+                            && Encoding.UTF8.GetString(packet.Information.Span[11..]).TrimEnd().Length <= 67
+                            && !definition.Labels.Any(label => label.Any(char.IsControl)):
+                        definitions++;
+                        copy = new TelemetryDefinition
+                        {
+                            Addressee = definition.Addressee,
+                            Kind = definition.Kind,
+                            Labels = definition.Labels,
+                            Equations = definition.Equations,
+                            BitSense = definition.BitSense,
+                            ProjectName = definition.ProjectName,
+                        };
+                        break;
+                    default:
+                        continue;
+                }
+
+                try
+                {
+                    AprsPacket.Create(packet.Source, packet.Destination, packet.Path, copy);
+                }
+                catch (ArgumentException ex)
+                {
+                    failures.Add($"{file}:{lineNumber} {ex.Message} {packet}");
+                }
+            }
+        }
+
+        Assert.True(reports > 2_000, $"only {reports} reports");
+        Assert.True(definitions > 3_500, $"only {definitions} definitions");
+        Assert.True(
+            failures.Count == 0,
+            $"{failures.Count} of {reports + definitions}:\n" + string.Join("\n", failures.Take(60))
+        );
+    }
+
+    [Fact]
+    public void CapabilitiesAndUserDefinedDataRebuiltFromTheirValuesDecodeTheSame()
+    {
+        var checkedPackets = 0;
+        var failures = new List<string>();
+        foreach (var file in CorpusFileTests.CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in CorpusParsingTests.Packets(file))
+            {
+                var packet = AprsPacket.Parse(bytes);
+                AprsPayload copy;
+                switch (packet)
+                {
+                    case { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: CapabilitiesReport report }
+                        when report.Capabilities.Count > 0
+                            && !report.Capabilities.Any(c => (c.Key + c.Value).Any(char.IsControl)):
+                        copy = new CapabilitiesReport { Capabilities = report.Capabilities };
+                        break;
+                    case { HasHeader: true, Outcome: ParseOutcome.Parsed, Payload: UserDefinedPayload user }
+                        when user.UserId is >= '!' and <= '~'
+                            && user.UserPacketType is >= '!' and <= '~'
+                            && !user.Data.Any(char.IsControl):
+                        copy = new UserDefinedPayload
+                        {
+                            UserId = user.UserId,
+                            UserPacketType = user.UserPacketType,
+                            Data = user.Data,
+                        };
+                        break;
+                    default:
+                        continue;
+                }
+
+                checkedPackets++;
+                try
+                {
+                    AprsPacket.Create(packet.Source, packet.Destination, packet.Path, copy);
+                }
+                catch (ArgumentException ex)
+                {
+                    failures.Add($"{file}:{lineNumber} {ex.Message} {packet}");
+                }
+            }
+        }
+
+        Assert.True(checkedPackets > 1_400, $"only {checkedPackets} packets");
         Assert.True(
             failures.Count == 0,
             $"{failures.Count} of {checkedPackets}:\n" + string.Join("\n", failures.Take(60))

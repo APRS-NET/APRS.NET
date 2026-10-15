@@ -55,7 +55,7 @@ internal static class PrettyFormatter
                 );
                 break;
             case WeatherReport weather:
-                fields.Add(("weather", Time(weather.Timestamp, received)));
+                fields.Add(("weather", weather.Timestamp is { } taken ? Time(taken, received) : "time unknown"));
                 fields.AddRange(PacketFormatter.WeatherFields(weather.Weather));
                 if (weather.Comment.Trim().Length > 0)
                 {
@@ -249,6 +249,15 @@ internal static class PrettyFormatter
         if (report.Datum is { } datum)
         {
             fields.Add(("datum", datum is 'W' or 'w' ? "WGS84 (extra precision)" : $"{datum} (extra precision)"));
+        }
+
+        if (report.Telemetry is { } telemetry)
+        {
+            fields.Add(("telemetry", $"#{telemetry.Sequence}  {PacketFormatter.Analog(telemetry)}"));
+            if (telemetry.Digital.Count > 0)
+            {
+                fields.Add(("digital", PacketFormatter.Bits(telemetry)));
+            }
         }
 
         if (report.Area is { } area)

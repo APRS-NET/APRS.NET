@@ -26,7 +26,7 @@ internal static class MessageDecoder
         var text = information[(colon + 1)..];
         if (TelemetryKind(text.Span) is { } kind)
         {
-            return Telemetry(addressee, kind, text[5..], offset + colon + 6, issues);
+            return Telemetry(addressee, kind, text, offset + colon + 6, issues);
         }
 
         if (TryAck(text.Span, out var ackKind, out var ackId, out var ackReply))
@@ -200,12 +200,12 @@ internal static class MessageDecoder
     private static TelemetryDefinition Telemetry(
         string addressee,
         TelemetryDefinitionKind kind,
-        ReadOnlyMemory<byte> body,
+        ReadOnlyMemory<byte> message,
         int offset,
         List<ParseIssue> issues
     )
     {
-        var text = AprsText.Decode(body.Span).TrimEnd();
+        var text = AprsText.Decode(message.Span[5..]).TrimEnd();
         switch (kind)
         {
             case TelemetryDefinitionKind.Equations:
@@ -240,6 +240,7 @@ internal static class MessageDecoder
                 {
                     Addressee = addressee,
                     Kind = kind,
+                    TextBytes = message,
                     Equations = equations,
                 };
 
@@ -251,13 +252,19 @@ internal static class MessageDecoder
                     issues.Add(
                         new ParseIssue(ParseIssueCode.InvalidTelemetryDefinition, ParseIssueSeverity.Warning, offset)
                     );
-                    return new TelemetryDefinition { Addressee = addressee, Kind = kind };
+                    return new TelemetryDefinition
+                    {
+                        Addressee = addressee,
+                        Kind = kind,
+                        TextBytes = message,
+                    };
                 }
 
                 return new TelemetryDefinition
                 {
                     Addressee = addressee,
                     Kind = kind,
+                    TextBytes = message,
                     BitSense = bits,
                     ProjectName = comma < 0 ? null : text[(comma + 1)..],
                 };
@@ -267,6 +274,7 @@ internal static class MessageDecoder
                 {
                     Addressee = addressee,
                     Kind = kind,
+                    TextBytes = message,
                     Labels = text.Split(','),
                 };
         }

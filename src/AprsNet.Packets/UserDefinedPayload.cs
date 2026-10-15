@@ -7,13 +7,17 @@ namespace AprsNet.Packets;
 /// </summary>
 public sealed class UserDefinedPayload : AprsPayload
 {
-    internal UserDefinedPayload() { }
+    /// <summary>
+    /// Creates user-defined data to encode with <see cref="AprsPacket.Create"/>. Set <see cref="UserId"/> (<c>{</c>
+    /// for an experimental packet), <see cref="UserPacketType"/> and <see cref="Data"/>.
+    /// </summary>
+    public UserDefinedPayload() { }
 
-    /// <summary>The user ID: the character after <c>{</c>.</summary>
-    public char UserId { get; internal init; }
+    /// <summary>The user ID: the character after <c>{</c>. Printable ASCII when encoding.</summary>
+    public char UserId { get; init; }
 
-    /// <summary>The user-defined packet type: the character after the user ID.</summary>
-    public char UserPacketType { get; internal init; }
+    /// <summary>The user-defined packet type: the character after the user ID. Printable ASCII when encoding.</summary>
+    public char UserPacketType { get; init; }
 
     /// <summary>Whether this is an experimental packet (<c>{{</c>), which needs no issued user ID.</summary>
     public bool IsExperimental => UserId == '{';
@@ -25,5 +29,5 @@ public sealed class UserDefinedPayload : AprsPayload
     /// The data after the packet type: decoded as UTF-8 when the bytes are valid UTF-8, otherwise one character per
     /// byte (Latin-1). APRS101 recommends printable ASCII but does not require it.
     /// </summary>
-    public string Data { get; internal init; } = "";
+    public string Data { get; init; } = "";
 }

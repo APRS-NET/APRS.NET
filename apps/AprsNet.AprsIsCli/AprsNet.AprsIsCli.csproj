@@ -1,17 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks />
-    <TargetFramework>net10.0</TargetFramework>
     <AssemblyName>aprscli</AssemblyName>
     <RootNamespace>AprsNet.AprsIsCli</RootNamespace>
-    <!-- Not published yet: the tool is mainly used to capture test traffic. To publish it as a .NET tool later, set
-         IsPackable to true; PackAsTool and the tool settings below are already in place. -->
-    <IsPackable>false</IsPackable>
+    <!-- Published as a .NET tool with the libraries, at the same version: dotnet tool install -g AprsNet.AprsIsCli. -->
+    <IsPackable>true</IsPackable>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>aprscli</ToolCommandName>
     <PackageId>AprsNet.AprsIsCli</PackageId>
-    <Description>APRS.NET command-line tool: listen, parse, send, passcode and replay.</Description>
+    <Description>APRS.NET command-line tool: listen to APRS-IS, parse and replay packets, send as your callsign, and compute passcodes.</Description>
   </PropertyGroup>
 
   <ItemGroup>
