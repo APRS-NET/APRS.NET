@@ -309,4 +309,114 @@ public class TelemetryCreateTests
 
         Assert.Equal(parsed.Information.ToArray(), rebuilt.Information.ToArray());
     }
+
+    [Theory]
+    [InlineData("ABC", null, "digits, or MIC")]
+    [InlineData("005", 6, "Sequence and SequenceNumber differ")]
+    [InlineData("MIC", 5, "Sequence and SequenceNumber differ")]
+    public void RefusesASequenceThatCannotBeSent(string sequence, int? number, string reason)
+    {
+        Rejects(
+            new TelemetryReport
+            {
+                Sequence = sequence,
+                SequenceNumber = number,
+                Analog = [1],
+            },
+            reason
+        );
+    }
+
+    [Fact]
+    public void AcceptsAMatchingSequenceAndNumber()
+    {
+        Assert.Equal(
+            "T#007,001",
+            Information(
+                new TelemetryReport
+                {
+                    Sequence = "007",
+                    SequenceNumber = 7,
+                    Analog = [1],
+                }
+            )
+        );
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(14)]
+    public void RefusesTheWrongNumberOfLabels(int count)
+    {
+        var definition = new TelemetryDefinition
+        {
+            Addressee = "N0QBF-11",
+            Kind = TelemetryDefinitionKind.ParameterNames,
+            Labels = [.. Enumerable.Repeat("A", count)],
+        };
+
+        Rejects(definition, "1 to 13 labels");
+    }
+
+    [Fact]
+    public void RefusesSixEquations()
+    {
+        var definition = new TelemetryDefinition
+        {
+            Addressee = "N0QBF-11",
+            Kind = TelemetryDefinitionKind.Equations,
+            Equations = [.. Enumerable.Repeat(new TelemetryEquation(0, 1, 0), 6)],
+        };
+
+        Rejects(definition, "one to five equations");
+    }
+
+    [Fact]
+    public void RefusesLabelsOnAnEquationsDefinition()
+    {
+        var definition = new TelemetryDefinition
+        {
+            Addressee = "N0QBF-11",
+            Kind = TelemetryDefinitionKind.Equations,
+            Equations = [new TelemetryEquation(0, 1, 0)],
+            Labels = ["Battery"],
+        };
+
+        Rejects(definition, "carries equations only");
+    }
+
+    [Fact]
+    public void RefusesLabelsOnABitSenseDefinition()
+    {
+        var definition = new TelemetryDefinition
+        {
+            Addressee = "N0QBF-11",
+            Kind = TelemetryDefinitionKind.BitSense,
+            BitSense = "11111111",
+            Labels = ["Battery"],
+        };
+
+        Rejects(definition, "bit sense and a project name only");
+    }
+
+    [Fact]
+    public void RefusesAnUnknownKind()
+    {
+        var definition = new TelemetryDefinition { Addressee = "N0QBF-11", Kind = (TelemetryDefinitionKind)99 };
+
+        Rejects(definition, "Unknown telemetry definition kind");
+    }
+
+    [Fact]
+    public void RefusesAnInfiniteCoefficient()
+    {
+        var definition = new TelemetryDefinition
+        {
+            Addressee = "N0QBF-11",
+            Kind = TelemetryDefinitionKind.Equations,
+            Equations = [new TelemetryEquation(0, double.PositiveInfinity, 0)],
+        };
+
+        Rejects(definition, "finite numbers");
+    }
 }
