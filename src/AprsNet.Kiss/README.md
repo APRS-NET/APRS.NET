@@ -90,4 +90,6 @@ await foreach (var frame in tnc.ReadFramesAsync())
 callsign (`N0CALL-10>APZNET:}N1ABC>APRS,TCPIP,N0CALL-10*:…`), so apps that only speak KISS see internet traffic too.
 An app that falls 1,000 frames behind is disconnected.
 
+Start with the [TNC guide](https://github.com/APRS-NET/APRS.NET/blob/main/docs/guides/tnc.md).
+
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

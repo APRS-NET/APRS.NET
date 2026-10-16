@@ -1,11 +1,13 @@
 # Metrics
 
-`AprsNet.AprsIsTcpClient` publishes counters through `System.Diagnostics.Metrics` on the meter
-**`AprsNet.AprsIsTcpClient`**. Nothing is recorded unless something listens: add the meter to an OpenTelemetry
-`MeterProvider` (`.AddMeter("AprsNet.AprsIsTcpClient")`), or use a `MeterListener`. `aprscli` exports them over OTLP
-when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
+The packages publish counters through `System.Diagnostics.Metrics`, each on a meter named after the package:
+**`AprsNet.AprsIsTcpClient`**, **`AprsNet.Kiss`** ([below](#kiss)) and **`AprsNet.Gateway`** ([below](#gateway)).
+Nothing is recorded unless something listens: add the meters to an OpenTelemetry `MeterProvider`
+(`.AddMeter("AprsNet.AprsIsTcpClient")`), or use a `MeterListener`. `aprscli` exports them over OTLP when
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 
-Every tag value comes from a fixed list below, so no series grows with the traffic (no callsigns, servers or text).
+No series grows with the traffic: tag values come from fixed lists, or name something the app set up (a TNC, a gateway
+server or source), never a callsign or packet text. The APRS-IS client's instruments come first.
 
 ## Receiving
 
@@ -48,6 +50,34 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 `keepalive_timeout` (nothing for `IdleTimeout`), `packet_silence` (keepalives but no packets for
 `MaxPacketSilence`), `connect_failed` (a reconnect attempt itself failed).
 
+## KISS
+
+On the meter `AprsNet.Kiss`. Every instrument has a `tnc` tag: the TNC's `host:port`, or `stream` for a
+`KissStreamClient` on a stream the app opened.
+
+| Instrument | Unit | Tags | Counts |
+| --- | --- | --- | --- |
+| `aprsnet.kiss.frames.received` | `{frame}` | `tnc` | AX.25 frames read from the TNC on the client's radio port |
+| `aprsnet.kiss.frames.sent` | `{frame}` | `tnc` | Frames sent to the TNC to transmit |
+| `aprsnet.kiss.frames.dropped` | `{frame}` | `tnc` | KISS frames dropped for an invalid escape or for being too long: a noisy link |
+| `aprsnet.kiss.connection.active` | `{connection}` | `tnc` | Up-down counter: TCP connections to the TNC open now |
+| `aprsnet.kiss.connection.reconnects` | `{reconnect}` | `tnc`, `cause`: `tnc_closed`, `socket_error`, `connect_failed` | Waits before `KissTcpConnection` reconnects |
+
+## Gateway
+
+On the meter `AprsNet.Gateway`. Every instrument has a `server` tag, the server's `ServerName`; the packet counters
+from a `GatewayFeed` also have a `source` tag, the name the app gave the source.
+
+| Instrument | Unit | Tags | Counts |
+| --- | --- | --- | --- |
+| `aprsnet.gateway.clients.connected` | `{client}` | `server` | Up-down counter: clients connected now, including any still logging in |
+| `aprsnet.gateway.logins` | `{login}` | `server`, `verified`: `true`, `false` | Client logins, by whether the passcode verified them |
+| `aprsnet.gateway.clients.disconnected` | `{client}` | `server`, `reason`: `closed`, `invalid_login`, `login_timeout`, `overflow`, `server_stopping`, `server_full`, `error` | Clients disconnected or refused |
+| `aprsnet.gateway.packets.received` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` read, duplicates included |
+| `aprsnet.gateway.packets.duplicates` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` dropped because a source had already heard them |
+| `aprsnet.gateway.packets.published` | `{packet}` | `server` | Packets given to the server to send |
+| `aprsnet.gateway.packets.queued` | `{packet}` | `server` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
+
 ## Useful queries
 
 - **Feed health:** `rate(lines.received{kind="packet"})` should be steady for a fixed filter; a drop to zero while
@@ -55,7 +85,9 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 - **Decoding coverage:** `packets.received{outcome="unsupported"}` and `{outcome="malformed"}` against the total show
   how much traffic the parser does not understand, by `type`.
 - **Flapping:** a rising `connection.reconnects` by `cause` says whether the network, the server or the feed is at
-  fault.
+  fault. The KISS causes match, so one query covers APRS-IS and TNCs.
+- **RF against APRS-IS:** in a gateway, `packets.duplicates{source="tnc"}` against `packets.received{source="tnc"}`
+  shows how much of what the TNC hears already reached APRS-IS through other IGates.
 
 ## Not yet
 

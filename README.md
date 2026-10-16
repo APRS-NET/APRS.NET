@@ -42,6 +42,11 @@ dotnet tool install --global AprsNet.AprsIsCli --prerelease
 Each [GitHub release](https://github.com/APRS-NET/APRS.NET/releases) also carries the same packages, and is marked as a
 pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are chosen.
 
+## Guides
+
+- [Getting started with a TNC](docs/guides/tnc.md): read and send packets through Dire Wolf or a serial TNC.
+- [Getting started with the gateway](docs/guides/gateway.md): serve APRS-IS and your TNCs to APRS-IS clients.
+
 ## Layout
 
 | Path                          | Contents                                                                  |

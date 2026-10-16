@@ -21,4 +21,6 @@ _ = feed.AddSource("tnc", tnc.ReadPacketsAsync());   // a KissTcpConnection from
 `feed.GetSourceCounts()` gives each source's packets and duplicates, and the `aprsnet.gateway.packets.received` and
 `aprsnet.gateway.packets.duplicates` metrics count them with a `source` tag.
 
+Start with the [gateway guide](https://github.com/APRS-NET/APRS.NET/blob/main/docs/guides/gateway.md).
+
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
