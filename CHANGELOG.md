@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.1...v0.3.0-alpha.2) (2026-10-16)
+
+
+### Features
+
+* **cli:** check a running gateway with aprscli health ([3eed7f4](https://github.com/APRS-NET/APRS.NET/commit/3eed7f491cd8cacc482585d5ef83a4efb03b4f5d)), closes [#167](https://github.com/APRS-NET/APRS.NET/issues/167)
+* **cli:** serve health checks with aprscli serve --http ([4383f9e](https://github.com/APRS-NET/APRS.NET/commit/4383f9e1df1bb1aaa3d03c83e70a056c73a0127f)), closes [#166](https://github.com/APRS-NET/APRS.NET/issues/166)
+* **cli:** serve WebSocket clients with aprscli serve --http ([7972f2d](https://github.com/APRS-NET/APRS.NET/commit/7972f2d2413ce5a239112872749a35fdb6fc0f29)), closes [#165](https://github.com/APRS-NET/APRS.NET/issues/165)
+* **cli:** use a TNC on a serial port with --tnc serial:PORT ([66f6e93](https://github.com/APRS-NET/APRS.NET/commit/66f6e93005316e0fe9af7b7f881042f018941612)), closes [#163](https://github.com/APRS-NET/APRS.NET/issues/163)
+* **gateway:** answer health checks at /health ([5132075](https://github.com/APRS-NET/APRS.NET/commit/513207589dc77d9bfe11d17af5f1f88cb3ec1cfa)), closes [#166](https://github.com/APRS-NET/APRS.NET/issues/166)
+* **gateway:** stream packets as JSON to WebSocket clients ([b5902af](https://github.com/APRS-NET/APRS.NET/commit/b5902afa0e0ef37930dd0072ed04d28881da6dfa)), closes [#165](https://github.com/APRS-NET/APRS.NET/issues/165)
+* **kiss:** reopen a serial TNC after it is unplugged ([91e1dcc](https://github.com/APRS-NET/APRS.NET/commit/91e1dccc83438ed77c281841679d477232ebea03)), closes [#126](https://github.com/APRS-NET/APRS.NET/issues/126)
+* **packets:** apply a station's telemetry definitions to its reports ([38f729b](https://github.com/APRS-NET/APRS.NET/commit/38f729b8d9fd3ef1f1c1333c868a457f373168e5)), closes [#153](https://github.com/APRS-NET/APRS.NET/issues/153)
+* **packets:** flag position reports that don't fit a station's track ([1803200](https://github.com/APRS-NET/APRS.NET/commit/1803200e154ec6c143900a3939a1b7dfbbb76bb8)), closes [#154](https://github.com/APRS-NET/APRS.NET/issues/154)
+* write packets as documented JSON with AprsNet.Packets.Json ([5ba274b](https://github.com/APRS-NET/APRS.NET/commit/5ba274bd3d3f6208d9d407e889e8cc075139555e)), closes [#164](https://github.com/APRS-NET/APRS.NET/issues/164)
+
+
+### Documentation
+
+* keep releasing 0.3.0 alphas until the 0.4.0 milestone is done ([20f5892](https://github.com/APRS-NET/APRS.NET/commit/20f5892e71ef2cae87a7cc089bebe2593fdf3eda))
+
 ## [0.3.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.2.0-alpha.3...v0.3.0-alpha.1) (2026-10-16)
 
 
