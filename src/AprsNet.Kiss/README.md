@@ -90,7 +90,7 @@ await foreach (var frame in tnc.ReadFramesAsync())
 ```
 
 `PublishFromAprsIs(packet, gateway)` sends a packet heard on APRS-IS to the apps as third-party traffic from your
-callsign (`N0CALL-10>APZNET:}N1ABC>APRS,TCPIP,N0CALL-10*:…`), so apps that only speak KISS see internet traffic too.
+callsign (`N0CALL-10>APNETL:}N1ABC>APRS,TCPIP,N0CALL-10*:…`), so apps that only speak KISS see internet traffic too.
 An app that falls 1,000 frames behind is disconnected.
 
 Start with the [TNC guide](https://github.com/APRS-NET/APRS.NET/blob/main/docs/guides/tnc.md).
