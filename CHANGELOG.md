@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.2.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.2.0-alpha.2...v0.2.0-alpha.3) (2026-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **gateway:** PacketDeduplicator is removed; use GatewayFeed, or DuplicateFilter from AprsNet.Packets.
+* **kiss:** KissTcpConnection.ConnectionLost and KissConnectionLostEventArgs are replaced by StateChanged, whose Reconnecting change carries the same error and wait.
+* **kiss:** the tncPort, connectTimeout, reconnectDelay, maxReconnectDelay, timeProvider and transmitLimit constructor parameters of KissTcpClient and KissTcpConnection are now KissTcpOptions properties.
+
+### Features
+
+* **aprs-is:** connect to APRS-IS over TLS ([6285c37](https://github.com/APRS-NET/APRS.NET/commit/6285c371c4a1e51235eb22ae6874cfe1fb1e987c)), closes [#110](https://github.com/APRS-NET/APRS.NET/issues/110)
+* **cli:** serve what KISS TNCs hear with aprscli serve --tnc ([b002900](https://github.com/APRS-NET/APRS.NET/commit/b0029004056bc7caa7cdd7a3bad75be591ec3342)), closes [#107](https://github.com/APRS-NET/APRS.NET/issues/107)
+* **cli:** transmit through a KISS TNC with aprscli tnc send ([eac1920](https://github.com/APRS-NET/APRS.NET/commit/eac19205f718a627c6717f37ef4e4ca6ffed7b80)), closes [#103](https://github.com/APRS-NET/APRS.NET/issues/103)
+* **gateway:** drop PacketDeduplicator in favour of GatewayFeed ([4ff89d3](https://github.com/APRS-NET/APRS.NET/commit/4ff89d3a6cf4667e6edbb4c78014a86dc6e07688)), closes [#99](https://github.com/APRS-NET/APRS.NET/issues/99)
+* **gateway:** serve packets from several sources at once ([6cc1b79](https://github.com/APRS-NET/APRS.NET/commit/6cc1b794374581915957d5e9b206567abcbc4d6a)), closes [#106](https://github.com/APRS-NET/APRS.NET/issues/106)
+* **kiss:** configure TNC clients and connections with KissTcpOptions ([b38a84c](https://github.com/APRS-NET/APRS.NET/commit/b38a84cddf5d62f7021662c91e2f034994ea34e1)), closes [#99](https://github.com/APRS-NET/APRS.NET/issues/99)
+* **kiss:** limit how fast frames are sent for transmission ([f1e15ea](https://github.com/APRS-NET/APRS.NET/commit/f1e15ea2fa63c8cd1bdbea81c0447d7ca915fd2c)), closes [#102](https://github.com/APRS-NET/APRS.NET/issues/102)
+* **kiss:** report TNC connection state and metrics like APRS-IS ([66ecf7d](https://github.com/APRS-NET/APRS.NET/commit/66ecf7da65998456e9badafb211cb0c10f5c2833)), closes [#99](https://github.com/APRS-NET/APRS.NET/issues/99)
+* **kiss:** share a TNC with several KISS apps through KissTcpServer ([4d1ebc9](https://github.com/APRS-NET/APRS.NET/commit/4d1ebc95f84a543045cfd248282f5ef8b85f3031)), closes [#108](https://github.com/APRS-NET/APRS.NET/issues/108)
+* **kiss:** share a TNC with several KISS apps through KissTcpServer ([#142](https://github.com/APRS-NET/APRS.NET/issues/142)) ([6b20f60](https://github.com/APRS-NET/APRS.NET/commit/6b20f607357473e4f529bec46bb1e3c77f05fb4b)), closes [#108](https://github.com/APRS-NET/APRS.NET/issues/108)
+* publish the AX.25, KISS, gateway and DI packages ([d7d7fac](https://github.com/APRS-NET/APRS.NET/commit/d7d7fac63809a30bc611eb466b1cd6a2ce9de7d2))
+
+
+### Bug Fixes
+
+* **ax25:** give a default Ax25Address an empty callsign, not null ([627cb3b](https://github.com/APRS-NET/APRS.NET/commit/627cb3b72dd36b15781d950c1066665e747f9be2)), closes [#99](https://github.com/APRS-NET/APRS.NET/issues/99)
+* **kiss:** back off from a TNC that drops every connection at once ([f683590](https://github.com/APRS-NET/APRS.NET/commit/f68359080d8e80b58a548e9664e9e6affa670897)), closes [#113](https://github.com/APRS-NET/APRS.NET/issues/113)
+* **kiss:** name reconnect causes as APRS-IS does ([6535bfd](https://github.com/APRS-NET/APRS.NET/commit/6535bfd8d7c3524c58a1b4cff213ed315d1ea6ce)), closes [#99](https://github.com/APRS-NET/APRS.NET/issues/99)
+
 ## [0.2.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.2.0-alpha.1...v0.2.0-alpha.2) (2026-10-15)
 
 
