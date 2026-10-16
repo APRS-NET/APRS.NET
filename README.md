@@ -23,6 +23,7 @@ Packages are published to nuget.org as pre-releases, so pass `--prerelease`:
 
 ```sh
 dotnet add package AprsNet.Packets --prerelease
+dotnet add package AprsNet.Packets.Json --prerelease
 dotnet add package AprsNet.AprsIsTcpClient --prerelease
 dotnet add package AprsNet.Symbols --prerelease
 dotnet add package AprsNet.DeviceId --prerelease
@@ -53,6 +54,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | Path                          | Contents                                                                  |
 |-------------------------------|---------------------------------------------------------------------------|
 | `src/AprsNet.Packets`         | Packet models, parser, encoder (no I/O)                                   |
+| `src/AprsNet.Packets.Json`    | Packets as documented JSON objects, for web apps, logs and pipes |
 | `src/AprsNet.AprsIsTcpClient` | APRS-IS client                                                            |
 | `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
 | `src/AprsNet.Filters`         | APRS-IS filters: build them from typed terms, and evaluate them locally   |

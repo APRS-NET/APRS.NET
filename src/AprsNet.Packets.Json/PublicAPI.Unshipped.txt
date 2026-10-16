@@ -1,0 +1,5 @@
+#nullable enable
+AprsNet.Packets.Json.AprsPacketJson
+static AprsNet.Packets.Json.AprsPacketJson.Serialize(AprsNet.Packets.AprsPacket! packet, System.DateTimeOffset received) -> string!
+static AprsNet.Packets.Json.AprsPacketJson.WriterOptions.get -> System.Text.Json.JsonWriterOptions
+static AprsNet.Packets.Json.AprsPacketJson.Write(System.Text.Json.Utf8JsonWriter! json, AprsNet.Packets.AprsPacket! packet, System.DateTimeOffset received) -> void
