@@ -28,6 +28,11 @@ During the alpha, release-please only increments the alpha number. To start a ne
 `Release-As: 0.2.0-alpha.1` to a commit. The commit must change a file outside `exclude-paths`: release-please sorts
 commits by the files they touch, so an empty commit, or one touching only excluded paths, is never read.
 
+Add that footer only once the milestone is complete in scope and confirmed. Until then, releases continue the current
+milestone's alpha numbers (`0.3.0-alpha.2`, `0.3.0-alpha.3`, ...), even when they carry the next milestone's work. A
+footer added too early is overridden by a newer one: release-please uses the most recent `Release-As` since the last
+release.
+
 Scopes are optional, for example `feat(is): support runtime filter changes`.
 
 Only changes to shipped code count: the libraries in `src/` and the `aprscli` tool in `apps/`, which is published as a
