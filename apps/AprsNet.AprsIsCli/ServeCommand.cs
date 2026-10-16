@@ -55,6 +55,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
         DefaultValueFactory = _ => _defaultListen,
     };
 
+    private readonly Option<string?> _http = new("--http")
+    {
+        Description =
+            "Also serve HTTP on this address:port, for example 127.0.0.1:14590: WebSocket clients at "
+            + "ws://address:port/aprs get JSON packets and set their filter in the URL or a message. Default: off.",
+    };
+
     private readonly Option<string> _name = new("--name")
     {
         Description = $"Server name sent to clients: 1 to 9 letters, digits or '-'. Default: {_defaultName}.",
@@ -78,7 +85,9 @@ internal sealed class ServeCommand(CliEnvironment environment)
             "Serve an APRS-IS feed, KISS TNCs or both to local APRS-IS clients, each with its own filter. A packet "
                 + "heard on several sources is served once. Clients are read-only."
         );
-        foreach (var option in new Option[] { _callsign, _server, _filter, _tnc, _listen, _name, _history, _duration })
+        foreach (
+            var option in new Option[] { _callsign, _server, _filter, _tnc, _listen, _http, _name, _history, _duration }
+        )
         {
             command.Options.Add(option);
         }
@@ -103,6 +112,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
         AprsIsClientOptions? Upstream,
         IReadOnlyList<TncAddress> Tncs,
         AprsIsServerOptions Local,
+        IPEndPoint? Http,
         TimeSpan? Duration
     );
 
@@ -160,6 +170,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
+        IPEndPoint? http = null;
+        if (parseResult.GetValue(_http) is { } httpText && !IPEndPoint.TryParse(httpText, out http))
+        {
+            error = $"--http '{httpText}' is not valid. Use address:port, for example 127.0.0.1:14590.";
+            return false;
+        }
+
         var history = TimeSpan.Zero;
         if (parseResult.GetValue(_history) is { } historyText && !DurationParser.TryParse(historyText, out history))
         {
@@ -209,7 +226,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, tncs, local, duration);
+        options = new ServeOptions(upstream, tncs, local, http, duration);
         error = "";
         return true;
     }
@@ -230,6 +247,20 @@ internal sealed class ServeCommand(CliEnvironment environment)
         catch (SocketException ex)
         {
             await environment.Error.WriteLineAsync($"aprscli: cannot serve on {options.Local.EndPoint}: {ex.Message}");
+            return ExitCodes.Error;
+        }
+
+        await using var hub = options.Http is null ? null : new AprsWebSocketHub(server);
+        await using var web = hub is null
+            ? null
+            : new GatewayWebServer(hub, new GatewayWebServerOptions { EndPoint = options.Http! });
+        try
+        {
+            web?.Start();
+        }
+        catch (SocketException ex)
+        {
+            await environment.Error.WriteLineAsync($"aprscli: cannot serve on {options.Http}: {ex.Message}");
             return ExitCodes.Error;
         }
 
@@ -304,6 +335,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             await environment.Error.WriteLineAsync(
                 $"aprscli: serving {string.Join(" and ", described)} on {server.LocalEndPoint} as "
                     + $"{options.Local.ServerName}"
+                    + (web is null ? "" : $", and on http://{web.LocalEndPoint} (WebSocket clients at /aprs)")
             );
 
             try
@@ -328,7 +360,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
         await environment.Error.WriteLineAsync(
             $"aprscli: served {feed.Published} packets ({feed.Duplicates} duplicates dropped); "
-                + $"{server.ClientsDroppedForOverflow} clients dropped for falling behind"
+                + $"{server.ClientsDroppedForOverflow + (hub?.ClientsDroppedForOverflow ?? 0)} clients dropped for "
+                + "falling behind"
         );
         var counts = feed.GetSourceCounts();
         if (counts.Count > 1)

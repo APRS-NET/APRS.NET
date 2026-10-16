@@ -189,6 +189,7 @@ aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 # for you
 aprscli serve -f "r/38.98/-94.67/300" --tnc localhost                  # APRS-IS and Dire Wolf
 aprscli serve --tnc localhost --tnc 192.168.1.20:8001                   # two TNCs, no internet
 aprscli serve -f "r/38.98/-94.67/300" --tnc serial:/dev/ttyUSB0         # APRS-IS and a USB TNC
+aprscli serve -f "r/38.98/-94.67/300" --http 127.0.0.1:14590           # also JSON over WebSocket
 aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a client
 ```
 
@@ -199,6 +200,7 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 | `-f`, `--filter` | Upstream filter: everything clients can ask for. Without it, APRS-IS is not used and only `--tnc` sources are served. |
 | `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's) or `serial:PORT[@BAUD]` (default 9600 baud). Repeat for several. A lost or unplugged TNC is reconnected. |
 | `-l`, `--listen` | Address and port to serve on. Default: `127.0.0.1:14580`. |
+| `--http` | Also serve HTTP on this `address:port`. WebSocket clients connect to `ws://address:port/aprs?filter=…`, get packets as [JSON](../../docs/json.md) and can change their filter by sending `{"filter":"…"}`. Default: off. |
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
