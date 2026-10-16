@@ -1,0 +1,24 @@
+#nullable enable
+AprsNet.Kiss.KissSerialConnection
+AprsNet.Kiss.KissSerialConnection.KissSerialConnection(AprsNet.Kiss.KissSerialOptions! options) -> void
+AprsNet.Kiss.KissSerialConnection.KissSerialConnection(string! portName, int baudRate = 9600) -> void
+AprsNet.Kiss.KissSerialConnection.PortName.get -> string!
+AprsNet.Kiss.KissSerialOptions
+AprsNet.Kiss.KissSerialOptions.BaudRate.get -> int
+AprsNet.Kiss.KissSerialOptions.BaudRate.set -> void
+AprsNet.Kiss.KissSerialOptions.KissSerialOptions() -> void
+AprsNet.Kiss.KissSerialOptions.MaxReconnectDelay.get -> System.TimeSpan
+AprsNet.Kiss.KissSerialOptions.MaxReconnectDelay.set -> void
+AprsNet.Kiss.KissSerialOptions.PortName.get -> string!
+AprsNet.Kiss.KissSerialOptions.PortName.set -> void
+AprsNet.Kiss.KissSerialOptions.ReconnectDelay.get -> System.TimeSpan
+AprsNet.Kiss.KissSerialOptions.ReconnectDelay.set -> void
+AprsNet.Kiss.KissSerialOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Kiss.KissSerialOptions.TimeProvider.set -> void
+AprsNet.Kiss.KissSerialOptions.TncPort.get -> int
+AprsNet.Kiss.KissSerialOptions.TncPort.set -> void
+AprsNet.Kiss.KissSerialOptions.TransmitLimit.get -> AprsNet.Kiss.KissTransmitLimit?
+AprsNet.Kiss.KissSerialOptions.TransmitLimit.set -> void
+AprsNet.Kiss.KissSerialOptions.Validate() -> void
+const AprsNet.Kiss.KissSerialOptions.DefaultBaudRate = 9600 -> int
+static AprsNet.Kiss.KissSerialConnection.GetPortNames() -> System.Collections.Generic.IReadOnlyList<string!>!

@@ -29,6 +29,7 @@ dotnet add package AprsNet.DeviceId --prerelease
 dotnet add package AprsNet.Filters --prerelease
 dotnet add package AprsNet.Ax25 --prerelease
 dotnet add package AprsNet.Kiss --prerelease
+dotnet add package AprsNet.Kiss.Serial --prerelease
 dotnet add package AprsNet.Gateway --prerelease
 dotnet add package AprsNet.Extensions.DependencyInjection --prerelease
 ```
@@ -58,6 +59,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0) |
 | `src/AprsNet.Ax25`            | AX.25 UI frames: decode and encode what a TNC sends and receives          |
 | `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit and a KISS TCP server |
+| `src/AprsNet.Kiss.Serial`     | KISS TNCs on a serial port, reopened after an unplug, and the ports present |
 | `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
 | `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |
 | `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool                                           |

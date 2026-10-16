@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Talk to a KISS TNC on a serial port, such as a USB TNC: a lasting connection that opens the port again when it fails or the TNC is unplugged and plugged back in, and a list of the ports present. Adds System.IO.Ports to AprsNet.Kiss.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <PackageReference Include="System.IO.Ports" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <InternalsVisibleTo Include="AprsNet.Kiss.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Kiss/AprsNet.Kiss.csproj" />
+  </ItemGroup>
+</Project>

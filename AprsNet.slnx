@@ -49,6 +49,7 @@
     <Project Path="src/AprsNet.Filters/AprsNet.Filters.csproj" />
     <Project Path="src/AprsNet.Gateway/AprsNet.Gateway.csproj" />
     <Project Path="src/AprsNet.Kiss/AprsNet.Kiss.csproj" />
+    <Project Path="src/AprsNet.Kiss.Serial/AprsNet.Kiss.Serial.csproj" />
     <Project Path="src/AprsNet.Packets/AprsNet.Packets.csproj" />
     <Project Path="src/AprsNet.Symbols/AprsNet.Symbols.csproj" />
   </Folder>

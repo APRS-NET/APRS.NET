@@ -26,8 +26,10 @@ _ = Task.Run(async () =>
 await tnc.SendAsync(address.Create(new StatusReport { Text = "On the air" }));
 ```
 
-For a serial, USB or Bluetooth TNC, open the port yourself and hand its stream to `KissStreamClient`, which does the
-same over any readable and writable stream (no serial-port dependency in this package):
+For a USB or serial TNC, `KissSerialConnection` in
+[`AprsNet.Kiss.Serial`](https://www.nuget.org/packages/AprsNet.Kiss.Serial) opens the port and opens it again after an
+unplug. To manage a port or a Bluetooth link yourself, hand its stream to `KissStreamClient`, which does the same over
+any readable and writable stream (no serial-port dependency in this package):
 
 ```csharp
 using var serial = new SerialPort("/dev/ttyUSB0", 9600);
@@ -37,7 +39,8 @@ await using var tnc = new KissStreamClient(serial.BaseStream);
 
 ### Staying connected
 
-`KissTcpConnection` reconnects by itself, and its read streams carry on across reconnects. `State` says where it is
+`KissTcpConnection` (and `KissSerialConnection`; both are a `KissConnection`) reconnects by itself, and its read
+streams carry on across reconnects. `State` says where it is
 (`Idle`, `Connecting`, `Connected`, `Reconnecting`, `Closed`), and `StateChanged` reports each change, as
 `AprsIsConnection` does; a `Reconnecting` change carries the error, if any, and the wait before the next attempt:
 
@@ -50,7 +53,7 @@ tnc.StateChanged += (_, e) =>
 ```
 
 The `AprsNet.Kiss` meter counts frames received, sent and dropped, open connections and reconnects by cause, each tagged
-with the TNC (`host:port`); add it to OpenTelemetry with `AddMeter("AprsNet.Kiss")`.
+with the TNC (`host:port`, or the serial port's name); add it to OpenTelemetry with `AddMeter("AprsNet.Kiss")`.
 
 ### Transmit limit
 
