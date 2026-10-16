@@ -4,11 +4,18 @@ namespace AprsNet.Gateway;
 
 /// <summary>
 /// Instruments for the gateway, on the <c>AprsNet.Gateway</c> meter. Every measurement carries the server's name as a
-/// <c>server</c> tag (one value per server); other tag values are fixed strings to keep cardinality bounded.
+/// <c>server</c> tag (one value per server); client measurements also carry a <c>protocol</c> tag, <c>aprs-is</c> or
+/// <c>websocket</c>. Other tag values are fixed strings to keep cardinality bounded.
 /// </summary>
 internal static class GatewayMetrics
 {
     public const string MeterName = "AprsNet.Gateway";
+
+    /// <summary>The <c>protocol</c> tag of APRS-IS clients.</summary>
+    public const string AprsIs = "aprs-is";
+
+    /// <summary>The <c>protocol</c> tag of WebSocket clients.</summary>
+    public const string WebSocket = "websocket";
 
     private static readonly Meter _meter = new(MeterName);
 
@@ -54,21 +61,22 @@ internal static class GatewayMetrics
         "Packets a GatewayFeed read, by source, duplicates included."
     );
 
-    public static void Connected(string server) => _connected.Add(1, Server(server));
+    public static void Connected(string server, string protocol = AprsIs) =>
+        _connected.Add(1, Server(server), Protocol(protocol));
 
     /// <summary>
     /// <paramref name="reason"/> is one of <c>closed</c> (the client left or the connection failed),
     /// <c>invalid_login</c>, <c>login_timeout</c>, <c>overflow</c>, <c>server_stopping</c>, <c>server_full</c> or
-    /// <c>error</c> (an unexpected fault in that session).
+    /// <c>error</c> (an unexpected fault in that session); for WebSocket clients also <c>invalid_message</c>.
     /// </summary>
-    public static void Disconnected(string server, string reason, bool wasConnected)
+    public static void Disconnected(string server, string reason, bool wasConnected, string protocol = AprsIs)
     {
         if (wasConnected)
         {
-            _connected.Add(-1, Server(server));
+            _connected.Add(-1, Server(server), Protocol(protocol));
         }
 
-        _disconnects.Add(1, Server(server), new KeyValuePair<string, object?>("reason", reason));
+        _disconnects.Add(1, Server(server), new KeyValuePair<string, object?>("reason", reason), Protocol(protocol));
     }
 
     public static void Login(string server, bool verified) =>
@@ -76,7 +84,8 @@ internal static class GatewayMetrics
 
     public static void Published(string server) => _published.Add(1, Server(server));
 
-    public static void Queued(string server) => _queued.Add(1, Server(server));
+    public static void Queued(string server, string protocol = AprsIs) =>
+        _queued.Add(1, Server(server), Protocol(protocol));
 
     public static void Duplicate(string server, string source) => _duplicates.Add(1, Server(server), Source(source));
 
@@ -85,4 +94,6 @@ internal static class GatewayMetrics
     private static KeyValuePair<string, object?> Server(string server) => new("server", server);
 
     private static KeyValuePair<string, object?> Source(string source) => new("source", source);
+
+    private static KeyValuePair<string, object?> Protocol(string protocol) => new("protocol", protocol);
 }

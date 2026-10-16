@@ -29,8 +29,9 @@ public sealed class AprsIsServer : IAsyncDisposable
     private readonly CancellationTokenSource _stopping = new();
 
     // Publishing and a client joining take turns, so a joining client gets each packet once: from the history or live.
-    private readonly object _publishing = new();
-    private readonly Queue<(DateTimeOffset At, AprsPacket Packet, byte[] Line)> _history = new();
+    private readonly Lock _publishing = new();
+    private readonly Queue<PublishedPacket> _history = new();
+    private readonly ConcurrentDictionary<IPacketSubscriber, byte> _subscribers = new();
     private TcpListener? _listener;
     private Task? _accepting;
 
@@ -51,6 +52,12 @@ public sealed class AprsIsServer : IAsyncDisposable
 
     /// <summary>The server's name, as in <see cref="AprsIsServerOptions.ServerName"/>.</summary>
     internal string Name => _options.ServerName;
+
+    /// <summary>The software name and version sent to clients.</summary>
+    internal string SoftwareName => _options.SoftwareName;
+
+    /// <inheritdoc cref="SoftwareName"/>
+    internal string SoftwareVersion => _options.SoftwareVersion;
 
     /// <summary>The server's clock.</summary>
     internal TimeProvider TimeProvider => _options.TimeProvider;
@@ -89,29 +96,54 @@ public sealed class AprsIsServer : IAsyncDisposable
         GatewayMetrics.Published(_options.ServerName);
         _options.Stations?.Observe(packet);
         var keepHistory = _options.History > TimeSpan.Zero;
-        if (_sessions.IsEmpty && !keepHistory)
+        if (_sessions.IsEmpty && _subscribers.IsEmpty && !keepHistory)
         {
             return;
         }
 
-        var raw = packet.Raw.Span;
-        var line = new byte[raw.Length + 2];
-        raw.CopyTo(line);
-        "\r\n"u8.CopyTo(line.AsSpan(raw.Length));
+        var published = new PublishedPacket(packet, _options.TimeProvider.GetUtcNow());
         lock (_publishing)
         {
             if (keepHistory)
             {
-                _history.Enqueue((_options.TimeProvider.GetUtcNow(), packet, line));
+                _history.Enqueue(published);
                 TrimHistory();
             }
 
             foreach (var session in _sessions.Keys)
             {
-                session.Offer(packet, line);
+                session.Offer(packet, published.Line);
+            }
+
+            foreach (var subscriber in _subscribers.Keys)
+            {
+                subscriber.Offer(published);
             }
         }
     }
+
+    /// <summary>
+    /// Starts giving published packets to <paramref name="subscriber"/>, beginning with the history; each packet
+    /// reaches it once, from the history or live.
+    /// </summary>
+    internal void Subscribe(IPacketSubscriber subscriber)
+    {
+        lock (_publishing)
+        {
+            _subscribers[subscriber] = 0;
+            TrimHistory();
+            foreach (var published in _history)
+            {
+                subscriber.Offer(published);
+            }
+        }
+    }
+
+    /// <summary>Stops giving packets to <paramref name="subscriber"/>.</summary>
+    internal void Unsubscribe(IPacketSubscriber subscriber) => _subscribers.TryRemove(subscriber, out _);
+
+    /// <summary>The station store, for filters that measure from where stations were heard.</summary>
+    internal StationStore? Stations => _options.Stations;
 
     /// <summary>Starts sending to a client that has logged in, beginning with the history its filter passes.</summary>
     internal void Join(ClientSession session, LoginLine login)
@@ -120,9 +152,9 @@ public sealed class AprsIsServer : IAsyncDisposable
         {
             session.Activate(login);
             TrimHistory();
-            foreach (var (_, packet, line) in _history)
+            foreach (var published in _history)
             {
-                session.Offer(packet, line);
+                session.Offer(published.Packet, published.Line);
             }
         }
     }
@@ -130,7 +162,9 @@ public sealed class AprsIsServer : IAsyncDisposable
     private void TrimHistory()
     {
         var oldest = _options.TimeProvider.GetUtcNow() - _options.History;
-        while (_history.Count > _options.MaxHistoryPackets || (_history.TryPeek(out var first) && first.At < oldest))
+        while (
+            _history.Count > _options.MaxHistoryPackets || (_history.TryPeek(out var first) && first.Received < oldest)
+        )
         {
             _history.Dequeue();
         }

@@ -93,9 +93,31 @@ counts (position reports, Mic-E, positioned weather), not the objects and items 
 every published packet before filtering it, so a station's own packet is measured from where it has just reported. It
 is in memory and bounded (100,000 stations by default), forgetting the station heard least recently first.
 
+## WebSocket clients
+
+`AprsWebSocketHub` subscribes to an `AprsIsServer`, so WebSocket clients get the same packets, history and station
+store as APRS-IS clients, published once. `GatewayWebServer` accepts them without ASP.NET Core, so `aprscli` runs on
+the plain .NET runtime; an ASP.NET Core app hands its own accepted sockets to `HandleAsync` instead.
+
+1. A client connects to `ws://host:port/aprs`, optionally with `?filter=…` (APRS-IS syntax) and `?call=…`.
+   `GatewayWebServer` listens on 127.0.0.1:14590 by default, answers other requests with a short HTTP error, and can
+   limit browsers to `AllowedOrigins`. It does not serve TLS; put a reverse proxy in front for `wss://`.
+2. The server sends `{"server":…,"software":…,"filter":…}`, then the history its filter passes, then the live feed:
+   one text message per packet, in the [JSON format](../json.md).
+3. `{"filter":"…"}` from the client replaces the filter; the answer is `{"filter":…,"active":true}` or
+   `{"filter":…,"error":…}`. Anything else gets `{"error":…}`. Messages to `call` always pass, and `m/` measures from
+   where `call` was last heard.
+
+Decisions:
+
+- **Read-only**, as for APRS-IS clients.
+- **Slow clients are dropped** when their queue (1,000 packets) fills: the connection is cut at once, without a close
+  handshake, since the client isn't reading.
+- **Pings** keep connections open every 30 seconds.
+- **Metrics** are the APRS-IS server's, with a `protocol` tag (`aprs-is` or `websocket`) on the client instruments.
+
 ## Still to do
 
-- A WebSocket endpoint streaming JSON (#165), which needs a JSON form of packets in a library (#164).
 - A health endpoint (#166) and a container image (#167).
 - Accepting packets from verified clients, with authentication and per-client rate limits.
 - Track history in the station store, persistence, and `q/con/I` (which needs IGate positions).

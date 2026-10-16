@@ -83,3 +83,37 @@ override AprsNet.Gateway.GatewaySourceCounts.GetHashCode() -> int
 ~override AprsNet.Gateway.GatewaySourceCounts.ToString() -> string
 static AprsNet.Gateway.GatewaySourceCounts.operator !=(AprsNet.Gateway.GatewaySourceCounts left, AprsNet.Gateway.GatewaySourceCounts right) -> bool
 static AprsNet.Gateway.GatewaySourceCounts.operator ==(AprsNet.Gateway.GatewaySourceCounts left, AprsNet.Gateway.GatewaySourceCounts right) -> bool
+AprsNet.Gateway.AprsWebSocketHub
+AprsNet.Gateway.AprsWebSocketHub.AprsWebSocketHub(AprsNet.Gateway.AprsIsServer! server, AprsNet.Gateway.AprsWebSocketHubOptions? options = null) -> void
+AprsNet.Gateway.AprsWebSocketHub.ClientCount.get -> int
+AprsNet.Gateway.AprsWebSocketHub.ClientsDroppedForOverflow.get -> long
+AprsNet.Gateway.AprsWebSocketHub.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Gateway.AprsWebSocketHub.HandleAsync(System.Net.WebSockets.WebSocket! socket, string? filter = null, string? callsign = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Gateway.AprsWebSocketHub.HasRoom.get -> bool
+AprsNet.Gateway.AprsWebSocketHubOptions
+AprsNet.Gateway.AprsWebSocketHubOptions.AprsWebSocketHubOptions() -> void
+AprsNet.Gateway.AprsWebSocketHubOptions.ClientQueueLength.get -> int
+AprsNet.Gateway.AprsWebSocketHubOptions.ClientQueueLength.set -> void
+AprsNet.Gateway.AprsWebSocketHubOptions.MaxClients.get -> int
+AprsNet.Gateway.AprsWebSocketHubOptions.MaxClients.set -> void
+AprsNet.Gateway.AprsWebSocketHubOptions.MaxMessageBytes.get -> int
+AprsNet.Gateway.AprsWebSocketHubOptions.MaxMessageBytes.set -> void
+AprsNet.Gateway.AprsWebSocketHubOptions.Validate() -> void
+AprsNet.Gateway.GatewayWebServer
+AprsNet.Gateway.GatewayWebServer.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Gateway.GatewayWebServer.GatewayWebServer(AprsNet.Gateway.AprsWebSocketHub! hub, AprsNet.Gateway.GatewayWebServerOptions? options = null) -> void
+AprsNet.Gateway.GatewayWebServer.LocalEndPoint.get -> System.Net.IPEndPoint?
+AprsNet.Gateway.GatewayWebServerOptions
+AprsNet.Gateway.GatewayWebServerOptions.AllowedOrigins.get -> System.Collections.Generic.IReadOnlyList<string!>?
+AprsNet.Gateway.GatewayWebServerOptions.AllowedOrigins.set -> void
+AprsNet.Gateway.GatewayWebServerOptions.EndPoint.get -> System.Net.IPEndPoint!
+AprsNet.Gateway.GatewayWebServerOptions.EndPoint.set -> void
+AprsNet.Gateway.GatewayWebServerOptions.GatewayWebServerOptions() -> void
+AprsNet.Gateway.GatewayWebServerOptions.KeepAliveInterval.get -> System.TimeSpan
+AprsNet.Gateway.GatewayWebServerOptions.KeepAliveInterval.set -> void
+AprsNet.Gateway.GatewayWebServerOptions.RequestTimeout.get -> System.TimeSpan
+AprsNet.Gateway.GatewayWebServerOptions.RequestTimeout.set -> void
+AprsNet.Gateway.GatewayWebServerOptions.Validate() -> void
+AprsNet.Gateway.GatewayWebServerOptions.WebSocketPath.get -> string!
+AprsNet.Gateway.GatewayWebServerOptions.WebSocketPath.set -> void
+AprsNet.Gateway.GatewayWebServer.Start() -> void

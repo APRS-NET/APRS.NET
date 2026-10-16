@@ -70,13 +70,13 @@ from a `GatewayFeed` also have a `source` tag, the name the app gave the source.
 
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |
-| `aprsnet.gateway.clients.connected` | `{client}` | `server` | Up-down counter: clients connected now, including any still logging in |
+| `aprsnet.gateway.clients.connected` | `{client}` | `server`, `protocol`: `aprs-is`, `websocket` | Up-down counter: clients connected now, including any still logging in |
 | `aprsnet.gateway.logins` | `{login}` | `server`, `verified`: `true`, `false` | Client logins, by whether the passcode verified them |
-| `aprsnet.gateway.clients.disconnected` | `{client}` | `server`, `reason`: `closed`, `invalid_login`, `login_timeout`, `overflow`, `server_stopping`, `server_full`, `error` | Clients disconnected or refused |
+| `aprsnet.gateway.clients.disconnected` | `{client}` | `server`, `protocol`, `reason`: `closed`, `invalid_login`, `login_timeout`, `invalid_message` (WebSocket), `overflow`, `server_stopping`, `server_full`, `error` | Clients disconnected or refused |
 | `aprsnet.gateway.packets.received` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` read, duplicates included |
 | `aprsnet.gateway.packets.duplicates` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` dropped because a source had already heard them |
 | `aprsnet.gateway.packets.published` | `{packet}` | `server` | Packets given to the server to send |
-| `aprsnet.gateway.packets.queued` | `{packet}` | `server` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
+| `aprsnet.gateway.packets.queued` | `{packet}` | `server`, `protocol` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
 
 ## Useful queries
 
