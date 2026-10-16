@@ -50,6 +50,10 @@ internal sealed class WebSocketSession : IPacketSubscriber
         {
             var server = _hub.Server;
             var reply = string.IsNullOrWhiteSpace(filter) ? null : ApplyFilter(filter.Trim());
+
+            // Ready for packets before the greeting goes out, as for APRS-IS clients, so a client that has read it
+            // misses nothing. The history and anything published meanwhile wait in the queue until the writer starts.
+            server.Subscribe(this);
             await SendAsync(
                     Json(w =>
                     {
@@ -70,9 +74,6 @@ internal sealed class WebSocketSession : IPacketSubscriber
             {
                 await SendAsync(reply.Value).ConfigureAwait(false);
             }
-
-            // Subscribed after the greeting, so the history follows it.
-            server.Subscribe(this);
 
             // Cancelling a WebSocket send or receive aborts the socket, so they take no token: the writer stops
             // between messages, and the reader when the client answers the close.

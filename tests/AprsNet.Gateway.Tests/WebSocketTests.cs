@@ -146,6 +146,18 @@ public sealed class WebSocketTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task APacketPublishedOnceTheGreetingArrivesIsNotMissed()
+    {
+        // Without a history to replay, a client that has read the greeting must already be subscribed.
+        await DisposeAsync();
+        Start(new AprsWebSocketHubOptions());
+        using var socket = await ConnectAsync("?filter=t/s");
+        await ReceiveAsync(socket);
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>Right after"));
+        Assert.Equal("N0CALL>APRS:>Right after", (await ReceiveAsync(socket)).GetProperty("raw").GetString());
+    }
+
+    [Fact]
     public async Task AClientChangesItsFilter()
     {
         using var socket = await ConnectAsync();
