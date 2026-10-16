@@ -132,6 +132,20 @@ path.IsHeardDirectly;                         // false: a digipeater repeated it
 path.RemainingHopCount;                       // 1
 ```
 
+`TrackAnalysis` flags a position report that doesn't fit the station's track: a position repeated too soon, an
+impossible jump, reports under a second apart, time running backwards, or a move that is only a change of ambiguity.
+It keeps no state; the caller keeps each station's recent reports:
+
+```csharp
+if (TrackReport.FromPacket(packet, receivedAt) is { } report)
+{
+    var check = TrackAnalysis.Check(track, report, new TrackAnalysisOptions { MaxSpeedKmh = 1000 });
+    if (check.Anomalies.HasFlag(TrackAnomalies.ImpossibleSpeed))
+        Console.WriteLine($"{check.SpeedKmh:N0} km/h from the previous position");
+    track.Add(report);
+}
+```
+
 `PacketMerger` reads several sources as one stream, naming each packet's source and marking a packet heard again on
 any source within 30 seconds as a duplicate of the first copy:
 
