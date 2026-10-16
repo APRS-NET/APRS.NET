@@ -815,3 +815,87 @@ AprsNet.Packets.TrackReport.HasWeather.init -> void
 AprsNet.Packets.TrackReport.TrackReport(AprsNet.Packets.AprsPosition Position, System.DateTimeOffset ReceivedAt, System.DateTimeOffset? ReportedAt = null, bool HasWeather = false) -> void
 AprsNet.Packets.TrackAnalysisOptions.LateCopyInterval.get -> System.TimeSpan
 AprsNet.Packets.TrackAnalysisOptions.LateCopyInterval.init -> void
+AprsNet.Packets.TelemetryAnalogReading
+AprsNet.Packets.TelemetryAnalogReading.Channel.get -> int
+AprsNet.Packets.TelemetryAnalogReading.Channel.init -> void
+AprsNet.Packets.TelemetryAnalogReading.Deconstruct(out int Channel, out string? Name, out string? Unit, out double? Raw, out double? Value, out bool IsScaled) -> void
+AprsNet.Packets.TelemetryAnalogReading.Equals(AprsNet.Packets.TelemetryAnalogReading other) -> bool
+AprsNet.Packets.TelemetryAnalogReading.IsScaled.get -> bool
+AprsNet.Packets.TelemetryAnalogReading.IsScaled.init -> void
+AprsNet.Packets.TelemetryAnalogReading.Name.get -> string?
+AprsNet.Packets.TelemetryAnalogReading.Name.init -> void
+AprsNet.Packets.TelemetryAnalogReading.Raw.get -> double?
+AprsNet.Packets.TelemetryAnalogReading.Raw.init -> void
+AprsNet.Packets.TelemetryAnalogReading.TelemetryAnalogReading(int Channel, string? Name, string? Unit, double? Raw, double? Value, bool IsScaled) -> void
+AprsNet.Packets.TelemetryAnalogReading.TelemetryAnalogReading() -> void
+AprsNet.Packets.TelemetryAnalogReading.Unit.get -> string?
+AprsNet.Packets.TelemetryAnalogReading.Unit.init -> void
+AprsNet.Packets.TelemetryAnalogReading.Value.get -> double?
+AprsNet.Packets.TelemetryAnalogReading.Value.init -> void
+AprsNet.Packets.TelemetryDigitalReading
+AprsNet.Packets.TelemetryDigitalReading.Bit.get -> bool
+AprsNet.Packets.TelemetryDigitalReading.Bit.init -> void
+AprsNet.Packets.TelemetryDigitalReading.Channel.get -> int
+AprsNet.Packets.TelemetryDigitalReading.Channel.init -> void
+AprsNet.Packets.TelemetryDigitalReading.Deconstruct(out int Channel, out string? Name, out string? Label, out bool Bit, out bool IsOn) -> void
+AprsNet.Packets.TelemetryDigitalReading.Equals(AprsNet.Packets.TelemetryDigitalReading other) -> bool
+AprsNet.Packets.TelemetryDigitalReading.IsOn.get -> bool
+AprsNet.Packets.TelemetryDigitalReading.IsOn.init -> void
+AprsNet.Packets.TelemetryDigitalReading.Label.get -> string?
+AprsNet.Packets.TelemetryDigitalReading.Label.init -> void
+AprsNet.Packets.TelemetryDigitalReading.Name.get -> string?
+AprsNet.Packets.TelemetryDigitalReading.Name.init -> void
+AprsNet.Packets.TelemetryDigitalReading.TelemetryDigitalReading(int Channel, string? Name, string? Label, bool Bit, bool IsOn) -> void
+AprsNet.Packets.TelemetryDigitalReading.TelemetryDigitalReading() -> void
+AprsNet.Packets.TelemetryProfile
+AprsNet.Packets.TelemetryProfile.Apply(AprsNet.Packets.TelemetryReport! report) -> AprsNet.Packets.TelemetryReading!
+AprsNet.Packets.TelemetryProfile.BitSense.get -> string?
+AprsNet.Packets.TelemetryProfile.BitSense.init -> void
+AprsNet.Packets.TelemetryProfile.<Clone>$() -> AprsNet.Packets.TelemetryProfile!
+AprsNet.Packets.TelemetryProfile.Equals(AprsNet.Packets.TelemetryProfile? other) -> bool
+AprsNet.Packets.TelemetryProfile.Equations.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryEquation>!
+AprsNet.Packets.TelemetryProfile.Equations.init -> void
+AprsNet.Packets.TelemetryProfile.Names.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Packets.TelemetryProfile.Names.init -> void
+AprsNet.Packets.TelemetryProfile.ProjectName.get -> string?
+AprsNet.Packets.TelemetryProfile.ProjectName.init -> void
+AprsNet.Packets.TelemetryProfile.TelemetryProfile() -> void
+AprsNet.Packets.TelemetryProfile.Units.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Packets.TelemetryProfile.Units.init -> void
+AprsNet.Packets.TelemetryProfile.With(AprsNet.Packets.TelemetryDefinition! definition) -> AprsNet.Packets.TelemetryProfile!
+AprsNet.Packets.TelemetryReading
+AprsNet.Packets.TelemetryReading.Analog.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryAnalogReading>!
+AprsNet.Packets.TelemetryReading.Analog.init -> void
+AprsNet.Packets.TelemetryReading.<Clone>$() -> AprsNet.Packets.TelemetryReading!
+AprsNet.Packets.TelemetryReading.Deconstruct(out int? SequenceNumber, out System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryAnalogReading>! Analog, out System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryDigitalReading>! Digital, out string? ProjectName) -> void
+AprsNet.Packets.TelemetryReading.Digital.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryDigitalReading>!
+AprsNet.Packets.TelemetryReading.Digital.init -> void
+AprsNet.Packets.TelemetryReading.Equals(AprsNet.Packets.TelemetryReading? other) -> bool
+AprsNet.Packets.TelemetryReading.ProjectName.get -> string?
+AprsNet.Packets.TelemetryReading.ProjectName.init -> void
+AprsNet.Packets.TelemetryReading.SequenceNumber.get -> int?
+AprsNet.Packets.TelemetryReading.SequenceNumber.init -> void
+AprsNet.Packets.TelemetryReading.TelemetryReading(int? SequenceNumber, System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryAnalogReading>! Analog, System.Collections.Generic.IReadOnlyList<AprsNet.Packets.TelemetryDigitalReading>! Digital, string? ProjectName) -> void
+const AprsNet.Packets.TelemetryProfile.AnalogChannels = 5 -> int
+const AprsNet.Packets.TelemetryProfile.DigitalChannels = 8 -> int
+~override AprsNet.Packets.TelemetryAnalogReading.Equals(object obj) -> bool
+override AprsNet.Packets.TelemetryAnalogReading.GetHashCode() -> int
+~override AprsNet.Packets.TelemetryAnalogReading.ToString() -> string
+~override AprsNet.Packets.TelemetryDigitalReading.Equals(object obj) -> bool
+override AprsNet.Packets.TelemetryDigitalReading.GetHashCode() -> int
+~override AprsNet.Packets.TelemetryDigitalReading.ToString() -> string
+override AprsNet.Packets.TelemetryProfile.Equals(object? obj) -> bool
+override AprsNet.Packets.TelemetryProfile.GetHashCode() -> int
+override AprsNet.Packets.TelemetryProfile.ToString() -> string!
+override AprsNet.Packets.TelemetryReading.Equals(object? obj) -> bool
+override AprsNet.Packets.TelemetryReading.GetHashCode() -> int
+override AprsNet.Packets.TelemetryReading.ToString() -> string!
+static AprsNet.Packets.TelemetryAnalogReading.operator !=(AprsNet.Packets.TelemetryAnalogReading left, AprsNet.Packets.TelemetryAnalogReading right) -> bool
+static AprsNet.Packets.TelemetryAnalogReading.operator ==(AprsNet.Packets.TelemetryAnalogReading left, AprsNet.Packets.TelemetryAnalogReading right) -> bool
+static AprsNet.Packets.TelemetryDigitalReading.operator !=(AprsNet.Packets.TelemetryDigitalReading left, AprsNet.Packets.TelemetryDigitalReading right) -> bool
+static AprsNet.Packets.TelemetryDigitalReading.operator ==(AprsNet.Packets.TelemetryDigitalReading left, AprsNet.Packets.TelemetryDigitalReading right) -> bool
+static AprsNet.Packets.TelemetryProfile.Empty.get -> AprsNet.Packets.TelemetryProfile!
+static AprsNet.Packets.TelemetryProfile.operator !=(AprsNet.Packets.TelemetryProfile? left, AprsNet.Packets.TelemetryProfile? right) -> bool
+static AprsNet.Packets.TelemetryProfile.operator ==(AprsNet.Packets.TelemetryProfile? left, AprsNet.Packets.TelemetryProfile? right) -> bool
+static AprsNet.Packets.TelemetryReading.operator !=(AprsNet.Packets.TelemetryReading? left, AprsNet.Packets.TelemetryReading? right) -> bool
+static AprsNet.Packets.TelemetryReading.operator ==(AprsNet.Packets.TelemetryReading? left, AprsNet.Packets.TelemetryReading? right) -> bool
