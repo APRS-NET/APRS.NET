@@ -48,6 +48,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 
 - [Getting started with a TNC](docs/guides/tnc.md): read and send packets through Dire Wolf or a serial TNC.
 - [Getting started with the gateway](docs/guides/gateway.md): serve APRS-IS and your TNCs to APRS-IS clients.
+- [Run the gateway in a container](docs/guides/container.md): the `aprscli` image, and a compose sample with Dire Wolf.
 
 ## Layout
 
