@@ -117,3 +117,46 @@ AprsNet.Gateway.GatewayWebServerOptions.Validate() -> void
 AprsNet.Gateway.GatewayWebServerOptions.WebSocketPath.get -> string!
 AprsNet.Gateway.GatewayWebServerOptions.WebSocketPath.set -> void
 AprsNet.Gateway.GatewayWebServer.Start() -> void
+AprsNet.Gateway.GatewayHealth
+AprsNet.Gateway.GatewayHealth.AddSource(string! name, System.Func<bool>! isConnected) -> void
+AprsNet.Gateway.GatewayHealth.Check() -> AprsNet.Gateway.GatewayHealthReport!
+AprsNet.Gateway.GatewayHealth.GatewayHealth(AprsNet.Gateway.GatewayFeed? feed = null, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Gateway.GatewayHealth.RemoveSource(string! name) -> bool
+AprsNet.Gateway.GatewayHealthReport
+AprsNet.Gateway.GatewayHealthReport.CheckedAt.get -> System.DateTimeOffset
+AprsNet.Gateway.GatewayHealthReport.CheckedAt.init -> void
+AprsNet.Gateway.GatewayHealthReport.<Clone>$() -> AprsNet.Gateway.GatewayHealthReport!
+AprsNet.Gateway.GatewayHealthReport.Deconstruct(out AprsNet.Gateway.GatewayHealthStatus Status, out System.Collections.Generic.IReadOnlyDictionary<string!, AprsNet.Gateway.GatewaySourceHealth>! Sources, out System.DateTimeOffset CheckedAt) -> void
+AprsNet.Gateway.GatewayHealthReport.Equals(AprsNet.Gateway.GatewayHealthReport? other) -> bool
+AprsNet.Gateway.GatewayHealthReport.GatewayHealthReport(AprsNet.Gateway.GatewayHealthStatus Status, System.Collections.Generic.IReadOnlyDictionary<string!, AprsNet.Gateway.GatewaySourceHealth>! Sources, System.DateTimeOffset CheckedAt) -> void
+AprsNet.Gateway.GatewayHealthReport.Sources.get -> System.Collections.Generic.IReadOnlyDictionary<string!, AprsNet.Gateway.GatewaySourceHealth>!
+AprsNet.Gateway.GatewayHealthReport.Sources.init -> void
+AprsNet.Gateway.GatewayHealthReport.Status.get -> AprsNet.Gateway.GatewayHealthStatus
+AprsNet.Gateway.GatewayHealthReport.Status.init -> void
+AprsNet.Gateway.GatewayHealthStatus
+AprsNet.Gateway.GatewayHealthStatus.Degraded = 1 -> AprsNet.Gateway.GatewayHealthStatus
+AprsNet.Gateway.GatewayHealthStatus.Healthy = 0 -> AprsNet.Gateway.GatewayHealthStatus
+AprsNet.Gateway.GatewayHealthStatus.Unhealthy = 2 -> AprsNet.Gateway.GatewayHealthStatus
+AprsNet.Gateway.GatewaySourceHealth
+AprsNet.Gateway.GatewaySourceHealth.Deconstruct(out bool IsConnected, out System.DateTimeOffset? LastPacket) -> void
+AprsNet.Gateway.GatewaySourceHealth.Equals(AprsNet.Gateway.GatewaySourceHealth other) -> bool
+AprsNet.Gateway.GatewaySourceHealth.GatewaySourceHealth(bool IsConnected, System.DateTimeOffset? LastPacket) -> void
+AprsNet.Gateway.GatewaySourceHealth.GatewaySourceHealth() -> void
+AprsNet.Gateway.GatewaySourceHealth.IsConnected.get -> bool
+AprsNet.Gateway.GatewaySourceHealth.IsConnected.init -> void
+AprsNet.Gateway.GatewaySourceHealth.LastPacket.get -> System.DateTimeOffset?
+AprsNet.Gateway.GatewaySourceHealth.LastPacket.init -> void
+AprsNet.Gateway.GatewayWebServerOptions.Health.get -> AprsNet.Gateway.GatewayHealth?
+AprsNet.Gateway.GatewayWebServerOptions.HealthPath.get -> string!
+AprsNet.Gateway.GatewayWebServerOptions.HealthPath.set -> void
+AprsNet.Gateway.GatewayWebServerOptions.Health.set -> void
+override AprsNet.Gateway.GatewayHealthReport.Equals(object? obj) -> bool
+override AprsNet.Gateway.GatewayHealthReport.GetHashCode() -> int
+override AprsNet.Gateway.GatewayHealthReport.ToString() -> string!
+~override AprsNet.Gateway.GatewaySourceHealth.Equals(object obj) -> bool
+override AprsNet.Gateway.GatewaySourceHealth.GetHashCode() -> int
+~override AprsNet.Gateway.GatewaySourceHealth.ToString() -> string
+static AprsNet.Gateway.GatewayHealthReport.operator !=(AprsNet.Gateway.GatewayHealthReport? left, AprsNet.Gateway.GatewayHealthReport? right) -> bool
+static AprsNet.Gateway.GatewayHealthReport.operator ==(AprsNet.Gateway.GatewayHealthReport? left, AprsNet.Gateway.GatewayHealthReport? right) -> bool
+static AprsNet.Gateway.GatewaySourceHealth.operator !=(AprsNet.Gateway.GatewaySourceHealth left, AprsNet.Gateway.GatewaySourceHealth right) -> bool
+static AprsNet.Gateway.GatewaySourceHealth.operator ==(AprsNet.Gateway.GatewaySourceHealth left, AprsNet.Gateway.GatewaySourceHealth right) -> bool

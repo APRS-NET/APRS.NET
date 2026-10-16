@@ -29,6 +29,12 @@ await using var hub = new AprsWebSocketHub(server);
 await using var web = new GatewayWebServer(hub);   // ws://127.0.0.1:14590/aprs?filter=r/35/-97/200
 web.Start();
 
+// With a health check at /health: 200 while any source is connected, 503 when none is.
+var health = new GatewayHealth(feed);
+health.AddSource("aprs-is", () => aprsIs.State == AprsIsConnectionState.Connected);
+health.AddSource("tnc", () => tnc.IsConnected);
+await using var withHealth = new GatewayWebServer(hub, new GatewayWebServerOptions { Health = health });
+
 // Or, in an ASP.NET Core app:
 app.Map("/aprs", async context => await hub.HandleAsync(
     await context.WebSockets.AcceptWebSocketAsync(), context.Request.Query["filter"], context.Request.Query["call"],

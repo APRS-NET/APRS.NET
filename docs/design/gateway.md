@@ -116,8 +116,20 @@ Decisions:
 - **Pings** keep connections open every 30 seconds.
 - **Metrics** are the APRS-IS server's, with a `protocol` tag (`aprs-is` or `websocket`) on the client instruments.
 
+## Health
+
+`GatewayHealth` says whether the gateway is serving. The app adds each source with a check that says whether it is
+connected (an APRS-IS connection's `State`, a TNC's `IsConnected`); given the `GatewayFeed`, it also reports when each
+source last delivered a packet. With every source connected, or none added, it is healthy; with some, degraded; with
+none, unhealthy.
+
+`GatewayWebServer` answers `GET /health` with it: `200` while healthy or degraded, `503` when unhealthy, so an
+orchestrator restarts only a gateway that serves nothing new. The body is JSON:
+`{"status":"degraded","checkedAt":…,"clients":{"aprsIs":2,"webSocket":1},"sources":{"aprs-is":{"connected":true,"lastPacket":…},"tnc":{"connected":false,"lastPacket":null}}}`.
+`aprscli serve --http` serves both routes.
+
 ## Still to do
 
-- A health endpoint (#166) and a container image (#167).
+- A container image (#167).
 - Accepting packets from verified clients, with authentication and per-client rate limits.
 - Track history in the station store, persistence, and `q/con/I` (which needs IGate positions).

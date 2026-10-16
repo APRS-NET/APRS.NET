@@ -27,6 +27,7 @@ public sealed class GatewayFeed : IAsyncDisposable
     private readonly PacketMerger _merger;
     private readonly ConcurrentDictionary<string, Counts> _counts = new(StringComparer.Ordinal);
     private readonly Task _publishing;
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>Creates a feed for <paramref name="server"/>, which it publishes to until disposed.</summary>
     /// <param name="server">The server to publish to. The feed does not start or dispose it.</param>
@@ -37,6 +38,7 @@ public sealed class GatewayFeed : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(server);
         _server = server;
         var time = timeProvider ?? server.TimeProvider;
+        _timeProvider = time;
         _merger = new PacketMerger(new DuplicateFilter(duplicateWindow, timeProvider: time), timeProvider: time);
         _publishing = PublishAsync();
     }
@@ -84,6 +86,12 @@ public sealed class GatewayFeed : IAsyncDisposable
             StringComparer.Ordinal
         );
 
+    /// <summary>When the source <paramref name="name"/> last delivered a packet, duplicates included.</summary>
+    internal DateTimeOffset? LastPacketAt(string name) =>
+        _counts.TryGetValue(name, out var counts) && Interlocked.Read(ref counts.LastTicks) is var ticks and > 0
+            ? new DateTimeOffset(ticks, TimeSpan.Zero)
+            : null;
+
     /// <summary>Stops every source and publishes what they had already read.</summary>
     public async ValueTask DisposeAsync()
     {
@@ -99,6 +107,7 @@ public sealed class GatewayFeed : IAsyncDisposable
         {
             var counts = _counts.GetOrAdd(merged.Source, _ => new Counts());
             Interlocked.Increment(ref counts.Packets);
+            Interlocked.Exchange(ref counts.LastTicks, _timeProvider.GetUtcNow().UtcTicks);
             GatewayMetrics.Received(_server.Name, merged.Source);
             if (merged.IsDuplicate)
             {
@@ -122,6 +131,7 @@ public sealed class GatewayFeed : IAsyncDisposable
     {
         public long Packets;
         public long Duplicates;
+        public long LastTicks;
     }
 }
 

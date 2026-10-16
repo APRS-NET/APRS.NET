@@ -9,9 +9,11 @@ namespace AprsNet.Gateway;
 
 /// <summary>
 /// A small web server for the gateway: it accepts WebSocket connections on
-/// <see cref="GatewayWebServerOptions.WebSocketPath"/> and hands them to an <see cref="AprsWebSocketHub"/>. It needs
-/// no ASP.NET Core; an app that already runs ASP.NET Core can call <see cref="AprsWebSocketHub.HandleAsync"/> from its
-/// own endpoint instead.
+/// <see cref="GatewayWebServerOptions.WebSocketPath"/> and hands them to an <see cref="AprsWebSocketHub"/>, and, with
+/// <see cref="GatewayWebServerOptions.Health"/>, answers health checks on
+/// <see cref="GatewayWebServerOptions.HealthPath"/>. It needs no ASP.NET Core; an app that already runs ASP.NET Core
+/// can call <see cref="AprsWebSocketHub.HandleAsync"/> and <see cref="GatewayHealth.Check"/> from its own endpoints
+/// instead.
 /// </summary>
 /// <remarks>
 /// A client connects to <c>ws://host:port/aprs?filter=r/35/-97/200&amp;call=N0CALL</c>; both query parameters are
@@ -138,6 +140,12 @@ public sealed class GatewayWebServer : IAsyncDisposable
             return;
         }
 
+        if (_options.Health is { } health && request.Path == _options.HealthPath)
+        {
+            await RespondHealthAsync(stream, health.Check(), stopping).ConfigureAwait(false);
+            return;
+        }
+
         if (request.Path != _options.WebSocketPath)
         {
             await RespondAsync(stream, 404, "Not Found", stopping).ConfigureAwait(false);
@@ -204,6 +212,53 @@ public sealed class GatewayWebServer : IAsyncDisposable
         );
         await _hub.HandleAsync(socket, request.Query("filter"), request.Query("call"), stopping).ConfigureAwait(false);
     }
+
+    // 200 while anything is served, 503 when nothing is, so an orchestrator restarts only a gateway that is down.
+    private Task RespondHealthAsync(NetworkStream stream, GatewayHealthReport report, CancellationToken stopping)
+    {
+        using var buffer = new MemoryStream();
+        using (var json = new System.Text.Json.Utf8JsonWriter(buffer))
+        {
+            json.WriteStartObject();
+            json.WriteString("status", report.Status.ToString().ToLowerInvariant());
+            json.WriteString("checkedAt", Utc(report.CheckedAt));
+            json.WriteStartObject("clients");
+            json.WriteNumber("aprsIs", _hub.Server.ClientCount);
+            json.WriteNumber("webSocket", _hub.ClientCount);
+            json.WriteEndObject();
+            json.WriteStartObject("sources");
+            foreach (var (name, source) in report.Sources)
+            {
+                json.WriteStartObject(name);
+                json.WriteBoolean("connected", source.IsConnected);
+                if (source.LastPacket is { } last)
+                {
+                    json.WriteString("lastPacket", Utc(last));
+                }
+                else
+                {
+                    json.WriteNull("lastPacket");
+                }
+
+                json.WriteEndObject();
+            }
+
+            json.WriteEndObject();
+            json.WriteEndObject();
+        }
+
+        var body = buffer.ToArray();
+        var (status, reason) =
+            report.Status == GatewayHealthStatus.Unhealthy ? (503, "Service Unavailable") : (200, "OK");
+        var head = Encoding.ASCII.GetBytes(
+            $"HTTP/1.1 {status} {reason}\r\nContent-Type: application/json\r\nCache-Control: no-store\r\n"
+                + $"Content-Length: {body.Length}\r\nConnection: close\r\n\r\n"
+        );
+        return stream.WriteAsync(head.Concat(body).ToArray(), stopping).AsTask();
+    }
+
+    private static string Utc(DateTimeOffset time) =>
+        time.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture);
 
     private async Task<HttpRequest?> ReadRequestAsync(NetworkStream stream, CancellationToken stopping)
     {
@@ -332,6 +387,15 @@ public sealed class GatewayWebServerOptions
     public string WebSocketPath { get; set; } = "/aprs";
 
     /// <summary>
+    /// The health check to answer on <see cref="HealthPath"/>: <c>200</c> while healthy or degraded, <c>503</c> when
+    /// unhealthy, with the details as JSON. <see langword="null"/>, the default, answers 404 there.
+    /// </summary>
+    public GatewayHealth? Health { get; set; }
+
+    /// <summary>The path health checks are answered on. Defaults to <c>/health</c>.</summary>
+    public string HealthPath { get; set; } = "/health";
+
+    /// <summary>
     /// The web page origins allowed to connect, such as <c>https://map.example.org</c>. <see langword="null"/>, the
     /// default, allows any: the feed is read-only. Clients that are not browsers send no origin and are always allowed.
     /// </summary>
@@ -350,6 +414,14 @@ public sealed class GatewayWebServerOptions
         if (!WebSocketPath.StartsWith('/'))
         {
             throw new ArgumentException("The WebSocket path must start with '/'.", nameof(WebSocketPath));
+        }
+
+        if (!HealthPath.StartsWith('/') || HealthPath == WebSocketPath)
+        {
+            throw new ArgumentException(
+                "The health path must start with '/' and differ from the WebSocket path.",
+                nameof(HealthPath)
+            );
         }
 
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(RequestTimeout, TimeSpan.Zero, nameof(RequestTimeout));
