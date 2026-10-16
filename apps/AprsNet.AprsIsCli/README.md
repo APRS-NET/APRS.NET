@@ -209,6 +209,16 @@ The upstream connection and each TNC always reconnect. When there is more than o
 counts each one's packets and duplicates. Clients are read-only for now: anything they send is ignored. A client
 that falls 1,000 lines behind is disconnected, as on APRS-IS.
 
+## health
+
+Ask a running `aprscli serve --http` whether it is serving, as the container image's `HEALTHCHECK` does. It prints the
+health report and exits 0 while any source is connected, 1 when none is, and 2 when nothing answers:
+
+```sh
+aprscli health                                       # http://127.0.0.1:14590/health
+aprscli health http://gateway.lan:14590/health --timeout 10s
+```
+
 ## tnc listen
 
 Print the APRS packets a KISS TNC hears, in the same formats as `listen`. The TNC can serve KISS over TCP, as Dire
