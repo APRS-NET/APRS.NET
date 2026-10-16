@@ -1,0 +1,15 @@
+# Only the CLI and the libraries it builds from go into the image's build.
+**/bin
+**/obj
+**/TestResults
+.git
+.github
+artifacts
+benchmarks
+docs
+samples
+tests
+tools
+*.md
+!apps/AprsNet.AprsIsCli/README.md
+!src/*/README.md
