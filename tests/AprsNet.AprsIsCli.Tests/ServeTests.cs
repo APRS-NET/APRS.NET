@@ -178,6 +178,16 @@ public class ServeTests
             StringComparison.Ordinal
         );
 
+        using (var http = new TcpClient())
+        {
+            await http.ConnectAsync(IPAddress.Loopback, webPort, token);
+            await http.GetStream().WriteAsync("GET /health HTTP/1.1\r\nHost: x\r\n\r\n"u8.ToArray(), token);
+            var response = await new StreamReader(http.GetStream()).ReadToEndAsync(token);
+            Assert.StartsWith("HTTP/1.1 200 ", response, StringComparison.Ordinal);
+            Assert.Contains("\"status\":\"healthy\"", response, StringComparison.Ordinal);
+            Assert.Contains("\"connected\":true", response, StringComparison.Ordinal);
+        }
+
         await stop.CancelAsync();
         var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
         Assert.Equal(0, result.ExitCode);

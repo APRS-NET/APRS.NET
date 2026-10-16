@@ -59,7 +59,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
     {
         Description =
             "Also serve HTTP on this address:port, for example 127.0.0.1:14590: WebSocket clients at "
-            + "ws://address:port/aprs get JSON packets and set their filter in the URL or a message. Default: off.",
+            + "ws://address:port/aprs get JSON packets and set their filter in the URL or a message, and /health "
+            + "says whether each source is connected (503 when none is). Default: off.",
     };
 
     private readonly Option<string> _name = new("--name")
@@ -250,10 +251,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return ExitCodes.Error;
         }
 
+        await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
+        var health = new GatewayHealth(feed, environment.TimeProvider);
         await using var hub = options.Http is null ? null : new AprsWebSocketHub(server);
         await using var web = hub is null
             ? null
-            : new GatewayWebServer(hub, new GatewayWebServerOptions { EndPoint = options.Http! });
+            : new GatewayWebServer(hub, new GatewayWebServerOptions { EndPoint = options.Http!, Health = health });
         try
         {
             web?.Start();
@@ -297,12 +300,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
             }
         }
 
-        await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
         var sources = new List<Task>();
         var described = new List<string>();
         if (connection is not null)
         {
             sources.Add(feed.AddSource(AprsIsSource, PacketsAsync(connection.ReadLinesAsync(run.Token))));
+            health.AddSource(AprsIsSource, () => connection.State == AprsIsConnectionState.Connected);
             described.Add($"{options.Upstream!.Endpoint} ({options.Upstream.Filter})");
         }
 
@@ -329,13 +332,18 @@ internal sealed class ServeCommand(CliEnvironment environment)
                     );
                 };
                 sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
+                health.AddSource(name, () => tnc.IsConnected);
                 described.Add($"the TNC at {name}");
             }
 
             await environment.Error.WriteLineAsync(
                 $"aprscli: serving {string.Join(" and ", described)} on {server.LocalEndPoint} as "
                     + $"{options.Local.ServerName}"
-                    + (web is null ? "" : $", and on http://{web.LocalEndPoint} (WebSocket clients at /aprs)")
+                    + (
+                        web is null
+                            ? ""
+                            : $", and on http://{web.LocalEndPoint} (WebSocket clients at /aprs, health at /health)"
+                    )
             );
 
             try
