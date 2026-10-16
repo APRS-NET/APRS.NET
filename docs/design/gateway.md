@@ -95,9 +95,7 @@ is in memory and bounded (100,000 stations by default), forgetting the station h
 
 ## Still to do
 
-- Accepting packets from verified clients, with per-client rate limits.
-- A WebSocket endpoint streaming JSON. This needs a JSON form of packets in a library; the CLI's `--format json` is
-  the obvious starting point.
+- A WebSocket endpoint streaming JSON (#165), which needs a JSON form of packets in a library (#164).
+- A health endpoint (#166) and a container image (#167).
+- Accepting packets from verified clients, with authentication and per-client rate limits.
 - Track history in the station store, persistence, and `q/con/I` (which needs IGate positions).
-- A KISS source in `aprscli serve`, merged with APRS-IS through the deduplicator.
-- A health endpoint and a container image.
