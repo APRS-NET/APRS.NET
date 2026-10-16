@@ -1,7 +1,7 @@
 # The aprscli image: run 'aprscli serve' as a gateway, or any other aprscli command.
 #
 #   docker build -t aprscli .
-#   docker run -p 14580:14580 -p 14590:14590 aprscli serve -f "r/38.98/-94.67/300" \
+#   docker run -p 14580:14580 -p 14590:14590 aprscli serve -c YOURCALL -f "r/38.98/-94.67/300" \
 #     --listen 0.0.0.0:14580 --http 0.0.0.0:14590
 #
 # See docs/guides/container.md. The release workflow builds it with VERSION set to the release.

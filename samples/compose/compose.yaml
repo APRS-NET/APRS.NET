@@ -2,7 +2,7 @@
 # and to WebSocket clients on port 14590. See docs/guides/container.md.
 #
 #   cd samples/compose
-#   edit direwolf.conf (MYCALL, ADEVICE) and the filter below
+#   edit direwolf.conf (MYCALL, ADEVICE), and the callsign and filter below
 #   docker compose up -d
 #   docker compose ps          # the gateway's health
 
@@ -24,6 +24,8 @@ services:
     # A packet heard both on the air and on APRS-IS is served once. Drop -f to serve the radio only.
     command:
       - serve
+      - -c
+      - YOURCALL
       - --tnc
       - direwolf:8001
       - -f
