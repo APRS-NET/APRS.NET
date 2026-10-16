@@ -7,8 +7,11 @@ on port 14590.
 ```sh
 docker build -t aprscli .
 docker run -d --name gateway -p 14580:14580 -p 14590:14590 aprscli \
-  serve -c N0CALL -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 --http 0.0.0.0:14590 --history 10m
+  serve -c YOURCALL -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 --http 0.0.0.0:14590 --history 10m
 ```
+
+- **Callsign:** `-c` is the callsign for the read-only APRS-IS login; give your own. Some APRS-IS servers refuse the
+  default, N0CALL ("Login by user not allowed"), and `aprscli` then exits.
 
 - **Listen on `0.0.0.0` inside the container.** The defaults, 127.0.0.1, can't be reached through a published port.
   Publish the ports to `127.0.0.1` on the host (`-p 127.0.0.1:14580:14580`) to keep the gateway to your computer.
@@ -24,7 +27,7 @@ docker run -d --name gateway -p 14580:14580 -p 14590:14590 aprscli \
 
 ```sh
 cd samples/compose
-# Set MYCALL and ADEVICE in direwolf.conf, and the filter in compose.yaml.
+# Set MYCALL and ADEVICE in direwolf.conf, and the callsign and filter in compose.yaml.
 docker compose up -d
 docker compose ps
 ```

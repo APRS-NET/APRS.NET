@@ -130,6 +130,5 @@ orchestrator restarts only a gateway that serves nothing new. The body is JSON:
 
 ## Still to do
 
-- A container image (#167).
 - Accepting packets from verified clients, with authentication and per-client rate limits.
 - Track history in the station store, persistence, and `q/con/I` (which needs IGate positions).
