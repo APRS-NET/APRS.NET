@@ -39,6 +39,9 @@ public class ServeTests
         harness.Transport.Server("N2ABC>APRS,qAC,T2TEST:>other");
         harness.Transport.Server("N1ABC>APRS,qAC,T2TEST:>second");
 
+        // The test stops the run once it has read what it needs, as Ctrl+C would; a short --duration made the run end
+        // before a slow runner had connected and read the packets.
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
         var port = FreePort();
         var run = harness.RunAsync(
             [
@@ -54,9 +57,9 @@ public class ServeTests
                 "--history",
                 "1h",
                 "--duration",
-                "3s",
+                "1m",
             ],
-            token
+            stop.Token
         );
 
         using var tcp = await ConnectAsync(port, token);
@@ -68,7 +71,8 @@ public class ServeTests
         Assert.Equal("N1ABC>APRS,WIDE1-1,qAR,IGATE1:>first", await reader.ReadLineAsync(token));
         Assert.Equal("N1ABC>APRS,qAC,T2TEST:>second", await reader.ReadLineAsync(token));
 
-        var result = await run;
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
         Assert.Equal(0, result.ExitCode);
         Assert.Equal("r/39/-95/500 p/N", harness.ClientOptions!.Filter);
         Assert.Contains($"on 127.0.0.1:{port} as T2LOCAL", result.Error, StringComparison.Ordinal);
