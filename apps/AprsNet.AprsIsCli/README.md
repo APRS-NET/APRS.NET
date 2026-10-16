@@ -34,6 +34,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 | `-s`, `--server host[:port]` | Server. Not combinable with `--region`. Default `rotate.aprs2.net:14580`. |
 | `-r`, `--region` | `noam`, `soam`, `euro`, `asia` or `aunz` rotate. |
 | `--port`, `--full-feed` | Port override, or the full feed port 10152. |
+| `--tls` | Connect over TLS, checking the server's certificate. Default server `ssl.aprs2.net:24580`; a `--server` without a port uses 24580. Not with `--region` or `--full-feed`. |
 | `-f`, `--filter` | APRS-IS filter sent with the login. |
 | `-t`, `--timestamps` | Prefix printed lines with a UTC timestamp (`raw` and `decoded`; `json` and `pretty` always show the received time). |
 | `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields (pipe it to `jq` to read it indented). `pretty`: a block per packet with the received time, the header and labelled fields in plain units, plus any parse issues. Position reports, Mic-E reports, objects, items, status reports, messages (including telemetry definitions), telemetry reports and weather are decoded so far; other types print as not decoded yet. |
@@ -167,6 +168,7 @@ reconnects as `listen --reconnect` does and carries on waiting.
 | `-c`, `--callsign` | Your callsign, with optional SSID. Required; `N0CALL` is refused. |
 | `--passcode` | Passcode for the callsign; prefer `APRS_PASSCODE`. |
 | `-s`, `--server`, `-r`, `--region` | Server, as for `listen`. Default: `rotate.aprs2.net:14580`. |
+| `--tls` | Connect over TLS, as for `listen`. |
 | `--tocall` | Destination TOCALL. Default: `APZNET` (the experimental `APZ` range). |
 | `--path` | Digipeater path, comma-separated. Default: none, for APRS-IS only. |
 | `-n`, `--dry-run` | Print the packet without connecting. |

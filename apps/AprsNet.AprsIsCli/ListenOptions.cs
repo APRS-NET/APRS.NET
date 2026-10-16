@@ -7,6 +7,9 @@ internal sealed record ListenOptions
 {
     public required AprsIsEndpoint Endpoint { get; init; }
 
+    /// <summary>Connect over TLS.</summary>
+    public bool UseTls { get; init; }
+
     public required string Callsign { get; init; }
 
     /// <summary>Never printed or logged.</summary>

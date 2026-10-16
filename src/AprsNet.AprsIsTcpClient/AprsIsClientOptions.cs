@@ -1,5 +1,7 @@
 using System.Buffers;
+using System.Net.Security;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using AprsNet.Packets;
 
 // Options are set by callers, which inspectors cannot see from inside this solution.
@@ -27,6 +29,26 @@ public sealed class AprsIsClientOptions
 
     /// <summary>Software version reported to the server. No whitespace.</summary>
     public string SoftwareVersion { get; set; } = DefaultVersion();
+
+    /// <summary>
+    /// Connect over TLS. The server must offer TLS on <see cref="Endpoint"/>'s port, usually
+    /// <see cref="AprsIsPorts.Tls"/> (24580); few servers do. The server's certificate is checked against
+    /// <see cref="AprsIsEndpoint.Host"/> unless <see cref="ServerCertificateValidation"/> decides instead. Off by default.
+    /// </summary>
+    public bool UseTls { get; set; }
+
+    /// <summary>
+    /// With <see cref="UseTls"/>: decides whether to accept the server's certificate, in place of the default check
+    /// (a valid chain and a name matching the host). For example, accept a server's self-signed certificate by its
+    /// thumbprint. <see langword="null"/>, the default, uses the default check.
+    /// </summary>
+    public RemoteCertificateValidationCallback? ServerCertificateValidation { get; set; }
+
+    /// <summary>
+    /// With <see cref="UseTls"/>: certificates to offer the server, such as an amateur radio certificate from LoTW,
+    /// which servers that support it accept in place of a passcode. <see langword="null"/>, the default, offers none.
+    /// </summary>
+    public X509CertificateCollection? ClientCertificates { get; set; }
 
     /// <summary>How long to wait for the TCP connection.</summary>
     public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(10);

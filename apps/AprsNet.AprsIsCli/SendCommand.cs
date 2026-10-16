@@ -31,6 +31,14 @@ internal sealed class SendCommand(CliEnvironment environment)
         Recursive = true,
     };
 
+    private readonly Option<bool> _tls = new("--tls")
+    {
+        Description =
+            $"Connect over TLS, checking the server's certificate. Default server: {ListenCommand.TlsDefault}; a "
+            + $"--server without a port uses {AprsIsPorts.Tls}. Cannot be combined with --region.",
+        Recursive = true,
+    };
+
     private readonly Option<string?> _server = new("--server", "-s")
     {
         Description = "Server as host[:port]. Default: rotate.aprs2.net:14580.",
@@ -165,7 +173,7 @@ internal sealed class SendCommand(CliEnvironment environment)
             "Send a status report, message, position, object, weather or telemetry report to APRS-IS. Needs your "
                 + "callsign and its passcode."
         );
-        foreach (var option in new Option[] { _callsign, _passcode, _server, _region, _tocall, _path, _dryRun })
+        foreach (var option in new Option[] { _callsign, _passcode, _server, _region, _tls, _tocall, _path, _dryRun })
         {
             command.Options.Add(option);
         }
@@ -522,6 +530,7 @@ internal sealed class SendCommand(CliEnvironment environment)
         var options = new AprsIsClientOptions
         {
             Endpoint = endpoint,
+            UseTls = parseResult.GetValue(_tls),
             Callsign = callsign,
             Passcode = passcode,
             // Messages addressed to us, so acknowledgements reach the messenger.
@@ -692,15 +701,31 @@ internal sealed class SendCommand(CliEnvironment environment)
             return false;
         }
 
+        var tls = parseResult.GetValue(_tls);
+        if (tls && region is not null)
+        {
+            endpoint = null!;
+            error = $"--tls cannot be combined with --region; it uses {ListenCommand.TlsDefault} or your --server.";
+            return false;
+        }
+
         if (server is null)
         {
-            endpoint = AprsIsServerPreset.TryFind(region, out var preset) ? preset.Endpoint : AprsIsEndpoint.Rotate;
+            endpoint =
+                tls ? ListenCommand.TlsDefault
+                : AprsIsServerPreset.TryFind(region, out var preset) ? preset.Endpoint
+                : AprsIsEndpoint.Rotate;
             return true;
         }
 
         try
         {
             endpoint = AprsIsEndpoint.Parse(server);
+            if (tls && !ListenCommand.HasExplicitPort(server))
+            {
+                endpoint = endpoint.WithPort(AprsIsPorts.Tls);
+            }
+
             return true;
         }
         catch (AprsValidationException ex)

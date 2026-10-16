@@ -81,6 +81,29 @@ await foreach (var packet in connection.ReadPacketsAsync()) // one stream across
 later login; one send rate limit covers every connection. `AprsMessenger` works with it the same way
 (`new AprsMessenger(address, connection.SendAsync)`).
 
+## TLS
+
+Set `UseTls` to connect over TLS. The server must offer it, usually on port 24580 (`AprsIsPorts.Tls`), and its
+certificate is checked against the host name unless you decide with `ServerCertificateValidation`:
+
+```csharp
+var options = new AprsIsClientOptions
+{
+    Endpoint = new AprsIsEndpoint("ssl.aprs2.net", AprsIsPorts.Tls),
+    Callsign = "N0CALL",
+    UseTls = true,
+};
+```
+
+A failed handshake throws `AprsIsTlsException`, an `IOException` whose `Failure` says why: `CertificateRejected` (with
+the `PolicyErrors`, such as a name mismatch) or `HandshakeFailed`. `AprsIsConnection` retries it like any other
+connection failure.
+
+Few APRS-IS servers offer TLS. Known: `ssl.aprs2.net:24580`, the aprs2.net servers running aprsc's experimental TLS
+support, where a Logbook of The World certificate can replace the passcode (pass it in `ClientCertificates`; see
+[APRSdroid's notes](https://aprsdroid.org/ssl)). APRS.NET's tests cover TLS against a local server; we have not yet
+checked these servers ourselves.
+
 ## Errors in the user's language
 
 Settings a person types (callsign, software name and version, filter, server address, passcode callsign) are refused

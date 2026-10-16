@@ -54,8 +54,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         _sendLimiter =
             sendLimiter ?? new SendRateLimiter(options.SendBurst, options.SendInterval, options.TimeProvider);
         _logger = logger ?? NullLogger.Instance;
-        _transport =
-            transport ?? new TcpAprsTransport(options.Endpoint, options.ConnectTimeout, options.MaxLineLength, _logger);
+        _transport = transport ?? new TcpAprsTransport(options, _logger);
 
         var channelOptions = new BoundedChannelOptions(options.ChannelCapacity)
         {
