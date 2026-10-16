@@ -3,6 +3,7 @@ using System.Diagnostics.Metrics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Channels;
 using AprsNet.Packets;
 using Microsoft.Extensions.Time.Testing;
 
@@ -119,6 +120,37 @@ public sealed class GatewayMetricsTests : IDisposable
         dedupe.TryAccept(packet);
         dedupe.TryAccept(packet);
         Assert.True(Sum("aprsnet.gateway.packets.duplicates") - before >= 1);
+    }
+
+    [Fact]
+    public async Task AFeedCountsPacketsAndDuplicatesBySource()
+    {
+        await using var server = Start();
+        await using var feed = new GatewayFeed(server);
+        var aprsIs = Channel.CreateUnbounded<AprsPacket>();
+        var tnc = Channel.CreateUnbounded<AprsPacket>();
+        _ = feed.AddSource("aprs-is", aprsIs.Reader.ReadAllAsync(TestContext.Current.CancellationToken));
+        _ = feed.AddSource("tnc", tnc.Reader.ReadAllAsync(TestContext.Current.CancellationToken));
+
+        aprsIs.Writer.TryWrite(AprsPacket.Parse("N1ABC>APRS,qAR,IGATE:>hello"));
+        await WaitUntil(() => feed.Published == 1);
+        tnc.Writer.TryWrite(AprsPacket.Parse("N1ABC>APRS:>hello"));
+        tnc.Writer.TryWrite(AprsPacket.Parse("N2ABC>APRS:>rf only"));
+        await WaitUntil(() => feed.Published == 2 && feed.Duplicates == 1);
+
+        Assert.Equal(1, Sum("aprsnet.gateway.packets.received", "source", "aprs-is"));
+        Assert.Equal(2, Sum("aprsnet.gateway.packets.received", "source", "tnc"));
+        Assert.Equal(
+            1,
+            _seen
+                .Where(m =>
+                    m.Instrument == "aprsnet.gateway.packets.duplicates"
+                    && m.Tags.GetValueOrDefault("server") == _name
+                    && m.Tags.GetValueOrDefault("source") == "tnc"
+                )
+                .Sum(m => m.Value)
+        );
+        Assert.Equal(2, Sum("aprsnet.gateway.packets.published"));
     }
 
     private AprsIsServer Start(int maxClients = 10, TimeProvider? time = null)

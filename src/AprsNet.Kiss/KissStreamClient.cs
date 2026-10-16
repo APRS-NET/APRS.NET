@@ -24,7 +24,15 @@ public sealed class KissStreamClient : IAsyncDisposable
     /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
     /// </param>
     /// <param name="ownsStream">Whether disposing this client disposes the stream.</param>
-    public KissStreamClient(Stream stream, int tncPort = 0, bool ownsStream = true)
+    /// <param name="transmitLimit">
+    /// How fast frames may be sent; a new <see cref="KissTransmitLimit"/> with the default settings when not given.
+    /// </param>
+    public KissStreamClient(
+        Stream stream,
+        int tncPort = 0,
+        bool ownsStream = true,
+        KissTransmitLimit? transmitLimit = null
+    )
     {
         ArgumentNullException.ThrowIfNull(stream);
         if (!stream.CanRead || !stream.CanWrite)
@@ -37,7 +45,11 @@ public sealed class KissStreamClient : IAsyncDisposable
         _stream = stream;
         _tncPort = tncPort;
         _ownsStream = ownsStream;
+        TransmitLimit = transmitLimit ?? KissTransmitLimit.Default;
     }
+
+    /// <summary>How fast frames may be sent; a send waits for its turn.</summary>
+    public KissTransmitLimit TransmitLimit { get; }
 
     /// <summary>KISS frames dropped for an invalid escape or for being too long: a sign of a noisy serial link.</summary>
     public long DroppedFrames => _decoder.DroppedFrames;
@@ -88,19 +100,22 @@ public sealed class KissStreamClient : IAsyncDisposable
     }
 
     /// <summary>
-    /// Sends <paramref name="packet"/> for the TNC to transmit on its radio port. The TNC handles channel access; it
-    /// may hold the frame until the channel is clear.
+    /// Sends <paramref name="packet"/> for the TNC to transmit on its radio port, once <see cref="TransmitLimit"/>
+    /// allows. The TNC handles channel access; it may hold the frame until the channel is clear.
     /// </summary>
     /// <exception cref="ArgumentException">The packet cannot be sent as AX.25; see <see cref="Ax25Frame.FromAprsPacket"/>.</exception>
     public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default) =>
         SendFrameAsync(Ax25Frame.FromAprsPacket(packet), cancellationToken);
 
-    /// <summary>Sends an AX.25 frame for the TNC to transmit on its radio port.</summary>
+    /// <summary>
+    /// Sends an AX.25 frame for the TNC to transmit on its radio port, once <see cref="TransmitLimit"/> allows.
+    /// </summary>
     public async ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(frame);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         var bytes = KissFrame.ForAx25(frame, _tncPort).Encode();
+        await TransmitLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

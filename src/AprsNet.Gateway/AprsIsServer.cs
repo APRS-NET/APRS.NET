@@ -49,6 +49,12 @@ public sealed class AprsIsServer : IAsyncDisposable
     /// </summary>
     public IPEndPoint? LocalEndPoint => (IPEndPoint?)_listener?.LocalEndpoint;
 
+    /// <summary>The server's name, as in <see cref="AprsIsServerOptions.ServerName"/>.</summary>
+    internal string Name => _options.ServerName;
+
+    /// <summary>The server's clock.</summary>
+    internal TimeProvider TimeProvider => _options.TimeProvider;
+
     /// <summary>Clients connected now, including any still logging in.</summary>
     public int ClientCount => _sessions.Count;
 

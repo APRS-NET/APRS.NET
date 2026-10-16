@@ -176,13 +176,16 @@ the server would drop the packet. Exit codes are those of `listen`, plus 5 for a
 
 ## serve
 
-Relay an APRS-IS feed to APRS clients on this computer or your network. `serve` makes one read-only connection
-upstream with a broad filter, drops duplicates, and serves the packets on a local port that behaves like an APRS-IS
-server: each client logs in as usual and gets its own filter, plus messages to its callsign.
+Relay an APRS-IS feed, what your KISS TNCs hear, or both, to APRS clients on this computer or your network. `serve`
+makes one read-only connection upstream with a broad filter, reads each `--tnc`, drops duplicates (a packet heard both
+on the air and on APRS-IS is served once), and serves the packets on a local port that behaves like an APRS-IS server:
+each client logs in as usual and gets its own filter, plus messages to its callsign.
 
 ```sh
 aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --history 10m          # on 127.0.0.1:14580
 aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 # for your network
+aprscli serve -f "r/38.98/-94.67/300" --tnc localhost                  # APRS-IS and Dire Wolf
+aprscli serve --tnc localhost --tnc 192.168.1.20:8001                   # two TNCs, no internet
 aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a client
 ```
 
@@ -190,13 +193,15 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 | --- | --- |
 | `-c`, `--callsign` | Callsign for the upstream login. Default: `N0CALL`. |
 | `-s`, `--server` | Upstream server as `host[:port]`. Default: `rotate.aprs2.net:14580`. |
-| `-f`, `--filter` | Upstream filter: everything clients can ask for. Required. |
+| `-f`, `--filter` | Upstream filter: everything clients can ask for. Without it, APRS-IS is not used and only `--tnc` sources are served. |
+| `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's). Repeat for several. |
 | `-l`, `--listen` | Address and port to serve on. Default: `127.0.0.1:14580`. |
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
 
-The upstream connection always reconnects. Clients are read-only for now: anything they send is ignored. A client
+The upstream connection and each TNC always reconnect. When there is more than one source, the summary at the end
+counts each one's packets and duplicates. Clients are read-only for now: anything they send is ignored. A client
 that falls 1,000 lines behind is disconnected, as on APRS-IS.
 
 ## tnc listen

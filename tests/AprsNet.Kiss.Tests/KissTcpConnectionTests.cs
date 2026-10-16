@@ -120,6 +120,46 @@ public sealed class KissTcpConnectionTests
     }
 
     [Fact]
+    public async Task AConnectionKeepsOneLimitAcrossReconnects()
+    {
+        var first = new FakeTnc();
+        var second = new FakeTnc();
+        var tncs = new Queue<FakeTnc>([first, second]);
+        var limit = new KissTransmitLimit(2, TimeSpan.FromSeconds(10), _time);
+        await using var connection = new KissTcpConnection(
+            _ => Task.FromResult<Stream>(tncs.Dequeue()),
+            0,
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(5),
+            _time,
+            limit
+        );
+        var frame = Ax25Frame.FromAprsPacket(AprsPacket.Parse("N0CALL>APRS:>beacon"));
+        first.Send(Kiss("N0CALL>APRS:>first"));
+        second.Send(Kiss("N0CALL>APRS:>second"));
+        await using var packets = connection
+            .ReadPacketsAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+        Assert.True(await packets.MoveNextAsync().AsTask().WaitAsync(Wait, TestContext.Current.CancellationToken));
+
+        await connection.SendFrameAsync(frame, TestContext.Current.CancellationToken);
+        await connection.SendFrameAsync(frame, TestContext.Current.CancellationToken);
+        first.End();
+        var next = packets.MoveNextAsync().AsTask();
+        await WaitUntil(() => !connection.IsConnected);
+        _time.Advance(TimeSpan.FromSeconds(5));
+        Assert.True(await next.WaitAsync(Wait, TestContext.Current.CancellationToken));
+
+        // The burst was used on the first connection; the new one does not start a fresh one.
+        var third = connection.SendFrameAsync(frame, TestContext.Current.CancellationToken).AsTask();
+        await Task.Delay(50, TestContext.Current.CancellationToken);
+        Assert.False(third.IsCompleted);
+        _time.Advance(TimeSpan.FromSeconds(5));
+        await third.WaitAsync(Wait, TestContext.Current.CancellationToken);
+        Assert.Single(new KissDecoder().Decode(second.Written.ToArray()));
+    }
+
+    [Fact]
     public async Task DisposingEndsTheRead()
     {
         var connection = Connection(_ => Task.FromResult<Stream>(new FakeTnc()));
@@ -248,66 +288,4 @@ public sealed class KissTcpConnectionTests
     }
 
     /// <summary>A TNC end of a link: bytes queued to send, an orderly close, or a failure.</summary>
-    private sealed class FakeTnc : Stream
-    {
-        private readonly Channel<object> _incoming = Channel.CreateUnbounded<object>();
-
-        public MemoryStream Written { get; } = new();
-
-        public void Send(byte[] bytes) => _incoming.Writer.TryWrite(bytes);
-
-        public void End() => _incoming.Writer.TryComplete();
-
-        public void Fail(Exception error) => _incoming.Writer.TryWrite(error);
-
-        public override async ValueTask<int> ReadAsync(
-            Memory<byte> buffer,
-            CancellationToken cancellationToken = default
-        )
-        {
-            if (!await _incoming.Reader.WaitToReadAsync(cancellationToken))
-            {
-                return 0;
-            }
-
-            var next = await _incoming.Reader.ReadAsync(cancellationToken);
-            if (next is Exception error)
-            {
-                throw error;
-            }
-
-            var bytes = (byte[])next;
-            bytes.CopyTo(buffer);
-            return bytes.Length;
-        }
-
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-        {
-            Written.Write(buffer.Span);
-            return ValueTask.CompletedTask;
-        }
-
-        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-        public override bool CanRead => true;
-        public override bool CanSeek => false;
-        public override bool CanWrite => true;
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override void Flush() { }
-
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-    }
 }
