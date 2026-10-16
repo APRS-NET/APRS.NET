@@ -175,6 +175,7 @@ public sealed class KissTcpClientTests : IAsyncDisposable
         Assert.Equal(KissTcpClient.DefaultPort, options.Port);
         Assert.Equal(0, options.TncPort);
         Assert.Equal(TimeSpan.FromSeconds(10), options.ConnectTimeout);
+        Assert.Equal(TimeSpan.FromSeconds(60), options.DeadLinkTimeout);
         Assert.NotSame(new KissTcpClient(options).TransmitLimit, new KissTcpClient(options).TransmitLimit);
         options.TransmitLimit = shared;
         Assert.Same(shared, new KissTcpClient(options).TransmitLimit);
@@ -183,5 +184,38 @@ public sealed class KissTcpClientTests : IAsyncDisposable
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new KissTcpClient(new KissTcpOptions { ConnectTimeout = TimeSpan.Zero })
         );
+    }
+
+    [Fact]
+    public void ADeadLinkTimeoutMustLeaveRoomForProbes()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new KissTcpClient(new KissTcpOptions { DeadLinkTimeout = TimeSpan.FromSeconds(1) })
+        );
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new KissTcpConnection(new KissTcpOptions { DeadLinkTimeout = TimeSpan.Zero })
+        );
+        _ = new KissTcpConnection(new KissTcpOptions { DeadLinkTimeout = Timeout.InfiniteTimeSpan });
+    }
+
+    [Fact]
+    public void TheDeadLinkTimeoutIsSplitBetweenIdleTimeAndThreeProbes()
+    {
+        using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        KissTcpOptions.SetKeepAlive(socket, TimeSpan.FromSeconds(60));
+
+        Assert.NotEqual(0, (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive)!);
+        Assert.Equal(30, (int)socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime)!);
+        Assert.Equal(10, (int)socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval)!);
+        Assert.Equal(3, (int)socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount)!);
+    }
+
+    [Fact]
+    public void AnInfiniteDeadLinkTimeoutLeavesKeepalivesOff()
+    {
+        using var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        KissTcpOptions.SetKeepAlive(socket, Timeout.InfiniteTimeSpan);
+
+        Assert.Equal(0, (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive)!);
     }
 }

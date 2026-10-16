@@ -52,6 +52,10 @@ tnc.StateChanged += (_, e) =>
 };
 ```
 
+A TNC that goes away without closing the connection, because its host lost power or this computer left the network,
+is noticed within `KissTcpOptions.DeadLinkTimeout` (60 seconds) through TCP keepalives. The TNC's host answers those
+even while the radio channel is quiet, so a quiet channel never looks like a dead link.
+
 The `AprsNet.Kiss` meter counts frames received, sent and dropped, open connections and reconnects by cause, each tagged
 with the TNC (`host:port`, or the serial port's name); add it to OpenTelemetry with `AddMeter("AprsNet.Kiss")`.
 

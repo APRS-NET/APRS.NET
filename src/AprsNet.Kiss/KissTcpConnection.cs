@@ -42,10 +42,16 @@ public sealed class KissTcpConnection : KissConnection
 
     private static Func<CancellationToken, Task<Stream>> ConnectTcp(KissTcpOptions options)
     {
-        var (host, port, connectTimeout) = (options.Host, options.Port, options.ConnectTimeout);
+        var (host, port, connectTimeout, deadLinkTimeout) = (
+            options.Host,
+            options.Port,
+            options.ConnectTimeout,
+            options.DeadLinkTimeout
+        );
         return async token =>
         {
             var client = new TcpClient { NoDelay = true };
+            KissTcpOptions.SetKeepAlive(client.Client, deadLinkTimeout);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
             timeout.CancelAfter(connectTimeout);
             try
