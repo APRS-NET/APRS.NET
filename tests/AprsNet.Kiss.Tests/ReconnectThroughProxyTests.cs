@@ -18,7 +18,7 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
     private static readonly double[] Backoff = [5, 10, 20, 40, 60, 60];
     private readonly FakeTimeProvider _time = new();
     private readonly TncListener _tnc = new();
-    private readonly ConcurrentQueue<KissConnectionLostEventArgs> _lost = new();
+    private readonly ConcurrentQueue<KissConnectionStateChangedEventArgs> _lost = new();
     private ChaosProxy _proxy = null!;
     private KissTcpConnection _connection = null!;
     private IAsyncEnumerator<AprsPacket> _packets = null!;
@@ -36,7 +36,13 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
                 TimeProvider = _time,
             }
         );
-        _connection.ConnectionLost += (_, e) => _lost.Enqueue(e);
+        _connection.StateChanged += (_, e) =>
+        {
+            if (e.State == KissConnectionState.Reconnecting)
+            {
+                _lost.Enqueue(e);
+            }
+        };
         _packets = _connection.ReadPacketsAsync(Token).GetAsyncEnumerator(Token);
         var first = _packets.MoveNextAsync().AsTask();
         await WaitUntil(() => _tnc.Connections == 1);
@@ -66,7 +72,7 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
         var next = _packets.MoveNextAsync().AsTask();
         _proxy.DropAll();
         await WaitUntil(() => _lost.Count == 1);
-        Assert.Equal(TimeSpan.FromSeconds(5), _lost.Single().RetryIn);
+        Assert.Equal(TimeSpan.FromSeconds(5), _lost.Single().RetryIn!.Value);
         Assert.False(_connection.IsConnected);
 
         await AdvanceUntil(TimeSpan.FromSeconds(5), () => _tnc.Connections == 2);
@@ -93,7 +99,7 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
         // Once the link is cut, it reconnects as usual.
         _proxy.DropAll();
         await WaitUntil(() => _lost.Count == 1);
-        await AdvanceUntil(_lost.Single().RetryIn, () => _tnc.Connections == 2);
+        await AdvanceUntil(_lost.Single().RetryIn!.Value, () => _tnc.Connections == 2);
         _tnc.Send("N1ABC>APRS:>after the stall");
         Assert.True(await next.WaitAsync(Wait, Token));
         Assert.Equal("N1ABC>APRS:>after the stall", _packets.Current.ToString());
@@ -108,17 +114,17 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
         for (var attempt = 1; attempt <= Backoff.Length; attempt++)
         {
             await WaitUntil(() => _lost.Count == attempt);
-            await AdvanceUntil(_lost.Last().RetryIn, () => _proxy.Refused == attempt);
+            await AdvanceUntil(_lost.Last().RetryIn!.Value, () => _proxy.Refused == attempt);
         }
 
         await WaitUntil(() => _lost.Count == Backoff.Length + 1);
         _proxy.Refusing = false;
-        await AdvanceUntil(_lost.Last().RetryIn, () => _tnc.Connections == 2);
+        await AdvanceUntil(_lost.Last().RetryIn!.Value, () => _tnc.Connections == 2);
         _tnc.Send("N1ABC>APRS:>back");
 
         Assert.True(await next.WaitAsync(Wait, Token));
         Assert.Equal("N1ABC>APRS:>back", _packets.Current.ToString());
-        Assert.Equal([.. Backoff, 60], _lost.Select(e => e.RetryIn.TotalSeconds));
+        Assert.Equal([.. Backoff, 60], _lost.Select(e => e.RetryIn!.Value.TotalSeconds));
         // A refused attempt counts as a connection when the reset comes after the connect completes, and as a failed
         // connect when it comes during it; the waits are the same either way.
         Assert.InRange(_connection.Reconnects, 1, Backoff.Length + 1);

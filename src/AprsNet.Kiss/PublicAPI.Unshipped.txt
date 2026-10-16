@@ -53,12 +53,7 @@ AprsNet.Kiss.KissStreamClient.ReadFramesAsync(System.Threading.CancellationToken
 AprsNet.Kiss.KissStreamClient.ReadPacketsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>!
 AprsNet.Kiss.KissStreamClient.SendAsync(AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 AprsNet.Kiss.KissStreamClient.SendFrameAsync(AprsNet.Ax25.Ax25Frame! frame, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
-AprsNet.Kiss.KissConnectionLostEventArgs
-AprsNet.Kiss.KissConnectionLostEventArgs.Error.get -> System.Exception?
-AprsNet.Kiss.KissConnectionLostEventArgs.KissConnectionLostEventArgs(System.Exception? error, System.TimeSpan retryIn) -> void
-AprsNet.Kiss.KissConnectionLostEventArgs.RetryIn.get -> System.TimeSpan
 AprsNet.Kiss.KissTcpConnection
-AprsNet.Kiss.KissTcpConnection.ConnectionLost -> System.EventHandler<AprsNet.Kiss.KissConnectionLostEventArgs!>?
 AprsNet.Kiss.KissTcpConnection.DisposeAsync() -> System.Threading.Tasks.ValueTask
 AprsNet.Kiss.KissTcpConnection.IsConnected.get -> bool
 AprsNet.Kiss.KissTcpConnection.MaxReconnectDelay.get -> System.TimeSpan
@@ -114,3 +109,15 @@ AprsNet.Kiss.KissTcpOptions.TncPort.set -> void
 AprsNet.Kiss.KissTcpOptions.TransmitLimit.get -> AprsNet.Kiss.KissTransmitLimit?
 AprsNet.Kiss.KissTcpOptions.TransmitLimit.set -> void
 AprsNet.Kiss.KissTcpOptions.Validate() -> void
+AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissConnectionState.Closed = 4 -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissConnectionState.Connected = 2 -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissConnectionState.Connecting = 1 -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissConnectionState.Idle = 0 -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissConnectionState.Reconnecting = 3 -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissConnectionStateChangedEventArgs
+AprsNet.Kiss.KissConnectionStateChangedEventArgs.Error.get -> System.Exception?
+AprsNet.Kiss.KissConnectionStateChangedEventArgs.RetryIn.get -> System.TimeSpan?
+AprsNet.Kiss.KissConnectionStateChangedEventArgs.State.get -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissTcpConnection.State.get -> AprsNet.Kiss.KissConnectionState
+AprsNet.Kiss.KissTcpConnection.StateChanged -> System.EventHandler<AprsNet.Kiss.KissConnectionStateChangedEventArgs!>?

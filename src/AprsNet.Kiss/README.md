@@ -36,6 +36,23 @@ serial.Open();
 await using var tnc = new KissStreamClient(serial.BaseStream);
 ```
 
+### Staying connected
+
+`KissTcpConnection` reconnects by itself, and its read streams carry on across reconnects. `State` says where it is
+(`Idle`, `Connecting`, `Connected`, `Reconnecting`, `Closed`), and `StateChanged` reports each change, as
+`AprsIsConnection` does; a `Reconnecting` change carries the error, if any, and the wait before the next attempt:
+
+```csharp
+tnc.StateChanged += (_, e) =>
+{
+    if (e.State == KissConnectionState.Reconnecting)
+        Console.WriteLine($"TNC lost ({e.Error?.Message ?? "closed"}); retrying in {e.RetryIn}");
+};
+```
+
+The `AprsNet.Kiss` meter counts frames received, sent and dropped, open connections and reconnects by cause, each tagged
+with the TNC (`host:port`); add it to OpenTelemetry with `AddMeter("AprsNet.Kiss")`.
+
 ### Transmit limit
 
 Every client limits how fast it sends frames for the TNC to transmit, so a bug or a loop cannot flood a shared radio

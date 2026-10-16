@@ -79,7 +79,11 @@ public sealed class KissTcpClient : IAsyncDisposable
         }
 
         _client = client;
-        _kiss = new KissStreamClient(client.GetStream(), _tncPort, transmitLimit: TransmitLimit);
+        _kiss = new KissStreamClient(client.GetStream(), _tncPort, transmitLimit: TransmitLimit)
+        {
+            MetricsTnc = $"{_host}:{_port}",
+        };
+        KissMetrics.Active(_kiss.MetricsTnc, +1);
     }
 
     /// <inheritdoc cref="KissStreamClient.ReadFramesAsync"/>
@@ -111,6 +115,7 @@ public sealed class KissTcpClient : IAsyncDisposable
 
         if (_kiss is not null)
         {
+            KissMetrics.Active(_kiss.MetricsTnc, -1);
             await _kiss.DisposeAsync().ConfigureAwait(false);
         }
 

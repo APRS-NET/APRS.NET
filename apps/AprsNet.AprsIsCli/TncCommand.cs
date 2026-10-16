@@ -109,9 +109,14 @@ internal sealed class TncCommand(CliEnvironment environment)
                     TimeProvider = environment.TimeProvider,
                 }
             );
-            connection.ConnectionLost += (_, e) =>
+            connection.StateChanged += (_, e) =>
             {
-                var retry = e.RetryIn.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+                if (e.State != KissConnectionState.Reconnecting)
+                {
+                    return;
+                }
+
+                var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
                 environment.Error.WriteLine(
                     e.Error is null
                         ? $"aprscli: the TNC at {host}:{port} closed the connection; reconnecting in {retry}s."

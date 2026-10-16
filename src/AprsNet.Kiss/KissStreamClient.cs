@@ -51,6 +51,9 @@ public sealed class KissStreamClient : IAsyncDisposable
     /// <summary>How fast frames may be sent; a send waits for its turn.</summary>
     public KissTransmitLimit TransmitLimit { get; }
 
+    /// <summary>The <c>tnc</c> tag on this client's metrics: the TNC's <c>host:port</c> when a TCP client made it.</summary>
+    internal string MetricsTnc { get; init; } = KissMetrics.StreamTnc;
+
     /// <summary>KISS frames dropped for an invalid escape or for being too long: a sign of a noisy serial link.</summary>
     public long DroppedFrames => _decoder.DroppedFrames;
 
@@ -72,10 +75,18 @@ public sealed class KissStreamClient : IAsyncDisposable
                 yield break;
             }
 
-            foreach (var kiss in _decoder.Decode(buffer.AsSpan(0, read)))
+            var dropped = _decoder.DroppedFrames;
+            var decoded = _decoder.Decode(buffer.AsSpan(0, read));
+            if (_decoder.DroppedFrames > dropped)
+            {
+                KissMetrics.Dropped(MetricsTnc, _decoder.DroppedFrames - dropped);
+            }
+
+            foreach (var kiss in decoded)
             {
                 if (kiss.Port == _tncPort && kiss.TryGetAx25(out var frame))
                 {
+                    KissMetrics.Received(MetricsTnc);
                     yield return frame!;
                 }
             }
@@ -121,6 +132,7 @@ public sealed class KissStreamClient : IAsyncDisposable
         {
             await _stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            KissMetrics.Sent(MetricsTnc);
         }
         finally
         {

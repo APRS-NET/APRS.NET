@@ -34,8 +34,14 @@ public sealed class KissTcpConnectionTests
         var second = new FakeTnc();
         var tncs = new Queue<FakeTnc>([first, second]);
         await using var connection = Connection(_ => Task.FromResult<Stream>(tncs.Dequeue()));
-        var lost = new List<KissConnectionLostEventArgs>();
-        connection.ConnectionLost += (_, e) => lost.Add(e);
+        var lost = new List<KissConnectionStateChangedEventArgs>();
+        connection.StateChanged += (_, e) =>
+        {
+            if (e.State == KissConnectionState.Reconnecting)
+            {
+                lost.Add(e);
+            }
+        };
 
         first.Send(Kiss("N0CALL>APRS:>one"));
         first.End();
@@ -48,7 +54,7 @@ public sealed class KissTcpConnectionTests
         var next = NextAsync(packets);
         await WaitUntil(() => lost.Count == 1);
         Assert.Null(lost[0].Error);
-        Assert.Equal(TimeSpan.FromSeconds(5), lost[0].RetryIn);
+        Assert.Equal(TimeSpan.FromSeconds(5), lost[0].RetryIn!.Value);
         Assert.False(connection.IsConnected);
         _time.Advance(TimeSpan.FromSeconds(5));
         Assert.Equal("N0CALL>APRS:>two", await next);
@@ -67,8 +73,14 @@ public sealed class KissTcpConnectionTests
                 ? throw new SocketException((int)SocketError.ConnectionRefused)
                 : Task.FromResult<Stream>(tnc)
         );
-        var lost = new List<KissConnectionLostEventArgs>();
-        connection.ConnectionLost += (_, e) => lost.Add(e);
+        var lost = new List<KissConnectionStateChangedEventArgs>();
+        connection.StateChanged += (_, e) =>
+        {
+            if (e.State == KissConnectionState.Reconnecting)
+            {
+                lost.Add(e);
+            }
+        };
 
         await using var packets = connection
             .ReadPacketsAsync(TestContext.Current.CancellationToken)
@@ -77,12 +89,12 @@ public sealed class KissTcpConnectionTests
         for (var i = 1; i <= 4; i++)
         {
             await WaitUntil(() => lost.Count == i);
-            _time.Advance(lost[^1].RetryIn);
+            _time.Advance(lost[^1].RetryIn!.Value);
         }
 
         Assert.Equal("N0CALL>APRS:>at last", await next);
         Assert.All(lost, e => Assert.IsType<SocketException>(e.Error));
-        Assert.Equal([5, 10, 15, 15], lost.Select(e => e.RetryIn.TotalSeconds));
+        Assert.Equal([5, 10, 15, 15], lost.Select(e => e.RetryIn!.Value.TotalSeconds));
         Assert.Equal(0, connection.Reconnects);
     }
 
@@ -93,8 +105,14 @@ public sealed class KissTcpConnectionTests
         var good = new FakeTnc();
         var tncs = new Queue<FakeTnc>([broken, good]);
         await using var connection = Connection(_ => Task.FromResult<Stream>(tncs.Dequeue()));
-        var lost = new List<KissConnectionLostEventArgs>();
-        connection.ConnectionLost += (_, e) => lost.Add(e);
+        var lost = new List<KissConnectionStateChangedEventArgs>();
+        connection.StateChanged += (_, e) =>
+        {
+            if (e.State == KissConnectionState.Reconnecting)
+            {
+                lost.Add(e);
+            }
+        };
         broken.Fail(new IOException("link down"));
         good.Send(Kiss("N0CALL>APRS:>back"));
 
@@ -167,6 +185,65 @@ public sealed class KissTcpConnectionTests
         _time.Advance(TimeSpan.FromSeconds(5));
         await third.WaitAsync(Wait, TestContext.Current.CancellationToken);
         Assert.Single(new KissDecoder().Decode(second.Written.ToArray()));
+    }
+
+    [Fact]
+    public async Task ReportsEachStateChangeOnce()
+    {
+        var first = new FakeTnc();
+        var second = new FakeTnc();
+        var tncs = new Queue<FakeTnc>([first, second]);
+        var connection = Connection(_ => Task.FromResult<Stream>(tncs.Dequeue()));
+        var changes = new List<KissConnectionStateChangedEventArgs>();
+        connection.StateChanged += (_, e) =>
+        {
+            lock (changes)
+            {
+                changes.Add(e);
+            }
+        };
+        Assert.Equal(KissConnectionState.Idle, connection.State);
+
+        first.Send(Kiss("N0CALL>APRS:>one"));
+        using (var reading = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken))
+        {
+            await using var packets = connection.ReadPacketsAsync(reading.Token).GetAsyncEnumerator(reading.Token);
+            Assert.Equal("N0CALL>APRS:>one", await NextAsync(packets));
+            Assert.Equal(KissConnectionState.Connected, connection.State);
+            first.End();
+            var next = NextAsync(packets);
+            await WaitUntil(() => connection.State == KissConnectionState.Reconnecting);
+            second.Send(Kiss("N0CALL>APRS:>two"));
+            // The state changes just before the wait starts, so keep advancing until the wait has seen it.
+            while (!next.IsCompleted)
+            {
+                _time.Advance(TimeSpan.FromSeconds(5));
+                await Task.Delay(20, TestContext.Current.CancellationToken);
+            }
+
+            Assert.Equal("N0CALL>APRS:>two", await next);
+            await reading.CancelAsync();
+        }
+
+        await WaitUntil(() => connection.State == KissConnectionState.Idle);
+        await connection.DisposeAsync();
+
+        Assert.Equal(
+            [
+                KissConnectionState.Connecting,
+                KissConnectionState.Connected,
+                KissConnectionState.Reconnecting,
+                KissConnectionState.Connecting,
+                KissConnectionState.Connected,
+                KissConnectionState.Idle,
+                KissConnectionState.Closed,
+            ],
+            changes.Select(c => c.State)
+        );
+        var reconnecting = changes[2];
+        Assert.Null(reconnecting.Error);
+        Assert.Equal(TimeSpan.FromSeconds(5), reconnecting.RetryIn);
+        Assert.All(changes.Where(c => c.State != KissConnectionState.Reconnecting), c => Assert.Null(c.RetryIn));
     }
 
     [Fact]
