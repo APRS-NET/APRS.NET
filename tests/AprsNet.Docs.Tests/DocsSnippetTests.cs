@@ -3,8 +3,8 @@ using System.Text.RegularExpressions;
 namespace AprsNet.Docs.Tests;
 
 /// <summary>
-/// Keeps the guides' code compiling: each C# block in docs/guides that follows a <c>&lt;!-- snippet: name --&gt;</c>
-/// comment must equal the <c>#region name</c> in Snippets/, which this project builds.
+/// Keeps the guides' code compiling: every C# block in docs/guides must follow a <c>&lt;!-- snippet: name --&gt;</c>
+/// comment and equal the <c>#region name</c> in Snippets/, which this project builds.
 /// </summary>
 public sealed partial class DocsSnippetTests
 {
@@ -21,7 +21,7 @@ public sealed partial class DocsSnippetTests
         var regions = Regions();
         var blocks = Snippet().Matches(text);
 
-        Assert.NotEmpty(blocks);
+        // A guide may have no C# at all, such as the container guide; any it has must be compiled snippets.
         Assert.Equal(CSharpBlock().Count(text), blocks.Count);
         foreach (Match block in blocks)
         {
