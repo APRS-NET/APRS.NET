@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.2...v0.3.0-alpha.3) (2026-10-16)
+
+
+### Bug Fixes
+
+* **kiss:** notice a TNC that went away without closing the link ([4a9c395](https://github.com/APRS-NET/APRS.NET/commit/4a9c395037f7e197be7b0c81870784d7ee7bef05))
+* **kiss:** notice a TNC that went away without closing the link ([4f09982](https://github.com/APRS-NET/APRS.NET/commit/4f09982025b860b407f968d0e23f40d305df87a5))
+
 ## [0.3.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.1...v0.3.0-alpha.2) (2026-10-16)
 
 
