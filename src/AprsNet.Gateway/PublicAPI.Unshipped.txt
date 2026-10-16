@@ -32,12 +32,6 @@ AprsNet.Gateway.AprsIsServerOptions.History.get -> System.TimeSpan
 AprsNet.Gateway.AprsIsServerOptions.History.init -> void
 AprsNet.Gateway.AprsIsServerOptions.MaxHistoryPackets.get -> int
 AprsNet.Gateway.AprsIsServerOptions.MaxHistoryPackets.init -> void
-AprsNet.Gateway.PacketDeduplicator
-AprsNet.Gateway.PacketDeduplicator.Count.get -> int
-AprsNet.Gateway.PacketDeduplicator.PacketDeduplicator(System.TimeSpan? window = null, System.TimeProvider? timeProvider = null) -> void
-AprsNet.Gateway.PacketDeduplicator.TryAccept(AprsNet.Packets.AprsPacket! packet) -> bool
-AprsNet.Gateway.PacketDeduplicator.Window.get -> System.TimeSpan
-static readonly AprsNet.Gateway.PacketDeduplicator.DefaultWindow -> System.TimeSpan
 AprsNet.Gateway.AprsIsServerOptions.Stations.get -> AprsNet.Gateway.StationStore?
 AprsNet.Gateway.AprsIsServerOptions.Stations.init -> void
 AprsNet.Gateway.StationState
