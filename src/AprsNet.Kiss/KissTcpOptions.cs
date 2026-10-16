@@ -1,3 +1,5 @@
+using System.Net.Sockets;
+
 namespace AprsNet.Kiss;
 
 /// <summary>Settings for <see cref="KissTcpClient"/> and <see cref="KissTcpConnection"/>.</summary>
@@ -21,6 +23,14 @@ public sealed class KissTcpOptions
 
     /// <summary>How long to wait for the TCP connection. Defaults to 10 seconds.</summary>
     public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(10);
+
+    /// <summary>
+    /// How long a TNC that went away without closing the connection can go unnoticed: its host lost power, or this
+    /// computer left the network. TCP keepalives find it, and the TNC's host answers them even while the radio channel
+    /// is quiet, so a quiet channel is never mistaken for a dead link. Defaults to 60 seconds;
+    /// <see cref="Timeout.InfiniteTimeSpan"/> turns keepalives off.
+    /// </summary>
+    public TimeSpan DeadLinkTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
     /// <summary>
     /// <see cref="KissTcpConnection"/>: how long to wait before the first reconnect; each failed attempt doubles it, up
@@ -52,9 +62,35 @@ public sealed class KissTcpOptions
         ArgumentOutOfRangeException.ThrowIfNegative(TncPort, nameof(TncPort));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(TncPort, 15, nameof(TncPort));
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ConnectTimeout, TimeSpan.Zero, nameof(ConnectTimeout));
+        if (DeadLinkTimeout != Timeout.InfiniteTimeSpan)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(
+                DeadLinkTimeout,
+                TimeSpan.FromSeconds(2),
+                nameof(DeadLinkTimeout)
+            );
+        }
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ReconnectDelay, TimeSpan.Zero, nameof(ReconnectDelay));
         ArgumentOutOfRangeException.ThrowIfLessThan(MaxReconnectDelay, ReconnectDelay, nameof(MaxReconnectDelay));
         ArgumentNullException.ThrowIfNull(TimeProvider, nameof(TimeProvider));
+    }
+
+    /// <summary>
+    /// Turns on TCP keepalives so a dead link fails within <see cref="DeadLinkTimeout"/>: idle for half of it, then
+    /// three probes spread over the other half.
+    /// </summary>
+    internal static void SetKeepAlive(Socket socket, TimeSpan deadLinkTimeout)
+    {
+        if (deadLinkTimeout == Timeout.InfiniteTimeSpan)
+        {
+            return;
+        }
+
+        var idle = Math.Max(1, (int)(deadLinkTimeout.TotalSeconds / 2));
+        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+        socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, idle);
+        socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval, Math.Max(1, idle / 3));
+        socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, 3);
     }
 
     /// <summary>The limit a client created now uses.</summary>

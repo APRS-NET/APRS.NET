@@ -83,6 +83,8 @@ AprsNet.Kiss.KissTcpConnection.KissTcpConnection(string! host, int port = 8001) 
 AprsNet.Kiss.KissTcpOptions
 AprsNet.Kiss.KissTcpOptions.ConnectTimeout.get -> System.TimeSpan
 AprsNet.Kiss.KissTcpOptions.ConnectTimeout.set -> void
+AprsNet.Kiss.KissTcpOptions.DeadLinkTimeout.get -> System.TimeSpan
+AprsNet.Kiss.KissTcpOptions.DeadLinkTimeout.set -> void
 AprsNet.Kiss.KissTcpOptions.Host.get -> string!
 AprsNet.Kiss.KissTcpOptions.Host.set -> void
 AprsNet.Kiss.KissTcpOptions.KissTcpOptions() -> void

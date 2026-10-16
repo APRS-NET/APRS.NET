@@ -18,6 +18,7 @@ public sealed class KissTcpClient : IAsyncDisposable
     private readonly int _port;
     private readonly int _tncPort;
     private readonly TimeSpan _connectTimeout;
+    private readonly TimeSpan _deadLinkTimeout;
     private TcpClient? _client;
     private KissStreamClient? _kiss;
     private int _disposed;
@@ -40,6 +41,7 @@ public sealed class KissTcpClient : IAsyncDisposable
         _port = options.Port;
         _tncPort = options.TncPort;
         _connectTimeout = options.ConnectTimeout;
+        _deadLinkTimeout = options.DeadLinkTimeout;
         TransmitLimit = options.CreateTransmitLimit();
     }
 
@@ -61,6 +63,7 @@ public sealed class KissTcpClient : IAsyncDisposable
         }
 
         var client = new TcpClient { NoDelay = true };
+        KissTcpOptions.SetKeepAlive(client.Client, _deadLinkTimeout);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(_connectTimeout);
         try
