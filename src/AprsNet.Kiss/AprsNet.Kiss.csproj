@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>KISS framing for TNCs: escape and frame data for a KISS TNC, and read frames back from a byte stream that splits them anywhere.</Description>
+    <Description>Talk to a KISS TNC, such as Dire Wolf: read the APRS packets it hears and send packets for it to transmit, over TCP with reconnects or over any stream (serial, Bluetooth), with a transmit rate limit. Also a KISS TCP server to share one TNC between apps.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Not published yet (phase 2 groundwork). Set to true when the KISS transport is ready to ship with it. -->
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,9 +1,8 @@
 # AprsNet.Kiss
 
-KISS framing for TNCs: escape and frame data for a KISS TNC, and read frames back from a byte stream that splits them
-anywhere.
-
-> **Not published yet.** Phase 2 groundwork.
+Talk to a KISS TNC, such as Dire Wolf or a hardware TNC: read the APRS packets it hears and send packets for it to
+transmit. Below the clients, the KISS framing itself: escape and frame data, and read frames back from a byte stream
+that splits them anywhere.
 
 ```csharp
 var decoder = new KissDecoder();
@@ -90,3 +89,5 @@ await foreach (var frame in tnc.ReadFramesAsync())
 `PublishFromAprsIs(packet, gateway)` sends a packet heard on APRS-IS to the apps as third-party traffic from your
 callsign (`N0CALL-10>APZNET:}N1ABC>APRS,TCPIP,N0CALL-10*:…`), so apps that only speak KISS see internet traffic too.
 An app that falls 1,000 frames behind is disconnected.
+
+Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

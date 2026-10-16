@@ -29,4 +29,4 @@ For TLS, set `"UseTls": true` and a server that offers it, such as `"Server": "s
 check of your own (`ServerCertificateValidation`) or client certificates (`ClientCertificates`) can't come from
 configuration; set them with `services.Configure<AprsIsClientOptions>(o => …)`.
 
-Not published yet.
+Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

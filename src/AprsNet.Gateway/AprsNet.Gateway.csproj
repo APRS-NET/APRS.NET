@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>A local APRS-IS server: serves packets to APRS-IS clients, each with its own filter.</Description>
+    <Description>A local APRS-IS server: serves packets from APRS-IS and KISS TNCs, each heard once, to APRS-IS clients, each with its own filter, with history and a station store.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Not published yet (phase 3 groundwork). -->
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

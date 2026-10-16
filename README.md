@@ -27,6 +27,10 @@ dotnet add package AprsNet.AprsIsTcpClient --prerelease
 dotnet add package AprsNet.Symbols --prerelease
 dotnet add package AprsNet.DeviceId --prerelease
 dotnet add package AprsNet.Filters --prerelease
+dotnet add package AprsNet.Ax25 --prerelease
+dotnet add package AprsNet.Kiss --prerelease
+dotnet add package AprsNet.Gateway --prerelease
+dotnet add package AprsNet.Extensions.DependencyInjection --prerelease
 ```
 
 The `aprscli` command-line tool is a .NET tool:
@@ -47,6 +51,10 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
 | `src/AprsNet.Filters`         | APRS-IS filters: build them from typed terms, and evaluate them locally   |
 | `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0) |
+| `src/AprsNet.Ax25`            | AX.25 UI frames: decode and encode what a TNC sends and receives          |
+| `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit and a KISS TCP server |
+| `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
+| `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |
 | `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool                                           |
 | `tests/`                      | Unit tests and the packet corpus                                          |
 
