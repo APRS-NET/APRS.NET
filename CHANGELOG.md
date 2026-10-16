@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.3...v0.4.0-alpha.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* **gateway:** don't miss packets right after a WebSocket greeting ([0f6662c](https://github.com/APRS-NET/APRS.NET/commit/0f6662cb248ec9303f619af2584211464ba35c73))
+* **gateway:** don't miss packets right after a WebSocket greeting ([8642aea](https://github.com/APRS-NET/APRS.NET/commit/8642aeaa7ce0d2a8ece9c313ee0e874709bc58f3))
+
+
+### Documentation
+
+* start the 0.4.0 alpha line ([6db5df6](https://github.com/APRS-NET/APRS.NET/commit/6db5df64cf0357044f4deabd02ca84f8832a1bcf))
+
 ## [0.3.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.2...v0.3.0-alpha.3) (2026-10-16)
 
 
