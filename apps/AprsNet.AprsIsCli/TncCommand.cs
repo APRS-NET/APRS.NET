@@ -57,7 +57,11 @@ internal sealed class TncCommand(CliEnvironment environment)
             _reconnect,
         };
         listen.SetAction(ListenAsync);
-        var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf.") { listen };
+        var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf.")
+        {
+            listen,
+            new SendCommand(environment, toTnc: true).Build(),
+        };
         return tnc;
     }
 

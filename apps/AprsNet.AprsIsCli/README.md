@@ -221,4 +221,29 @@ aprscli tnc listen --tnc localhost --reconnect      # survives Dire Wolf restart
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
 (waiting 5 s, doubling to 60 s), says so on stderr, and carries on when the TNC is back.
 
+## tnc send
+
+Transmit on the air through a KISS TNC: the same `status`, `message`, `position`, `object`, `weather` and `telemetry`
+commands as `send`, built the same way. You need a licence to transmit, and to send as your own callsign. Check the
+packet with `--dry-run` (`-n`) first: it prints what would go out without connecting.
+
+```sh
+aprscli tnc send status "On the air" -c KD9XYZ-9 --tnc localhost -n      # check it
+aprscli tnc send status "On the air" -c KD9XYZ-9 --tnc localhost         # transmit it
+aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --tnc localhost --path WIDE1-1
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-c`, `--callsign` | Your callsign, with optional SSID. It must fit AX.25: up to six letters or digits and an SSID of 0 to 15. Required. |
+| `-t`, `--tnc` | The TNC as `host[:port]`. Default port 8001. Required unless `--dry-run`. |
+| `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
+| `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
+| `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
+| `-n`, `--dry-run` | Print the packets without connecting. |
+
+Each packet is printed once the TNC has it. Frames are spread out by the transmit limit: three at once, then one every
+10 seconds, so telemetry with its definitions takes a few seconds. A message is sent once, without a message number,
+so no acknowledgement comes back. Exit code 2 when the TNC cannot be reached.
+
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

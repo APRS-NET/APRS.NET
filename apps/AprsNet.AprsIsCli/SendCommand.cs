@@ -1,6 +1,8 @@
 using System.CommandLine;
 using System.Globalization;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Ax25;
+using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 
@@ -8,10 +10,14 @@ namespace AprsNet.AprsIsCli;
 
 /// <summary>
 /// The <c>send</c> command: build a status report, message, position, object, weather or telemetry report and send it to APRS-IS on a verified
-/// login. <c>--dry-run</c> prints the packet without connecting.
+/// login. <c>--dry-run</c> prints the packet without connecting. With <paramref name="toTnc"/>, the same commands make
+/// <c>tnc send</c>, which sends the packets through a KISS TNC to transmit on the air.
 /// </summary>
-internal sealed class SendCommand(CliEnvironment environment)
+internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false)
 {
+    /// <summary>The path <c>tnc send</c> uses unless <c>--path</c> is given: the usual two-hop path.</summary>
+    public const string DefaultRfPath = "WIDE1-1,WIDE2-1";
+
     private const string _passcodeVariable = "APRS_PASSCODE";
 
     /// <summary>The experimental TOCALL range (APZxxx) until APRS.NET has a registered one.</summary>
@@ -60,13 +66,30 @@ internal sealed class SendCommand(CliEnvironment environment)
 
     private readonly Option<string?> _path = new("--path")
     {
-        Description = "Digipeater path, comma-separated, for example WIDE1-1. Default: none (APRS-IS only).",
+        Description = toTnc
+            ? $"Digipeater path, comma-separated. Default: {DefaultRfPath}; use \"\" for none (direct only)."
+            : "Digipeater path, comma-separated, for example WIDE1-1. Default: none (APRS-IS only).",
+        Recursive = true,
+    };
+
+    private readonly Option<string?> _tnc = new("--tnc", "-t")
+    {
+        Description = $"The TNC as host[:port]. Default port: {KissTcpClient.DefaultPort} (Dire Wolf's KISS port).",
+        Recursive = true,
+    };
+
+    private readonly Option<int> _radioPort = new("--radio-port")
+    {
+        Description = "The radio port on a multi-port TNC, 0 to 15. Default: 0.",
+        DefaultValueFactory = _ => 0,
         Recursive = true,
     };
 
     private readonly Option<bool> _dryRun = new("--dry-run", "-n")
     {
-        Description = "Print the packet that would be sent, without connecting.",
+        Description = toTnc
+            ? "Print the packet that would be transmitted, without connecting to the TNC."
+            : "Print the packet that would be sent, without connecting.",
         Recursive = true,
     };
 
@@ -168,12 +191,22 @@ internal sealed class SendCommand(CliEnvironment environment)
 
     public Command Build()
     {
-        var command = new Command(
-            "send",
-            "Send a status report, message, position, object, weather or telemetry report to APRS-IS. Needs your "
-                + "callsign and its passcode."
-        );
-        foreach (var option in new Option[] { _callsign, _passcode, _server, _region, _tls, _tocall, _path, _dryRun })
+        var command = toTnc
+            ? new Command(
+                "send",
+                "Transmit a status report, message, position, object, weather or telemetry report on the air "
+                    + "through a KISS TNC. Needs your callsign and a licence to transmit; check the path first "
+                    + "with --dry-run."
+            )
+            : new Command(
+                "send",
+                "Send a status report, message, position, object, weather or telemetry report to APRS-IS. Needs "
+                    + "your callsign and its passcode."
+            );
+        Option[] options = toTnc
+            ? [_callsign, _tnc, _radioPort, _tocall, _path, _dryRun]
+            : [_callsign, _passcode, _server, _region, _tls, _tocall, _path, _dryRun];
+        foreach (var option in options)
         {
             command.Options.Add(option);
         }
@@ -188,15 +221,25 @@ internal sealed class SendCommand(CliEnvironment environment)
 
         var addressee = new Argument<string>("addressee") { Description = "Callsign to send the message to." };
         var messageText = new Argument<string>("text") { Description = "Message text, at most 67 characters." };
-        var message = new Command(
-            "message",
-            "Send a message and wait for the recipient's acknowledgement, resending at 30 s, 1, 2, 4 and 8 minutes."
-        )
-        {
-            addressee,
-            messageText,
-            _waitReplies,
-        };
+        var message = toTnc
+            ? new Command(
+                "message",
+                "Transmit a message once. It carries no message number, so the recipient does not acknowledge it."
+            )
+            {
+                addressee,
+                messageText,
+            }
+            : new Command(
+                "message",
+                "Send a message and wait for the recipient's acknowledgement, resending at 30 s, 1, 2, 4 and 8 "
+                    + "minutes."
+            )
+            {
+                addressee,
+                messageText,
+                _waitReplies,
+            };
         SetAction(
             message,
             parseResult => new MessagePayload
@@ -474,19 +517,27 @@ internal sealed class SendCommand(CliEnvironment environment)
 
         PacketAddress address;
         AprsPacket[] packets;
+        Ax25Frame[] frames = [];
         MessagePayload? message;
         try
         {
             address = PacketAddress.Parse(
                 callsign,
                 parseResult.GetValue(_tocall)!.Trim().ToUpperInvariant(),
-                parseResult.GetValue(_path) is { } path
-                    ? path.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                    : []
+                (parseResult.GetValue(_path) ?? (toTnc ? DefaultRfPath : "")).Split(
+                    ',',
+                    StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
+                )
             );
             var payloads = build(address);
             packets = [.. payloads.Select(address.Create)];
             message = payloads is [MessagePayload single] ? single : null;
+
+            // Checked before connecting, so a callsign or path AX.25 cannot carry is a usage error, even on --dry-run.
+            if (toTnc)
+            {
+                frames = [.. packets.Select(Ax25Frame.FromAprsPacket)];
+            }
         }
         catch (ArgumentException ex)
         {
@@ -501,6 +552,18 @@ internal sealed class SendCommand(CliEnvironment environment)
             }
 
             return ExitCodes.Success;
+        }
+
+        if (toTnc)
+        {
+            return await TransmitAsync(
+                parseResult,
+                commandName,
+                packets,
+                frames,
+                message is not null,
+                cancellationToken
+            );
         }
 
         var waitReplies = TimeSpan.Zero;
@@ -586,6 +649,77 @@ internal sealed class SendCommand(CliEnvironment environment)
             await environment.Error.WriteLineAsync("aprscli: cancelled.");
             return ExitCodes.Success;
         }
+    }
+
+    /// <summary>Sends each frame through the TNC, in order, waiting for the transmit limit between them.</summary>
+    private async Task<int> TransmitAsync(
+        ParseResult parseResult,
+        string commandName,
+        AprsPacket[] packets,
+        Ax25Frame[] frames,
+        bool isMessage,
+        CancellationToken cancellationToken
+    )
+    {
+        if (parseResult.GetValue(_tnc) is not { } tncText)
+        {
+            return await UsageAsync(commandName, "--tnc is required: the TNC to transmit through, as host[:port].");
+        }
+
+        if (!TncCommand.TryParseAddress(tncText, out var host, out var port))
+        {
+            return await UsageAsync(
+                commandName,
+                $"--tnc '{tncText.Trim()}' is not valid. Use host or host:port, such as localhost:8001."
+            );
+        }
+
+        var radioPort = parseResult.GetValue(_radioPort);
+        if (radioPort is < 0 or > 15)
+        {
+            return await UsageAsync(commandName, "--radio-port must be 0 to 15.");
+        }
+
+        var limit = environment.CreateTransmitLimit();
+        await using var client = new KissTcpClient(host, port, radioPort, transmitLimit: limit);
+        try
+        {
+            await client.ConnectAsync(cancellationToken);
+            for (var i = 0; i < frames.Length; i++)
+            {
+                if (i == limit.Burst && limit.IsOn)
+                {
+                    await environment.Error.WriteLineAsync(
+                        $"aprscli: sending the rest one every {DurationParser.Format(limit.Interval)}, the transmit "
+                            + "limit."
+                    );
+                }
+
+                await client.SendFrameAsync(frames[i], cancellationToken);
+                await environment.Out.WriteLineAsync(packets[i].ToString());
+            }
+        }
+        catch (Exception ex) when (ex is System.Net.Sockets.SocketException or TimeoutException or IOException)
+        {
+            await environment.Error.WriteLineAsync(
+                $"aprscli: could not send through the TNC at {host}:{port}: {ex.Message}"
+            );
+            return ExitCodes.ConnectionFailed;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await environment.Error.WriteLineAsync("aprscli: cancelled.");
+            return ExitCodes.Success;
+        }
+
+        if (isMessage)
+        {
+            await environment.Error.WriteLineAsync(
+                "aprscli: sent once, without a message number; no acknowledgement is expected."
+            );
+        }
+
+        return ExitCodes.Success;
     }
 
     private async Task<int> SendMessageAsync(
@@ -739,7 +873,7 @@ internal sealed class SendCommand(CliEnvironment environment)
     private async Task<int> UsageAsync(string commandName, string message)
     {
         await environment.Error.WriteLineAsync($"aprscli: {message}");
-        await environment.Error.WriteLineAsync($"Try 'aprscli send {commandName} --help'.");
+        await environment.Error.WriteLineAsync($"Try 'aprscli {(toTnc ? "tnc " : "")}send {commandName} --help'.");
         return ExitCodes.Usage;
     }
 }

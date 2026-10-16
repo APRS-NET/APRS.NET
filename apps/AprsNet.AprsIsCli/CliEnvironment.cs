@@ -32,6 +32,9 @@ internal sealed class CliEnvironment
     public Func<AprsIsClientOptions, ILogger, AprsIsConnection> CreateConnection { get; init; } =
         (options, logger) => new AprsIsConnection(options, logger);
 
+    /// <summary>The transmit limit for <c>tnc send</c>; tests replace it to avoid real waits.</summary>
+    public Func<KissTransmitLimit> CreateTransmitLimit { get; init; } = () => new KissTransmitLimit();
+
     /// <summary>A reconnecting KISS connection to the TNC at <paramref name="host"/>:<paramref name="port"/>.</summary>
     public KissTcpConnection CreateTncConnection(string host, int port) =>
         new(host, port, reconnectDelay: ReconnectDelay, timeProvider: TimeProvider);
