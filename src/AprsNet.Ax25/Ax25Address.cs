@@ -25,13 +25,15 @@ public readonly record struct Ax25Address
 
         ArgumentOutOfRangeException.ThrowIfNegative(ssid);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(ssid, 15);
-        Callsign = callsign;
+        _callsign = callsign;
         Ssid = ssid;
         Flag = flag;
     }
 
-    /// <summary>The callsign without padding.</summary>
-    public string Callsign { get; }
+    private readonly string? _callsign;
+
+    /// <summary>The callsign without padding; empty for <see langword="default"/>.</summary>
+    public string Callsign => _callsign ?? "";
 
     /// <summary>The SSID, 0 to 15.</summary>
     public int Ssid { get; }
