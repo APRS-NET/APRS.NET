@@ -20,7 +20,6 @@
 * **kiss:** limit how fast frames are sent for transmission ([f1e15ea](https://github.com/APRS-NET/APRS.NET/commit/f1e15ea2fa63c8cd1bdbea81c0447d7ca915fd2c)), closes [#102](https://github.com/APRS-NET/APRS.NET/issues/102)
 * **kiss:** report TNC connection state and metrics like APRS-IS ([66ecf7d](https://github.com/APRS-NET/APRS.NET/commit/66ecf7da65998456e9badafb211cb0c10f5c2833)), closes [#99](https://github.com/APRS-NET/APRS.NET/issues/99)
 * **kiss:** share a TNC with several KISS apps through KissTcpServer ([4d1ebc9](https://github.com/APRS-NET/APRS.NET/commit/4d1ebc95f84a543045cfd248282f5ef8b85f3031)), closes [#108](https://github.com/APRS-NET/APRS.NET/issues/108)
-* **kiss:** share a TNC with several KISS apps through KissTcpServer ([#142](https://github.com/APRS-NET/APRS.NET/issues/142)) ([6b20f60](https://github.com/APRS-NET/APRS.NET/commit/6b20f607357473e4f529bec46bb1e3c77f05fb4b)), closes [#108](https://github.com/APRS-NET/APRS.NET/issues/108)
 * publish the AX.25, KISS, gateway and DI packages ([d7d7fac](https://github.com/APRS-NET/APRS.NET/commit/d7d7fac63809a30bc611eb466b1cd6a2ce9de7d2))
 
 
