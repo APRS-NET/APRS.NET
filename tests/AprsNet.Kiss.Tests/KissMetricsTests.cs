@@ -80,7 +80,7 @@ public sealed class KissMetricsTests : IDisposable
 
         first.End();
         var next = packets.MoveNextAsync().AsTask();
-        await WaitUntil(() => Sum("aprsnet.kiss.connection.reconnects", "cause", "closed") == 1);
+        await WaitUntil(() => Sum("aprsnet.kiss.connection.reconnects", "cause", "tnc_closed") == 1);
         Assert.Equal(0, Sum("aprsnet.kiss.connection.active"));
         second.Send(Kiss("N0CALL>APRS:>three"));
         await AdvanceUntilDone(next);

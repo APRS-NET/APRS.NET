@@ -196,8 +196,8 @@ public sealed class KissTcpConnection : IAsyncDisposable
                 KissMetrics.Reconnect(
                     _tnc,
                     client is null ? "connect_failed"
-                        : failure is null ? "closed"
-                        : "error"
+                        : failure is null ? "tnc_closed"
+                        : "socket_error"
                 );
                 SetState(KissConnectionState.Reconnecting, failure, delay);
                 try

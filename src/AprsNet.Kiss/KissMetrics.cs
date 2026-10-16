@@ -42,7 +42,7 @@ internal static class KissMetrics
     private static readonly Counter<long> _reconnects = _meter.CreateCounter<long>(
         "aprsnet.kiss.connection.reconnects",
         "{reconnect}",
-        "Waits before reconnecting, by cause: closed (the TNC closed the connection), error or connect_failed."
+        "Waits before reconnecting, by cause: tnc_closed, socket_error or connect_failed, as for APRS-IS."
     );
 
     public static void Received(string tnc) => _received.Add(1, Tnc(tnc));
