@@ -35,15 +35,29 @@ internal sealed class CliEnvironment
     /// <summary>The transmit limit for <c>tnc send</c>; tests replace it to avoid real waits.</summary>
     public Func<KissTransmitLimit> CreateTransmitLimit { get; init; } = () => new KissTransmitLimit();
 
-    /// <summary>A reconnecting KISS connection to the TNC at <paramref name="host"/>:<paramref name="port"/>.</summary>
-    public KissTcpConnection CreateTncConnection(string host, int port) =>
-        new(
-            new KissTcpOptions
-            {
-                Host = host,
-                Port = port,
-                ReconnectDelay = ReconnectDelay,
-                TimeProvider = TimeProvider,
-            }
-        );
+    /// <summary>A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP or a serial port.</summary>
+    public KissConnection CreateTncConnection(TncAddress address, int radioPort = 0) =>
+        address.SerialPort is { } name
+            ? new KissSerialConnection(
+                new KissSerialOptions
+                {
+                    PortName = name,
+                    BaudRate = address.BaudRate,
+                    TncPort = radioPort,
+                    TimeProvider = TimeProvider,
+                }
+            )
+            : new KissTcpConnection(
+                new KissTcpOptions
+                {
+                    Host = address.Host,
+                    Port = address.Port,
+                    TncPort = radioPort,
+                    ReconnectDelay = ReconnectDelay,
+                    TimeProvider = TimeProvider,
+                }
+            );
+
+    /// <summary>The serial ports present, for <c>tnc ports</c>; tests replace it.</summary>
+    public Func<IReadOnlyList<string>> GetSerialPortNames { get; init; } = KissSerialConnection.GetPortNames;
 }

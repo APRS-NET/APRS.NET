@@ -1,20 +1,23 @@
 using System.CommandLine;
 using System.Globalization;
-using System.Net.Sockets;
 using AprsNet.Kiss;
 using AprsNet.Packets;
 
 namespace AprsNet.AprsIsCli;
 
 /// <summary>
-/// The <c>tnc</c> commands: talk to a KISS TNC over TCP (Dire Wolf, a soundmodem, a network TNC). <c>tnc listen</c>
-/// prints the APRS packets it hears, in the same formats as <c>listen</c>.
+/// The <c>tnc</c> commands: talk to a KISS TNC over TCP (Dire Wolf, a soundmodem, a network TNC) or on a serial port
+/// (a USB TNC). <c>tnc listen</c> prints the APRS packets it hears, in the same formats as <c>listen</c>; <c>tnc
+/// ports</c> lists the serial ports present.
 /// </summary>
 internal sealed class TncCommand(CliEnvironment environment)
 {
     private readonly Option<string> _tnc = new("--tnc", "-t")
     {
-        Description = $"The TNC as host[:port]. Default port: {KissTcpClient.DefaultPort} (Dire Wolf's KISS port).",
+        Description =
+            $"The TNC as host[:port] (default port {KissTcpClient.DefaultPort}, Dire Wolf's KISS port), or a serial "
+            + $"TNC as serial:PORT[@BAUD], such as serial:/dev/ttyUSB0 or serial:COM3@57600 (default "
+            + $"{KissSerialOptions.DefaultBaudRate} baud).",
         Required = true,
     };
 
@@ -35,8 +38,9 @@ internal sealed class TncCommand(CliEnvironment environment)
     private readonly Option<bool> _reconnect = new("--reconnect")
     {
         Description =
-            "If the TNC closes the connection or cannot be reached, keep trying (waiting 5s, doubling to 60s) until "
-            + "--count, --duration or Ctrl+C. Without it, the first loss ends the command.",
+            "If the TNC closes the connection, is unplugged or cannot be reached, keep trying (waiting 5s, doubling "
+            + "to 60s; 2s to 30s for a serial port) until --count, --duration or Ctrl+C. Without it, the first loss "
+            + "ends the command.",
     };
 
     private readonly Option<string?> _duration = new("--duration", "-d")
@@ -47,7 +51,7 @@ internal sealed class TncCommand(CliEnvironment environment)
     public Command Build()
     {
         _format.AcceptOnlyFromAmong("raw", "decoded", "json", "pretty");
-        var listen = new Command("listen", "Connect to a KISS TNC over TCP and print the APRS packets it hears.")
+        var listen = new Command("listen", "Connect to a KISS TNC and print the APRS packets it hears.")
         {
             _tnc,
             _radioPort,
@@ -57,10 +61,13 @@ internal sealed class TncCommand(CliEnvironment environment)
             _reconnect,
         };
         listen.SetAction(ListenAsync);
-        var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf.")
+        var ports = new Command("ports", "List the serial ports present, for --tnc serial:PORT.");
+        ports.SetAction(ListPortsAsync);
+        var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf, or on a serial port.")
         {
             listen,
             new SendCommand(environment, toTnc: true).Build(),
+            ports,
         };
         return tnc;
     }
@@ -68,9 +75,11 @@ internal sealed class TncCommand(CliEnvironment environment)
     private async Task<int> ListenAsync(ParseResult parseResult, CancellationToken cancellationToken)
     {
         var text = parseResult.GetValue(_tnc)!.Trim();
-        if (!TryParseAddress(text, out var host, out var port))
+        if (!TncAddress.TryParse(text, out var address))
         {
-            return await UsageAsync($"--tnc '{text}' is not valid. Use host or host:port, such as localhost:8001.");
+            return await UsageAsync(
+                $"--tnc '{text}' is not valid. Use {TncAddress.Forms}, such as {TncAddress.Examples}."
+            );
         }
 
         if (parseResult.GetValue(_radioPort) is < 0 or > 15)
@@ -99,16 +108,7 @@ internal sealed class TncCommand(CliEnvironment environment)
 
         if (parseResult.GetValue(_reconnect))
         {
-            await using var connection = new KissTcpConnection(
-                new KissTcpOptions
-                {
-                    Host = host,
-                    Port = port,
-                    TncPort = parseResult.GetValue(_radioPort),
-                    ReconnectDelay = environment.ReconnectDelay,
-                    TimeProvider = environment.TimeProvider,
-                }
-            );
+            await using var connection = environment.CreateTncConnection(address, parseResult.GetValue(_radioPort));
             connection.StateChanged += (_, e) =>
             {
                 if (e.State != KissConnectionState.Reconnecting)
@@ -119,8 +119,8 @@ internal sealed class TncCommand(CliEnvironment environment)
                 var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
                 environment.Error.WriteLine(
                     e.Error is null
-                        ? $"aprscli: the TNC at {host}:{port} closed the connection; reconnecting in {retry}s."
-                        : $"aprscli: lost the TNC at {host}:{port}: {e.Error.Message}; reconnecting in {retry}s."
+                        ? $"aprscli: the TNC at {address} closed the connection; reconnecting in {retry}s."
+                        : $"aprscli: lost the TNC at {address}: {e.Error.Message}; reconnecting in {retry}s."
                 );
             };
             try
@@ -135,29 +135,22 @@ internal sealed class TncCommand(CliEnvironment environment)
             return ExitCodes.Success;
         }
 
-        await using var client = new KissTcpClient(
-            new KissTcpOptions
-            {
-                Host = host,
-                Port = port,
-                TncPort = parseResult.GetValue(_radioPort),
-            }
-        );
+        TncLink client;
         try
         {
-            await client.ConnectAsync(run.Token);
+            client = await TncLink.OpenAsync(address, parseResult.GetValue(_radioPort), null, run.Token);
         }
         catch (OperationCanceledException) when (run.IsCancellationRequested)
         {
             return ExitCodes.Success;
         }
-        catch (Exception ex) when (ex is SocketException or TimeoutException)
+        catch (Exception ex) when (TncLink.IsLinkFailure(ex))
         {
-            await environment.Error.WriteLineAsync(
-                $"aprscli: could not connect to the TNC at {host}:{port}: {ex.Message}"
-            );
+            await environment.Error.WriteLineAsync($"aprscli: could not connect to the TNC at {address}: {ex.Message}");
             return ExitCodes.ConnectionFailed;
         }
+
+        await using var _ = client;
 
         try
         {
@@ -170,14 +163,30 @@ internal sealed class TncCommand(CliEnvironment environment)
         {
             return ExitCodes.Success;
         }
-        catch (IOException ex)
+        catch (Exception ex) when (TncLink.IsLinkFailure(ex))
         {
-            await environment.Error.WriteLineAsync($"aprscli: lost the TNC at {host}:{port}: {ex.Message}");
+            await environment.Error.WriteLineAsync($"aprscli: lost the TNC at {address}: {ex.Message}");
             return ExitCodes.ConnectionFailed;
         }
 
-        await environment.Error.WriteLineAsync($"aprscli: the TNC at {host}:{port} closed the connection.");
+        await environment.Error.WriteLineAsync($"aprscli: the TNC at {address} closed the connection.");
         return ExitCodes.ConnectionFailed;
+    }
+
+    private async Task<int> ListPortsAsync(ParseResult parseResult, CancellationToken cancellationToken)
+    {
+        var names = environment.GetSerialPortNames();
+        if (names.Count == 0)
+        {
+            await environment.Error.WriteLineAsync("aprscli: no serial ports found.");
+        }
+
+        foreach (var name in names)
+        {
+            await environment.Out.WriteLineAsync(name);
+        }
+
+        return ExitCodes.Success;
     }
 
     /// <summary>Prints packets until the stream ends (false) or <paramref name="count"/> is reached (true).</summary>

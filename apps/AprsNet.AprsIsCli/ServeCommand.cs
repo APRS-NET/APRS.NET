@@ -42,7 +42,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
     {
         Description =
             $"Also serve what a KISS TNC hears, as host[:port] (default port {KissTcpClient.DefaultPort}, Dire "
-            + "Wolf's). Repeat for several TNCs. A lost TNC is reconnected.",
+            + "Wolf's) or serial:PORT[@BAUD] for a TNC on a serial port. Repeat for several TNCs. A lost or "
+            + "unplugged TNC is reconnected.",
         Arity = ArgumentArity.ZeroOrMore,
     };
 
@@ -100,7 +101,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
     private sealed record ServeOptions(
         AprsIsClientOptions? Upstream,
-        IReadOnlyList<(string Host, int Port)> Tncs,
+        IReadOnlyList<TncAddress> Tncs,
         AprsIsServerOptions Local,
         TimeSpan? Duration
     );
@@ -116,22 +117,22 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        var tncs = new List<(string Host, int Port)>();
+        var tncs = new List<TncAddress>();
         foreach (var text in parseResult.GetValue(_tnc) ?? [])
         {
-            if (!TncCommand.TryParseAddress(text, out var host, out var port))
+            if (!TncAddress.TryParse(text, out var address))
             {
-                error = $"--tnc '{text}' is not valid. Use host or host:port, such as localhost:8001.";
+                error = $"--tnc '{text}' is not valid. Use {TncAddress.Forms}, such as {TncAddress.Examples}.";
                 return false;
             }
 
-            if (tncs.Contains((host, port)))
+            if (tncs.Any(t => t.ToString() == address.ToString()))
             {
                 error = $"--tnc '{text}' is given twice.";
                 return false;
             }
 
-            tncs.Add((host, port));
+            tncs.Add(address);
         }
 
         AprsFilter? parsedFilter = null;
@@ -274,14 +275,14 @@ internal sealed class ServeCommand(CliEnvironment environment)
             described.Add($"{options.Upstream!.Endpoint} ({options.Upstream.Filter})");
         }
 
-        var tncs = new List<KissTcpConnection>();
+        var tncs = new List<KissConnection>();
         try
         {
-            foreach (var (host, port) in options.Tncs)
+            foreach (var address in options.Tncs)
             {
-                var tnc = environment.CreateTncConnection(host, port);
+                var tnc = environment.CreateTncConnection(address);
                 tncs.Add(tnc);
-                var name = $"{host}:{port}";
+                var name = address.ToString();
                 tnc.StateChanged += (_, e) =>
                 {
                     if (e.State != KissConnectionState.Reconnecting)

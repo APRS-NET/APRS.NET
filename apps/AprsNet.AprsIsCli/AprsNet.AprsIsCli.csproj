@@ -20,6 +20,7 @@
     <ProjectReference Include="..\..\src\AprsNet.Gateway\AprsNet.Gateway.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Symbols\AprsNet.Symbols.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Kiss\AprsNet.Kiss.csproj" />
+    <ProjectReference Include="..\..\src\AprsNet.Kiss.Serial\AprsNet.Kiss.Serial.csproj" />
   </ItemGroup>
 
   <ItemGroup>

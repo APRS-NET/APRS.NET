@@ -188,6 +188,7 @@ aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --history 10m          # on 127.
 aprscli serve -c KD9XYZ -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 # for your network
 aprscli serve -f "r/38.98/-94.67/300" --tnc localhost                  # APRS-IS and Dire Wolf
 aprscli serve --tnc localhost --tnc 192.168.1.20:8001                   # two TNCs, no internet
+aprscli serve -f "r/38.98/-94.67/300" --tnc serial:/dev/ttyUSB0         # APRS-IS and a USB TNC
 aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a client
 ```
 
@@ -196,7 +197,7 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 | `-c`, `--callsign` | Callsign for the upstream login. Default: `N0CALL`. |
 | `-s`, `--server` | Upstream server as `host[:port]`. Default: `rotate.aprs2.net:14580`. |
 | `-f`, `--filter` | Upstream filter: everything clients can ask for. Without it, APRS-IS is not used and only `--tnc` sources are served. |
-| `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's). Repeat for several. |
+| `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's) or `serial:PORT[@BAUD]` (default 9600 baud). Repeat for several. A lost or unplugged TNC is reconnected. |
 | `-l`, `--listen` | Address and port to serve on. Default: `127.0.0.1:14580`. |
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
@@ -208,18 +209,23 @@ that falls 1,000 lines behind is disconnected, as on APRS-IS.
 
 ## tnc listen
 
-Print the APRS packets a KISS TNC hears, in the same formats as `listen`. The TNC must serve KISS over TCP, as Dire
-Wolf does on port 8001:
+Print the APRS packets a KISS TNC hears, in the same formats as `listen`. The TNC can serve KISS over TCP, as Dire
+Wolf does on port 8001, or sit on a serial port, such as a USB TNC, given as `serial:PORT[@BAUD]` (default 9600 baud;
+on Linux, prefer the port's stable name under `/dev/serial/by-id/`):
 
 ```sh
 aprscli tnc listen --tnc localhost:8001 --format decoded
 aprscli tnc listen --tnc 192.168.1.20 --radio-port 1 -d 1h
 aprscli tnc listen --tnc localhost --reconnect      # survives Dire Wolf restarts
+aprscli tnc listen --tnc serial:/dev/ttyUSB0 --reconnect     # a USB TNC; survives unplugging it
+aprscli tnc listen --tnc serial:COM3@57600          # a NinoTNC on Windows
+aprscli tnc ports                                   # the serial ports present
 ```
 
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
-(waiting 5 s, doubling to 60 s), says so on stderr, and carries on when the TNC is back.
+(waiting 5 s, doubling to 60 s; 2 s to 30 s for a serial port), says so on stderr, and carries on when the TNC is back.
+`aprscli tnc ports` lists the serial ports present.
 
 ## tnc send
 
@@ -236,7 +242,7 @@ aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --t
 | Option | Meaning |
 | --- | --- |
 | `-c`, `--callsign` | Your callsign, with optional SSID. It must fit AX.25: up to six letters or digits and an SSID of 0 to 15. Required. |
-| `-t`, `--tnc` | The TNC as `host[:port]`. Default port 8001. Required unless `--dry-run`. |
+| `-t`, `--tnc` | The TNC as `host[:port]` (default port 8001) or `serial:PORT[@BAUD]` (default 9600 baud). Required unless `--dry-run`. |
 | `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
 | `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
 | `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
