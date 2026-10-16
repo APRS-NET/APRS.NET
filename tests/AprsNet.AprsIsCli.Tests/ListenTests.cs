@@ -1039,6 +1039,10 @@ public class ListenTests
     [InlineData("--server example.org --full-feed", "example.org:10152")]
     [InlineData("--server example.org --port 99", "example.org:99")]
     [InlineData("--full-feed", "rotate.aprs2.net:10152")]
+    [InlineData("--tls", "ssl.aprs2.net:24580")]
+    [InlineData("--tls --server example.org", "example.org:24580")]
+    [InlineData("--tls --server example.org:1234", "example.org:1234")]
+    [InlineData("--tls --server example.org --port 99", "example.org:99")]
     public async Task ResolvesTheEndpoint(string args, string expected)
     {
         var harness = new CliHarness().LoginAccepted();
@@ -1049,6 +1053,7 @@ public class ListenTests
         );
 
         Assert.Equal(expected, harness.ClientOptions!.Endpoint.ToString());
+        Assert.Equal(args.Contains("--tls", StringComparison.Ordinal), harness.ClientOptions.UseTls);
     }
 
     [Fact]
@@ -1082,6 +1087,8 @@ public class ListenTests
     [InlineData("listen --port 14580 --full-feed", "--port and --full-feed")]
     [InlineData("listen --server a.example:1234 --port 99", "already includes a port")]
     [InlineData("listen --server a.example:1234 --full-feed", "already includes a port")]
+    [InlineData("listen --tls --region noam", "--tls cannot be combined with --region or --full-feed")]
+    [InlineData("listen --tls --full-feed", "--tls cannot be combined with --region or --full-feed")]
     [InlineData("listen --port 0", "between 1 and 65535")]
     [InlineData("listen --port 70000", "between 1 and 65535")]
     [InlineData("listen --server a:b:c", "not valid")]

@@ -39,7 +39,8 @@ public sealed class AddAprsIsConnectionTests
                 ("SoftwareVersion", "2.0"),
                 ("ReconnectDelay", "00:00:07"),
                 ("MaxPacketSilence", "00:10:00"),
-                ("OverflowPolicy", "DropOldest")
+                ("OverflowPolicy", "DropOldest"),
+                ("UseTls", "true")
             )
         );
         var options = Options(provider);
@@ -52,6 +53,7 @@ public sealed class AddAprsIsConnectionTests
         Assert.Equal(TimeSpan.FromSeconds(7), options.ReconnectDelay);
         Assert.Equal(TimeSpan.FromMinutes(10), options.MaxPacketSilence);
         Assert.Equal(OverflowPolicy.DropOldest, options.OverflowPolicy);
+        Assert.True(options.UseTls);
     }
 
     [Theory]

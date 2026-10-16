@@ -57,7 +57,11 @@ internal sealed class TncCommand(CliEnvironment environment)
             _reconnect,
         };
         listen.SetAction(ListenAsync);
-        var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf.") { listen };
+        var tnc = new Command("tnc", "Talk to a KISS TNC over TCP, such as Dire Wolf.")
+        {
+            listen,
+            new SendCommand(environment, toTnc: true).Build(),
+        };
         return tnc;
     }
 
@@ -96,15 +100,23 @@ internal sealed class TncCommand(CliEnvironment environment)
         if (parseResult.GetValue(_reconnect))
         {
             await using var connection = new KissTcpConnection(
-                host,
-                port,
-                parseResult.GetValue(_radioPort),
-                environment.ReconnectDelay,
-                timeProvider: environment.TimeProvider
+                new KissTcpOptions
+                {
+                    Host = host,
+                    Port = port,
+                    TncPort = parseResult.GetValue(_radioPort),
+                    ReconnectDelay = environment.ReconnectDelay,
+                    TimeProvider = environment.TimeProvider,
+                }
             );
-            connection.ConnectionLost += (_, e) =>
+            connection.StateChanged += (_, e) =>
             {
-                var retry = e.RetryIn.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+                if (e.State != KissConnectionState.Reconnecting)
+                {
+                    return;
+                }
+
+                var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
                 environment.Error.WriteLine(
                     e.Error is null
                         ? $"aprscli: the TNC at {host}:{port} closed the connection; reconnecting in {retry}s."
@@ -123,7 +135,14 @@ internal sealed class TncCommand(CliEnvironment environment)
             return ExitCodes.Success;
         }
 
-        await using var client = new KissTcpClient(host, port, parseResult.GetValue(_radioPort));
+        await using var client = new KissTcpClient(
+            new KissTcpOptions
+            {
+                Host = host,
+                Port = port,
+                TncPort = parseResult.GetValue(_radioPort),
+            }
+        );
         try
         {
             await client.ConnectAsync(run.Token);

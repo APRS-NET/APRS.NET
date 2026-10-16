@@ -51,6 +51,16 @@ internal sealed class ListenCommand
         Description = "Use the full feed port (10152). All traffic, so expect a heavy stream.",
     };
 
+    /// <summary>The server <c>--tls</c> uses when no <c>--server</c> is given.</summary>
+    internal static readonly AprsIsEndpoint TlsDefault = new("ssl.aprs2.net", AprsIsPorts.Tls);
+
+    private readonly Option<bool> _tls = new("--tls")
+    {
+        Description =
+            $"Connect over TLS, checking the server's certificate. Default server: {TlsDefault}; a --server without a "
+            + $"port uses {AprsIsPorts.Tls}. Few servers offer TLS. Cannot be combined with --region or --full-feed.",
+    };
+
     private readonly Option<string?> _filter = new("--filter", "-f")
     {
         Description = "APRS-IS filter sent with the login, for example \"r/35/-97/200\" or \"t/m\".",
@@ -144,6 +154,7 @@ internal sealed class ListenCommand
                 _region,
                 _port,
                 _fullFeed,
+                _tls,
                 _filter,
                 _timestamps,
                 _capture,
@@ -300,6 +311,7 @@ internal sealed class ListenCommand
         options = new ListenOptions
         {
             Endpoint = endpoint,
+            UseTls = parseResult.GetValue(_tls),
             Callsign = callsign,
             Passcode = passcode,
             Filter = filter,
@@ -335,10 +347,17 @@ internal sealed class ListenCommand
         var region = parseResult.GetValue(_region);
         var port = parseResult.GetValue(_port);
         var fullFeed = parseResult.GetValue(_fullFeed);
+        var tls = parseResult.GetValue(_tls);
 
         if (server is not null && region is not null)
         {
             error = "--server and --region cannot be used together.";
+            return false;
+        }
+
+        if (tls && (region is not null || fullFeed))
+        {
+            error = $"--tls cannot be combined with --region or --full-feed; it uses {TlsDefault} or your --server.";
             return false;
         }
 
@@ -354,7 +373,13 @@ internal sealed class ListenCommand
             return false;
         }
 
-        var chosenPort = port ?? (fullFeed ? AprsIsPorts.FullFeed : AprsIsPorts.UserDefinedFilter);
+        var chosenPort =
+            port
+            ?? (
+                fullFeed ? AprsIsPorts.FullFeed
+                : tls ? AprsIsPorts.Tls
+                : AprsIsPorts.UserDefinedFilter
+            );
         var hasPortOverride = port is not null || fullFeed;
 
         if (server is not null)
@@ -383,12 +408,15 @@ internal sealed class ListenCommand
             return true;
         }
 
-        var rotate = AprsIsServerPreset.TryFind(region, out var preset) ? preset.Endpoint : AprsIsEndpoint.Rotate;
+        var rotate =
+            tls ? TlsDefault
+            : AprsIsServerPreset.TryFind(region, out var preset) ? preset.Endpoint
+            : AprsIsEndpoint.Rotate;
         endpoint = rotate.WithPort(chosenPort);
         return true;
     }
 
-    private static bool HasExplicitPort(string server)
+    internal static bool HasExplicitPort(string server)
     {
         server = server.Trim();
         return server.StartsWith('[')

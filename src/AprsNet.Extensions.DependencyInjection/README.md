@@ -25,4 +25,8 @@ await connection.StartAsync();
 `rotate.aprs2.net:14580`. Every other key is a property of `AprsIsClientOptions`. Keep `Passcode` out of files you
 commit: set it with an environment variable (`AprsIs__Passcode`) or user secrets.
 
-Not published yet.
+For TLS, set `"UseTls": true` and a server that offers it, such as `"Server": "ssl.aprs2.net:24580"`. A certificate
+check of your own (`ServerCertificateValidation`) or client certificates (`ClientCertificates`) can't come from
+configuration; set them with `services.Configure<AprsIsClientOptions>(o => …)`.
+
+Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

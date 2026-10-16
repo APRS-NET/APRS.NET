@@ -8,7 +8,9 @@ namespace AprsNet.Kiss;
 /// <summary>
 /// A lasting connection to a KISS TNC over TCP: like <see cref="KissTcpClient"/>, but when the TNC closes the
 /// connection or cannot be reached it reconnects, waiting <see cref="ReconnectDelay"/> and doubling up to
-/// <see cref="MaxReconnectDelay"/>. The read streams carry on across reconnects until cancelled or disposed, so a
+/// <see cref="MaxReconnectDelay"/>. A connection that stayed up at least <see cref="MaxReconnectDelay"/> starts the
+/// waits again from <see cref="ReconnectDelay"/>; one the TNC drops straight away does not, so a TNC that accepts and
+/// then closes every connection is retried less and less often. The read streams carry on across reconnects until cancelled or disposed, so a
 /// restarted Dire Wolf or a soundmodem that starts after the app only pauses them.
 /// </summary>
 public sealed class KissTcpConnection : IAsyncDisposable
@@ -16,57 +18,43 @@ public sealed class KissTcpConnection : IAsyncDisposable
     private readonly Func<CancellationToken, Task<Stream>> _connect;
     private readonly int _tncPort;
     private readonly TimeProvider _timeProvider;
+    private readonly string _tnc;
+    private readonly Lock _stateLock = new();
     private readonly CancellationTokenSource _disposing = new();
     private KissStreamClient? _current;
     private int _reading;
     private int _disposed;
 
-    /// <summary>Creates a connection; nothing connects until a read starts.</summary>
-    /// <param name="host">The TNC's host name or address.</param>
-    /// <param name="port">The TNC's KISS TCP port.</param>
-    /// <param name="tncPort">The radio port on a multi-port TNC, 0 to 15.</param>
-    /// <param name="reconnectDelay">The first wait before reconnecting; 5 seconds when not given.</param>
-    /// <param name="maxReconnectDelay">The longest wait between attempts; 60 seconds when not given.</param>
-    /// <param name="timeProvider">The clock for the waits.</param>
-    /// <param name="transmitLimit">
-    /// How fast frames may be sent, across reconnects; a new <see cref="KissTransmitLimit"/> with the default settings
-    /// and <paramref name="timeProvider"/> when not given.
-    /// </param>
-    public KissTcpConnection(
-        string host,
-        int port = KissTcpClient.DefaultPort,
-        int tncPort = 0,
-        TimeSpan? reconnectDelay = null,
-        TimeSpan? maxReconnectDelay = null,
-        TimeProvider? timeProvider = null,
-        KissTransmitLimit? transmitLimit = null
-    )
-        : this(ConnectTcp(host, port), tncPort, reconnectDelay, maxReconnectDelay, timeProvider, transmitLimit)
+    /// <summary>
+    /// Creates a connection to the TNC at <paramref name="host"/>:<paramref name="port"/> with the other settings at
+    /// their defaults; nothing connects until a read starts.
+    /// </summary>
+    /// <exception cref="ArgumentException">The host is empty or the port is not 1 to 65535.</exception>
+    public KissTcpConnection(string host, int port = KissTcpClient.DefaultPort)
+        : this(new KissTcpOptions { Host = host, Port = port }) { }
+
+    /// <summary>Creates a connection with <paramref name="options"/>; nothing connects until a read starts.</summary>
+    /// <exception cref="ArgumentException">A setting in <paramref name="options"/> is unusable.</exception>
+    public KissTcpConnection(KissTcpOptions options)
+        : this(ConnectTcp(Validated(options)), options) { }
+
+    internal KissTcpConnection(Func<CancellationToken, Task<Stream>> connect, KissTcpOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(host);
-        ArgumentOutOfRangeException.ThrowIfLessThan(port, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, 65535);
+        Validated(options);
+        ReconnectDelay = options.ReconnectDelay;
+        MaxReconnectDelay = options.MaxReconnectDelay;
+        _connect = connect;
+        _tncPort = options.TncPort;
+        _timeProvider = options.TimeProvider;
+        _tnc = $"{options.Host}:{options.Port}";
+        TransmitLimit = options.CreateTransmitLimit();
     }
 
-    internal KissTcpConnection(
-        Func<CancellationToken, Task<Stream>> connect,
-        int tncPort,
-        TimeSpan? reconnectDelay,
-        TimeSpan? maxReconnectDelay,
-        TimeProvider? timeProvider,
-        KissTransmitLimit? transmitLimit = null
-    )
+    private static KissTcpOptions Validated(KissTcpOptions options)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(tncPort);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(tncPort, 15);
-        ReconnectDelay = reconnectDelay ?? TimeSpan.FromSeconds(5);
-        MaxReconnectDelay = maxReconnectDelay ?? TimeSpan.FromSeconds(60);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ReconnectDelay, TimeSpan.Zero, nameof(reconnectDelay));
-        ArgumentOutOfRangeException.ThrowIfLessThan(MaxReconnectDelay, ReconnectDelay, nameof(maxReconnectDelay));
-        _connect = connect;
-        _tncPort = tncPort;
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        TransmitLimit = transmitLimit ?? new KissTransmitLimit(timeProvider: _timeProvider);
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        return options;
     }
 
     /// <summary>How fast frames may be sent; one limit covers every connection, and a send waits for its turn.</summary>
@@ -80,17 +68,20 @@ public sealed class KissTcpConnection : IAsyncDisposable
     /// <summary>The longest wait between attempts.</summary>
     public TimeSpan MaxReconnectDelay { get; }
 
-    /// <summary>Whether the TNC is connected now.</summary>
+    /// <summary>Where the connection is now: not reading, connecting, connected, waiting to reconnect, or closed.</summary>
+    public KissConnectionState State { get; private set; } = KissConnectionState.Idle;
+
+    /// <summary>Whether the TNC is connected now (<see cref="State"/> is <see cref="KissConnectionState.Connected"/>).</summary>
     public bool IsConnected => Volatile.Read(ref _current) is not null;
 
     /// <summary>Connections made after the first: one each time the TNC was lost and reached again.</summary>
     public int Reconnects { get; private set; }
 
     /// <summary>
-    /// Raised when the TNC is lost or cannot be reached, with the exception (<see langword="null"/> when the TNC closed
-    /// the connection cleanly) and the wait before the next attempt. Raised on the reading thread; keep it short.
+    /// Raised when <see cref="State"/> changes. For <see cref="KissConnectionState.Reconnecting"/> it says what ended
+    /// the connection or attempt and how long until the next one. Raised on the reading thread; keep it short.
     /// </summary>
-    public event EventHandler<KissConnectionLostEventArgs>? ConnectionLost;
+    public event EventHandler<KissConnectionStateChangedEventArgs>? StateChanged;
 
     /// <summary>
     /// Yields every AX.25 frame the TNC passes on, connecting and reconnecting as needed. Disposing the connection
@@ -112,6 +103,7 @@ public sealed class KissTcpConnection : IAsyncDisposable
         var token = stop.Token;
         var delay = ReconnectDelay;
         var connectedBefore = false;
+        SetState(KissConnectionState.Connecting);
         try
         {
             while (true)
@@ -125,7 +117,10 @@ public sealed class KissTcpConnection : IAsyncDisposable
                         await _connect(token).ConfigureAwait(false),
                         _tncPort,
                         transmitLimit: KissTransmitLimit.Off
-                    );
+                    )
+                    {
+                        MetricsTnc = _tnc,
+                    };
                 }
                 catch (Exception e) when (e is SocketException or IOException or TimeoutException)
                 {
@@ -144,8 +139,10 @@ public sealed class KissTcpConnection : IAsyncDisposable
                     }
 
                     connectedBefore = true;
-                    delay = ReconnectDelay;
+                    var connectedAt = _timeProvider.GetTimestamp();
                     Volatile.Write(ref _current, client);
+                    KissMetrics.Active(_tnc, +1);
+                    SetState(KissConnectionState.Connected);
                     await using (client.ConfigureAwait(false))
                     {
                         var frames = client.ReadFramesAsync(token).GetAsyncEnumerator(token);
@@ -177,8 +174,15 @@ public sealed class KissTcpConnection : IAsyncDisposable
                         finally
                         {
                             Volatile.Write(ref _current, null);
+                            KissMetrics.Active(_tnc, -1);
                             await frames.DisposeAsync().ConfigureAwait(false);
                         }
+                    }
+
+                    // A connection that held for a while was not part of a failing streak: start the backoff again.
+                    if (_timeProvider.GetElapsedTime(connectedAt) >= MaxReconnectDelay)
+                    {
+                        delay = ReconnectDelay;
                     }
                 }
 
@@ -189,7 +193,13 @@ public sealed class KissTcpConnection : IAsyncDisposable
                     yield break;
                 }
 
-                ConnectionLost?.Invoke(this, new KissConnectionLostEventArgs(failure, delay));
+                KissMetrics.Reconnect(
+                    _tnc,
+                    client is null ? "connect_failed"
+                        : failure is null ? "tnc_closed"
+                        : "socket_error"
+                );
+                SetState(KissConnectionState.Reconnecting, failure, delay);
                 try
                 {
                     await Task.Delay(delay, _timeProvider, token).ConfigureAwait(false);
@@ -200,10 +210,17 @@ public sealed class KissTcpConnection : IAsyncDisposable
                 }
 
                 delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, MaxReconnectDelay.Ticks));
+                SetState(KissConnectionState.Connecting);
             }
         }
         finally
         {
+            // A read that ends while the connection lives leaves it idle, ready for another; disposing closes it.
+            if (!IsDisposed)
+            {
+                SetState(KissConnectionState.Idle);
+            }
+
             Volatile.Write(ref _reading, 0);
         }
     }
@@ -262,14 +279,32 @@ public sealed class KissTcpConnection : IAsyncDisposable
 
         await _disposing.CancelAsync().ConfigureAwait(false);
         _disposing.Dispose();
+        SetState(KissConnectionState.Closed);
     }
 
-    private static Func<CancellationToken, Task<Stream>> ConnectTcp(string host, int port) =>
-        async token =>
+    private void SetState(KissConnectionState state, Exception? error = null, TimeSpan? retryIn = null)
+    {
+        lock (_stateLock)
+        {
+            if (State == state || State == KissConnectionState.Closed)
+            {
+                return;
+            }
+
+            State = state;
+        }
+
+        StateChanged?.Invoke(this, new KissConnectionStateChangedEventArgs(state, error, retryIn));
+    }
+
+    private static Func<CancellationToken, Task<Stream>> ConnectTcp(KissTcpOptions options)
+    {
+        var (host, port, connectTimeout) = (options.Host, options.Port, options.ConnectTimeout);
+        return async token =>
         {
             var client = new TcpClient { NoDelay = true };
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-            timeout.CancelAfter(TimeSpan.FromSeconds(10));
+            timeout.CancelAfter(connectTimeout);
             try
             {
                 await client.ConnectAsync(host, port, timeout.Token).ConfigureAwait(false);
@@ -286,6 +321,7 @@ public sealed class KissTcpConnection : IAsyncDisposable
                 throw;
             }
         };
+    }
 
     /// <summary>A TCP client's stream that closes the client with it.</summary>
     private sealed class OwningStream(TcpClient client) : Stream
@@ -336,12 +372,47 @@ public sealed class KissTcpConnection : IAsyncDisposable
     }
 }
 
-/// <summary>Why a <see cref="KissTcpConnection"/> lost or could not reach its TNC, and when it tries again.</summary>
-public sealed class KissConnectionLostEventArgs(Exception? error, TimeSpan retryIn) : EventArgs
+/// <summary>Where a <see cref="KissTcpConnection"/> is: see <see cref="KissTcpConnection.State"/>.</summary>
+public enum KissConnectionState
 {
-    /// <summary>What went wrong, or <see langword="null"/> when the TNC closed the connection.</summary>
-    public Exception? Error { get; } = error;
+    /// <summary>Not reading: no read has started, or the last one ended.</summary>
+    Idle,
 
-    /// <summary>How long until the next attempt.</summary>
-    public TimeSpan RetryIn { get; } = retryIn;
+    /// <summary>Connecting to the TNC.</summary>
+    Connecting,
+
+    /// <summary>Connected: frames are flowing and can be sent.</summary>
+    Connected,
+
+    /// <summary>
+    /// The connection ended or could not be made, and the next attempt is waiting;
+    /// <see cref="KissConnectionStateChangedEventArgs.RetryIn"/> says how long.
+    /// </summary>
+    Reconnecting,
+
+    /// <summary>Disposed.</summary>
+    Closed,
+}
+
+/// <summary>A change of <see cref="KissTcpConnection.State"/>.</summary>
+public sealed class KissConnectionStateChangedEventArgs : EventArgs
+{
+    internal KissConnectionStateChangedEventArgs(KissConnectionState state, Exception? error, TimeSpan? retryIn)
+    {
+        State = state;
+        Error = error;
+        RetryIn = retryIn;
+    }
+
+    /// <summary>The new state.</summary>
+    public KissConnectionState State { get; }
+
+    /// <summary>
+    /// What ended the connection or attempt, when the state is <see cref="KissConnectionState.Reconnecting"/>:
+    /// <see langword="null"/> when the TNC closed the connection cleanly.
+    /// </summary>
+    public Exception? Error { get; }
+
+    /// <summary>How long until the next attempt, when the state is <see cref="KissConnectionState.Reconnecting"/>.</summary>
+    public TimeSpan? RetryIn { get; }
 }

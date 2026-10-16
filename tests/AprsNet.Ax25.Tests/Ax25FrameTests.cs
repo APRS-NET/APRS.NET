@@ -151,4 +151,14 @@ public class Ax25FrameTests
     {
         Assert.False(Ax25Address.TryParse(text, out _));
     }
+
+    [Fact]
+    public void ADefaultAddressHasAnEmptyCallsign()
+    {
+        var address = default(Ax25Address);
+
+        Assert.Equal("", address.Callsign);
+        Assert.Equal(0, address.Ssid);
+        Assert.Equal(default, address);
+    }
 }

@@ -34,6 +34,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 | `-s`, `--server host[:port]` | Server. Not combinable with `--region`. Default `rotate.aprs2.net:14580`. |
 | `-r`, `--region` | `noam`, `soam`, `euro`, `asia` or `aunz` rotate. |
 | `--port`, `--full-feed` | Port override, or the full feed port 10152. |
+| `--tls` | Connect over TLS, checking the server's certificate. Default server `ssl.aprs2.net:24580`; a `--server` without a port uses 24580. Not with `--region` or `--full-feed`. |
 | `-f`, `--filter` | APRS-IS filter sent with the login. |
 | `-t`, `--timestamps` | Prefix printed lines with a UTC timestamp (`raw` and `decoded`; `json` and `pretty` always show the received time). |
 | `--format` | `raw` (default): the line as received. `decoded`: one readable line with the header and decoded fields. `json`: one JSON object per line with the raw line, header, outcome, issues and decoded fields (pipe it to `jq` to read it indented). `pretty`: a block per packet with the received time, the header and labelled fields in plain units, plus any parse issues. Position reports, Mic-E reports, objects, items, status reports, messages (including telemetry definitions), telemetry reports and weather are decoded so far; other types print as not decoded yet. |
@@ -167,6 +168,7 @@ reconnects as `listen --reconnect` does and carries on waiting.
 | `-c`, `--callsign` | Your callsign, with optional SSID. Required; `N0CALL` is refused. |
 | `--passcode` | Passcode for the callsign; prefer `APRS_PASSCODE`. |
 | `-s`, `--server`, `-r`, `--region` | Server, as for `listen`. Default: `rotate.aprs2.net:14580`. |
+| `--tls` | Connect over TLS, as for `listen`. |
 | `--tocall` | Destination TOCALL. Default: `APZNET` (the experimental `APZ` range). |
 | `--path` | Digipeater path, comma-separated. Default: none, for APRS-IS only. |
 | `-n`, `--dry-run` | Print the packet without connecting. |
@@ -218,5 +220,30 @@ aprscli tnc listen --tnc localhost --reconnect      # survives Dire Wolf restart
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
 (waiting 5 s, doubling to 60 s), says so on stderr, and carries on when the TNC is back.
+
+## tnc send
+
+Transmit on the air through a KISS TNC: the same `status`, `message`, `position`, `object`, `weather` and `telemetry`
+commands as `send`, built the same way. You need a licence to transmit, and to send as your own callsign. Check the
+packet with `--dry-run` (`-n`) first: it prints what would go out without connecting.
+
+```sh
+aprscli tnc send status "On the air" -c KD9XYZ-9 --tnc localhost -n      # check it
+aprscli tnc send status "On the air" -c KD9XYZ-9 --tnc localhost         # transmit it
+aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --tnc localhost --path WIDE1-1
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-c`, `--callsign` | Your callsign, with optional SSID. It must fit AX.25: up to six letters or digits and an SSID of 0 to 15. Required. |
+| `-t`, `--tnc` | The TNC as `host[:port]`. Default port 8001. Required unless `--dry-run`. |
+| `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
+| `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
+| `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
+| `-n`, `--dry-run` | Print the packets without connecting. |
+
+Each packet is printed once the TNC has it. Frames are spread out by the transmit limit: three at once, then one every
+10 seconds, so telemetry with its definitions takes a few seconds. A message is sent once, without a message number,
+so no acknowledgement comes back. Exit code 2 when the TNC cannot be reached.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

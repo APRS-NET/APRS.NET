@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.AprsIsTcpClient.Tests;
+using AprsNet.Kiss;
 using Microsoft.Extensions.Logging;
 
 namespace AprsNet.AprsIsCli.Tests;
@@ -39,6 +40,9 @@ internal sealed class CliHarness
     /// </summary>
     public Queue<FakeAprsTransport> Reconnects { get; } = new();
 
+    /// <summary>The transmit limit for <c>tnc send</c>: none by default, so tests do not wait.</summary>
+    public Func<KissTransmitLimit> TransmitLimit { get; set; } = () => KissTransmitLimit.Off;
+
     /// <summary>How many transports the connection asked for, which is one per connection attempt.</summary>
     public int ConnectionAttempts { get; private set; }
 
@@ -74,6 +78,7 @@ internal sealed class CliHarness
             LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddProvider(Logs)),
             TimeProvider = Time,
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
+            CreateTransmitLimit = TransmitLimit,
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
             CreateConnection = (options, logger) =>
             {

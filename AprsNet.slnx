@@ -35,6 +35,9 @@
   </Folder>
   <Folder Name="/docs/">
     <File Path="docs/benchmarks.md" />
+    <File Path="docs/guides/gateway.md" />
+    <File Path="docs/guides/tnc.md" />
+    <File Path="docs/metrics.md" />
     <File Path="docs/public-api.md" />
     <File Path="docs/versioning.md" />
   </Folder>
@@ -54,6 +57,7 @@
     <Project Path="tests/AprsNet.AprsIsTcpClient.Tests/AprsNet.AprsIsTcpClient.Tests.csproj" />
     <Project Path="tests/AprsNet.Ax25.Tests/AprsNet.Ax25.Tests.csproj" />
     <Project Path="tests/AprsNet.DeviceId.Tests/AprsNet.DeviceId.Tests.csproj" />
+    <Project Path="tests/AprsNet.Docs.Tests/AprsNet.Docs.Tests.csproj" />
     <Project Path="tests/AprsNet.Extensions.DependencyInjection.Tests/AprsNet.Extensions.DependencyInjection.Tests.csproj" />
     <Project Path="tests/AprsNet.Filters.Tests/AprsNet.Filters.Tests.csproj" />
     <Project Path="tests/AprsNet.Gateway.Tests/AprsNet.Gateway.Tests.csproj" />

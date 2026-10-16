@@ -23,6 +23,7 @@ internal static class ListenRunner
         var clientOptions = new AprsIsClientOptions
         {
             Endpoint = options.Endpoint,
+            UseTls = options.UseTls,
             Callsign = options.Callsign,
             Passcode = options.Passcode,
             Filter = options.Filter,

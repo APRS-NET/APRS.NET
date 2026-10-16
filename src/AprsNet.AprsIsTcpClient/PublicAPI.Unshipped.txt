@@ -173,3 +173,18 @@ AprsNet.AprsIsTcpClient.AprsIsConnectionState.NotStarted = 0 -> AprsNet.AprsIsTc
 AprsNet.AprsIsTcpClient.AprsIsConnectionState.Reconnecting = 3 -> AprsNet.AprsIsTcpClient.AprsIsConnectionState
 AprsNet.AprsIsTcpClient.AprsIsClient.ReadPacketsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>!
 AprsNet.AprsIsTcpClient.AprsIsConnection.ReadPacketsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.AprsPacket!>!
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ClientCertificates.get -> System.Security.Cryptography.X509Certificates.X509CertificateCollection?
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ClientCertificates.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ServerCertificateValidation.get -> System.Net.Security.RemoteCertificateValidationCallback?
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ServerCertificateValidation.set -> void
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.UseTls.get -> bool
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.UseTls.set -> void
+AprsNet.AprsIsTcpClient.AprsIsTlsException
+AprsNet.AprsIsTcpClient.AprsIsTlsException.AprsIsTlsException(AprsNet.AprsIsTcpClient.AprsIsTlsFailure failure, System.Net.Security.SslPolicyErrors policyErrors, string! message, System.Exception? innerException = null) -> void
+AprsNet.AprsIsTcpClient.AprsIsTlsException.Failure.get -> AprsNet.AprsIsTcpClient.AprsIsTlsFailure
+AprsNet.AprsIsTcpClient.AprsIsTlsException.PolicyErrors.get -> System.Net.Security.SslPolicyErrors
+AprsNet.AprsIsTcpClient.AprsIsTlsFailure
+AprsNet.AprsIsTcpClient.AprsIsTlsFailure.CertificateRejected = 0 -> AprsNet.AprsIsTcpClient.AprsIsTlsFailure
+AprsNet.AprsIsTcpClient.AprsIsTlsFailure.HandshakeFailed = 1 -> AprsNet.AprsIsTcpClient.AprsIsTlsFailure
+AprsNet.AprsIsTcpClient.TcpAprsTransport.TcpAprsTransport(AprsNet.AprsIsTcpClient.AprsIsClientOptions! options, Microsoft.Extensions.Logging.ILogger? logger) -> void
+const AprsNet.AprsIsTcpClient.AprsIsPorts.Tls = 24580 -> int

@@ -36,10 +36,7 @@ public sealed class GatewayMetricsTests : IDisposable
                     map[tag.Key] = tag.Value?.ToString();
                 }
 
-                if (
-                    map.GetValueOrDefault("server") == _name
-                    || instrument.Name.EndsWith("duplicates", StringComparison.Ordinal)
-                )
+                if (map.GetValueOrDefault("server") == _name)
                 {
                     _seen.Enqueue((instrument.Name, value, map));
                 }
@@ -109,17 +106,6 @@ public sealed class GatewayMetricsTests : IDisposable
         await WaitUntil(() => Sum("aprsnet.gateway.clients.disconnected", "reason", "server_stopping") == 1);
         Assert.Equal(1, Sum("aprsnet.gateway.logins", "verified", "false"));
         Assert.Equal(0, Sum("aprsnet.gateway.clients.connected"));
-    }
-
-    [Fact]
-    public void DuplicatesAreCounted()
-    {
-        var before = Sum("aprsnet.gateway.packets.duplicates");
-        var dedupe = new PacketDeduplicator();
-        var packet = AprsPacket.Parse($"{_name}>APRS:>dupe");
-        dedupe.TryAccept(packet);
-        dedupe.TryAccept(packet);
-        Assert.True(Sum("aprsnet.gateway.packets.duplicates") - before >= 1);
     }
 
     [Fact]

@@ -66,6 +66,45 @@ public class SendTests
         Assert.Null(harness.ClientOptions!.Filter);
     }
 
+    [Theory]
+    [InlineData("", "ssl.aprs2.net:24580")]
+    [InlineData("--server example.org", "example.org:24580")]
+    [InlineData("--server example.org:1234", "example.org:1234")]
+    public async Task SendsOverTls(string server, string expected)
+    {
+        var harness = Verified();
+
+        var result = await harness.RunAsync(
+            [
+                "send",
+                "status",
+                "Testing",
+                "-c",
+                Callsign,
+                "--tls",
+                .. server.Split(' ', StringSplitOptions.RemoveEmptyEntries),
+            ],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.True(harness.ClientOptions!.UseTls);
+        Assert.Equal(expected, harness.ClientOptions.Endpoint.ToString());
+    }
+
+    [Fact]
+    public async Task TlsCannotUseARegion()
+    {
+        var result = await Verified()
+            .RunAsync(
+                ["send", "status", "Testing", "-c", Callsign, "--tls", "--region", "noam"],
+                TestContext.Current.CancellationToken
+            );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("--tls cannot be combined with --region", result.Error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task SendsAPositionAndAnObject()
     {

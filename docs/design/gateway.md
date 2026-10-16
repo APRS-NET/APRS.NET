@@ -9,7 +9,7 @@ It is built in layers, each its own pull request:
 | --- | --- | --- |
 | Filter expressions | `AprsFilter`, `AprsFilterContext` (`AprsNet.Filters`) | #67 |
 | Server | `AprsIsServer`, `AprsIsServerOptions` (`AprsNet.Gateway`) | #68 |
-| De-duplication and history | `PacketDeduplicator`, `AprsIsServerOptions.History` | #69 |
+| De-duplication and history | `GatewayFeed`, `AprsIsServerOptions.History` | #69, #106 |
 | Metrics | the `AprsNet.Gateway` meter | #71 |
 | Station store | `StationStore`, `AprsIsServerOptions.Stations` | #72 |
 | Command line | `aprscli serve` | #70 |
@@ -70,14 +70,14 @@ Decisions:
   to other local clients).
 - **Slow clients are dropped.** Each client has a bounded queue (`ClientQueueLength`, 1,000 lines). `Publish` never
   blocks; a client whose queue is full is disconnected, as aprsc does, rather than delaying everyone.
-- **`Publish` is the only input.** The host decides where packets come from. `aprscli serve` reads APRS-IS; a KISS
-  source would call `Publish` the same way.
+- **`Publish` is the only input.** The host decides where packets come from, usually through a `GatewayFeed`, which
+  merges APRS-IS and KISS sources and publishes each packet once; `aprscli serve` uses one.
 - **Lines go out as received.** The server sends each packet's original bytes, so nothing is re-encoded.
 
 ## De-duplication and history
 
-`PacketDeduplicator` applies the APRS-IS rule through `DuplicateFilter` from `AprsNet.Packets`, and counts what it
-drops: the same source, destination and information field within 30 s of the first copy is a duplicate, whatever its
+`GatewayFeed` applies the APRS-IS rule through `DuplicateFilter` from `AprsNet.Packets` across all its sources, and
+counts what it drops by source: the same source, destination and information field within 30 s of the first copy is a duplicate, whatever its
 path. The window runs from the first copy and is not extended by later ones,
 so a beacon every 30 s is never dropped. On a 10-minute full-feed capture, already de-duplicated by the server, it drops
 2 of 54,468.

@@ -2,8 +2,6 @@
   <PropertyGroup>
     <Description>Registers an APRS.NET APRS-IS connection and its options with Microsoft.Extensions.DependencyInjection and configuration.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Not published yet: planned for 0.1. Set to true when it is reviewed. -->
-    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>

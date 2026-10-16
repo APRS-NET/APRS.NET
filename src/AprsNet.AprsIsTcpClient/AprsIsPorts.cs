@@ -6,6 +6,12 @@ public static class AprsIsPorts
     /// <summary>User-defined filter port. The standard port for clients.</summary>
     public const int UserDefinedFilter = 14580;
 
+    /// <summary>
+    /// TLS port for user-defined filters, on the few servers that offer TLS (aprsc's convention), such as
+    /// <c>ssl.aprs2.net</c>. Use with <see cref="AprsIsClientOptions.UseTls"/>.
+    /// </summary>
+    public const int Tls = 24580;
+
     /// <summary>Full feed port. Delivers all traffic; heavy, and most clients should not use it.</summary>
     public const int FullFeed = 10152;
 
