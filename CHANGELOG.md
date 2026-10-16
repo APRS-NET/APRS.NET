@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.2.0-alpha.3...v0.3.0-alpha.1) (2026-10-16)
+
+
+### Documentation
+
+* describe the 0.3.0 milestone in the README ([ce84b13](https://github.com/APRS-NET/APRS.NET/commit/ce84b135a8d43a967545b9d883a7d3650d8623df))
+
 ## [0.2.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.2.0-alpha.2...v0.2.0-alpha.3) (2026-10-16)
 
 
