@@ -5,12 +5,12 @@
 [![Line coverage](https://raw.githubusercontent.com/APRS-NET/APRS.NET/badges/badge_linecoverage.svg)](#code-coverage)
 [![AI-DECLARATION: pair](https://img.shields.io/badge/䷼%20AI--DECLARATION-pair-ffedd5?labelColor=ffedd5)](https://ai-declaration.md)
 
-An async-first, dependency-light .NET library family for APRS: parse and build packets, connect to APRS-IS, and later
-bridge radios and clients through KISS, TCP and WebSocket services.
+An async-first, dependency-light .NET library family for APRS: parse and build packets, connect to APRS-IS, and
+bridge radios and clients through KISS and APRS-IS services, with WebSocket to come.
 
-Status: alpha, in the 0.2.0 milestone. Parsing and building every common APRS packet type, the APRS-IS client with
-verified sending, messaging and automatic reconnects, and the `aprscli` tool all work. AX.25 and KISS (for radios
-through a TNC) and a local APRS-IS gateway with filters are in place but not yet published as packages.
+Status: alpha, in the 0.3.0 milestone. Parsing and building every common APRS packet type, the APRS-IS client with
+verified sending, messaging, TLS and automatic reconnects, AX.25 and KISS for receiving and transmitting through a TNC,
+a local APRS-IS gateway that serves radio and internet traffic together, and the `aprscli` tool are all published.
 
 > [!WARNING]
 > **Alpha software.** Every APRS.NET package is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. APIs,
