@@ -293,7 +293,14 @@ public sealed partial class KissAudioEndToEndTests
         var deadline = DateTime.UtcNow + Wait;
         while (true)
         {
-            var client = new KissTcpClient("127.0.0.1", port, transmitLimit: transmitLimit);
+            var client = new KissTcpClient(
+                new KissTcpOptions
+                {
+                    Host = "127.0.0.1",
+                    Port = port,
+                    TransmitLimit = transmitLimit,
+                }
+            );
             try
             {
                 await client.ConnectAsync(token);

@@ -24,10 +24,7 @@ public sealed class KissTcpServerTests
         var tnc = new FakeTnc();
         await using var connection = new KissTcpConnection(
             _ => Task.FromResult<Stream>(tnc),
-            0,
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(5),
-            new FakeTimeProvider()
+            new KissTcpOptions { TimeProvider = new FakeTimeProvider() }
         );
         await using var server = new KissTcpServer(AnyPort) { Transmit = connection.SendFrameAsync };
         server.Start();

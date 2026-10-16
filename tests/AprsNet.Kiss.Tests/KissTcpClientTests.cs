@@ -52,7 +52,14 @@ public sealed class KissTcpClientTests : IAsyncDisposable
     [Fact]
     public async Task ReadsOnlyItsOwnRadioPort()
     {
-        await using var client = new KissTcpClient("127.0.0.1", Port, tncPort: 1);
+        await using var client = new KissTcpClient(
+            new KissTcpOptions
+            {
+                Host = "127.0.0.1",
+                Port = Port,
+                TncPort = 1,
+            }
+        );
         await client.ConnectAsync(TestContext.Current.CancellationToken);
         using var tnc = await _tnc.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
         byte[] heard = [.. Wire("N0CALL>APRS:>port 0", port: 0), .. Wire("N0CALL>APRS:>port 1", port: 1)];
@@ -146,6 +153,35 @@ public sealed class KissTcpClientTests : IAsyncDisposable
     [InlineData("tnc", 8001, 16)]
     public void RefusesBadSettings(string host, int port, int tncPort)
     {
-        Assert.ThrowsAny<ArgumentException>(() => new KissTcpClient(host, port, tncPort));
+        Assert.ThrowsAny<ArgumentException>(() =>
+            new KissTcpClient(
+                new KissTcpOptions
+                {
+                    Host = host,
+                    Port = port,
+                    TncPort = tncPort,
+                }
+            )
+        );
+    }
+
+    [Fact]
+    public void OptionsHaveDireWolfDefaultsAndShareASetLimit()
+    {
+        var options = new KissTcpOptions();
+        var shared = new KissTransmitLimit(1);
+
+        Assert.Equal("localhost", options.Host);
+        Assert.Equal(KissTcpClient.DefaultPort, options.Port);
+        Assert.Equal(0, options.TncPort);
+        Assert.Equal(TimeSpan.FromSeconds(10), options.ConnectTimeout);
+        Assert.NotSame(new KissTcpClient(options).TransmitLimit, new KissTcpClient(options).TransmitLimit);
+        options.TransmitLimit = shared;
+        Assert.Same(shared, new KissTcpClient(options).TransmitLimit);
+        Assert.Same(shared, new KissTcpConnection(options).TransmitLimit);
+        Assert.Throws<ArgumentNullException>(() => new KissTcpClient((KissTcpOptions)null!));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new KissTcpClient(new KissTcpOptions { ConnectTimeout = TimeSpan.Zero })
+        );
     }
 }

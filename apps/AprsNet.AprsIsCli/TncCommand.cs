@@ -100,11 +100,14 @@ internal sealed class TncCommand(CliEnvironment environment)
         if (parseResult.GetValue(_reconnect))
         {
             await using var connection = new KissTcpConnection(
-                host,
-                port,
-                parseResult.GetValue(_radioPort),
-                environment.ReconnectDelay,
-                timeProvider: environment.TimeProvider
+                new KissTcpOptions
+                {
+                    Host = host,
+                    Port = port,
+                    TncPort = parseResult.GetValue(_radioPort),
+                    ReconnectDelay = environment.ReconnectDelay,
+                    TimeProvider = environment.TimeProvider,
+                }
             );
             connection.ConnectionLost += (_, e) =>
             {
@@ -127,7 +130,14 @@ internal sealed class TncCommand(CliEnvironment environment)
             return ExitCodes.Success;
         }
 
-        await using var client = new KissTcpClient(host, port, parseResult.GetValue(_radioPort));
+        await using var client = new KissTcpClient(
+            new KissTcpOptions
+            {
+                Host = host,
+                Port = port,
+                TncPort = parseResult.GetValue(_radioPort),
+            }
+        );
         try
         {
             await client.ConnectAsync(run.Token);

@@ -17,7 +17,15 @@ public sealed class KissTcpConnectionTests
         KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse(line)), 0).Encode();
 
     private KissTcpConnection Connection(Func<CancellationToken, Task<Stream>> connect) =>
-        new(connect, 0, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), _time);
+        new(
+            connect,
+            new KissTcpOptions
+            {
+                ReconnectDelay = TimeSpan.FromSeconds(5),
+                MaxReconnectDelay = TimeSpan.FromSeconds(15),
+                TimeProvider = _time,
+            }
+        );
 
     [Fact]
     public async Task ReadingCarriesOnAfterTheTncClosesTheConnection()
@@ -128,11 +136,13 @@ public sealed class KissTcpConnectionTests
         var limit = new KissTransmitLimit(2, TimeSpan.FromSeconds(10), _time);
         await using var connection = new KissTcpConnection(
             _ => Task.FromResult<Stream>(tncs.Dequeue()),
-            0,
-            TimeSpan.FromSeconds(5),
-            TimeSpan.FromSeconds(5),
-            _time,
-            limit
+            new KissTcpOptions
+            {
+                ReconnectDelay = TimeSpan.FromSeconds(5),
+                MaxReconnectDelay = TimeSpan.FromSeconds(5),
+                TimeProvider = _time,
+                TransmitLimit = limit,
+            }
         );
         var frame = Ax25Frame.FromAprsPacket(AprsPacket.Parse("N0CALL>APRS:>beacon"));
         first.Send(Kiss("N0CALL>APRS:>first"));
@@ -199,13 +209,17 @@ public sealed class KissTcpConnectionTests
     {
         Assert.Throws<ArgumentException>(() => new KissTcpConnection(" "));
         Assert.Throws<ArgumentOutOfRangeException>(() => new KissTcpConnection("tnc", port: 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new KissTcpConnection("tnc", tncPort: 16));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new KissTcpConnection("tnc", reconnectDelay: TimeSpan.Zero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new KissTcpConnection(new KissTcpOptions { TncPort = 16 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new KissTcpConnection(new KissTcpOptions { ReconnectDelay = TimeSpan.Zero })
+        );
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             new KissTcpConnection(
-                "tnc",
-                reconnectDelay: TimeSpan.FromSeconds(10),
-                maxReconnectDelay: TimeSpan.FromSeconds(5)
+                new KissTcpOptions
+                {
+                    ReconnectDelay = TimeSpan.FromSeconds(10),
+                    MaxReconnectDelay = TimeSpan.FromSeconds(5),
+                }
             )
         );
         var connection = new KissTcpConnection("tnc");
@@ -234,9 +248,12 @@ public sealed class KissTcpConnectionTests
         );
 
         await using var connection = new KissTcpConnection(
-            "127.0.0.1",
-            port,
-            reconnectDelay: TimeSpan.FromMilliseconds(20)
+            new KissTcpOptions
+            {
+                Host = "127.0.0.1",
+                Port = port,
+                ReconnectDelay = TimeSpan.FromMilliseconds(20),
+            }
         );
         await using var packets = connection.ReadPacketsAsync(token).GetAsyncEnumerator(token);
         Assert.Equal("N0CALL>APRS:>first connection", await NextAsync(packets));

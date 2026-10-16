@@ -22,34 +22,25 @@ public sealed class KissTcpClient : IAsyncDisposable
     private KissStreamClient? _kiss;
     private int _disposed;
 
-    /// <summary>Creates a client; nothing connects until <see cref="ConnectAsync"/>.</summary>
-    /// <param name="host">The TNC's host name or address.</param>
-    /// <param name="port">The TNC's KISS TCP port.</param>
-    /// <param name="tncPort">
-    /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
-    /// </param>
-    /// <param name="connectTimeout">How long to wait for the connection; 10 seconds when not given.</param>
-    /// <param name="transmitLimit">
-    /// How fast frames may be sent; a new <see cref="KissTransmitLimit"/> with the default settings when not given.
-    /// </param>
-    public KissTcpClient(
-        string host,
-        int port = DefaultPort,
-        int tncPort = 0,
-        TimeSpan? connectTimeout = null,
-        KissTransmitLimit? transmitLimit = null
-    )
+    /// <summary>
+    /// Creates a client for the TNC at <paramref name="host"/>:<paramref name="port"/> with the other settings at their
+    /// defaults; nothing connects until <see cref="ConnectAsync"/>.
+    /// </summary>
+    /// <exception cref="ArgumentException">The host is empty or the port is not 1 to 65535.</exception>
+    public KissTcpClient(string host, int port = DefaultPort)
+        : this(new KissTcpOptions { Host = host, Port = port }) { }
+
+    /// <summary>Creates a client with <paramref name="options"/>; nothing connects until <see cref="ConnectAsync"/>.</summary>
+    /// <exception cref="ArgumentException">A setting in <paramref name="options"/> is unusable.</exception>
+    public KissTcpClient(KissTcpOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(host);
-        ArgumentOutOfRangeException.ThrowIfLessThan(port, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, 65535);
-        ArgumentOutOfRangeException.ThrowIfNegative(tncPort);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(tncPort, 15);
-        _host = host;
-        _port = port;
-        _tncPort = tncPort;
-        _connectTimeout = connectTimeout ?? TimeSpan.FromSeconds(10);
-        TransmitLimit = transmitLimit ?? KissTransmitLimit.Default;
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        _host = options.Host;
+        _port = options.Port;
+        _tncPort = options.TncPort;
+        _connectTimeout = options.ConnectTimeout;
+        TransmitLimit = options.CreateTransmitLimit();
     }
 
     /// <inheritdoc cref="KissStreamClient.TransmitLimit"/>

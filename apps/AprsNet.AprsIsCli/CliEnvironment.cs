@@ -37,5 +37,13 @@ internal sealed class CliEnvironment
 
     /// <summary>A reconnecting KISS connection to the TNC at <paramref name="host"/>:<paramref name="port"/>.</summary>
     public KissTcpConnection CreateTncConnection(string host, int port) =>
-        new(host, port, reconnectDelay: ReconnectDelay, timeProvider: TimeProvider);
+        new(
+            new KissTcpOptions
+            {
+                Host = host,
+                Port = port,
+                ReconnectDelay = ReconnectDelay,
+                TimeProvider = TimeProvider,
+            }
+        );
 }

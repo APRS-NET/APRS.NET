@@ -681,7 +681,15 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         }
 
         var limit = environment.CreateTransmitLimit();
-        await using var client = new KissTcpClient(host, port, radioPort, transmitLimit: limit);
+        await using var client = new KissTcpClient(
+            new KissTcpOptions
+            {
+                Host = host,
+                Port = port,
+                TncPort = radioPort,
+                TransmitLimit = limit,
+            }
+        );
         try
         {
             await client.ConnectAsync(cancellationToken);

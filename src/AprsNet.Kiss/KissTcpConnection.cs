@@ -23,52 +23,35 @@ public sealed class KissTcpConnection : IAsyncDisposable
     private int _reading;
     private int _disposed;
 
-    /// <summary>Creates a connection; nothing connects until a read starts.</summary>
-    /// <param name="host">The TNC's host name or address.</param>
-    /// <param name="port">The TNC's KISS TCP port.</param>
-    /// <param name="tncPort">The radio port on a multi-port TNC, 0 to 15.</param>
-    /// <param name="reconnectDelay">The first wait before reconnecting; 5 seconds when not given.</param>
-    /// <param name="maxReconnectDelay">The longest wait between attempts; 60 seconds when not given.</param>
-    /// <param name="timeProvider">The clock for the waits.</param>
-    /// <param name="transmitLimit">
-    /// How fast frames may be sent, across reconnects; a new <see cref="KissTransmitLimit"/> with the default settings
-    /// and <paramref name="timeProvider"/> when not given.
-    /// </param>
-    public KissTcpConnection(
-        string host,
-        int port = KissTcpClient.DefaultPort,
-        int tncPort = 0,
-        TimeSpan? reconnectDelay = null,
-        TimeSpan? maxReconnectDelay = null,
-        TimeProvider? timeProvider = null,
-        KissTransmitLimit? transmitLimit = null
-    )
-        : this(ConnectTcp(host, port), tncPort, reconnectDelay, maxReconnectDelay, timeProvider, transmitLimit)
+    /// <summary>
+    /// Creates a connection to the TNC at <paramref name="host"/>:<paramref name="port"/> with the other settings at
+    /// their defaults; nothing connects until a read starts.
+    /// </summary>
+    /// <exception cref="ArgumentException">The host is empty or the port is not 1 to 65535.</exception>
+    public KissTcpConnection(string host, int port = KissTcpClient.DefaultPort)
+        : this(new KissTcpOptions { Host = host, Port = port }) { }
+
+    /// <summary>Creates a connection with <paramref name="options"/>; nothing connects until a read starts.</summary>
+    /// <exception cref="ArgumentException">A setting in <paramref name="options"/> is unusable.</exception>
+    public KissTcpConnection(KissTcpOptions options)
+        : this(ConnectTcp(Validated(options)), options) { }
+
+    internal KissTcpConnection(Func<CancellationToken, Task<Stream>> connect, KissTcpOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(host);
-        ArgumentOutOfRangeException.ThrowIfLessThan(port, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, 65535);
+        Validated(options);
+        ReconnectDelay = options.ReconnectDelay;
+        MaxReconnectDelay = options.MaxReconnectDelay;
+        _connect = connect;
+        _tncPort = options.TncPort;
+        _timeProvider = options.TimeProvider;
+        TransmitLimit = options.CreateTransmitLimit();
     }
 
-    internal KissTcpConnection(
-        Func<CancellationToken, Task<Stream>> connect,
-        int tncPort,
-        TimeSpan? reconnectDelay,
-        TimeSpan? maxReconnectDelay,
-        TimeProvider? timeProvider,
-        KissTransmitLimit? transmitLimit = null
-    )
+    private static KissTcpOptions Validated(KissTcpOptions options)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(tncPort);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(tncPort, 15);
-        ReconnectDelay = reconnectDelay ?? TimeSpan.FromSeconds(5);
-        MaxReconnectDelay = maxReconnectDelay ?? TimeSpan.FromSeconds(60);
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ReconnectDelay, TimeSpan.Zero, nameof(reconnectDelay));
-        ArgumentOutOfRangeException.ThrowIfLessThan(MaxReconnectDelay, ReconnectDelay, nameof(maxReconnectDelay));
-        _connect = connect;
-        _tncPort = tncPort;
-        _timeProvider = timeProvider ?? TimeProvider.System;
-        TransmitLimit = transmitLimit ?? new KissTransmitLimit(timeProvider: _timeProvider);
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        return options;
     }
 
     /// <summary>How fast frames may be sent; one limit covers every connection, and a send waits for its turn.</summary>
@@ -272,12 +255,14 @@ public sealed class KissTcpConnection : IAsyncDisposable
         _disposing.Dispose();
     }
 
-    private static Func<CancellationToken, Task<Stream>> ConnectTcp(string host, int port) =>
-        async token =>
+    private static Func<CancellationToken, Task<Stream>> ConnectTcp(KissTcpOptions options)
+    {
+        var (host, port, connectTimeout) = (options.Host, options.Port, options.ConnectTimeout);
+        return async token =>
         {
             var client = new TcpClient { NoDelay = true };
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-            timeout.CancelAfter(TimeSpan.FromSeconds(10));
+            timeout.CancelAfter(connectTimeout);
             try
             {
                 await client.ConnectAsync(host, port, timeout.Token).ConfigureAwait(false);
@@ -294,6 +279,7 @@ public sealed class KissTcpConnection : IAsyncDisposable
                 throw;
             }
         };
+    }
 
     /// <summary>A TCP client's stream that closes the client with it.</summary>
     private sealed class OwningStream(TcpClient client) : Stream

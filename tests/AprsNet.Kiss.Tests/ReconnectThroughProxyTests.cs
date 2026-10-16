@@ -28,7 +28,14 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
     public async ValueTask InitializeAsync()
     {
         _proxy = new ChaosProxy(_tnc.EndPoint);
-        _connection = new KissTcpConnection("127.0.0.1", _proxy.EndPoint.Port, timeProvider: _time);
+        _connection = new KissTcpConnection(
+            new KissTcpOptions
+            {
+                Host = "127.0.0.1",
+                Port = _proxy.EndPoint.Port,
+                TimeProvider = _time,
+            }
+        );
         _connection.ConnectionLost += (_, e) => _lost.Enqueue(e);
         _packets = _connection.ReadPacketsAsync(Token).GetAsyncEnumerator(Token);
         var first = _packets.MoveNextAsync().AsTask();
