@@ -8,7 +8,9 @@ namespace AprsNet.Kiss;
 /// <summary>
 /// A lasting connection to a KISS TNC over TCP: like <see cref="KissTcpClient"/>, but when the TNC closes the
 /// connection or cannot be reached it reconnects, waiting <see cref="ReconnectDelay"/> and doubling up to
-/// <see cref="MaxReconnectDelay"/>. The read streams carry on across reconnects until cancelled or disposed, so a
+/// <see cref="MaxReconnectDelay"/>. A connection that stayed up at least <see cref="MaxReconnectDelay"/> starts the
+/// waits again from <see cref="ReconnectDelay"/>; one the TNC drops straight away does not, so a TNC that accepts and
+/// then closes every connection is retried less and less often. The read streams carry on across reconnects until cancelled or disposed, so a
 /// restarted Dire Wolf or a soundmodem that starts after the app only pauses them.
 /// </summary>
 public sealed class KissTcpConnection : IAsyncDisposable
@@ -144,7 +146,7 @@ public sealed class KissTcpConnection : IAsyncDisposable
                     }
 
                     connectedBefore = true;
-                    delay = ReconnectDelay;
+                    var connectedAt = _timeProvider.GetTimestamp();
                     Volatile.Write(ref _current, client);
                     await using (client.ConfigureAwait(false))
                     {
@@ -179,6 +181,12 @@ public sealed class KissTcpConnection : IAsyncDisposable
                             Volatile.Write(ref _current, null);
                             await frames.DisposeAsync().ConfigureAwait(false);
                         }
+                    }
+
+                    // A connection that held for a while was not part of a failing streak: start the backoff again.
+                    if (_timeProvider.GetElapsedTime(connectedAt) >= MaxReconnectDelay)
+                    {
+                        delay = ReconnectDelay;
                     }
                 }
 
