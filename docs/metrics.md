@@ -52,16 +52,16 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 
 ## KISS
 
-On the meter `AprsNet.Kiss`. Every instrument has a `tnc` tag: the TNC's `host:port`, or `stream` for a
-`KissStreamClient` on a stream the app opened.
+On the meter `AprsNet.Kiss`. Every instrument has a `tnc` tag: the TNC's `host:port`, the port name for a
+`KissSerialConnection`, or `stream` for a `KissStreamClient` on a stream the app opened.
 
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |
 | `aprsnet.kiss.frames.received` | `{frame}` | `tnc` | AX.25 frames read from the TNC on the client's radio port |
 | `aprsnet.kiss.frames.sent` | `{frame}` | `tnc` | Frames sent to the TNC to transmit |
 | `aprsnet.kiss.frames.dropped` | `{frame}` | `tnc` | KISS frames dropped for an invalid escape or for being too long: a noisy link |
-| `aprsnet.kiss.connection.active` | `{connection}` | `tnc` | Up-down counter: TCP connections to the TNC open now |
-| `aprsnet.kiss.connection.reconnects` | `{reconnect}` | `tnc`, `cause`: `tnc_closed`, `socket_error`, `connect_failed` | Waits before `KissTcpConnection` reconnects |
+| `aprsnet.kiss.connection.active` | `{connection}` | `tnc` | Up-down counter: connections to the TNC open now, over TCP or a serial port |
+| `aprsnet.kiss.connection.reconnects` | `{reconnect}` | `tnc`, `cause`: `tnc_closed`, `socket_error`, `connect_failed` | Waits before a `KissTcpConnection` or `KissSerialConnection` reconnects; `socket_error` is any failure of the link, a serial port's included |
 
 ## Gateway
 
@@ -70,13 +70,13 @@ from a `GatewayFeed` also have a `source` tag, the name the app gave the source.
 
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |
-| `aprsnet.gateway.clients.connected` | `{client}` | `server` | Up-down counter: clients connected now, including any still logging in |
+| `aprsnet.gateway.clients.connected` | `{client}` | `server`, `protocol`: `aprs-is`, `websocket` | Up-down counter: clients connected now, including any still logging in |
 | `aprsnet.gateway.logins` | `{login}` | `server`, `verified`: `true`, `false` | Client logins, by whether the passcode verified them |
-| `aprsnet.gateway.clients.disconnected` | `{client}` | `server`, `reason`: `closed`, `invalid_login`, `login_timeout`, `overflow`, `server_stopping`, `server_full`, `error` | Clients disconnected or refused |
+| `aprsnet.gateway.clients.disconnected` | `{client}` | `server`, `protocol`, `reason`: `closed`, `invalid_login`, `login_timeout`, `invalid_message` (WebSocket), `overflow`, `server_stopping`, `server_full`, `error` | Clients disconnected or refused |
 | `aprsnet.gateway.packets.received` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` read, duplicates included |
 | `aprsnet.gateway.packets.duplicates` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` dropped because a source had already heard them |
 | `aprsnet.gateway.packets.published` | `{packet}` | `server` | Packets given to the server to send |
-| `aprsnet.gateway.packets.queued` | `{packet}` | `server` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
+| `aprsnet.gateway.packets.queued` | `{packet}` | `server`, `protocol` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
 
 ## Useful queries
 

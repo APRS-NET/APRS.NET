@@ -15,7 +15,7 @@ public sealed class StationStore
     private readonly TimeProvider _timeProvider;
     private readonly Dictionary<string, LinkedListNode<StationState>> _stations = new(StringComparer.OrdinalIgnoreCase);
     private readonly LinkedList<StationState> _byLastHeard = new();
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     /// <summary>Creates a store that remembers at most <paramref name="capacity"/> stations.</summary>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="capacity"/> is not positive.</exception>

@@ -1,4 +1,3 @@
-using System.IO.Ports;
 using System.Net;
 using AprsNet.Kiss;
 using AprsNet.Packets;
@@ -81,10 +80,8 @@ internal static class TncGuide
     public static async Task SerialAsync(CancellationToken cancellationToken)
     {
         #region tnc-serial
-        // A hardware TNC in KISS mode on a USB serial port (System.IO.Ports).
-        using var serial = new SerialPort("/dev/ttyUSB0", 9600);
-        serial.Open();
-        await using var tnc = new KissStreamClient(serial.BaseStream, ownsStream: false);
+        // A hardware TNC in KISS mode on a USB serial port (AprsNet.Kiss.Serial).
+        await using var tnc = new KissSerialConnection("/dev/ttyUSB0", 9600);
 
         await foreach (var packet in tnc.ReadPacketsAsync(cancellationToken))
         {

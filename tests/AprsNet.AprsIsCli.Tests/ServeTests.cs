@@ -127,6 +127,89 @@ public class ServeTests
     }
 
     [Fact]
+    public async Task ServesWebSocketClientsJson()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var tnc = new TcpListener(IPAddress.Loopback, 0);
+        tnc.Start();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var (port, webPort) = (FreePort(), FreePort());
+        var run = new CliHarness().RunAsync(
+            [
+                "serve",
+                "--tnc",
+                $"127.0.0.1:{((IPEndPoint)tnc.LocalEndpoint).Port}",
+                "--listen",
+                $"127.0.0.1:{port}",
+                "--http",
+                $"127.0.0.1:{webPort}",
+            ],
+            stop.Token
+        );
+
+        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var socket = new System.Net.WebSockets.ClientWebSocket();
+        var url = new Uri($"ws://127.0.0.1:{webPort}/aprs?filter=p/N");
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                await socket.ConnectAsync(url, token);
+                break;
+            }
+            catch (System.Net.WebSockets.WebSocketException) when (attempt < 100)
+            {
+                await Task.Delay(50, token);
+            }
+        }
+
+        var buffer = new byte[8192];
+        var greeting = await socket.ReceiveAsync(buffer, token);
+        Assert.Contains(
+            "\"filter\":\"p/N\"",
+            System.Text.Encoding.UTF8.GetString(buffer, 0, greeting.Count),
+            StringComparison.Ordinal
+        );
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>heard on RF"), token);
+        var packet = await socket.ReceiveAsync(buffer, token);
+        Assert.Contains(
+            "\"raw\":\"N1ABC>APRS,WIDE1-1:>heard on RF\"",
+            System.Text.Encoding.UTF8.GetString(buffer, 0, packet.Count),
+            StringComparison.Ordinal
+        );
+
+        using (var http = new TcpClient())
+        {
+            await http.ConnectAsync(IPAddress.Loopback, webPort, token);
+            await http.GetStream().WriteAsync("GET /health HTTP/1.1\r\nHost: x\r\n\r\n"u8.ToArray(), token);
+            var response = await new StreamReader(http.GetStream()).ReadToEndAsync(token);
+            Assert.StartsWith("HTTP/1.1 200 ", response, StringComparison.Ordinal);
+            Assert.Contains("\"status\":\"healthy\"", response, StringComparison.Ordinal);
+            Assert.Contains("\"connected\":true", response, StringComparison.Ordinal);
+        }
+
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(
+            $"on http://127.0.0.1:{webPort} (WebSocket clients at /aprs",
+            result.Error,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public async Task AnUnusableHttpAddressIsRefused()
+    {
+        var result = await new CliHarness().RunAsync(
+            ["serve", "-f", "p/N0", "--http", "localhost"],
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("--http 'localhost' is not valid.", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task APacketOnAprsIsAndTheTncIsServedOnce()
     {
         var token = TestContext.Current.CancellationToken;

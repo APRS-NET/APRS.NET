@@ -23,12 +23,14 @@ Packages are published to nuget.org as pre-releases, so pass `--prerelease`:
 
 ```sh
 dotnet add package AprsNet.Packets --prerelease
+dotnet add package AprsNet.Packets.Json --prerelease
 dotnet add package AprsNet.AprsIsTcpClient --prerelease
 dotnet add package AprsNet.Symbols --prerelease
 dotnet add package AprsNet.DeviceId --prerelease
 dotnet add package AprsNet.Filters --prerelease
 dotnet add package AprsNet.Ax25 --prerelease
 dotnet add package AprsNet.Kiss --prerelease
+dotnet add package AprsNet.Kiss.Serial --prerelease
 dotnet add package AprsNet.Gateway --prerelease
 dotnet add package AprsNet.Extensions.DependencyInjection --prerelease
 ```
@@ -46,18 +48,21 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 
 - [Getting started with a TNC](docs/guides/tnc.md): read and send packets through Dire Wolf or a serial TNC.
 - [Getting started with the gateway](docs/guides/gateway.md): serve APRS-IS and your TNCs to APRS-IS clients.
+- [Run the gateway in a container](docs/guides/container.md): the `aprscli` image, and a compose sample with Dire Wolf.
 
 ## Layout
 
 | Path                          | Contents                                                                  |
 |-------------------------------|---------------------------------------------------------------------------|
 | `src/AprsNet.Packets`         | Packet models, parser, encoder (no I/O)                                   |
+| `src/AprsNet.Packets.Json`    | Packets as documented JSON objects, for web apps, logs and pipes |
 | `src/AprsNet.AprsIsTcpClient` | APRS-IS client                                                            |
 | `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
 | `src/AprsNet.Filters`         | APRS-IS filters: build them from typed terms, and evaluate them locally   |
 | `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0) |
 | `src/AprsNet.Ax25`            | AX.25 UI frames: decode and encode what a TNC sends and receives          |
 | `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit and a KISS TCP server |
+| `src/AprsNet.Kiss.Serial`     | KISS TNCs on a serial port, reopened after an unplug, and the ports present |
 | `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
 | `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |
 | `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool                                           |

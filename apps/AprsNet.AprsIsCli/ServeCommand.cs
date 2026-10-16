@@ -42,7 +42,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
     {
         Description =
             $"Also serve what a KISS TNC hears, as host[:port] (default port {KissTcpClient.DefaultPort}, Dire "
-            + "Wolf's). Repeat for several TNCs. A lost TNC is reconnected.",
+            + "Wolf's) or serial:PORT[@BAUD] for a TNC on a serial port. Repeat for several TNCs. A lost or "
+            + "unplugged TNC is reconnected.",
         Arity = ArgumentArity.ZeroOrMore,
     };
 
@@ -52,6 +53,14 @@ internal sealed class ServeCommand(CliEnvironment environment)
             $"Address and port to serve on. Default: {_defaultListen} (this computer only); use 0.0.0.0:14580 to "
             + "serve your network.",
         DefaultValueFactory = _ => _defaultListen,
+    };
+
+    private readonly Option<string?> _http = new("--http")
+    {
+        Description =
+            "Also serve HTTP on this address:port, for example 127.0.0.1:14590: WebSocket clients at "
+            + "ws://address:port/aprs get JSON packets and set their filter in the URL or a message, and /health "
+            + "says whether each source is connected (503 when none is). Default: off.",
     };
 
     private readonly Option<string> _name = new("--name")
@@ -77,7 +86,9 @@ internal sealed class ServeCommand(CliEnvironment environment)
             "Serve an APRS-IS feed, KISS TNCs or both to local APRS-IS clients, each with its own filter. A packet "
                 + "heard on several sources is served once. Clients are read-only."
         );
-        foreach (var option in new Option[] { _callsign, _server, _filter, _tnc, _listen, _name, _history, _duration })
+        foreach (
+            var option in new Option[] { _callsign, _server, _filter, _tnc, _listen, _http, _name, _history, _duration }
+        )
         {
             command.Options.Add(option);
         }
@@ -100,8 +111,9 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
     private sealed record ServeOptions(
         AprsIsClientOptions? Upstream,
-        IReadOnlyList<(string Host, int Port)> Tncs,
+        IReadOnlyList<TncAddress> Tncs,
         AprsIsServerOptions Local,
+        IPEndPoint? Http,
         TimeSpan? Duration
     );
 
@@ -116,22 +128,22 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        var tncs = new List<(string Host, int Port)>();
+        var tncs = new List<TncAddress>();
         foreach (var text in parseResult.GetValue(_tnc) ?? [])
         {
-            if (!TncCommand.TryParseAddress(text, out var host, out var port))
+            if (!TncAddress.TryParse(text, out var address))
             {
-                error = $"--tnc '{text}' is not valid. Use host or host:port, such as localhost:8001.";
+                error = $"--tnc '{text}' is not valid. Use {TncAddress.Forms}, such as {TncAddress.Examples}.";
                 return false;
             }
 
-            if (tncs.Contains((host, port)))
+            if (tncs.Any(t => t.ToString() == address.ToString()))
             {
                 error = $"--tnc '{text}' is given twice.";
                 return false;
             }
 
-            tncs.Add((host, port));
+            tncs.Add(address);
         }
 
         AprsFilter? parsedFilter = null;
@@ -156,6 +168,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
         )
         {
             error = $"--listen '{listenText}' is not valid. Use address:port, for example {_defaultListen}.";
+            return false;
+        }
+
+        IPEndPoint? http = null;
+        if (parseResult.GetValue(_http) is { } httpText && !IPEndPoint.TryParse(httpText, out http))
+        {
+            error = $"--http '{httpText}' is not valid. Use address:port, for example 127.0.0.1:14590.";
             return false;
         }
 
@@ -208,7 +227,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, tncs, local, duration);
+        options = new ServeOptions(upstream, tncs, local, http, duration);
         error = "";
         return true;
     }
@@ -229,6 +248,22 @@ internal sealed class ServeCommand(CliEnvironment environment)
         catch (SocketException ex)
         {
             await environment.Error.WriteLineAsync($"aprscli: cannot serve on {options.Local.EndPoint}: {ex.Message}");
+            return ExitCodes.Error;
+        }
+
+        await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
+        var health = new GatewayHealth(feed, environment.TimeProvider);
+        await using var hub = options.Http is null ? null : new AprsWebSocketHub(server);
+        await using var web = hub is null
+            ? null
+            : new GatewayWebServer(hub, new GatewayWebServerOptions { EndPoint = options.Http!, Health = health });
+        try
+        {
+            web?.Start();
+        }
+        catch (SocketException ex)
+        {
+            await environment.Error.WriteLineAsync($"aprscli: cannot serve on {options.Http}: {ex.Message}");
             return ExitCodes.Error;
         }
 
@@ -265,23 +300,23 @@ internal sealed class ServeCommand(CliEnvironment environment)
             }
         }
 
-        await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
         var sources = new List<Task>();
         var described = new List<string>();
         if (connection is not null)
         {
             sources.Add(feed.AddSource(AprsIsSource, PacketsAsync(connection.ReadLinesAsync(run.Token))));
+            health.AddSource(AprsIsSource, () => connection.State == AprsIsConnectionState.Connected);
             described.Add($"{options.Upstream!.Endpoint} ({options.Upstream.Filter})");
         }
 
-        var tncs = new List<KissTcpConnection>();
+        var tncs = new List<KissConnection>();
         try
         {
-            foreach (var (host, port) in options.Tncs)
+            foreach (var address in options.Tncs)
             {
-                var tnc = environment.CreateTncConnection(host, port);
+                var tnc = environment.CreateTncConnection(address);
                 tncs.Add(tnc);
-                var name = $"{host}:{port}";
+                var name = address.ToString();
                 tnc.StateChanged += (_, e) =>
                 {
                     if (e.State != KissConnectionState.Reconnecting)
@@ -297,12 +332,18 @@ internal sealed class ServeCommand(CliEnvironment environment)
                     );
                 };
                 sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
+                health.AddSource(name, () => tnc.IsConnected);
                 described.Add($"the TNC at {name}");
             }
 
             await environment.Error.WriteLineAsync(
                 $"aprscli: serving {string.Join(" and ", described)} on {server.LocalEndPoint} as "
                     + $"{options.Local.ServerName}"
+                    + (
+                        web is null
+                            ? ""
+                            : $", and on http://{web.LocalEndPoint} (WebSocket clients at /aprs, health at /health)"
+                    )
             );
 
             try
@@ -327,7 +368,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
         await environment.Error.WriteLineAsync(
             $"aprscli: served {feed.Published} packets ({feed.Duplicates} duplicates dropped); "
-                + $"{server.ClientsDroppedForOverflow} clients dropped for falling behind"
+                + $"{server.ClientsDroppedForOverflow + (hub?.ClientsDroppedForOverflow ?? 0)} clients dropped for "
+                + "falling behind"
         );
         var counts = feed.GetSourceCounts();
         if (counts.Count > 1)

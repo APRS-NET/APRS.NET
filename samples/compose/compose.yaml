@@ -1,0 +1,42 @@
+# A gateway that serves what a radio hears through Dire Wolf, plus an APRS-IS feed, to APRS-IS clients on port 14580
+# and to WebSocket clients on port 14590. See docs/guides/container.md.
+#
+#   cd samples/compose
+#   edit direwolf.conf (MYCALL, ADEVICE) and the filter below
+#   docker compose up -d
+#   docker compose ps          # the gateway's health
+
+services:
+  direwolf:
+    build: ./direwolf
+    devices:
+      - /dev/snd:/dev/snd # the sound card the radio is on
+    group_add:
+      - audio
+    volumes:
+      - ./direwolf.conf:/etc/direwolf.conf:ro
+    command: ["direwolf", "-c", "/etc/direwolf.conf", "-t", "0"]
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ../..
+    # A packet heard both on the air and on APRS-IS is served once. Drop -f to serve the radio only.
+    command:
+      - serve
+      - --tnc
+      - direwolf:8001
+      - -f
+      - r/38.98/-94.67/300
+      - --listen
+      - 0.0.0.0:14580
+      - --http
+      - 0.0.0.0:14590
+      - --history
+      - 10m
+    ports:
+      - "14580:14580"
+      - "14590:14590"
+    depends_on:
+      - direwolf
+    restart: unless-stopped

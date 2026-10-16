@@ -4,7 +4,7 @@ namespace AprsNet.Kiss;
 
 /// <summary>
 /// Instruments for KISS clients, on the <c>AprsNet.Kiss</c> meter. Every measurement carries a <c>tnc</c> tag: the TNC's
-/// <c>host:port</c> for TCP, or <c>stream</c> for a <see cref="KissStreamClient"/> on a stream the app opened.
+/// <c>host:port</c> for TCP, the port name for a serial connection, or <c>stream</c> for a <see cref="KissStreamClient"/> on a stream the app opened.
 /// </summary>
 internal static class KissMetrics
 {
@@ -36,7 +36,7 @@ internal static class KissMetrics
     private static readonly UpDownCounter<long> _active = _meter.CreateUpDownCounter<long>(
         "aprsnet.kiss.connection.active",
         "{connection}",
-        "TCP connections to TNCs open now."
+        "Connections to TNCs open now, over TCP or a serial port."
     );
 
     private static readonly Counter<long> _reconnects = _meter.CreateCounter<long>(

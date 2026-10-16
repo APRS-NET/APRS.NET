@@ -663,14 +663,17 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
     {
         if (parseResult.GetValue(_tnc) is not { } tncText)
         {
-            return await UsageAsync(commandName, "--tnc is required: the TNC to transmit through, as host[:port].");
+            return await UsageAsync(
+                commandName,
+                $"--tnc is required: the TNC to transmit through, as {TncAddress.Forms}."
+            );
         }
 
-        if (!TncCommand.TryParseAddress(tncText, out var host, out var port))
+        if (!TncAddress.TryParse(tncText, out var address))
         {
             return await UsageAsync(
                 commandName,
-                $"--tnc '{tncText.Trim()}' is not valid. Use host or host:port, such as localhost:8001."
+                $"--tnc '{tncText.Trim()}' is not valid. Use {TncAddress.Forms}, such as {TncAddress.Examples}."
             );
         }
 
@@ -681,18 +684,10 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         }
 
         var limit = environment.CreateTransmitLimit();
-        await using var client = new KissTcpClient(
-            new KissTcpOptions
-            {
-                Host = host,
-                Port = port,
-                TncPort = radioPort,
-                TransmitLimit = limit,
-            }
-        );
+        TncLink? client = null;
         try
         {
-            await client.ConnectAsync(cancellationToken);
+            client = await TncLink.OpenAsync(address, radioPort, limit, cancellationToken);
             for (var i = 0; i < frames.Length; i++)
             {
                 if (i == limit.Burst && limit.IsOn)
@@ -707,10 +702,10 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 await environment.Out.WriteLineAsync(packets[i].ToString());
             }
         }
-        catch (Exception ex) when (ex is System.Net.Sockets.SocketException or TimeoutException or IOException)
+        catch (Exception ex) when (TncLink.IsLinkFailure(ex))
         {
             await environment.Error.WriteLineAsync(
-                $"aprscli: could not send through the TNC at {host}:{port}: {ex.Message}"
+                $"aprscli: could not send through the TNC at {address}: {ex.Message}"
             );
             return ExitCodes.ConnectionFailed;
         }
@@ -718,6 +713,13 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         {
             await environment.Error.WriteLineAsync("aprscli: cancelled.");
             return ExitCodes.Success;
+        }
+        finally
+        {
+            if (client is not null)
+            {
+                await client.DisposeAsync();
+            }
         }
 
         if (isMessage)

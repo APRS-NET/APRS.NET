@@ -95,3 +95,29 @@ jobs:
         run: |
           dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" \
             --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  container:
+    # Pushes the aprscli image for the release to the GitHub Container Registry, as ghcr.io/<owner>/aprscli:<version>.
+    # Skipped until the PUBLISH_CONTAINER repository variable is 'true'. See docs/guides/container.md.
+    needs: [release-please, pack]
+    if: vars.PUBLISH_CONTAINER == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - name: Build and push
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          version="${TAG#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/aprscli"
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker build --build-arg VERSION="$version" -t "$image:$version" .
+          docker push "$image:$version"

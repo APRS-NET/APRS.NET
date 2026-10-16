@@ -13,5 +13,6 @@
   <ItemGroup>
     <ProjectReference Include="../AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
     <ProjectReference Include="../AprsNet.Filters/AprsNet.Filters.csproj" />
+    <ProjectReference Include="../AprsNet.Packets.Json/AprsNet.Packets.Json.csproj" />
   </ItemGroup>
 </Project>

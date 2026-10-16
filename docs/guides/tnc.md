@@ -100,16 +100,20 @@ await using var tnc = new KissTcpConnection(
 
 ## A hardware TNC on a serial port
 
-Put the TNC in KISS mode, open the port with `System.IO.Ports`, and hand its stream to `KissStreamClient`, which reads
-and sends the same way over any stream (a serial port, Bluetooth, a pipe). It does not reconnect: if the port goes
-away, the read ends and you open it again.
+Put the TNC in KISS mode and use `KissSerialConnection` from `AprsNet.Kiss.Serial`
+(`dotnet add package AprsNet.Kiss.Serial --prerelease`). It is a `KissConnection`, like `KissTcpConnection`: it opens
+the port when you start reading and opens it again, waiting 2 seconds and doubling to 30, if the port fails or the TNC
+is unplugged and plugged back in. `KissSerialConnection.GetPortNames()` lists the ports present. Most USB TNCs run at
+9600 baud; the NinoTNC uses 57600.
+
+On Linux, a USB TNC may come back as `/dev/ttyUSB1` after a replug; use its stable name under `/dev/serial/by-id/`.
+To manage the port yourself, or for a Bluetooth link, hand its stream to `KissStreamClient`, which reads and sends the
+same way over any stream but doesn't reconnect.
 
 <!-- snippet: tnc-serial -->
 ```csharp
-// A hardware TNC in KISS mode on a USB serial port (System.IO.Ports).
-using var serial = new SerialPort("/dev/ttyUSB0", 9600);
-serial.Open();
-await using var tnc = new KissStreamClient(serial.BaseStream, ownsStream: false);
+// A hardware TNC in KISS mode on a USB serial port (AprsNet.Kiss.Serial).
+await using var tnc = new KissSerialConnection("/dev/ttyUSB0", 9600);
 
 await foreach (var packet in tnc.ReadPacketsAsync(cancellationToken))
 {

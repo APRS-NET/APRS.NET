@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/AprsNet.Kiss/AprsNet.Kiss.csproj" />
+    <ProjectReference Include="../../src/AprsNet.Kiss.Serial/AprsNet.Kiss.Serial.csproj" />
     <Compile Include="../AprsNet.AprsIsTcpClient.Tests/ChaosProxy.cs" Link="ChaosProxy.cs" />
   </ItemGroup>
 

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>APRS packets as JSON: one documented object per packet, with the raw line, header, parse issues and decoded fields, for web apps, logs and pipes. Written with Utf8JsonWriter, so it trims and compiles ahead of time.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <InternalsVisibleTo Include="AprsNet.Packets.Json.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Packets/AprsNet.Packets.csproj" />
+    <ProjectReference Include="../AprsNet.Symbols/AprsNet.Symbols.csproj" />
+  </ItemGroup>
+</Project>

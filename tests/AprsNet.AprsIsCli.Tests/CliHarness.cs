@@ -43,6 +43,9 @@ internal sealed class CliHarness
     /// <summary>The transmit limit for <c>tnc send</c>: none by default, so tests do not wait.</summary>
     public Func<KissTransmitLimit> TransmitLimit { get; set; } = () => KissTransmitLimit.Off;
 
+    /// <summary>The serial ports <c>tnc ports</c> finds.</summary>
+    public IReadOnlyList<string> SerialPorts { get; set; } = [];
+
     /// <summary>How many transports the connection asked for, which is one per connection attempt.</summary>
     public int ConnectionAttempts { get; private set; }
 
@@ -79,6 +82,7 @@ internal sealed class CliHarness
             TimeProvider = Time,
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
+            GetSerialPortNames = () => SerialPorts,
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
             CreateConnection = (options, logger) =>
             {

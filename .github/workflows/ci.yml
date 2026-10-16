@@ -214,10 +214,40 @@ jobs:
             exit 1
           fi
 
+  container:
+    # Builds the aprscli image and checks it serves, offline: a gateway whose only TNC can't be reached still answers
+    # APRS-IS clients with its banner, and /health with 503. See docs/guides/container.md.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: docker build -t aprscli:ci .
+      - name: Smoke test
+        run: |
+          docker run -d --name gateway -p 127.0.0.1:14580:14580 -p 127.0.0.1:14590:14590 aprscli:ci \
+            serve --tnc 127.0.0.1:1 --listen 0.0.0.0:14580 --http 0.0.0.0:14590
+          trap 'docker logs gateway; docker rm -f gateway > /dev/null' EXIT
+          for _ in $(seq 30); do
+            status="$(curl -s -o health.json -w '%{http_code}' http://127.0.0.1:14590/health || true)"
+            [ "$status" != "000" ] && break
+            sleep 1
+          done
+          cat health.json; echo
+          [ "$status" = "503" ] || { echo "::error::/health answered $status, not 503"; exit 1; }
+          jq -e '.status == "unhealthy" and .sources["127.0.0.1:1"].connected == false' health.json > /dev/null
+          banner="$(timeout 5 bash -c 'exec 3<>/dev/tcp/127.0.0.1/14580; head -n 1 <&3')"
+          echo "$banner"
+          case "$banner" in "# aprscli "*) ;; *) echo "::error::Unexpected banner"; exit 1 ;; esac
+          docker exec gateway dotnet /app/aprscli.dll health || [ $? -eq 1 ]
+
   ci-ok:
     # The one check to require on main: it passes when every job above passed, or was skipped for a docs-only change.
     if: always()
-    needs: [changes, build, coverage, format, tools]
+    needs: [changes, build, coverage, format, tools, container]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
