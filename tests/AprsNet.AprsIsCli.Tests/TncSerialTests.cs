@@ -63,6 +63,11 @@ public sealed class TncSerialTests
         );
         Assert.Equal(2, result.ExitCode);
         Assert.Contains($"could not connect to the TNC at {Missing}", result.Error, StringComparison.Ordinal);
+        if (OperatingSystem.IsLinux())
+        {
+            // .NET says "access denied" for a device that isn't there; the message says what's wrong.
+            Assert.Contains($"{Missing} is not present", result.Error, StringComparison.Ordinal);
+        }
     }
 
     [Fact]

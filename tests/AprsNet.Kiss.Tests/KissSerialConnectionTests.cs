@@ -67,6 +67,46 @@ public sealed class KissSerialConnectionTests
     }
 
     [Fact]
+    public async Task APortThatDotNetClosedWhenTheTncWasUnpluggedIsReconnected()
+    {
+        // On Linux an unplug makes .NET close the port, and the next read throws "The port is closed".
+        var before = new FakeTnc();
+        var after = new FakeTnc();
+        var attempts = 0;
+        await using var connection = Connection(_ =>
+            Task.FromResult<Stream>(
+                ++attempts == 1
+                    ? new KissSerialConnection.SerialPortStream(before, before)
+                    : new KissSerialConnection.SerialPortStream(after, after)
+            )
+        );
+        var states = new List<KissConnectionStateChangedEventArgs>();
+        connection.StateChanged += (_, e) =>
+        {
+            lock (states)
+            {
+                states.Add(e);
+            }
+        };
+
+        before.Send(Kiss("N0CALL>APRS:>before"));
+        await using var packets = connection
+            .ReadPacketsAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+        Assert.Equal("N0CALL>APRS:>before", await NextAsync(packets));
+
+        before.Fail(new ObjectDisposedException(null, "The port is closed."));
+        after.Send(Kiss("N0CALL>APRS:>after"));
+        var next = NextAsync(packets);
+        await WaitUntil(() => Reconnecting(states).Count == 1);
+        _time.Advance(TimeSpan.FromSeconds(2));
+
+        Assert.Equal("N0CALL>APRS:>after", await next);
+        var lost = Assert.IsType<IOException>(Reconnecting(states)[0].Error);
+        Assert.IsType<ObjectDisposedException>(lost.InnerException);
+    }
+
+    [Fact]
     public async Task APortAnotherProgramHoldsIsTriedAgain()
     {
         var tnc = new FakeTnc();
