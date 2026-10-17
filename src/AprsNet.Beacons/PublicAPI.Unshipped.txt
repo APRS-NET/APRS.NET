@@ -1,0 +1,37 @@
+#nullable enable
+AprsNet.Beacons.BeaconDue
+AprsNet.Beacons.BeaconDue.At.get -> System.DateTimeOffset
+AprsNet.Beacons.BeaconDue.At.init -> void
+AprsNet.Beacons.BeaconDue.BeaconDue(System.DateTimeOffset At, AprsNet.Beacons.BeaconReason Reason) -> void
+AprsNet.Beacons.BeaconDue.BeaconDue() -> void
+AprsNet.Beacons.BeaconDue.Deconstruct(out System.DateTimeOffset At, out AprsNet.Beacons.BeaconReason Reason) -> void
+AprsNet.Beacons.BeaconDue.Equals(AprsNet.Beacons.BeaconDue other) -> bool
+AprsNet.Beacons.BeaconDue.Reason.get -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconDue.Reason.init -> void
+AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconReason.Changed = 3 -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconReason.Decay = 2 -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconReason.Interval = 1 -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconReason.Start = 0 -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconSchedule
+AprsNet.Beacons.BeaconSchedule.Changed() -> void
+AprsNet.Beacons.BeaconSchedule.DueIn.get -> System.TimeSpan
+AprsNet.Beacons.BeaconSchedule.IsDue.get -> bool
+AprsNet.Beacons.BeaconSchedule.LastSent.get -> System.DateTimeOffset?
+AprsNet.Beacons.BeaconSchedule.Next.get -> AprsNet.Beacons.BeaconDue
+AprsNet.Beacons.BeaconSchedule.Sent() -> void
+AprsNet.Beacons.BeaconSchedule.Time.get -> System.TimeProvider!
+AprsNet.Beacons.DecayBeaconSchedule
+AprsNet.Beacons.DecayBeaconSchedule.Ceiling.get -> System.TimeSpan
+AprsNet.Beacons.DecayBeaconSchedule.DecayBeaconSchedule(System.TimeSpan firstStep, System.TimeSpan ceiling, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Beacons.DecayBeaconSchedule.FirstStep.get -> System.TimeSpan
+AprsNet.Beacons.FixedBeaconSchedule
+AprsNet.Beacons.FixedBeaconSchedule.FixedBeaconSchedule(System.TimeSpan interval, System.TimeSpan? startDelay = null, System.TimeProvider? timeProvider = null, System.Random? random = null) -> void
+AprsNet.Beacons.FixedBeaconSchedule.Interval.get -> System.TimeSpan
+AprsNet.Beacons.FixedBeaconSchedule.StartDelay.get -> System.TimeSpan
+~override AprsNet.Beacons.BeaconDue.Equals(object obj) -> bool
+override AprsNet.Beacons.BeaconDue.GetHashCode() -> int
+~override AprsNet.Beacons.BeaconDue.ToString() -> string
+static AprsNet.Beacons.BeaconDue.operator !=(AprsNet.Beacons.BeaconDue left, AprsNet.Beacons.BeaconDue right) -> bool
+static AprsNet.Beacons.BeaconDue.operator ==(AprsNet.Beacons.BeaconDue left, AprsNet.Beacons.BeaconDue right) -> bool
+static readonly AprsNet.Beacons.FixedBeaconSchedule.MaxStartDelay -> System.TimeSpan
