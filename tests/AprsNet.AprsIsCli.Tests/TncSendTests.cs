@@ -55,9 +55,9 @@ public sealed class TncSendTests : IDisposable
             Token
         );
 
-        Assert.Equal($"KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1:>Testing{Environment.NewLine}", usual.Out);
-        Assert.Equal($"KD9XYZ-9>APZNET:>Testing{Environment.NewLine}", direct.Out);
-        Assert.Equal($"KD9XYZ-9>APZNET,WIDE2-2:>Testing{Environment.NewLine}", custom.Out);
+        Assert.Equal($"KD9XYZ-9>APNETL,WIDE1-1,WIDE2-1:>Testing{Environment.NewLine}", usual.Out);
+        Assert.Equal($"KD9XYZ-9>APNETL:>Testing{Environment.NewLine}", direct.Out);
+        Assert.Equal($"KD9XYZ-9>APNETL,WIDE2-2:>Testing{Environment.NewLine}", custom.Out);
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class TncSendTests : IDisposable
         ]);
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1::N1ABC-7  :Hello{Environment.NewLine}", result.Out);
+        Assert.Equal($"KD9XYZ-9>APNETL,WIDE1-1,WIDE2-1::N1ABC-7  :Hello{Environment.NewLine}", result.Out);
         Assert.Single(new KissDecoder().Decode(received));
         Assert.Contains("no acknowledgement is expected", result.Error, StringComparison.Ordinal);
     }

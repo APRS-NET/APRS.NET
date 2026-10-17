@@ -78,7 +78,7 @@ var reading = Task.Run(
 await connected.Task.WaitAsync(cancellationToken);
 
 // Your callsign, APRS.NET's TOCALL and the usual two-hop path.
-var me = PacketAddress.Parse("N0CALL-9", "APZNET", ["WIDE1-1", "WIDE2-1"]);
+var me = PacketAddress.Parse("N0CALL-9", "APNETL", ["WIDE1-1", "WIDE2-1"]);
 await tnc.SendAsync(me.Create(new StatusReport { Text = "On the air with APRS.NET" }), cancellationToken);
 ```
 
