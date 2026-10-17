@@ -28,6 +28,7 @@ public abstract class KissConnection : IAsyncDisposable
     private KissStreamClient? _current;
     private int _reading;
     private int _disposed;
+    private int _textWarning;
 
     private protected KissConnection(
         Func<CancellationToken, Task<Stream>> connect,
@@ -75,6 +76,13 @@ public abstract class KissConnection : IAsyncDisposable
     public event EventHandler<KissConnectionStateChangedEventArgs>? StateChanged;
 
     /// <summary>
+    /// Fires when the TNC starts sending something other than KISS frames, and again when it stops, on the reading
+    /// thread. Across reconnects a warning fires once, and is over when frames arrive again on any connection. See
+    /// <see cref="KissWarning"/>.
+    /// </summary>
+    public event EventHandler<KissWarningEventArgs>? Warning;
+
+    /// <summary>
     /// Yields every AX.25 frame the TNC passes on, connecting and reconnecting as needed. Disposing the connection
     /// ends the stream; cancelling <paramref name="cancellationToken"/> throws <see cref="OperationCanceledException"/>.
     /// One reader at a time.
@@ -112,6 +120,7 @@ public abstract class KissConnection : IAsyncDisposable
                     {
                         MetricsTnc = _tnc,
                     };
+                    client.Warning += (_, e) => SetTextWarning(e.IsActive);
                 }
                 catch (Exception e) when (IsLinkFailure(e))
                 {
@@ -159,6 +168,7 @@ public abstract class KissConnection : IAsyncDisposable
                                     break;
                                 }
 
+                                SetTextWarning(false); // a frame came, so the TNC speaks KISS (again)
                                 yield return frames.Current;
                             }
                         }
@@ -278,6 +288,14 @@ public abstract class KissConnection : IAsyncDisposable
     // or one another program holds or the user may not open.
     private static bool IsLinkFailure(Exception e) =>
         e is SocketException or IOException or TimeoutException or UnauthorizedAccessException;
+
+    private void SetTextWarning(bool active)
+    {
+        if (Interlocked.Exchange(ref _textWarning, active ? 1 : 0) != (active ? 1 : 0))
+        {
+            Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.TextNotKiss, active));
+        }
+    }
 
     private void SetState(KissConnectionState state, Exception? error = null, TimeSpan? retryIn = null)
     {
