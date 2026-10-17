@@ -32,7 +32,8 @@ public enum OutgoingMessageState
 
 /// <summary>
 /// A message a <see cref="MessagingStation"/> is sending, from <see cref="MessagingStation.Send"/>: its ID, and where
-/// it has got to. <see cref="StateChanged"/> fires on each change, on the thread that caused it.
+/// it has got to. <see cref="StateChanged"/> fires on each change and <see cref="Attempted"/> on each send, on the
+/// thread that caused it.
 /// </summary>
 public sealed class OutgoingMessage
 {
@@ -83,6 +84,15 @@ public sealed class OutgoingMessage
     /// <summary>Fires when <see cref="State"/> changes.</summary>
     public event EventHandler? StateChanged;
 
+    /// <summary>
+    /// Fires each time it is sent again (every retry, and the extra try when its station is heard again) once
+    /// <see cref="Attempts"/>, <see cref="LastSent"/> and <see cref="NextDue"/> say so, and after any
+    /// <see cref="StateChanged"/> the send causes. Retries leave the state at <see cref="OutgoingMessageState.Retrying"/>,
+    /// so this is how a UI hears of them: "attempt 3, next try in 4 minutes". The first send happens within
+    /// <see cref="MessagingStation.Send"/>, so <see cref="Attempts"/> is already 1 when it returns.
+    /// </summary>
+    public event EventHandler? Attempted;
+
     /// <summary>When it failed, for retrying when the station is heard again.</summary>
     internal DateTimeOffset? FailedAt { get; set; }
 
@@ -103,6 +113,9 @@ public sealed class OutgoingMessage
         State = state;
         return () => StateChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>The <see cref="Attempted"/> event to raise once the station's lock is released.</summary>
+    internal Action RaiseAttempted => () => Attempted?.Invoke(this, EventArgs.Empty);
 
     /// <inheritdoc />
     public override string ToString() => $"to {To}: {Text} ({MessageId ?? "no ID"}, {State})";
