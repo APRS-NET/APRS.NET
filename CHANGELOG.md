@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.3...v0.4.0-alpha.4) (2026-10-17)
+
+
+### Features
+
+* **aprs-is:** say so when a login reaches a KISS TNC ([7bb2078](https://github.com/APRS-NET/APRS.NET/commit/7bb20781edf9d5ebf9134264af409984d84e63b0)), closes [#232](https://github.com/APRS-NET/APRS.NET/issues/232)
+* **cli:** add --quiet-warning to tnc listen and serve ([8ee36dd](https://github.com/APRS-NET/APRS.NET/commit/8ee36ddc421feb65acc097c335714b2a7fe0b597)), closes [#234](https://github.com/APRS-NET/APRS.NET/issues/234)
+* **cli:** hold a message conversation through a TNC ([8f9b0af](https://github.com/APRS-NET/APRS.NET/commit/8f9b0afc8f2ec8958708d66546a462eadc9b895d)), closes [#235](https://github.com/APRS-NET/APRS.NET/issues/235)
+* **cli:** print a TNC's warnings in tnc listen and serve ([cf10aee](https://github.com/APRS-NET/APRS.NET/commit/cf10aee959d8f11eed9bdc52b75f8ab1e0d1cb5b)), closes [#232](https://github.com/APRS-NET/APRS.NET/issues/232)
+* **cli:** say when a lost TNC is back ([3a560c2](https://github.com/APRS-NET/APRS.NET/commit/3a560c29ba5d4673790bd4034b93f5bf48833e15))
+* **gateway:** show a quiet source in the health report ([cf97d29](https://github.com/APRS-NET/APRS.NET/commit/cf97d29ce8858de658c409f3a8f0f7168f05df7c)), closes [#234](https://github.com/APRS-NET/APRS.NET/issues/234)
+* **kiss:** warn when a TNC goes quiet behind a port that stays open ([d1896af](https://github.com/APRS-NET/APRS.NET/commit/d1896af8e65eeabb2b3c1ddd3c0f34e6b258e785)), closes [#234](https://github.com/APRS-NET/APRS.NET/issues/234)
+* **kiss:** warn when a TNC sends text instead of KISS frames ([e46a79a](https://github.com/APRS-NET/APRS.NET/commit/e46a79aafe2f17cf3014d7cf93d62b54069f3e9b)), closes [#232](https://github.com/APRS-NET/APRS.NET/issues/232)
+
+
+### Bug Fixes
+
+* **kiss:** land the serial TNC stack on main ([bd99641](https://github.com/APRS-NET/APRS.NET/commit/bd996410dd48746b7d9007092f463c4611653845))
+* **kiss:** take an unplugged serial TNC for a lost link ([47bb12a](https://github.com/APRS-NET/APRS.NET/commit/47bb12a42249884e4fb45290fd2357228d1bbcaa))
+
 ## [0.4.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.2...v0.4.0-alpha.3) (2026-10-17)
 
 
