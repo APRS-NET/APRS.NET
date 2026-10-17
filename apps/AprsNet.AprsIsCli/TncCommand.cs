@@ -109,20 +109,7 @@ internal sealed class TncCommand(CliEnvironment environment)
         if (parseResult.GetValue(_reconnect))
         {
             await using var connection = environment.CreateTncConnection(address, parseResult.GetValue(_radioPort));
-            connection.StateChanged += (_, e) =>
-            {
-                if (e.State != KissConnectionState.Reconnecting)
-                {
-                    return;
-                }
-
-                var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
-                environment.Error.WriteLine(
-                    e.Error is null
-                        ? $"aprscli: the TNC at {address} closed the connection; reconnecting in {retry}s."
-                        : $"aprscli: lost the TNC at {address}: {e.Error.Message}; reconnecting in {retry}s."
-                );
-            };
+            ReportReconnects(connection, address.ToString(), environment.Error);
             try
             {
                 await PrintAsync(connection.ReadPacketsAsync(run.Token), format, count);
@@ -171,6 +158,33 @@ internal sealed class TncCommand(CliEnvironment environment)
 
         await environment.Error.WriteLineAsync($"aprscli: the TNC at {address} closed the connection.");
         return ExitCodes.ConnectionFailed;
+    }
+
+    /// <summary>
+    /// Prints a line when a TNC is lost, with the wait before the next try, and when it is back: for
+    /// <c>tnc listen --reconnect</c> and <c>serve</c>.
+    /// </summary>
+    internal static void ReportReconnects(KissConnection connection, string name, TextWriter error)
+    {
+        var lost = false;
+        connection.StateChanged += (_, e) =>
+        {
+            if (e.State == KissConnectionState.Connected && lost)
+            {
+                lost = false;
+                error.WriteLine($"aprscli: reconnected to the TNC at {name}.");
+            }
+            else if (e.State == KissConnectionState.Reconnecting)
+            {
+                lost = true;
+                var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+                error.WriteLine(
+                    e.Error is null
+                        ? $"aprscli: the TNC at {name} closed the connection; reconnecting in {retry}s."
+                        : $"aprscli: lost the TNC at {name}: {e.Error.Message}; reconnecting in {retry}s."
+                );
+            }
+        };
     }
 
     private async Task<int> ListPortsAsync(ParseResult parseResult, CancellationToken cancellationToken)

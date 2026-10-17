@@ -92,6 +92,7 @@ public sealed class TncTests : IDisposable
             result.Out
         );
         Assert.Contains("closed the connection; reconnecting in 0s.", result.Error, StringComparison.Ordinal);
+        Assert.Contains($"reconnected to the TNC at {Address}.", result.Error, StringComparison.Ordinal);
     }
 
     [Fact]

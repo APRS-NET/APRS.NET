@@ -317,20 +317,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 var tnc = environment.CreateTncConnection(address);
                 tncs.Add(tnc);
                 var name = address.ToString();
-                tnc.StateChanged += (_, e) =>
-                {
-                    if (e.State != KissConnectionState.Reconnecting)
-                    {
-                        return;
-                    }
-
-                    var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
-                    environment.Error.WriteLine(
-                        e.Error is null
-                            ? $"aprscli: the TNC at {name} closed the connection; reconnecting in {retry}s."
-                            : $"aprscli: lost the TNC at {name}: {e.Error.Message}; reconnecting in {retry}s."
-                    );
-                };
+                TncCommand.ReportReconnects(tnc, name, environment.Error);
                 sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
                 health.AddSource(name, () => tnc.IsConnected);
                 described.Add($"the TNC at {name}");
