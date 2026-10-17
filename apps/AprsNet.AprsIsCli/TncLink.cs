@@ -39,9 +39,13 @@ internal sealed class TncLink : IAsyncDisposable
     {
         if (address.SerialPort is { } name)
         {
+            // DTR and RTS raised, as KissSerialConnection opens a port: some radios (the Kenwood TH-D72A among them)
+            // hold their output while RTS is low.
             var serial = new SerialPort(name, address.BaudRate, Parity.None, 8, StopBits.One)
             {
                 Handshake = Handshake.None,
+                DtrEnable = true,
+                RtsEnable = true,
             };
             try
             {
