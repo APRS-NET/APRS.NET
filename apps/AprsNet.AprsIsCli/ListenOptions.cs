@@ -7,6 +7,9 @@ internal sealed record ListenOptions
 {
     public required AprsIsEndpoint Endpoint { get; init; }
 
+    /// <summary>Log in only to receive, as a listener ID, because no callsign was given.</summary>
+    public bool ListenOnly { get; init; }
+
     /// <summary>Connect over TLS.</summary>
     public bool UseTls { get; init; }
 

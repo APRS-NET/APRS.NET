@@ -10,8 +10,8 @@ docker run -d --name gateway -p 14580:14580 -p 14590:14590 aprscli \
   serve -c YOURCALL -f "r/38.98/-94.67/300" --listen 0.0.0.0:14580 --http 0.0.0.0:14590 --history 10m
 ```
 
-- **Callsign:** `-c` is the callsign for the read-only APRS-IS login; give your own. Some APRS-IS servers refuse the
-  default, N0CALL ("Login by user not allowed"), and `aprscli` then exits.
+- **Callsign:** `-c` is the callsign for the read-only APRS-IS login; give your own. Without it, `aprscli` logs in
+  with a generated listener ID such as `SWL482913`, which receives only.
 
 - **Listen on `0.0.0.0` inside the container.** The defaults, 127.0.0.1, can't be reached through a published port.
   Publish the ports to `127.0.0.1` on the host (`-p 127.0.0.1:14580:14580`) to keep the gateway to your computer.

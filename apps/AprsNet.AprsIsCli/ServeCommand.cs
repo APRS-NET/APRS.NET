@@ -23,7 +23,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
     private readonly Option<string?> _callsign = new("--callsign", "-c")
     {
         Description =
-            $"Callsign for the read-only upstream login, with optional SSID. Default: {ListenCommand.DefaultCallsign}.",
+            "Callsign for the read-only upstream login, with optional SSID. Default: a listener ID such as SWL482913.",
     };
 
     private readonly Option<string?> _server = new("--server", "-s")
@@ -120,7 +120,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
     private bool TryBind(ParseResult parseResult, out ServeOptions options, out string error)
     {
         options = null!;
-        var callsign = (parseResult.GetValue(_callsign) ?? ListenCommand.DefaultCallsign).Trim().ToUpperInvariant();
+        var listenOnly = parseResult.GetValue(_callsign) is null;
+        var callsign = (parseResult.GetValue(_callsign) ?? environment.NewListenerId()).Trim().ToUpperInvariant();
         var endpoint = AprsIsEndpoint.Rotate;
         if (parseResult.GetValue(_server) is { } server && !AprsIsEndpoint.TryParse(server, out endpoint!))
         {
@@ -203,6 +204,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             {
                 Endpoint = endpoint,
                 Callsign = callsign,
+                ListenOnly = listenOnly,
                 Filter = parsedFilter.ToString(),
                 SoftwareName = "aprscli",
                 TimeProvider = environment.TimeProvider,
