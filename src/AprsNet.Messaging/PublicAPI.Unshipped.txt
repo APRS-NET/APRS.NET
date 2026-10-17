@@ -1,0 +1,100 @@
+#nullable enable
+AprsNet.Messaging.IncomingMessage
+AprsNet.Messaging.IncomingMessage.<Clone>$() -> AprsNet.Messaging.IncomingMessage!
+AprsNet.Messaging.IncomingMessage.Deconstruct(out AprsNet.Packets.Callsign! From, out string! Text, out string? MessageId, out System.DateTimeOffset ReceivedAt, out string? Source, out AprsNet.Packets.AprsPacket! Packet) -> void
+AprsNet.Messaging.IncomingMessage.Equals(AprsNet.Messaging.IncomingMessage? other) -> bool
+AprsNet.Messaging.IncomingMessage.From.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.IncomingMessage.From.init -> void
+AprsNet.Messaging.IncomingMessage.IncomingMessage(AprsNet.Packets.Callsign! From, string! Text, string? MessageId, System.DateTimeOffset ReceivedAt, string? Source, AprsNet.Packets.AprsPacket! Packet) -> void
+AprsNet.Messaging.IncomingMessage.MessageId.get -> string?
+AprsNet.Messaging.IncomingMessage.MessageId.init -> void
+AprsNet.Messaging.IncomingMessage.Packet.get -> AprsNet.Packets.AprsPacket!
+AprsNet.Messaging.IncomingMessage.Packet.init -> void
+AprsNet.Messaging.IncomingMessage.ReceivedAt.get -> System.DateTimeOffset
+AprsNet.Messaging.IncomingMessage.ReceivedAt.init -> void
+AprsNet.Messaging.IncomingMessage.Source.get -> string?
+AprsNet.Messaging.IncomingMessage.Source.init -> void
+AprsNet.Messaging.IncomingMessage.Text.get -> string!
+AprsNet.Messaging.IncomingMessage.Text.init -> void
+AprsNet.Messaging.MessageReceivedEventArgs
+AprsNet.Messaging.MessageReceivedEventArgs.Message.get -> AprsNet.Messaging.IncomingMessage!
+AprsNet.Messaging.MessagingStation
+AprsNet.Messaging.MessagingStation.Cancel(AprsNet.Messaging.OutgoingMessage! message) -> void
+AprsNet.Messaging.MessagingStation.Dispose() -> void
+AprsNet.Messaging.MessagingStation.LastMessageIdChanged -> System.EventHandler?
+AprsNet.Messaging.MessagingStation.LastMessageId.get -> string?
+AprsNet.Messaging.MessagingStation.MessageReceived -> System.EventHandler<AprsNet.Messaging.MessageReceivedEventArgs!>?
+AprsNet.Messaging.MessagingStation.MessagingStation(AprsNet.Packets.Callsign! station, AprsNet.Messaging.MessagingStationOptions? options = null) -> void
+AprsNet.Messaging.MessagingStationOptions
+AprsNet.Messaging.MessagingStationOptions.AckRepeats.get -> int
+AprsNet.Messaging.MessagingStationOptions.AckRepeats.set -> void
+AprsNet.Messaging.MessagingStationOptions.LastMessageId.get -> string?
+AprsNet.Messaging.MessagingStationOptions.LastMessageId.set -> void
+AprsNet.Messaging.MessagingStationOptions.MessagingStationOptions() -> void
+AprsNet.Messaging.MessagingStationOptions.ReceiveWindow.get -> System.TimeSpan
+AprsNet.Messaging.MessagingStationOptions.ReceiveWindow.set -> void
+AprsNet.Messaging.MessagingStationOptions.RetryOnHeardWindow.get -> System.TimeSpan
+AprsNet.Messaging.MessagingStationOptions.RetryOnHeardWindow.set -> void
+AprsNet.Messaging.MessagingStationOptions.RetryProfile.get -> AprsNet.Messaging.RetryProfile!
+AprsNet.Messaging.MessagingStationOptions.RetryProfile.set -> void
+AprsNet.Messaging.MessagingStationOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Messaging.MessagingStationOptions.TimeProvider.set -> void
+AprsNet.Messaging.MessagingStationOptions.Validate() -> void
+AprsNet.Messaging.MessagingStation.ReadOutgoingAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Messaging.OutgoingPacket!>!
+AprsNet.Messaging.MessagingStation.Receive(AprsNet.Packets.AprsPacket! packet, string? source = null) -> void
+AprsNet.Messaging.MessagingStation.Reject(AprsNet.Messaging.IncomingMessage! message) -> void
+AprsNet.Messaging.MessagingStation.Send(AprsNet.Packets.Callsign! to, string! text, AprsNet.Messaging.RetryProfile? retryProfile = null, bool withId = true) -> AprsNet.Messaging.OutgoingMessage!
+AprsNet.Messaging.MessagingStation.Station.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.OutgoingMessage
+AprsNet.Messaging.OutgoingMessage.Attempts.get -> int
+AprsNet.Messaging.OutgoingMessage.IsFinished.get -> bool
+AprsNet.Messaging.OutgoingMessage.LastSent.get -> System.DateTimeOffset?
+AprsNet.Messaging.OutgoingMessage.MessageId.get -> string?
+AprsNet.Messaging.OutgoingMessage.NextDue.get -> System.DateTimeOffset?
+AprsNet.Messaging.OutgoingMessage.RetryProfile.get -> AprsNet.Messaging.RetryProfile!
+AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessageState.Cancelled = 6 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessage.StateChanged -> System.EventHandler?
+AprsNet.Messaging.OutgoingMessageState.Delivered = 3 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessageState.Failed = 5 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessage.State.get -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessageState.Queued = 0 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessageState.Rejected = 4 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessageState.Retrying = 2 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessageState.Sent = 1 -> AprsNet.Messaging.OutgoingMessageState
+AprsNet.Messaging.OutgoingMessage.Text.get -> string!
+AprsNet.Messaging.OutgoingMessage.To.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.OutgoingPacket
+AprsNet.Messaging.OutgoingPacket.<Clone>$() -> AprsNet.Messaging.OutgoingPacket!
+AprsNet.Messaging.OutgoingPacket.Deconstruct(out AprsNet.Packets.MessagePayload! Payload, out AprsNet.Packets.Callsign! To, out string? Source) -> void
+AprsNet.Messaging.OutgoingPacket.Equals(AprsNet.Messaging.OutgoingPacket? other) -> bool
+AprsNet.Messaging.OutgoingPacket.OutgoingPacket(AprsNet.Packets.MessagePayload! Payload, AprsNet.Packets.Callsign! To, string? Source) -> void
+AprsNet.Messaging.OutgoingPacket.Payload.get -> AprsNet.Packets.MessagePayload!
+AprsNet.Messaging.OutgoingPacket.Payload.init -> void
+AprsNet.Messaging.OutgoingPacket.Source.get -> string?
+AprsNet.Messaging.OutgoingPacket.Source.init -> void
+AprsNet.Messaging.OutgoingPacket.To.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.OutgoingPacket.To.init -> void
+AprsNet.Messaging.RetryProfile
+AprsNet.Messaging.RetryProfile.AckWait.get -> System.TimeSpan
+AprsNet.Messaging.RetryProfile.Name.get -> string!
+AprsNet.Messaging.RetryProfile.RetryDelays.get -> System.Collections.Generic.IReadOnlyList<System.TimeSpan>!
+AprsNet.Messaging.RetryProfile.RetryProfile(string! name, System.Collections.Generic.IEnumerable<System.TimeSpan>! retryDelays, System.TimeSpan ackWait) -> void
+AprsNet.Messaging.RetryProfile.Sends.get -> int
+override AprsNet.Messaging.IncomingMessage.Equals(object? obj) -> bool
+override AprsNet.Messaging.IncomingMessage.GetHashCode() -> int
+override AprsNet.Messaging.IncomingMessage.ToString() -> string!
+override AprsNet.Messaging.OutgoingMessage.ToString() -> string!
+override AprsNet.Messaging.OutgoingPacket.Equals(object? obj) -> bool
+override AprsNet.Messaging.OutgoingPacket.GetHashCode() -> int
+override AprsNet.Messaging.OutgoingPacket.ToString() -> string!
+override AprsNet.Messaging.RetryProfile.ToString() -> string!
+static AprsNet.Messaging.IncomingMessage.operator !=(AprsNet.Messaging.IncomingMessage? left, AprsNet.Messaging.IncomingMessage? right) -> bool
+static AprsNet.Messaging.IncomingMessage.operator ==(AprsNet.Messaging.IncomingMessage? left, AprsNet.Messaging.IncomingMessage? right) -> bool
+static AprsNet.Messaging.OutgoingPacket.operator !=(AprsNet.Messaging.OutgoingPacket? left, AprsNet.Messaging.OutgoingPacket? right) -> bool
+static AprsNet.Messaging.OutgoingPacket.operator ==(AprsNet.Messaging.OutgoingPacket? left, AprsNet.Messaging.OutgoingPacket? right) -> bool
+static AprsNet.Messaging.RetryProfile.AprsIs.get -> AprsNet.Messaging.RetryProfile!
+static AprsNet.Messaging.RetryProfile.Default.get -> AprsNet.Messaging.RetryProfile!
+static AprsNet.Messaging.RetryProfile.None.get -> AprsNet.Messaging.RetryProfile!
+static AprsNet.Messaging.RetryProfile.SlowHf.get -> AprsNet.Messaging.RetryProfile!
+static readonly AprsNet.Messaging.RetryProfile.MinimumGap -> System.TimeSpan

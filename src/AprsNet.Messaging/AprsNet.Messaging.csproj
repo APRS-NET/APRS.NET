@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>APRS message conversations for one station: message IDs, retries until an ack, reply-acks, and acks for what it receives, over APRS-IS, a KISS TNC or both.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <InternalsVisibleTo Include="AprsNet.Messaging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Packets/AprsNet.Packets.csproj" />
+  </ItemGroup>
+</Project>
