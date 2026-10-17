@@ -18,6 +18,20 @@ await foreach (var packet in client.ReadPacketsAsync())
         Console.WriteLine($"{packet.Source} at {position.Position.Latitude:0.0000}, {position.Position.Longitude:0.0000}");
 ```
 
+### Without a callsign
+
+Someone without a licence can still receive. Set `ListenOnly`, and the client logs in with a generated listener ID such
+as `SWL482913` (`SWL` and six random digits, which no callsign can be), always read-only, and refuses to send:
+
+```csharp
+var options = new AprsIsClientOptions { ListenOnly = true, Filter = "r/38.98/-94.67/50" };
+options.Validate();                                    // fills in options.Callsign, such as SWL482913
+Console.WriteLine($"Listening as {options.Callsign}");
+```
+
+`AprsIsLogin.IsListenerId` tells a listener ID from a callsign, to show "listening as …" or refuse to set up
+transmitting. A listener ID is too long for an AX.25 address, so it can never be a packet's source.
+
 ## Server presets
 
 `AprsIsServerPreset.All` lists the aprs2.net rotates for a server picker, worldwide first, each with a stable key to

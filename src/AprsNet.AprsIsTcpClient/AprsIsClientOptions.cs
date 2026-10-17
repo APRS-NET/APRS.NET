@@ -15,8 +15,18 @@ public sealed class AprsIsClientOptions
     /// <summary>Server to connect to. Defaults to the worldwide Tier 2 rotate on port 14580.</summary>
     public AprsIsEndpoint Endpoint { get; set; } = AprsIsEndpoint.Rotate;
 
-    /// <summary>Login callsign, with optional SSID (for example <c>N0CALL-10</c>). Required.</summary>
+    /// <summary>
+    /// Login callsign, with optional SSID (for example <c>N0CALL-10</c>). Required, unless <see cref="ListenOnly"/> is
+    /// set, which fills in a listener ID.
+    /// </summary>
     public string Callsign { get; set; } = "";
+
+    /// <summary>
+    /// Log in only to receive, for someone without a callsign. <see cref="Validate"/> fills an empty
+    /// <see cref="Callsign"/> with a new listener ID (<see cref="AprsIsLogin.NewListenerId"/>), the login always uses
+    /// passcode <c>-1</c> whatever <see cref="Passcode"/> says, and sending is refused. Off by default.
+    /// </summary>
+    public bool ListenOnly { get; set; }
 
     /// <summary>APRS-IS passcode. <c>-1</c> logs in read-only. Never logged.</summary>
     public int Passcode { get; set; } = -1;
@@ -109,18 +119,26 @@ public sealed class AprsIsClientOptions
     /// <summary>What to do when the receive queue is full.</summary>
     public OverflowPolicy OverflowPolicy { get; set; } = OverflowPolicy.Block;
 
-    /// <summary>True when the passcode is <c>-1</c>, so the login cannot transmit.</summary>
-    public bool IsReadOnly => Passcode == -1;
+    /// <summary>True when the login cannot transmit: the passcode is <c>-1</c>, or <see cref="ListenOnly"/> is set.</summary>
+    public bool IsReadOnly => Passcode == -1 || ListenOnly;
+
+    /// <summary>The passcode the login line carries: <c>-1</c> when <see cref="ListenOnly"/> is set.</summary>
+    internal int LoginPasscode => ListenOnly ? -1 : Passcode;
 
     /// <summary>
     /// Throws <see cref="ArgumentException"/> if any setting is unusable. Settings a person types (callsign, software
     /// name and version, filter) throw <see cref="AprsValidationException"/>, whose
-    /// <see cref="AprsValidationException.Code"/> says why.
+    /// <see cref="AprsValidationException.Code"/> says why. With <see cref="ListenOnly"/> and no
+    /// <see cref="Callsign"/>, fills in a new listener ID first.
     /// </summary>
     public void Validate()
     {
         ArgumentNullException.ThrowIfNull(Endpoint);
         ArgumentNullException.ThrowIfNull(TimeProvider);
+        if (ListenOnly && string.IsNullOrEmpty(Callsign))
+        {
+            Callsign = AprsIsLogin.NewListenerId();
+        }
 
         if (Callsign is not { Length: >= 1 and <= 9 })
         {

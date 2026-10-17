@@ -199,6 +199,11 @@ public sealed class AprsIsConnection : IAsyncDisposable
     public async ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(packet);
+        if (_options.ListenOnly)
+        {
+            throw AprsIsClient.ListenOnlyRefusal(_options.Callsign); // at once, without waiting for a connection
+        }
+
         while (true)
         {
             var client = await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);

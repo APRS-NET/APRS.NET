@@ -60,4 +60,7 @@ internal sealed class CliEnvironment
 
     /// <summary>The serial ports present, for <c>tnc ports</c>; tests replace it.</summary>
     public Func<IReadOnlyList<string>> GetSerialPortNames { get; init; } = KissSerialConnection.GetPortNames;
+
+    /// <summary>Makes the listener ID used when no <c>--callsign</c> is given; tests replace it.</summary>
+    public Func<string> NewListenerId { get; init; } = () => AprsIsLogin.NewListenerId();
 }

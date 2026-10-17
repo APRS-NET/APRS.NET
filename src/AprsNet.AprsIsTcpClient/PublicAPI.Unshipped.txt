@@ -161,3 +161,9 @@ AprsNet.AprsIsTcpClient.AprsIsTlsFailure.CertificateRejected = 0 -> AprsNet.Aprs
 AprsNet.AprsIsTcpClient.AprsIsTlsFailure.HandshakeFailed = 1 -> AprsNet.AprsIsTcpClient.AprsIsTlsFailure
 AprsNet.AprsIsTcpClient.TcpAprsTransport.TcpAprsTransport(AprsNet.AprsIsTcpClient.AprsIsClientOptions! options, Microsoft.Extensions.Logging.ILogger? logger) -> void
 const AprsNet.AprsIsTcpClient.AprsIsPorts.Tls = 24580 -> int
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ListenOnly.get -> bool
+AprsNet.AprsIsTcpClient.AprsIsClientOptions.ListenOnly.set -> void
+AprsNet.AprsIsTcpClient.AprsIsLogin
+const AprsNet.AprsIsTcpClient.AprsIsLogin.ListenerPrefix = "SWL" -> string!
+static AprsNet.AprsIsTcpClient.AprsIsLogin.IsListenerId(string? login) -> bool
+static AprsNet.AprsIsTcpClient.AprsIsLogin.NewListenerId(System.Random? random = null) -> string!

@@ -19,7 +19,9 @@ internal sealed class ListenCommand
 
     private readonly Option<string?> _callsign = new("--callsign", "-c")
     {
-        Description = $"Login callsign, with optional SSID. Default: {DefaultCallsign}.",
+        Description =
+            "Login callsign, with optional SSID. Default: a listener ID such as SWL482913, which logs in to receive "
+            + "only.",
     };
 
     private readonly Option<int?> _passcode = new("--passcode")
@@ -194,7 +196,9 @@ internal sealed class ListenCommand
     {
         options = null!;
 
-        var callsign = (parseResult.GetValue(_callsign) ?? DefaultCallsign).Trim().ToUpperInvariant();
+        // Without a callsign, a listener ID: someone without a licence never needs to borrow one.
+        var listenOnly = parseResult.GetValue(_callsign) is null;
+        var callsign = (parseResult.GetValue(_callsign) ?? _environment.NewListenerId()).Trim().ToUpperInvariant();
 
         var passcode = -1;
         if (parseResult.GetValue(_passcode) is { } explicitPasscode)
@@ -300,6 +304,7 @@ internal sealed class ListenCommand
                 Callsign = callsign,
                 Passcode = passcode,
                 Filter = filter,
+                ListenOnly = listenOnly,
             }.Validate();
         }
         catch (ArgumentException ex)
@@ -311,6 +316,7 @@ internal sealed class ListenCommand
         options = new ListenOptions
         {
             Endpoint = endpoint,
+            ListenOnly = listenOnly,
             UseTls = parseResult.GetValue(_tls),
             Callsign = callsign,
             Passcode = passcode,

@@ -26,6 +26,7 @@ internal static class ListenRunner
             UseTls = options.UseTls,
             Callsign = options.Callsign,
             Passcode = options.Passcode,
+            ListenOnly = options.ListenOnly,
             Filter = options.Filter,
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
@@ -117,7 +118,14 @@ internal static class ListenRunner
             await environment.Error.WriteLineAsync(
                 $"aprscli: login rejected by {options.Endpoint}: {ex.ServerMessage}"
             );
-            if (options.Callsign == ListenCommand.DefaultCallsign)
+            if (options.ListenOnly)
+            {
+                await environment.Error.WriteLineAsync(
+                    $"This server refused the listener ID {options.Callsign}. "
+                        + "Run again (the rotate may pick another server) or pass --callsign."
+                );
+            }
+            else if (options.Callsign == ListenCommand.DefaultCallsign)
             {
                 await environment.Error.WriteLineAsync(
                     $"Some servers refuse the placeholder callsign {ListenCommand.DefaultCallsign}. "

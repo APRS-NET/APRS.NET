@@ -63,6 +63,9 @@ internal sealed class CliHarness
         Reconnects.Enqueue(transport);
     }
 
+    /// <summary>The listener ID a run gets when no callsign is given.</summary>
+    public string ListenerId { get; init; } = "SWL482913";
+
     public CliHarness LoginAccepted(string callsign = "NZ0P")
     {
         Transport.Server("# aprsc 2.1.test");
@@ -86,6 +89,7 @@ internal sealed class CliHarness
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
             GetSerialPortNames = () => SerialPorts,
+            NewListenerId = () => ListenerId,
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
             CreateConnection = (options, logger) =>
             {

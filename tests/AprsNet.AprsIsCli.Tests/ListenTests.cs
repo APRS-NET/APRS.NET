@@ -980,7 +980,7 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task RejectedDefaultCallsignExplainsAndExits4()
+    public async Task ARejectedListenerIdExplainsAndExits4()
     {
         var harness = new CliHarness();
         harness.Transport.Server("# aprsc 2.1.21-gbfc2090");
@@ -990,9 +990,21 @@ public class ListenTests
 
         Assert.Equal(4, result.ExitCode);
         Assert.Contains("Login by user not allowed", result.Error, StringComparison.Ordinal);
-        Assert.Contains("placeholder callsign N0CALL", result.Error, StringComparison.Ordinal);
+        Assert.Contains("refused the listener ID SWL482913", result.Error, StringComparison.Ordinal);
         Assert.Contains("--callsign", result.Error, StringComparison.Ordinal);
         Assert.Equal("", result.Out);
+    }
+
+    [Fact]
+    public async Task RejectedPlaceholderCallsignExplainsAndExits4()
+    {
+        var harness = new CliHarness();
+        harness.Transport.Server("# Login by user not allowed");
+
+        var result = await harness.RunAsync(["listen", "-c", "N0CALL"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(4, result.ExitCode);
+        Assert.Contains("placeholder callsign N0CALL", result.Error, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -1019,15 +1031,28 @@ public class ListenTests
     }
 
     [Fact]
-    public async Task DefaultsAreN0callReadOnlyOnTheWorldwideRotate()
+    public async Task DefaultsAreAListenerIdOnTheWorldwideRotate()
     {
-        var harness = new CliHarness().LoginAccepted("N0CALL");
+        var harness = new CliHarness { Environment = { ["APRS_PASSCODE"] = "12345" } }.LoginAccepted("SWL482913");
 
         await harness.RunAsync(["listen", "-d", "0.1s"], TestContext.Current.CancellationToken);
 
-        Assert.Equal("N0CALL", harness.ClientOptions!.Callsign);
-        Assert.Equal(-1, harness.ClientOptions.Passcode);
+        // A listener ID, listen-only: logged in with -1 even though a passcode is in the environment.
+        Assert.Equal("SWL482913", harness.ClientOptions!.Callsign);
+        Assert.True(harness.ClientOptions.ListenOnly);
+        Assert.Contains("user SWL482913 pass -1 ", harness.Transport.Written[0], StringComparison.Ordinal);
         Assert.Equal("rotate.aprs2.net:14580", harness.ClientOptions.Endpoint.ToString());
+    }
+
+    [Fact]
+    public async Task AGivenCallsignIsNotListenOnly()
+    {
+        var harness = new CliHarness().LoginAccepted("NZ0P");
+
+        await harness.RunAsync(["listen", "-c", "nz0p", "-d", "0.1s"], TestContext.Current.CancellationToken);
+
+        Assert.Equal("NZ0P", harness.ClientOptions!.Callsign);
+        Assert.False(harness.ClientOptions.ListenOnly);
     }
 
     [Theory]

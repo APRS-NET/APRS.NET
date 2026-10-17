@@ -29,7 +29,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 
 | Option | Meaning |
 | --- | --- |
-| `-c`, `--callsign` | Login callsign. Default `N0CALL`. Some servers refuse it; pass your own if so. |
+| `-c`, `--callsign` | Login callsign. Default: a listener ID such as `SWL482913`, which logs in to receive only, for anyone without a licence. |
 | `--passcode` | Passcode, default `-1` (read-only). Prefer the `APRS_PASSCODE` environment variable: an option is visible in the process list and shell history. Never printed or logged. |
 | `-s`, `--server host[:port]` | Server. Not combinable with `--region`. Default `rotate.aprs2.net:14580`. |
 | `-r`, `--region` | `noam`, `soam`, `euro`, `asia` or `aunz` rotate. |
@@ -197,7 +197,7 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 
 | Option | Meaning |
 | --- | --- |
-| `-c`, `--callsign` | Callsign for the upstream login. Default: `N0CALL`. |
+| `-c`, `--callsign` | Callsign for the upstream login. Default: a listener ID such as `SWL482913` (receive only). |
 | `-s`, `--server` | Upstream server as `host[:port]`. Default: `rotate.aprs2.net:14580`. |
 | `-f`, `--filter` | Upstream filter: everything clients can ask for. Without it, APRS-IS is not used and only `--tnc` sources are served. |
 | `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's) or `serial:PORT[@BAUD]` (default 9600 baud). Repeat for several. A lost or unplugged TNC is reconnected. |
