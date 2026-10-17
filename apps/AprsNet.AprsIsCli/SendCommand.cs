@@ -557,6 +557,18 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
         if (parseResult.GetValue(_dryRun))
         {
+            if (message is not null && !toTnc)
+            {
+                // As the station sends it, with the message ID a real send would get.
+                using var station = new MessagingStation(address.Source);
+                station.Send(Callsign.Parse(message.Addressee), message.Text);
+                await foreach (var outgoing in station.ReadOutgoingAsync(cancellationToken))
+                {
+                    packets = [address.Create(outgoing.Payload)];
+                    break;
+                }
+            }
+
             foreach (var packet in packets)
             {
                 await environment.Out.WriteLineAsync(packet.ToString());
