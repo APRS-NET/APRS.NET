@@ -14,7 +14,9 @@ namespace AprsNet.Gateway;
 /// </remarks>
 public sealed class GatewayHealth
 {
-    private readonly ConcurrentDictionary<string, Func<bool>> _sources = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, (Func<bool> IsConnected, Func<bool>? IsQuiet)> _sources = new(
+        StringComparer.Ordinal
+    );
     private readonly GatewayFeed? _feed;
     private readonly TimeProvider _timeProvider;
 
@@ -29,11 +31,19 @@ public sealed class GatewayHealth
 
     /// <summary>Adds a source, with a check that says whether it is connected now. Keep the check quick.</summary>
     /// <exception cref="ArgumentException">A source with that name is already added, or the name is empty.</exception>
-    public void AddSource(string name, Func<bool> isConnected)
+    public void AddSource(string name, Func<bool> isConnected) => AddSource(name, isConnected, null);
+
+    /// <summary>
+    /// Adds a source, with a check that says whether it is connected now, and one that says whether it has gone quiet,
+    /// such as a TNC's <c>KissWarning.Quiet</c> warning. A quiet source is reported as such but
+    /// still counts as connected, since a quiet channel looks the same. Keep the checks quick.
+    /// </summary>
+    /// <exception cref="ArgumentException">A source with that name is already added, or the name is empty.</exception>
+    public void AddSource(string name, Func<bool> isConnected, Func<bool>? isQuiet)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(isConnected);
-        if (!_sources.TryAdd(name, isConnected))
+        if (!_sources.TryAdd(name, (isConnected, isQuiet)))
         {
             throw new ArgumentException($"A source named '{name}' is already added.", nameof(name));
         }
@@ -49,19 +59,12 @@ public sealed class GatewayHealth
     public GatewayHealthReport Check()
     {
         var sources = new SortedDictionary<string, GatewaySourceHealth>(StringComparer.Ordinal);
-        foreach (var (name, isConnected) in _sources)
+        foreach (var (name, (isConnected, isQuiet)) in _sources)
         {
-            bool connected;
-            try
+            sources[name] = new GatewaySourceHealth(Try(isConnected), _feed?.LastPacketAt(name))
             {
-                connected = isConnected();
-            }
-            catch (Exception)
-            {
-                connected = false;
-            }
-
-            sources[name] = new GatewaySourceHealth(connected, _feed?.LastPacketAt(name));
+                IsQuiet = isQuiet is not null && Try(isQuiet),
+            };
         }
 
         var up = sources.Values.Count(s => s.IsConnected);
@@ -70,6 +73,19 @@ public sealed class GatewayHealth
             : up > 0 ? GatewayHealthStatus.Degraded
             : GatewayHealthStatus.Unhealthy;
         return new GatewayHealthReport(status, sources, _timeProvider.GetUtcNow());
+    }
+
+    // A check that throws counts as false: not connected, or not known to be quiet.
+    private static bool Try(Func<bool> check)
+    {
+        try
+        {
+            return check();
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 }
 
@@ -99,4 +115,11 @@ public sealed record GatewayHealthReport(
 /// <summary>One source's health.</summary>
 /// <param name="IsConnected">Whether it is connected now.</param>
 /// <param name="LastPacket">When it last delivered a packet to the feed, if it has and a feed was given.</param>
-public readonly record struct GatewaySourceHealth(bool IsConnected, DateTimeOffset? LastPacket);
+public readonly record struct GatewaySourceHealth(bool IsConnected, DateTimeOffset? LastPacket)
+{
+    /// <summary>
+    /// Whether it has gone quiet: connected, but nothing has arrived for a while. Only known for a source added with a
+    /// quiet check.
+    /// </summary>
+    public bool IsQuiet { get; init; }
+}

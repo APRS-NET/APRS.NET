@@ -41,6 +41,25 @@ public sealed class GatewayHealthTests
     }
 
     [Fact]
+    public void AQuietSourceIsReportedButStillCountsAsConnected()
+    {
+        var quiet = true;
+        var health = new GatewayHealth();
+        health.AddSource("tnc", () => true, () => quiet);
+        health.AddSource("aprs-is", () => true);
+        health.AddSource("broken", () => true, () => throw new InvalidOperationException());
+
+        var report = health.Check();
+        Assert.Equal(GatewayHealthStatus.Healthy, report.Status);
+        Assert.True(report.Sources["tnc"].IsQuiet);
+        Assert.False(report.Sources["aprs-is"].IsQuiet);
+        Assert.False(report.Sources["broken"].IsQuiet);
+
+        quiet = false;
+        Assert.False(health.Check().Sources["tnc"].IsQuiet);
+    }
+
+    [Fact]
     public void SourcesAreAddedOnceAndCanBeRemoved()
     {
         var health = new GatewayHealth();
@@ -83,7 +102,7 @@ public sealed class GatewayHealthTests
         await using var hub = new AprsWebSocketHub(server);
         var health = new GatewayHealth(timeProvider: _time);
         health.AddSource("aprs-is", () => oneUp);
-        health.AddSource("tnc", () => false);
+        health.AddSource("tnc", () => false, () => true);
         await using var web = new GatewayWebServer(
             hub,
             new GatewayWebServerOptions { EndPoint = new(IPAddress.Loopback, 0), Health = health }
@@ -100,6 +119,8 @@ public sealed class GatewayHealthTests
         Assert.Equal("2026-10-15T07:30:00.000Z", body.GetProperty("checkedAt").GetString());
         Assert.Equal(0, body.GetProperty("clients").GetProperty("aprsIs").GetInt32());
         Assert.Equal(oneUp, body.GetProperty("sources").GetProperty("aprs-is").GetProperty("connected").GetBoolean());
+        Assert.False(body.GetProperty("sources").GetProperty("aprs-is").GetProperty("quiet").GetBoolean());
+        Assert.True(body.GetProperty("sources").GetProperty("tnc").GetProperty("quiet").GetBoolean());
         Assert.Equal(
             JsonValueKind.Null,
             body.GetProperty("sources").GetProperty("tnc").GetProperty("lastPacket").ValueKind
