@@ -172,6 +172,7 @@ public class SendTests
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Reply from WU2Z: Got it", result.Out, StringComparison.Ordinal);
         Assert.Contains("Acknowledged by WU2Z after 1 attempt.", result.Out, StringComparison.Ordinal);
+        Assert.Contains("KD9XYZ-9>APZNET::WU2Z     :ack7}01", harness.Transport.Written); // sent before exiting
     }
 
     [Fact]

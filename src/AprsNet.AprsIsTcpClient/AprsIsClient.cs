@@ -320,6 +320,14 @@ public sealed class AprsIsClient : IAsyncDisposable
                     return LoginResult.TryParse(line) ?? throw new LoginException($"Unreadable login response: {line}");
                 }
 
+                // FEND (C0), read as Latin-1: the other end is a KISS TNC, such as Dire Wolf's KISS port, not a server.
+                if (line.Contains('\u00C0', StringComparison.Ordinal))
+                {
+                    throw new LoginException(
+                        "The other end sent KISS frames: it is a KISS TNC, not an APRS-IS server. Connect to it as a TNC."
+                    );
+                }
+
                 _logger.ServerLine(line);
             }
         }

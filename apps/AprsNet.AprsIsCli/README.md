@@ -206,8 +206,10 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
+| `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. |
 
-The upstream connection and each TNC always reconnect. When there is more than one source, the summary at the end
+The upstream connection and each TNC always reconnect. A TNC sending text instead of KISS frames (not in KISS mode) is
+reported on stderr. When there is more than one source, the summary at the end
 counts each one's packets and duplicates. Clients are read-only for now: anything they send is ignored. A client
 that falls 1,000 lines behind is disconnected, as on APRS-IS.
 
@@ -239,7 +241,10 @@ aprscli tnc ports                                   # the serial ports present
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
 (waiting 5 s, doubling to 60 s; 2 s to 30 s for a serial port), says so on stderr, and carries on when the TNC is back.
-`aprscli tnc ports` lists the serial ports present.
+`aprscli tnc ports` lists the serial ports present. A TNC sending text instead of KISS frames, because it isn't in KISS
+mode, is reported on stderr. With `--reconnect`, `--quiet-warning 10m` also warns when the TNC sends nothing at all for
+that long, as a radio's built-in TNC does when switched off behind a USB port that stays open; see the
+[TNC guide](../../docs/guides/tnc.md#a-radios-built-in-tnc).
 
 ## tnc send
 
@@ -261,9 +266,15 @@ aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --t
 | `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
 | `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
 | `-n`, `--dry-run` | Print the packets without connecting. |
+| `--retry` | For a message: `default`, `aprs-is`, `slow-hf` or `none`, as for `send message`. |
+| `--wait-replies` | For a message: how long to keep listening for replies once it is answered. Default `2m`. |
 
 Each packet is printed once the TNC has it. Frames are spread out by the transmit limit: three at once, then one every
-10 seconds, so telemetry with its definitions takes a few seconds. A message is sent once, without a message number,
-so no acknowledgement comes back. Exit code 2 when the TNC cannot be reached.
+10 seconds, so telemetry with its definitions takes a few seconds. Exit code 2 when the TNC cannot be reached.
+
+`tnc send message` holds a conversation on the air as `send message` does on APRS-IS: the message carries an ID, is
+resent on the `--retry` schedule until the recipient's ack arrives over RF, and replies heard meanwhile and for
+`--wait-replies` afterwards are printed and acked. The transmit limit spaces out every send, acks included. Exit code 5
+when no ack comes.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

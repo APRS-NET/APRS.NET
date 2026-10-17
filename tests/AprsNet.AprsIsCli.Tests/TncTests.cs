@@ -51,6 +51,59 @@ public sealed class TncTests : IDisposable
         );
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ListenWarnsWhenTheTncSendsTextInsteadOfKiss(bool reconnect)
+    {
+        string[] args = ["tnc", "listen", "--tnc", Address, "-n", "1"];
+        var run = new CliHarness().RunAsync(
+            reconnect ? [.. args, "--reconnect"] : args,
+            TestContext.Current.CancellationToken
+        );
+        using (var tnc = await _tnc.AcceptTcpClientAsync(TestContext.Current.CancellationToken))
+        {
+            // A TNC not in KISS mode prints its monitor lines; then it is switched to KISS and a frame follows.
+            var text = string.Concat(
+                Enumerable
+                    .Range(1, 3)
+                    .Select(i => $"N0CALL-{i}>APRS,WIDE1-1:>A packet heard while the TNC was not in KISS mode\r\n")
+            );
+            await tnc.GetStream()
+                .WriteAsync(System.Text.Encoding.ASCII.GetBytes(text), TestContext.Current.CancellationToken);
+            await tnc.GetStream()
+                .WriteAsync(
+                    KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse("N0CALL>APRS:>KISS"))).Encode(),
+                    TestContext.Current.CancellationToken
+                );
+            var result = await run;
+
+            Assert.Equal(0, result.ExitCode);
+            Assert.Equal($"N0CALL>APRS:>KISS{Environment.NewLine}", result.Out);
+            Assert.Contains(
+                $"aprscli: warning: the TNC at {Address}: The TNC is sending text, not KISS frames; is it in KISS mode?",
+                result.Error,
+                StringComparison.Ordinal
+            );
+            Assert.Contains("The TNC is sending KISS frames again.", result.Error, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData("10m", false, "--quiet-warning needs --reconnect.")]
+    [InlineData("soon", true, "--quiet-warning 'soon' is not valid.")]
+    public async Task AQuietWarningMustBeADurationWithReconnect(string quiet, bool reconnect, string message)
+    {
+        string[] args = ["tnc", "listen", "--tnc", Address, "--quiet-warning", quiet];
+        var result = await new CliHarness().RunAsync(
+            reconnect ? [.. args, "--reconnect"] : args,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(ExitCodes.Usage, result.ExitCode);
+        Assert.Contains(message, result.Error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task ListenDecodesInTheChosenFormat()
     {
@@ -92,6 +145,7 @@ public sealed class TncTests : IDisposable
             result.Out
         );
         Assert.Contains("closed the connection; reconnecting in 0s.", result.Error, StringComparison.Ordinal);
+        Assert.Contains($"reconnected to the TNC at {Address}.", result.Error, StringComparison.Ordinal);
     }
 
     [Fact]

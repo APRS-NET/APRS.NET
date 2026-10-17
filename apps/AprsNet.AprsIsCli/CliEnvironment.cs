@@ -36,7 +36,7 @@ internal sealed class CliEnvironment
     public Func<KissTransmitLimit> CreateTransmitLimit { get; init; } = () => new KissTransmitLimit();
 
     /// <summary>A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP or a serial port.</summary>
-    public KissConnection CreateTncConnection(TncAddress address, int radioPort = 0) =>
+    public KissConnection CreateTncConnection(TncAddress address, int radioPort = 0, TimeSpan? quietWarning = null) =>
         address.SerialPort is { } name
             ? new KissSerialConnection(
                 new KissSerialOptions
@@ -45,6 +45,7 @@ internal sealed class CliEnvironment
                     BaudRate = address.BaudRate,
                     TncPort = radioPort,
                     TimeProvider = TimeProvider,
+                    QuietWarning = quietWarning,
                 }
             )
             : new KissTcpConnection(
@@ -55,6 +56,7 @@ internal sealed class CliEnvironment
                     TncPort = radioPort,
                     ReconnectDelay = ReconnectDelay,
                     TimeProvider = TimeProvider,
+                    QuietWarning = quietWarning,
                 }
             );
 

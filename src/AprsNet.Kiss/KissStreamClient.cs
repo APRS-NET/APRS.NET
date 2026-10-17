@@ -51,11 +51,23 @@ public sealed class KissStreamClient : IAsyncDisposable
     /// <summary>How fast frames may be sent; a send waits for its turn.</summary>
     public KissTransmitLimit TransmitLimit { get; }
 
+    /// <summary>Called after each read that brought bytes, before they are decoded.</summary>
+    internal Action? DataRead { get; init; }
+
     /// <summary>The <c>tnc</c> tag on this client's metrics: the TNC's <c>host:port</c> when a TCP client made it.</summary>
     internal string MetricsTnc { get; init; } = KissMetrics.StreamTnc;
 
     /// <summary>KISS frames dropped for an invalid escape or for being too long: a sign of a noisy serial link.</summary>
     public long DroppedFrames => _decoder.DroppedFrames;
+
+    /// <summary>Bytes read that were not part of a frame passed on; see <see cref="KissDecoder.DiscardedBytes"/>.</summary>
+    public long DiscardedBytes => _decoder.DiscardedBytes;
+
+    /// <summary>
+    /// Fires when the TNC starts sending something other than KISS frames, and again when it stops; on the reading
+    /// thread. See <see cref="KissWarning"/>.
+    /// </summary>
+    public event EventHandler<KissWarningEventArgs>? Warning;
 
     /// <summary>
     /// Yields every AX.25 frame the TNC passes on from its radio port, APRS or not, until the stream ends. Frames that
@@ -75,11 +87,35 @@ public sealed class KissStreamClient : IAsyncDisposable
                 yield break;
             }
 
-            var dropped = _decoder.DroppedFrames;
+            DataRead?.Invoke();
+
+            var (dropped, discarded, text, spotted) = (
+                _decoder.DroppedFrames,
+                _decoder.DiscardedBytes,
+                _decoder.LooksLikeText,
+                _decoder.TextSpotted
+            );
             var decoded = _decoder.Decode(buffer.AsSpan(0, read));
             if (_decoder.DroppedFrames > dropped)
             {
                 KissMetrics.Dropped(MetricsTnc, _decoder.DroppedFrames - dropped);
+            }
+
+            if (_decoder.DiscardedBytes > discarded)
+            {
+                KissMetrics.Discarded(MetricsTnc, _decoder.DiscardedBytes - discarded);
+            }
+
+            // Text may start and stop within one read, when a frame follows it closely; report both.
+            var started = _decoder.TextSpotted > spotted;
+            if (started && !text)
+            {
+                Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.TextNotKiss, true));
+            }
+
+            if (!_decoder.LooksLikeText && (text || started))
+            {
+                Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.TextNotKiss, false));
             }
 
             foreach (var kiss in decoded)

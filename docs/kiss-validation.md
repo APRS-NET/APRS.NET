@@ -74,10 +74,42 @@ radio's default 9600 baud. `tools/d72.sh` switches it into and out of KISS mode.
 The failure: `System.IO.Ports` opens a port with DTR and RTS low, and the radio sends nothing while RTS is low. `cat`
 leaves both raised, which is why it saw the frames. `KissSerialConnection` and the CLI's serial link now raise both.
 
+### Unplugging, and switching the radio off
+
+| Check | Seen | Result |
+| --- | --- | --- |
+| Unplug and replug under `tnc listen --reconnect` | At first the listener crashed: on Linux .NET closes the port itself, and the next read throws `ObjectDisposedException` ("The port is closed"), which wasn't taken for a lost link. After the fix: "the TNC was probably unplugged", retries after 2, 4, 8 and 16 s, then packets again once it was back | Failed, then fixed |
+| Unplug without `--reconnect` | At first an unhandled exception; after the fix one line, "lost the TNC … probably unplugged", and exit code 2 | Failed, then fixed |
+| Retries while unplugged | .NET reports a port that isn't there as "access denied"; the message now says the port "is not present; is the TNC plugged in?" | Fixed |
+| Unplug and replug under `aprscli serve` | The gateway kept running; `/health` went to `unhealthy` (503) within 3 s, back to `healthy` once the port reopened, and packets resumed. Retries waited 2, 4, 8 and 16 s, then 30 s | Passed |
+| `tnc ports` and `tnc send` with no port | "no serial ports found"; the send fails with exit code 2 | Passed |
+| Radio switched off, cable still in | The radio's USB chip runs on USB power, so `/dev/ttyUSB0` stayed and the port stayed open: `/health` said `healthy` with only `lastPacket` standing still (#234) | Gap |
+| Radio switched back on | It came back in PACKET mode but with KISS off, sending text the KISS reader dropped without a word (#232). `tools/d72.sh kiss-on` brought the packets back | Gap |
+
+While `serve` held the port, `stty` on it failed with "Device or resource busy": .NET opens a serial port for one
+program at a time.
+
+### A 30-minute soak
+
+`aprscli tnc listen -t serial:/dev/ttyUSB0 --reconnect --format json` for 30 minutes: 90 packets from 32 stations
+(33 positions, 32 Mic-E, 22 objects, 3 statuses), every one parsed with no issues, no reconnects, and nothing cut short.
+The longest silence was 102 s, a quiet channel.
+
+### What else the radio sends on the same port
+
+In APRS mode, with its GPS output on, the radio sends NMEA sentences (GGA, GLL, GSA, GSV, RMC, VTG and ZDA, each
+selectable, every 2 seconds) on the same port as the TNC-2 text, interleaved line by line. Where the two collide it cuts
+a line short: in 7 minutes, one sentence and one APRS packet were cut off with the next line run into them. Bytes held
+while no program had the port open came out as fragments when it was next opened. The NMEA checksums caught every
+damaged sentence. These are notes for a reader of either format (#223, #232); the recordings aren't kept, since they
+carry the station's position.
+
 ## Result
 
 KISS over TCP receives, reconnects, notices a dead link and transmits through a real Dire Wolf. The one bug found, the
 dead link reported as connected, was fixed in #184 and shipped in 0.3.0-alpha.3.
 
-KISS over USB serial receives and transmits through a TH-D72A, once the port is opened with DTR and RTS raised. Still
-to check by hand: unplugging and replugging the radio (#126).
+KISS over USB serial receives and transmits through a TH-D72A, and survives the radio being unplugged and plugged back
+in, both under `tnc listen --reconnect` and in the gateway. Three bugs were found and fixed: DTR and RTS left low, an
+unplug taken for a crash, and a missing port reported as access denied. Two gaps remain, both about a TNC that is
+connected but not working: one switched off behind a powered USB chip (#234), and one sending text in KISS mode (#232).

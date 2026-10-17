@@ -124,3 +124,21 @@ AprsNet.Kiss.KissConnection.SendFrameAsync(AprsNet.Ax25.Ax25Frame! frame, System
 AprsNet.Kiss.KissConnection.StateChanged -> System.EventHandler<AprsNet.Kiss.KissConnectionStateChangedEventArgs!>?
 AprsNet.Kiss.KissConnection.State.get -> AprsNet.Kiss.KissConnectionState
 AprsNet.Kiss.KissConnection.TransmitLimit.get -> AprsNet.Kiss.KissTransmitLimit!
+AprsNet.Kiss.KissConnection.Warning -> System.EventHandler<AprsNet.Kiss.KissWarningEventArgs!>?
+AprsNet.Kiss.KissDecoder.DiscardedBytes.get -> long
+AprsNet.Kiss.KissDecoder.LooksLikeText.get -> bool
+AprsNet.Kiss.KissStreamClient.DiscardedBytes.get -> long
+AprsNet.Kiss.KissStreamClient.Warning -> System.EventHandler<AprsNet.Kiss.KissWarningEventArgs!>?
+AprsNet.Kiss.KissTcpClient.DiscardedBytes.get -> long
+AprsNet.Kiss.KissTcpClient.Warning -> System.EventHandler<AprsNet.Kiss.KissWarningEventArgs!>?
+AprsNet.Kiss.KissWarning
+AprsNet.Kiss.KissWarningEventArgs
+AprsNet.Kiss.KissWarningEventArgs.IsActive.get -> bool
+AprsNet.Kiss.KissWarningEventArgs.Message.get -> string!
+AprsNet.Kiss.KissWarningEventArgs.Warning.get -> AprsNet.Kiss.KissWarning
+AprsNet.Kiss.KissWarning.TextNotKiss = 0 -> AprsNet.Kiss.KissWarning
+AprsNet.Kiss.KissConnection.QuietWarning.get -> System.TimeSpan?
+AprsNet.Kiss.KissTcpOptions.QuietWarning.get -> System.TimeSpan?
+AprsNet.Kiss.KissTcpOptions.QuietWarning.set -> void
+AprsNet.Kiss.KissWarning.Quiet = 1 -> AprsNet.Kiss.KissWarning
+AprsNet.Kiss.KissConnection.IsQuiet.get -> bool

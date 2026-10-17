@@ -60,6 +60,7 @@ On the meter `AprsNet.Kiss`. Every instrument has a `tnc` tag: the TNC's `host:p
 | `aprsnet.kiss.frames.received` | `{frame}` | `tnc` | AX.25 frames read from the TNC on the client's radio port |
 | `aprsnet.kiss.frames.sent` | `{frame}` | `tnc` | Frames sent to the TNC to transmit |
 | `aprsnet.kiss.frames.dropped` | `{frame}` | `tnc` | KISS frames dropped for an invalid escape or for being too long: a noisy link |
+| `aprsnet.kiss.bytes.discarded` | `By` | `tnc` | Bytes from the TNC that were not part of a frame passed on: noise, or text from a TNC not in KISS mode |
 | `aprsnet.kiss.connection.active` | `{connection}` | `tnc` | Up-down counter: connections to the TNC open now, over TCP or a serial port |
 | `aprsnet.kiss.connection.reconnects` | `{reconnect}` | `tnc`, `cause`: `tnc_closed`, `socket_error`, `connect_failed` | Waits before a `KissTcpConnection` or `KissSerialConnection` reconnects; `socket_error` is any failure of the link, a serial port's included |
 
