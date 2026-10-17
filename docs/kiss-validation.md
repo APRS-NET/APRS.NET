@@ -58,9 +58,26 @@ aprscli tnc send -c NZ0P-9 -t 10.10.20.144 --path WIDE1-1 status "APRS.NET KISS 
 Two earlier sends without a path weren't confirmed either way: the Dire Wolf console had been scrolled up. On RF the
 callsign needs a numeric SSID from 0 to 15; `NZ0P-AM`, for example, can only be used on APRS-IS.
 
+## A TNC on USB serial
+
+On 17 October 2026, a Kenwood TH-D72A on `/dev/ttyUSB0`: its built-in TNC behind a CP2102 USB serial chip, at the
+radio's default 9600 baud. `tools/d72.sh` switches it into and out of KISS mode.
+
+| Check | Seen | Result |
+| --- | --- | --- |
+| The radio in APRS mode | It sends TNC-2 text lines (`SRC>DEST,PATH:info`), not KISS; a KISS reader drops them all without a word (#232) | As expected |
+| PACKET mode, then `KISS ON` and `RESTART` | KISS frames (`C0 00 …`) | Passed |
+| `aprscli tnc listen -t serial:/dev/ttyUSB0`, with and without `--reconnect` | Nothing at first, though `cat` showed the frames | Failed, then fixed |
+| The same, after the fix | Packets heard through the local digipeaters, on both paths | Passed |
+| `aprscli tnc send -c NZ0P-3 -t serial:/dev/ttyUSB0 --path WIDE1-1 status …` | The maintainer's Dire Wolf heard it directly, then a digipeated copy a second later | Passed |
+
+The failure: `System.IO.Ports` opens a port with DTR and RTS low, and the radio sends nothing while RTS is low. `cat`
+leaves both raised, which is why it saw the frames. `KissSerialConnection` and the CLI's serial link now raise both.
+
 ## Result
 
 KISS over TCP receives, reconnects, notices a dead link and transmits through a real Dire Wolf. The one bug found, the
 dead link reported as connected, was fixed in #184 and shipped in 0.3.0-alpha.3.
 
-Not covered here: KISS TNCs on USB serial (#126, #160), which still need their hands-on check.
+KISS over USB serial receives and transmits through a TH-D72A, once the port is opened with DTR and RTS raised. Still
+to check by hand: unplugging and replugging the radio (#126).
