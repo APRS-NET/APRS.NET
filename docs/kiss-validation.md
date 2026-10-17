@@ -89,6 +89,21 @@ leaves both raised, which is why it saw the frames. `KissSerialConnection` and t
 While `serve` held the port, `stty` on it failed with "Device or resource busy": .NET opens a serial port for one
 program at a time.
 
+### A 30-minute soak
+
+`aprscli tnc listen -t serial:/dev/ttyUSB0 --reconnect --format json` for 30 minutes: 90 packets from 32 stations
+(33 positions, 32 Mic-E, 22 objects, 3 statuses), every one parsed with no issues, no reconnects, and nothing cut short.
+The longest silence was 102 s, a quiet channel.
+
+### What else the radio sends on the same port
+
+In APRS mode, with its GPS output on, the radio sends NMEA sentences (GGA, GLL, GSA, GSV, RMC, VTG and ZDA, each
+selectable, every 2 seconds) on the same port as the TNC-2 text, interleaved line by line. Where the two collide it cuts
+a line short: in 7 minutes, one sentence and one APRS packet were cut off with the next line run into them. Bytes held
+while no program had the port open came out as fragments when it was next opened. The NMEA checksums caught every
+damaged sentence. These are notes for a reader of either format (#223, #232); the recordings aren't kept, since they
+carry the station's position.
+
 ## Result
 
 KISS over TCP receives, reconnects, notices a dead link and transmits through a real Dire Wolf. The one bug found, the
