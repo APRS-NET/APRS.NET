@@ -64,7 +64,14 @@ public sealed class KissSerialConnection : KissConnection
         return token =>
         {
             token.ThrowIfCancellationRequested();
-            var port = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One) { Handshake = Handshake.None };
+            // DTR and RTS raised, as a terminal program leaves them: some radios (the Kenwood TH-D72A among them)
+            // hold their output while RTS is low.
+            var port = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
+            {
+                Handshake = Handshake.None,
+                DtrEnable = true,
+                RtsEnable = true,
+            };
             try
             {
                 port.Open();
