@@ -33,6 +33,12 @@ internal static class KissMetrics
         "KISS frames dropped for an invalid escape or for being too long: a sign of a noisy link."
     );
 
+    private static readonly Counter<long> _discarded = _meter.CreateCounter<long>(
+        "aprsnet.kiss.bytes.discarded",
+        "By",
+        "Bytes from the TNC that were not part of a frame passed on: noise, or text from a TNC not in KISS mode."
+    );
+
     private static readonly UpDownCounter<long> _active = _meter.CreateUpDownCounter<long>(
         "aprsnet.kiss.connection.active",
         "{connection}",
@@ -50,6 +56,8 @@ internal static class KissMetrics
     public static void Sent(string tnc) => _sent.Add(1, Tnc(tnc));
 
     public static void Dropped(string tnc, long count) => _dropped.Add(count, Tnc(tnc));
+
+    public static void Discarded(string tnc, long count) => _discarded.Add(count, Tnc(tnc));
 
     public static void Active(string tnc, int change) => _active.Add(change, Tnc(tnc));
 

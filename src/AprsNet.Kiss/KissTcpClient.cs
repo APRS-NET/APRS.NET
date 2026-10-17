@@ -51,6 +51,9 @@ public sealed class KissTcpClient : IAsyncDisposable
     /// <summary>KISS frames dropped for an invalid escape or for being too long.</summary>
     public long DroppedFrames => _kiss?.DroppedFrames ?? 0;
 
+    /// <inheritdoc cref="KissStreamClient.DiscardedBytes"/>
+    public long DiscardedBytes => _kiss?.DiscardedBytes ?? 0;
+
     /// <summary>Connects to the TNC.</summary>
     /// <exception cref="TimeoutException">The TNC did not accept the connection in time.</exception>
     /// <exception cref="SocketException">The TNC could not be reached.</exception>
@@ -86,8 +89,12 @@ public sealed class KissTcpClient : IAsyncDisposable
         {
             MetricsTnc = $"{_host}:{_port}",
         };
+        _kiss.Warning += (_, e) => Warning?.Invoke(this, e);
         KissMetrics.Active(_kiss.MetricsTnc, +1);
     }
+
+    /// <inheritdoc cref="KissStreamClient.Warning"/>
+    public event EventHandler<KissWarningEventArgs>? Warning;
 
     /// <inheritdoc cref="KissStreamClient.ReadFramesAsync"/>
     public IAsyncEnumerable<Ax25Frame> ReadFramesAsync(CancellationToken cancellationToken = default) =>
