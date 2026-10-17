@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.1...v0.4.0-alpha.2) (2026-10-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **aprs-is:** AprsMessenger, MessageDelivery and MessageDeliveryStatus are removed from AprsNet.AprsIsTcpClient; use MessagingStation from AprsNet.Messaging.
+
+### Features
+
+* **aprs-is:** remove AprsMessenger in favour of AprsNet.Messaging ([ea810a7](https://github.com/APRS-NET/APRS.NET/commit/ea810a7d33a5d0da06ecfc14ffea72597c1af75b))
+* **cli:** send messages through MessagingStation, with --retry ([6b68c14](https://github.com/APRS-NET/APRS.NET/commit/6b68c14ecbb181c747dacff4540c0d7eb6cec845))
+* **cli:** send messages through MessagingStation, with --retry ([1b14c52](https://github.com/APRS-NET/APRS.NET/commit/1b14c52efd4fdaf623522348f2bcb9805111d989))
+* **messaging:** hold APRS message conversations with AprsNet.Messaging ([cfb9a5e](https://github.com/APRS-NET/APRS.NET/commit/cfb9a5e053b226b4eb1dfd6267b12849ca49bf15))
+* **messaging:** hold APRS message conversations with AprsNet.Messaging ([9b3d3dd](https://github.com/APRS-NET/APRS.NET/commit/9b3d3dd78608e3b2dfbe3550e961b2fdb4dcd5b8))
+* **messaging:** keep the bulletins and announcements heard ([f1964f5](https://github.com/APRS-NET/APRS.NET/commit/f1964f5bd1abdce0283ea1a32a031573e235df61))
+* **messaging:** keep the bulletins and announcements heard ([d04a94a](https://github.com/APRS-NET/APRS.NET/commit/d04a94a60dccb4a21fe6ee3b921d7bd2d2ede978)), closes [#193](https://github.com/APRS-NET/APRS.NET/issues/193)
+
 ## [0.4.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.3...v0.4.0-alpha.1) (2026-10-16)
 
 
