@@ -1,6 +1,6 @@
 # Messaging design
 
-Status: **agreed** (#190); sending and receiving are implemented (#191, #192), bulletins are still to do (#193). This is the shape of `AprsNet.Messaging`, a new package that handles APRS message
+Status: **agreed** (#190); sending and receiving (#191, #192) and bulletins (#193) are implemented. This is the shape of `AprsNet.Messaging`, a new package that handles APRS message
 conversations for one station: message IDs, retries until an ack or rej, reply-acks, acks for what it receives, retries
 delivered once, and the bulletins it hears. AprsMap's transmit phase builds messaging (F2.4), bulletins (F2.5), the
 email and query helpers (F2.6) and auto-reply (F2.10) on it.
@@ -116,7 +116,9 @@ Each has a recommendation; the alternatives considered follow it.
 `BulletinBoard` is separate from `MessagingStation` because bulletins aren't addressed to anyone. It is fed every
 packet, keeps bulletins (`BLN0`–`BLN9`), group bulletins (`BLN4WX`), announcements (`BLNA`–`BLNZ`) and NWS bulletins by
 sender and ID, replaces one when a new copy differs, and forgets one not heard for `Expiry` (a day by default). Its
-`Changed` event says what was added, replaced or expired. Sending bulletins is a `MessagingStation` job with no ID and
+`Changed` event says what was added, replaced or removed. NWS bulletins are kept per sender, addressee and message ID
+(or text, without one), since one sender sends many different warnings to `NWS-WARN`; `NWS_` addressees count too. At
+most `MaxBulletins` (1,000) are kept, dropping the one heard longest ago. Sending bulletins is a `MessagingStation` job with no ID and
 no acks, retried on the `Default` schedule's decay.
 
 ## Out of scope

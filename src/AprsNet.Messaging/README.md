@@ -27,6 +27,17 @@ station.MessageReceived += (_, e) => Console.WriteLine($"{e.Message.From}: {e.Me
 
 Messages to one station go one at a time, retried on a `RetryProfile` (`Default`, `AprsIs`, `SlowHf` or `None`) that
 never resends inside APRS-IS's 30-second duplicate window. Save `LastMessageId` and pass it back after a restart so
-IDs don't repeat. See [the design](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/messaging.md).
+IDs don't repeat.
+
+`BulletinBoard` keeps the bulletins, announcements and NWS bulletins heard, from anyone: hand it every packet, and its
+`Changed` event says what was added, replaced (new text from the same sender) or removed (not heard for a day).
+
+```csharp
+using var board = new BulletinBoard();
+board.Changed += (_, e) => Console.WriteLine($"{e.Change}: {e.Bulletin.From} {e.Bulletin.Addressee}: {e.Bulletin.Text}");
+board.Receive(packet, source: "aprs-is");
+```
+
+See [the design](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/messaging.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

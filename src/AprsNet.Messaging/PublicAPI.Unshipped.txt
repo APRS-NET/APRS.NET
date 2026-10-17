@@ -98,3 +98,54 @@ static AprsNet.Messaging.RetryProfile.Default.get -> AprsNet.Messaging.RetryProf
 static AprsNet.Messaging.RetryProfile.None.get -> AprsNet.Messaging.RetryProfile!
 static AprsNet.Messaging.RetryProfile.SlowHf.get -> AprsNet.Messaging.RetryProfile!
 static readonly AprsNet.Messaging.RetryProfile.MinimumGap -> System.TimeSpan
+AprsNet.Messaging.Bulletin
+AprsNet.Messaging.Bulletin.Addressee.get -> string!
+AprsNet.Messaging.Bulletin.Addressee.init -> void
+AprsNet.Messaging.BulletinBoard
+AprsNet.Messaging.BulletinBoard.BulletinBoard(AprsNet.Messaging.BulletinBoardOptions? options = null) -> void
+AprsNet.Messaging.BulletinBoard.Bulletins.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Messaging.Bulletin!>!
+AprsNet.Messaging.BulletinBoard.Changed -> System.EventHandler<AprsNet.Messaging.BulletinChangedEventArgs!>?
+AprsNet.Messaging.BulletinBoard.Dispose() -> void
+AprsNet.Messaging.BulletinBoardOptions
+AprsNet.Messaging.BulletinBoardOptions.BulletinBoardOptions() -> void
+AprsNet.Messaging.BulletinBoardOptions.Expiry.get -> System.TimeSpan
+AprsNet.Messaging.BulletinBoardOptions.Expiry.set -> void
+AprsNet.Messaging.BulletinBoardOptions.MaxBulletins.get -> int
+AprsNet.Messaging.BulletinBoardOptions.MaxBulletins.set -> void
+AprsNet.Messaging.BulletinBoardOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Messaging.BulletinBoardOptions.TimeProvider.set -> void
+AprsNet.Messaging.BulletinBoardOptions.Validate() -> void
+AprsNet.Messaging.BulletinBoard.Receive(AprsNet.Packets.AprsPacket! packet, string? source = null) -> bool
+AprsNet.Messaging.Bulletin.Bulletin(AprsNet.Packets.Callsign! From, AprsNet.Packets.MessageKind Kind, string! Addressee, string? Id, string? Group, string! Text, System.DateTimeOffset FirstHeard, System.DateTimeOffset LastHeard, string? Source) -> void
+AprsNet.Messaging.BulletinChange
+AprsNet.Messaging.BulletinChange.Added = 0 -> AprsNet.Messaging.BulletinChange
+AprsNet.Messaging.BulletinChangedEventArgs
+AprsNet.Messaging.BulletinChangedEventArgs.Bulletin.get -> AprsNet.Messaging.Bulletin!
+AprsNet.Messaging.BulletinChangedEventArgs.Change.get -> AprsNet.Messaging.BulletinChange
+AprsNet.Messaging.BulletinChangedEventArgs.Previous.get -> AprsNet.Messaging.Bulletin?
+AprsNet.Messaging.BulletinChange.Removed = 2 -> AprsNet.Messaging.BulletinChange
+AprsNet.Messaging.BulletinChange.Replaced = 1 -> AprsNet.Messaging.BulletinChange
+AprsNet.Messaging.Bulletin.<Clone>$() -> AprsNet.Messaging.Bulletin!
+AprsNet.Messaging.Bulletin.Deconstruct(out AprsNet.Packets.Callsign! From, out AprsNet.Packets.MessageKind Kind, out string! Addressee, out string? Id, out string? Group, out string! Text, out System.DateTimeOffset FirstHeard, out System.DateTimeOffset LastHeard, out string? Source) -> void
+AprsNet.Messaging.Bulletin.Equals(AprsNet.Messaging.Bulletin? other) -> bool
+AprsNet.Messaging.Bulletin.FirstHeard.get -> System.DateTimeOffset
+AprsNet.Messaging.Bulletin.FirstHeard.init -> void
+AprsNet.Messaging.Bulletin.From.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.Bulletin.From.init -> void
+AprsNet.Messaging.Bulletin.Group.get -> string?
+AprsNet.Messaging.Bulletin.Group.init -> void
+AprsNet.Messaging.Bulletin.Id.get -> string?
+AprsNet.Messaging.Bulletin.Id.init -> void
+AprsNet.Messaging.Bulletin.Kind.get -> AprsNet.Packets.MessageKind
+AprsNet.Messaging.Bulletin.Kind.init -> void
+AprsNet.Messaging.Bulletin.LastHeard.get -> System.DateTimeOffset
+AprsNet.Messaging.Bulletin.LastHeard.init -> void
+AprsNet.Messaging.Bulletin.Source.get -> string?
+AprsNet.Messaging.Bulletin.Source.init -> void
+AprsNet.Messaging.Bulletin.Text.get -> string!
+AprsNet.Messaging.Bulletin.Text.init -> void
+override AprsNet.Messaging.Bulletin.Equals(object? obj) -> bool
+override AprsNet.Messaging.Bulletin.GetHashCode() -> int
+override AprsNet.Messaging.Bulletin.ToString() -> string!
+static AprsNet.Messaging.Bulletin.operator !=(AprsNet.Messaging.Bulletin? left, AprsNet.Messaging.Bulletin? right) -> bool
+static AprsNet.Messaging.Bulletin.operator ==(AprsNet.Messaging.Bulletin? left, AprsNet.Messaging.Bulletin? right) -> bool
