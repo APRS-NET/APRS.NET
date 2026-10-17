@@ -1,6 +1,6 @@
 # Messaging design
 
-Status: **draft for review** (#190). This is the shape of `AprsNet.Messaging`, a new package that handles APRS message
+Status: **agreed** (#190); sending and receiving are implemented (#191, #192), bulletins are still to do (#193). This is the shape of `AprsNet.Messaging`, a new package that handles APRS message
 conversations for one station: message IDs, retries until an ack or rej, reply-acks, acks for what it receives, retries
 delivered once, and the bulletins it hears. AprsMap's transmit phase builds messaging (F2.4), bulletins (F2.5), the
 email and query helpers (F2.6) and auto-reply (F2.10) on it.
@@ -27,7 +27,7 @@ await foreach (var outgoing in station.ReadOutgoingAsync(cancellationToken))
 
 // Sending, and following one message.
 OutgoingMessage message = station.Send(Callsign.Parse("WU2Z"), "Hello");
-message.StateChanged += (_, e) => Console.WriteLine(e.State); // Sent, Retrying, Delivered, Rejected, Failed
+message.StateChanged += (_, _) => Console.WriteLine(message.State); // Sent, Retrying, Delivered, Rejected, Failed
 
 // Messages for this station, each delivered once.
 station.MessageReceived += (_, e) => Console.WriteLine($"{e.Message.From}: {e.Message.Text}");
@@ -54,8 +54,9 @@ Each has a recommendation; the alternatives considered follow it.
 
 2. **The engine returns payloads, not packets.** `OutgoingPacket.Payload` is a `MessagePayload`; the app builds the
    packet with its own `PacketAddress`, since only it knows the TOCALL and which path suits which source (a `WIDE`
-   path on RF, none on APRS-IS). `OutgoingPacket.Source` says where the correspondent was last heard, so the app can
-   reply the same way, or send everywhere when it is `null`.
+   path on RF, none on APRS-IS). `OutgoingPacket.Source` says where the correspondent was last heard, from any of its
+   packets, so the app can reply the same way, or send everywhere when it is `null`. The station remembers this for
+   up to 10,000 stations, forgetting the half heard longest ago when it fills.
 
 3. **Message IDs are two characters**, from `0-9A-Za-z` (3,844 values), one sequence for the station. Reply-acks need
    `{MM}AA` to fit the 5-character limit, so `MM` can't be longer. The app saves `MessagingStation.LastMessageId` (an
@@ -75,12 +76,12 @@ Each has a recommendation; the alternatives considered follow it.
 6. **Retry profiles, named so a UI can offer them.** Each retry is randomised by ±10 % (A12-NET-01), but never comes
    less than 30 s after the last send, since APRS-IS drops a copy inside 30 s as a duplicate.
 
-   | Profile | Sends at | Sends |
-   | --- | --- | --- |
-   | `Default` | 0, 30 s, 1 min, 2 min, 4 min, 8 min | 6, over about 15 minutes |
-   | `AprsIs` | 0, 30 s, 2 min, 5 min | 4. The internet leg is reliable; retries cover the far IGate's RF leg |
-   | `SlowHf` | 0, 2 min, 4 min, 8 min, 16 min | 5, for 300-baud HF |
-   | `None` | 0 | 1 |
+   | Profile | Waits before each retry | Fails after the last send | Sends |
+   | --- | --- | --- | --- |
+   | `Default` | 30 s, 1 min, 2 min, 4 min, 8 min | 8 min | 6, failing after about 23 minutes |
+   | `AprsIs` | 30 s, 2 min, 5 min | 5 min | 4. The internet leg is reliable; retries cover the far IGate's RF leg |
+   | `SlowHf` | 2 min, 4 min, 8 min, 16 min | 16 min | 5, for 300-baud HF |
+   | `None` | none | 2 min | 1 |
 
    The first retry at 30 s is slower than the 15 s that replyacks.txt suggests, because of APRS-IS's duplicate
    window; an app on RF only can make its own profile.

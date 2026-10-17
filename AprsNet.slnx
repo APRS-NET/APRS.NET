@@ -50,6 +50,7 @@
     <Project Path="src/AprsNet.Gateway/AprsNet.Gateway.csproj" />
     <Project Path="src/AprsNet.Kiss/AprsNet.Kiss.csproj" />
     <Project Path="src/AprsNet.Kiss.Serial/AprsNet.Kiss.Serial.csproj" />
+    <Project Path="src/AprsNet.Messaging/AprsNet.Messaging.csproj" />
     <Project Path="src/AprsNet.Packets/AprsNet.Packets.csproj" />
     <Project Path="src/AprsNet.Packets.Json/AprsNet.Packets.Json.csproj" />
     <Project Path="src/AprsNet.Symbols/AprsNet.Symbols.csproj" />
@@ -62,6 +63,7 @@
     <Project Path="tests/AprsNet.Docs.Tests/AprsNet.Docs.Tests.csproj" />
     <Project Path="tests/AprsNet.Extensions.DependencyInjection.Tests/AprsNet.Extensions.DependencyInjection.Tests.csproj" />
     <Project Path="tests/AprsNet.Filters.Tests/AprsNet.Filters.Tests.csproj" />
+    <Project Path="tests/AprsNet.Messaging.Tests/AprsNet.Messaging.Tests.csproj" />
     <Project Path="tests/AprsNet.Packets.Json.Tests/AprsNet.Packets.Json.Tests.csproj" />
     <Project Path="tests/AprsNet.Gateway.Tests/AprsNet.Gateway.Tests.csproj" />
     <Project Path="tests/AprsNet.Kiss.Tests/AprsNet.Kiss.Tests.csproj" />
