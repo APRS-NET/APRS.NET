@@ -1,4 +1,3 @@
-using System.IO.Ports;
 using System.Net.Sockets;
 using AprsNet.Ax25;
 using AprsNet.Kiss;
@@ -13,16 +12,11 @@ namespace AprsNet.AprsIsCli;
 internal sealed class TncLink : IAsyncDisposable
 {
     private readonly KissTcpClient? _tcp;
-    private readonly SerialPort? _serial;
     private readonly KissStreamClient? _serialKiss;
 
     private TncLink(KissTcpClient tcp) => _tcp = tcp;
 
-    private TncLink(SerialPort serial, KissStreamClient kiss)
-    {
-        _serial = serial;
-        _serialKiss = kiss;
-    }
+    private TncLink(KissStreamClient serialKiss) => _serialKiss = serialKiss;
 
     /// <summary>Whether <paramref name="error"/> is how a TNC that can't be reached or went away fails.</summary>
     public static bool IsLinkFailure(Exception error) =>
@@ -39,33 +33,9 @@ internal sealed class TncLink : IAsyncDisposable
     {
         if (address.SerialPort is { } name)
         {
-            // DTR and RTS raised, as KissSerialConnection opens a port: some radios (the Kenwood TH-D72A among them)
-            // hold their output while RTS is low.
-            var serial = new SerialPort(name, address.BaudRate, Parity.None, 8, StopBits.One)
-            {
-                Handshake = Handshake.None,
-                DtrEnable = true,
-                RtsEnable = true,
-            };
-            try
-            {
-                serial.Open();
-            }
-            catch (ArgumentException e)
-            {
-                serial.Dispose();
-                throw new IOException(e.Message, e);
-            }
-            catch
-            {
-                serial.Dispose();
-                throw;
-            }
-
-            return new TncLink(
-                serial,
-                new KissStreamClient(serial.BaseStream, radioPort, ownsStream: false, transmitLimit)
-            );
+            // Opened as KissSerialConnection opens a port, so an unplug is a lost link here too.
+            var serial = KissSerialConnection.OpenPort(name, address.BaudRate);
+            return new TncLink(new KissStreamClient(serial, radioPort, ownsStream: true, transmitLimit));
         }
 
         var tcp = new KissTcpClient(
@@ -109,7 +79,5 @@ internal sealed class TncLink : IAsyncDisposable
         {
             await _serialKiss.DisposeAsync();
         }
-
-        _serial?.Dispose();
     }
 }

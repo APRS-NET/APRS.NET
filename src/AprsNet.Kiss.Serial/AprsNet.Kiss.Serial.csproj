@@ -9,6 +9,7 @@
     <PackageReference Include="System.IO.Ports" />
     <None Include="README.md" Pack="true" PackagePath="/" />
     <InternalsVisibleTo Include="AprsNet.Kiss.Tests" />
+    <InternalsVisibleTo Include="aprscli" />
   </ItemGroup>
 
   <ItemGroup>
