@@ -14,9 +14,20 @@ internal sealed class TncLink : IAsyncDisposable
     private readonly KissTcpClient? _tcp;
     private readonly KissStreamClient? _serialKiss;
 
-    private TncLink(KissTcpClient tcp) => _tcp = tcp;
+    private TncLink(KissTcpClient tcp)
+    {
+        _tcp = tcp;
+        tcp.Warning += (_, e) => Warning?.Invoke(this, e);
+    }
 
-    private TncLink(KissStreamClient serialKiss) => _serialKiss = serialKiss;
+    private TncLink(KissStreamClient serialKiss)
+    {
+        _serialKiss = serialKiss;
+        serialKiss.Warning += (_, e) => Warning?.Invoke(this, e);
+    }
+
+    /// <inheritdoc cref="KissStreamClient.Warning"/>
+    public event EventHandler<KissWarningEventArgs>? Warning;
 
     /// <summary>Whether <paramref name="error"/> is how a TNC that can't be reached or went away fails.</summary>
     public static bool IsLinkFailure(Exception error) =>

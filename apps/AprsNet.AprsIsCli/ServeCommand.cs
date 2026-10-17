@@ -317,7 +317,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 var tnc = environment.CreateTncConnection(address);
                 tncs.Add(tnc);
                 var name = address.ToString();
-                TncCommand.ReportReconnects(tnc, name, environment.Error);
+                TncCommand.ReportConnection(tnc, name, environment.Error);
                 sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
                 health.AddSource(name, () => tnc.IsConnected);
                 described.Add($"the TNC at {name}");
