@@ -261,9 +261,15 @@ aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --t
 | `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
 | `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
 | `-n`, `--dry-run` | Print the packets without connecting. |
+| `--retry` | For a message: `default`, `aprs-is`, `slow-hf` or `none`, as for `send message`. |
+| `--wait-replies` | For a message: how long to keep listening for replies once it is answered. Default `2m`. |
 
 Each packet is printed once the TNC has it. Frames are spread out by the transmit limit: three at once, then one every
-10 seconds, so telemetry with its definitions takes a few seconds. A message is sent once, without a message number,
-so no acknowledgement comes back. Exit code 2 when the TNC cannot be reached.
+10 seconds, so telemetry with its definitions takes a few seconds. Exit code 2 when the TNC cannot be reached.
+
+`tnc send message` holds a conversation on the air as `send message` does on APRS-IS: the message carries an ID, is
+resent on the `--retry` schedule until the recipient's ack arrives over RF, and replies heard meanwhile and for
+`--wait-replies` afterwards are printed and acked. The transmit limit spaces out every send, acks included. Exit code 5
+when no ack comes.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

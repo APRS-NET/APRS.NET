@@ -22,7 +22,6 @@ public sealed class TncSendTests : IDisposable
 
     [Theory]
     [InlineData("status|Testing")]
-    [InlineData("message|N1ABC-7|Hello there")]
     [InlineData("position|--lat|49.05833|--lon|-72.02917|--symbol|/>|--comment|mobile")]
     [InlineData("object|LEADER|--lat|49.05833|--lon|-72.02917|--symbol|/>")]
     [InlineData("weather|--temp|68|--humidity|50|--lat|49.05833|--lon|-72.02917")]
@@ -61,24 +60,87 @@ public sealed class TncSendTests : IDisposable
     }
 
     [Fact]
-    public async Task AMessageIsSentOnceWithoutANumber()
+    public async Task AMessageGoesOutWithAnIdAndAReplyFromTheRadioAcknowledgesIt()
     {
-        var (result, received) = await SendAsync([
-            "tnc",
-            "send",
-            "message",
-            "N1ABC-7",
-            "Hello",
-            "-c",
-            Callsign,
-            "--tnc",
-            Address,
-        ]);
+        var run = new CliHarness().RunAsync(
+            ["tnc", "send", "message", "N1ABC-7", "Hello", "-c", Callsign, "--tnc", Address, "--wait-replies", "0"],
+            Token
+        );
+        using var tnc = await _tnc.AcceptTcpClientAsync(Token);
+        var heard = new Heard(tnc.GetStream());
+
+        Assert.Equal("KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1::N1ABC-7  :Hello{01}", await heard.NextAsync());
+
+        // The radio answers with a reply-ack: it delivers the message, and the reply is acked in turn.
+        await tnc.GetStream().WriteAsync(Kiss($"N1ABC-7>APRS,WIDE1-1::{Callsign} :Hi back{{AB}}01"), Token);
+        Assert.Equal("KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1::N1ABC-7  :ackAB}01", await heard.NextAsync());
+        var result = await run;
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1::N1ABC-7  :Hello{Environment.NewLine}", result.Out);
-        Assert.Single(new KissDecoder().Decode(received));
-        Assert.Contains("no acknowledgement is expected", result.Error, StringComparison.Ordinal);
+        Assert.Contains("Reply from N1ABC-7: Hi back", result.Out, StringComparison.Ordinal);
+        Assert.Contains("Acknowledged by N1ABC-7 after 1 attempt.", result.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AMessageNobodyAcknowledgesOnTheAirFailsWhenItsRetriesRunOut()
+    {
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var run = new CliHarness { Clock = clock }.RunAsync(
+            [
+                "tnc",
+                "send",
+                "message",
+                "N1ABC-7",
+                "Hello",
+                "-c",
+                Callsign,
+                "--tnc",
+                Address,
+                "--retry",
+                "none",
+                "--wait-replies",
+                "0",
+            ],
+            Token
+        );
+        using var tnc = await _tnc.AcceptTcpClientAsync(Token);
+        var heard = new Heard(tnc.GetStream());
+        Assert.EndsWith(":Hello{01}", await heard.NextAsync(), StringComparison.Ordinal);
+
+        clock.Advance(TimeSpan.FromMinutes(2));
+        var result = await run;
+
+        Assert.Equal(5, result.ExitCode);
+        Assert.Contains("no acknowledgement after 1 attempt.", result.Error, StringComparison.Ordinal);
+    }
+
+    private static byte[] Kiss(string line) =>
+        KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse(line))).Encode();
+
+    /// <summary>The TNC's side of the link: each frame aprscli sent, as a TNC2 line.</summary>
+    private sealed class Heard(NetworkStream stream)
+    {
+        private readonly KissDecoder _decoder = new();
+        private readonly Queue<string> _lines = new();
+        private readonly byte[] _buffer = new byte[4096];
+
+        public async Task<string> NextAsync()
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(10));
+            while (_lines.Count == 0)
+            {
+                var read = await stream.ReadAsync(_buffer, timeout.Token);
+                Assert.NotEqual(0, read);
+                foreach (var frame in _decoder.Decode(_buffer.AsSpan(0, read)))
+                {
+                    Assert.True(frame.TryGetAx25(out var ax25));
+                    _lines.Enqueue(ax25!.ToAprsPacket().ToString());
+                }
+            }
+
+            return _lines.Dequeue();
+        }
     }
 
     [Fact]
@@ -153,7 +215,10 @@ public sealed class TncSendTests : IDisposable
     )]
     [InlineData(new[] { "status", "x", "-c", "N0CALL", "--tnc", "tnc" }, "N0CALL is a placeholder")]
     [InlineData(new[] { "status", "x", "-c", "KD9XYZ-L", "-n" }, "")]
-    [InlineData(new[] { "message", "N1ABC", "hi", "-c", Callsign, "--wait-replies", "1m", "-n" }, "")]
+    [InlineData(
+        new[] { "message", "N1ABC", "hi", "-c", Callsign, "--tnc", "tnc", "--wait-replies", "soon" },
+        "--wait-replies"
+    )]
     public async Task RefusesWhatItCannotSend(string[] args, string message)
     {
         var result = await new CliHarness().RunAsync(["tnc", "send", .. args], Token);
