@@ -48,6 +48,13 @@ internal sealed class TncCommand(CliEnvironment environment)
         Description = "Stop after this long, for example 90s, 10m, 2h or 1d.",
     };
 
+    private readonly Option<string?> _quietWarning = new("--quiet-warning")
+    {
+        Description =
+            "Warn when the TNC sends nothing at all for this long, for example 10m: it may be switched off behind a "
+            + "port that stays open. Pick longer than the channel is ever quiet. Needs --reconnect. Default: off.",
+    };
+
     public Command Build()
     {
         _format.AcceptOnlyFromAmong("raw", "decoded", "json", "pretty");
@@ -59,6 +66,7 @@ internal sealed class TncCommand(CliEnvironment environment)
             _count,
             _duration,
             _reconnect,
+            _quietWarning,
         };
         listen.SetAction(ListenAsync);
         var ports = new Command("ports", "List the serial ports present, for --tnc serial:PORT.");
@@ -98,6 +106,22 @@ internal sealed class TncCommand(CliEnvironment environment)
             duration = parsed;
         }
 
+        TimeSpan? quietWarning = null;
+        if (parseResult.GetValue(_quietWarning) is { } quietText)
+        {
+            if (!DurationParser.TryParse(quietText, out var quiet) || quiet <= TimeSpan.Zero)
+            {
+                return await UsageAsync($"--quiet-warning '{quietText}' is not valid. Use a duration such as 10m.");
+            }
+
+            if (!parseResult.GetValue(_reconnect))
+            {
+                return await UsageAsync("--quiet-warning needs --reconnect.");
+            }
+
+            quietWarning = quiet;
+        }
+
         var format = Enum.Parse<OutputFormat>(parseResult.GetValue(_format)!, ignoreCase: true);
         var count = parseResult.GetValue(_count);
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -108,7 +132,11 @@ internal sealed class TncCommand(CliEnvironment environment)
 
         if (parseResult.GetValue(_reconnect))
         {
-            await using var connection = environment.CreateTncConnection(address, parseResult.GetValue(_radioPort));
+            await using var connection = environment.CreateTncConnection(
+                address,
+                parseResult.GetValue(_radioPort),
+                quietWarning
+            );
             ReportConnection(connection, address.ToString(), environment.Error);
             try
             {

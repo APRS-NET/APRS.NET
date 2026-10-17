@@ -79,6 +79,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
         Description = "Stop after this long, for example 2h. Default: until Ctrl+C.",
     };
 
+    private readonly Option<string?> _quietWarning = new("--quiet-warning")
+    {
+        Description =
+            "Warn when a --tnc sends nothing at all for this long, for example 10m: it may be switched off behind a "
+            + "port that stays open. Pick longer than the channel is ever quiet. /health shows it as quiet. Default: off.",
+    };
+
     public Command Build()
     {
         var command = new Command(
@@ -87,7 +94,19 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 + "heard on several sources is served once. Clients are read-only."
         );
         foreach (
-            var option in new Option[] { _callsign, _server, _filter, _tnc, _listen, _http, _name, _history, _duration }
+            var option in new Option[]
+            {
+                _callsign,
+                _server,
+                _filter,
+                _tnc,
+                _listen,
+                _http,
+                _name,
+                _history,
+                _duration,
+                _quietWarning,
+            }
         )
         {
             command.Options.Add(option);
@@ -114,7 +133,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
         IReadOnlyList<TncAddress> Tncs,
         AprsIsServerOptions Local,
         IPEndPoint? Http,
-        TimeSpan? Duration
+        TimeSpan? Duration,
+        TimeSpan? QuietWarning
     );
 
     private bool TryBind(ParseResult parseResult, out ServeOptions options, out string error)
@@ -198,6 +218,18 @@ internal sealed class ServeCommand(CliEnvironment environment)
             duration = parsed;
         }
 
+        TimeSpan? quietWarning = null;
+        if (parseResult.GetValue(_quietWarning) is { } quietText)
+        {
+            if (!DurationParser.TryParse(quietText, out var quiet) || quiet <= TimeSpan.Zero)
+            {
+                error = $"--quiet-warning '{quietText}' is not valid. Use a number and a unit: 90s, 10m or 2h.";
+                return false;
+            }
+
+            quietWarning = quiet;
+        }
+
         var upstream = parsedFilter is null
             ? null
             : new AprsIsClientOptions
@@ -229,7 +261,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, tncs, local, http, duration);
+        options = new ServeOptions(upstream, tncs, local, http, duration, quietWarning);
         error = "";
         return true;
     }
@@ -316,12 +348,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
         {
             foreach (var address in options.Tncs)
             {
-                var tnc = environment.CreateTncConnection(address);
+                var tnc = environment.CreateTncConnection(address, quietWarning: options.QuietWarning);
                 tncs.Add(tnc);
                 var name = address.ToString();
                 TncCommand.ReportConnection(tnc, name, environment.Error);
                 sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
-                health.AddSource(name, () => tnc.IsConnected);
+                health.AddSource(name, () => tnc.IsConnected, () => tnc.IsQuiet);
                 described.Add($"the TNC at {name}");
             }
 

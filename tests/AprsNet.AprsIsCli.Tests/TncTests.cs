@@ -89,6 +89,21 @@ public sealed class TncTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("10m", false, "--quiet-warning needs --reconnect.")]
+    [InlineData("soon", true, "--quiet-warning 'soon' is not valid.")]
+    public async Task AQuietWarningMustBeADurationWithReconnect(string quiet, bool reconnect, string message)
+    {
+        string[] args = ["tnc", "listen", "--tnc", Address, "--quiet-warning", quiet];
+        var result = await new CliHarness().RunAsync(
+            reconnect ? [.. args, "--reconnect"] : args,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(ExitCodes.Usage, result.ExitCode);
+        Assert.Contains(message, result.Error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task ListenDecodesInTheChosenFormat()
     {
