@@ -189,8 +189,8 @@ public sealed class AprsIsClient : IAsyncDisposable
     /// <c>MessagingStation</c> of <c>AprsNet.Messaging</c> sends them again until they are.
     /// </remarks>
     /// <exception cref="InvalidOperationException">
-    /// The client is not connected, the connection has ended, or the login is not verified: the server drops packets
-    /// from an unverified login, so they are refused here rather than lost silently.
+    /// The client is not connected, the connection has ended, the login is listen-only, or the login is not verified:
+    /// the server drops packets from an unverified login, so they are refused here rather than lost silently.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// The packet has no header, holds a line break or NUL byte, is longer than an APRS-IS line (510 bytes), or
@@ -201,6 +201,11 @@ public sealed class AprsIsClient : IAsyncDisposable
         ArgumentNullException.ThrowIfNull(packet);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         CheckSendable(packet);
+        if (_options.ListenOnly)
+        {
+            throw ListenOnlyRefusal(_options.Callsign);
+        }
+
         var login = Login ?? throw new InvalidOperationException("Connect before sending.");
         if (login.Status != LoginStatus.Verified)
         {
@@ -281,10 +286,14 @@ public sealed class AprsIsClient : IAsyncDisposable
         _shutdown.Dispose();
     }
 
+    /// <summary>The error for a send on a listen-only login.</summary>
+    internal static InvalidOperationException ListenOnlyRefusal(string login) =>
+        new($"This login is listen-only ({login}): it can receive but not send. Transmitting needs a callsign.");
+
     private string BuildLoginLine()
     {
         var line =
-            $"user {_options.Callsign} pass {_options.Passcode} vers {_options.SoftwareName} {_options.SoftwareVersion}";
+            $"user {_options.Callsign} pass {_options.LoginPasscode} vers {_options.SoftwareName} {_options.SoftwareVersion}";
         return _options.Filter is { Length: > 0 } filter ? $"{line} filter {filter}" : line;
     }
 
