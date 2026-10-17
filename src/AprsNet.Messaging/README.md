@@ -22,6 +22,7 @@ await foreach (var outgoing in station.ReadOutgoingAsync(cancellationToken))
 
 var message = station.Send(Callsign.Parse("WU2Z"), "Hello");
 message.StateChanged += (_, _) => Console.WriteLine(message.State); // Sent, Retrying, Delivered, Rejected, Failed
+message.Attempted += (_, _) => Console.WriteLine($"Try {message.Attempts}, next at {message.NextDue}"); // each retry
 station.MessageReceived += (_, e) => Console.WriteLine($"{e.Message.From}: {e.Message.Text}");
 ```
 

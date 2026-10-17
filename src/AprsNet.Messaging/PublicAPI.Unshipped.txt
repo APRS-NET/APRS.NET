@@ -149,3 +149,4 @@ override AprsNet.Messaging.Bulletin.GetHashCode() -> int
 override AprsNet.Messaging.Bulletin.ToString() -> string!
 static AprsNet.Messaging.Bulletin.operator !=(AprsNet.Messaging.Bulletin? left, AprsNet.Messaging.Bulletin? right) -> bool
 static AprsNet.Messaging.Bulletin.operator ==(AprsNet.Messaging.Bulletin? left, AprsNet.Messaging.Bulletin? right) -> bool
+AprsNet.Messaging.OutgoingMessage.Attempted -> System.EventHandler?

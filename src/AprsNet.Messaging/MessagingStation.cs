@@ -125,6 +125,7 @@ public sealed class MessagingStation : IDisposable
                 // Not acked, so it doesn't wait its turn or hold up the next one.
                 Transmit(correspondent, message, _time.GetUtcNow());
                 Add(events, message.SetState(OutgoingMessageState.Sent));
+                events.Add(message.RaiseAttempted);
             }
             else
             {
@@ -457,6 +458,7 @@ public sealed class MessagingStation : IDisposable
                                 active.Attempts == 1 ? OutgoingMessageState.Sent : OutgoingMessageState.Retrying
                             )
                         );
+                        events.Add(active.RaiseAttempted);
                         break;
                     }
 

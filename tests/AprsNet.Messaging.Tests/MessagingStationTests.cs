@@ -145,6 +145,41 @@ public sealed class MessagingStationTests : IDisposable
     }
 
     [Fact]
+    public void EachRetryIsReportedThoughTheStateStaysRetrying()
+    {
+        var profile = new RetryProfile(
+            "Three",
+            [TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(120)],
+            TimeSpan.FromSeconds(30)
+        );
+        var message = _station.Send(Wu2z, "Hello", profile);
+        var attempts = new List<(int Attempts, OutgoingMessageState State, DateTimeOffset? LastSent)>();
+        var changes = 0;
+        message.Attempted += (_, _) => attempts.Add((message.Attempts, message.State, message.LastSent));
+        message.StateChanged += (_, _) => changes++;
+
+        Wait(40);
+        Wait(70);
+        Wait(140);
+
+        Assert.Equal([2, 3, 4], attempts.Select(a => a.Attempts));
+        Assert.All(attempts, a => Assert.Equal(OutgoingMessageState.Retrying, a.State));
+        Assert.All(attempts, a => Assert.NotNull(a.LastSent));
+        Assert.Equal(1, changes); // Sent to Retrying, once
+    }
+
+    [Fact]
+    public void AMessageWithoutAnIdReportsItsOneSend()
+    {
+        var reported = 0;
+        var message = _station.Send(Wu2z, "No ack wanted", withId: false);
+        message.Attempted += (_, _) => reported++;
+        Assert.Equal(1, message.Attempts);
+        Wait(600);
+        Assert.Equal(0, reported); // it went out inside Send, before a handler could be attached, and never again
+    }
+
+    [Fact]
     public void NoRetryComesInsideTheDuplicateWindow()
     {
         var profile = new RetryProfile("Quick", [TimeSpan.FromSeconds(30)], TimeSpan.FromSeconds(30));

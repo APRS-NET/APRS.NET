@@ -28,6 +28,7 @@ await foreach (var outgoing in station.ReadOutgoingAsync(cancellationToken))
 // Sending, and following one message.
 OutgoingMessage message = station.Send(Callsign.Parse("WU2Z"), "Hello");
 message.StateChanged += (_, _) => Console.WriteLine(message.State); // Sent, Retrying, Delivered, Rejected, Failed
+message.Attempted += (_, _) => Console.WriteLine($"Try {message.Attempts}, next at {message.NextDue}"); // each retry
 
 // Messages for this station, each delivered once.
 station.MessageReceived += (_, e) => Console.WriteLine($"{e.Message.From}: {e.Message.Text}");
