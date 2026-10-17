@@ -185,8 +185,8 @@ public sealed class AprsIsClient : IAsyncDisposable
     /// </summary>
     /// <remarks>
     /// APRS-IS has no acknowledgement for a sent packet: when this returns, the line has been written to the
-    /// connection, not necessarily delivered. Messages are acknowledged by their recipient, see
-    /// <see cref="AprsMessenger"/>.
+    /// connection, not necessarily delivered. Messages are acknowledged by their recipient; the
+    /// <c>MessagingStation</c> of <c>AprsNet.Messaging</c> sends them again until they are.
     /// </remarks>
     /// <exception cref="InvalidOperationException">
     /// The client is not connected, the connection has ended, or the login is not verified: the server drops packets

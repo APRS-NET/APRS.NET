@@ -38,25 +38,14 @@ with `PacketAddress`. Sends are spread out, 5 at once and then one every 6 secon
 `SendInterval`); a sender waits for its turn rather than failing. Unverified logins, packets received from APRS-IS
 (they carry a q-construct) and lines APRS-IS cannot carry are refused.
 
-`AprsMessenger` handles messages: it gives each one an ID, resends it until the recipient acknowledges or rejects
-it (after 30 s, 1, 2, 4 and 8 minutes by default), and acknowledges messages sent to this station. Pass it every
-received packet:
-
 ```csharp
 var address = PacketAddress.Parse("N0CALL-9", "APZ123", []);
 await client.SendAsync(address.Create(new StatusReport { Text = "On the air" }));
-
-using var messenger = new AprsMessenger(address, client.SendAsync);
-_ = Task.Run(async () =>
-{
-    await foreach (var packet in client.ReadPacketsAsync())
-        if (await messenger.HandleAsync(packet) is { } message)
-            Console.WriteLine($"Message: {message.Text}");
-});
-
-var delivery = await messenger.SendAsync("WU2Z", "Hello there");
-Console.WriteLine(delivery.Status); // Acknowledged, Rejected or NotAcknowledged
 ```
+
+For messages, which are resent until the recipient acknowledges them, use `MessagingStation` from
+[AprsNet.Messaging](https://www.nuget.org/packages/AprsNet.Messaging): hand it every received packet and send what
+it hands back.
 
 A login filter of `g/<callsign>` makes sure messages and acknowledgements addressed to the station reach it.
 
@@ -78,8 +67,7 @@ await foreach (var packet in connection.ReadPacketsAsync()) // one stream across
 ```
 
 `SendAsync` waits while the connection is down and sends once it is back; `SetFilterAsync` applies now and on every
-later login; one send rate limit covers every connection. `AprsMessenger` works with it the same way
-(`new AprsMessenger(address, connection.SendAsync)`).
+later login; one send rate limit covers every connection.
 
 ## TLS
 

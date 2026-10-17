@@ -116,33 +116,6 @@ AprsNet.AprsIsTcpClient.AprsIsClientOptions.SendInterval.get -> System.TimeSpan
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.SendInterval.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClient.PacketsSent.get -> long
 AprsNet.AprsIsTcpClient.AprsIsClient.SendAsync(AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
-AprsNet.AprsIsTcpClient.AprsMessenger
-AprsNet.AprsIsTcpClient.AprsMessenger.AprsMessenger(AprsNet.Packets.PacketAddress! address, System.Func<AprsNet.Packets.AprsPacket!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask>! send, System.TimeProvider? timeProvider = null) -> void
-AprsNet.AprsIsTcpClient.AprsMessenger.Dispose() -> void
-AprsNet.AprsIsTcpClient.AprsMessenger.HandleAsync(AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<AprsNet.Packets.MessagePayload?>
-AprsNet.AprsIsTcpClient.AprsMessenger.RetryDelays.get -> System.Collections.Generic.IReadOnlyList<System.TimeSpan>!
-AprsNet.AprsIsTcpClient.AprsMessenger.RetryDelays.init -> void
-AprsNet.AprsIsTcpClient.AprsMessenger.SendAsync(string! addressee, string! text, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<AprsNet.AprsIsTcpClient.MessageDelivery!>!
-AprsNet.AprsIsTcpClient.MessageDelivery
-AprsNet.AprsIsTcpClient.MessageDelivery.Attempts.get -> int
-AprsNet.AprsIsTcpClient.MessageDelivery.Attempts.init -> void
-AprsNet.AprsIsTcpClient.MessageDelivery.<Clone>$() -> AprsNet.AprsIsTcpClient.MessageDelivery!
-AprsNet.AprsIsTcpClient.MessageDelivery.Deconstruct(out string! MessageId, out AprsNet.AprsIsTcpClient.MessageDeliveryStatus Status, out int Attempts) -> void
-AprsNet.AprsIsTcpClient.MessageDelivery.Equals(AprsNet.AprsIsTcpClient.MessageDelivery? other) -> bool
-AprsNet.AprsIsTcpClient.MessageDelivery.MessageDelivery(string! MessageId, AprsNet.AprsIsTcpClient.MessageDeliveryStatus Status, int Attempts) -> void
-AprsNet.AprsIsTcpClient.MessageDelivery.MessageId.get -> string!
-AprsNet.AprsIsTcpClient.MessageDelivery.MessageId.init -> void
-AprsNet.AprsIsTcpClient.MessageDeliveryStatus
-AprsNet.AprsIsTcpClient.MessageDeliveryStatus.Acknowledged = 0 -> AprsNet.AprsIsTcpClient.MessageDeliveryStatus
-AprsNet.AprsIsTcpClient.MessageDelivery.Status.get -> AprsNet.AprsIsTcpClient.MessageDeliveryStatus
-AprsNet.AprsIsTcpClient.MessageDelivery.Status.init -> void
-AprsNet.AprsIsTcpClient.MessageDeliveryStatus.NotAcknowledged = 2 -> AprsNet.AprsIsTcpClient.MessageDeliveryStatus
-AprsNet.AprsIsTcpClient.MessageDeliveryStatus.Rejected = 1 -> AprsNet.AprsIsTcpClient.MessageDeliveryStatus
-override AprsNet.AprsIsTcpClient.MessageDelivery.Equals(object? obj) -> bool
-override AprsNet.AprsIsTcpClient.MessageDelivery.GetHashCode() -> int
-override AprsNet.AprsIsTcpClient.MessageDelivery.ToString() -> string!
-static AprsNet.AprsIsTcpClient.MessageDelivery.operator !=(AprsNet.AprsIsTcpClient.MessageDelivery? left, AprsNet.AprsIsTcpClient.MessageDelivery? right) -> bool
-static AprsNet.AprsIsTcpClient.MessageDelivery.operator ==(AprsNet.AprsIsTcpClient.MessageDelivery? left, AprsNet.AprsIsTcpClient.MessageDelivery? right) -> bool
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxPacketSilence.get -> System.TimeSpan?
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxPacketSilence.set -> void
 AprsNet.AprsIsTcpClient.AprsIsClientOptions.MaxReconnectDelay.get -> System.TimeSpan
