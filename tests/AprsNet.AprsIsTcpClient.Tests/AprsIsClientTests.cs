@@ -118,6 +118,21 @@ public class AprsIsClientTests
     }
 
     [Fact]
+    public async Task LoginFailsClearlyWhenTheOtherEndIsAKissTnc()
+    {
+        // Dire Wolf's KISS port, given as an APRS-IS server by mistake: it ignores the login and sends frames.
+        var transport = new FakeAprsTransport();
+        transport.Server("\u00C0\u0000\u0082\u00A0\u00A4\u00A6@@`=3906.66N/09505.61W$\u00C0");
+        await using var client = new AprsIsClient(Options(), transport: transport);
+
+        var ex = await Assert.ThrowsAsync<LoginException>(() =>
+            client.ConnectAsync(TestContext.Current.CancellationToken)
+        );
+
+        Assert.Contains("KISS TNC, not an APRS-IS server", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task LoginIsRejectedWhenTheServerRefusesN0CallWithoutALogresp()
     {
         // Seen live on several Tier 2 servers: a comment line, no "# logresp", and the connection stays open.
