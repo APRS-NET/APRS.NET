@@ -7,9 +7,9 @@ public class SendTests
 {
     private const string Callsign = "KD9XYZ-9";
 
-    private static CliHarness Verified(string status = "verified")
+    private static CliHarness Verified(string status = "verified", TimeProvider? clock = null)
     {
-        var harness = new CliHarness();
+        var harness = new CliHarness { Clock = clock };
         harness.Environment["APRS_PASSCODE"] = AprsIsPasscode
             .Compute(Callsign)
             .ToString(System.Globalization.CultureInfo.InvariantCulture);
@@ -136,6 +136,58 @@ public class SendTests
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Acknowledged by WU2Z after 1 attempt.", result.Out, StringComparison.Ordinal);
         Assert.Equal($"g/{Callsign}", harness.ClientOptions!.Filter);
+    }
+
+    [Fact]
+    public async Task AMessageCarriesAReplyAckIdAndAReplyCanAcknowledgeIt()
+    {
+        var harness = Verified();
+
+        var run = harness.RunAsync(
+            ["send", "message", "WU2Z", "Hello there", "-c", Callsign, "--wait-replies", "0"],
+            TestContext.Current.CancellationToken
+        );
+        var written = await WaitForWritten(harness, 2);
+        Assert.Equal("KD9XYZ-9>APZNET::WU2Z     :Hello there{01}", written[1]);
+
+        // A reply carrying the ack (APRS 1.1 reply-ack) delivers the message, and is itself acked.
+        harness.Transport.Server($"WU2Z>APRS,TCPIP*,qAC,T2TEST::{Callsign} :Got it{{7}}01");
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("Reply from WU2Z: Got it", result.Out, StringComparison.Ordinal);
+        Assert.Contains("Acknowledged by WU2Z after 1 attempt.", result.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AMessageNobodyAnswersFailsWhenItsRetriesRunOut()
+    {
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var harness = Verified(clock: clock);
+
+        var run = harness.RunAsync(
+            ["send", "message", "WU2Z", "Hello there", "-c", Callsign, "--retry", "none", "--wait-replies", "0"],
+            TestContext.Current.CancellationToken
+        );
+        await WaitForWritten(harness, 2);
+        clock.Advance(TimeSpan.FromMinutes(2));
+        var result = await run;
+
+        Assert.Equal(5, result.ExitCode);
+        Assert.Contains("no acknowledgement after 1 attempt.", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnUnknownRetryProfileIsAUsageError()
+    {
+        var result = await Verified()
+            .RunAsync(
+                ["send", "message", "WU2Z", "Hello", "-c", Callsign, "--retry", "often"],
+                TestContext.Current.CancellationToken
+            );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("often", result.Error, StringComparison.Ordinal);
     }
 
     [Fact]
