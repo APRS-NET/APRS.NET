@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.2...v0.4.0-alpha.3) (2026-10-17)
+
+
+### Bug Fixes
+
+* **cli:** show a message's ID in send --dry-run ([cf3588c](https://github.com/APRS-NET/APRS.NET/commit/cf3588c8b985c19e1eb225f6de6ef8284279c427)), closes [#194](https://github.com/APRS-NET/APRS.NET/issues/194)
+
 ## [0.4.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.1...v0.4.0-alpha.2) (2026-10-17)
 
 
