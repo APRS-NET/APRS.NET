@@ -121,6 +121,40 @@ await foreach (var packet in tnc.ReadPacketsAsync(cancellationToken))
 }
 ```
 
+From the command line, give the port as `serial:PORT[@BAUD]` wherever a TNC goes:
+
+```sh
+aprscli tnc ports                                        # the serial ports present
+aprscli tnc listen -t serial:/dev/ttyUSB0 --reconnect    # 9600 baud; serial:/dev/ttyACM0@57600 for a NinoTNC
+aprscli serve -t serial:/dev/ttyUSB0 --http 127.0.0.1:14590
+```
+
+When the TNC is unplugged, `tnc listen --reconnect` and `serve` say so ("lost the TNC at /dev/ttyUSB0: … probably
+unplugged; reconnecting in 2s"), say "is not present; is the TNC plugged in?" while it is away, and "reconnected" once
+it is back. Without `--reconnect`, `tnc listen` ends with exit code 2. A program has the port to itself while it reads;
+another one opening it gets "Device or resource busy".
+
+### A radio's built-in TNC
+
+Some handhelds and mobiles, such as the Kenwood TH-D72A, have a TNC behind a USB serial port. A few things set them
+apart from a stand-alone TNC:
+
+- **KISS has to be switched on.** In its APRS mode the radio prints each packet as a line of text, which a KISS reader
+  can't use; `aprscli` warns "the TNC is sending text, not KISS frames; is it in KISS mode?". Switch the radio's TNC to
+  its packet mode (PACKET12 on the TH-D72A), then send it `KISS ON` and `RESTART`, each ending in a carriage return.
+  The KISS exit frame (`C0 FF C0`) returns it to its `cmd:` prompt.
+- **KISS doesn't survive a power cut.** Switched off and on again, the radio comes back in packet mode with KISS off,
+  sending text. Switch it on again.
+- **Switching the radio off may not close the port.** The USB chip can be powered from the computer, so the port stays
+  open and nothing fails; only silence shows it. `--quiet-warning 10m` (or `QuietWarning`) reports a TNC that has sent
+  nothing for that long. Pick a time longer than your channel is ever quiet.
+- **DTR and RTS.** Some radios send nothing while RTS is low; the serial connection raises DTR and RTS when it opens the
+  port, as a terminal program does.
+- **Other output on the same port.** With GPS output switched on, NMEA sentences arrive between the packets, and the
+  radio may cut a line short where the two meet.
+
+`tools/d72.sh` in this repository switches a TH-D72A into and out of KISS mode and shows what it is sending.
+
 ## Share one TNC between apps
 
 Dire Wolf already lets several apps connect. For a TNC that takes one connection, or to give every app one transmit
