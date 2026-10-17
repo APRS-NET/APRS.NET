@@ -109,7 +109,7 @@ internal sealed class TncCommand(CliEnvironment environment)
         if (parseResult.GetValue(_reconnect))
         {
             await using var connection = environment.CreateTncConnection(address, parseResult.GetValue(_radioPort));
-            ReportReconnects(connection, address.ToString(), environment.Error);
+            ReportConnection(connection, address.ToString(), environment.Error);
             try
             {
                 await PrintAsync(connection.ReadPacketsAsync(run.Token), format, count);
@@ -138,6 +138,7 @@ internal sealed class TncCommand(CliEnvironment environment)
         }
 
         await using var _ = client;
+        client.Warning += (_, e) => ReportWarning(address.ToString(), e, environment.Error);
 
         try
         {
@@ -161,11 +162,12 @@ internal sealed class TncCommand(CliEnvironment environment)
     }
 
     /// <summary>
-    /// Prints a line when a TNC is lost, with the wait before the next try, and when it is back: for
+    /// Prints a line when a TNC is lost, with the wait before the next try, and when it is back, and its warnings: for
     /// <c>tnc listen --reconnect</c> and <c>serve</c>.
     /// </summary>
-    internal static void ReportReconnects(KissConnection connection, string name, TextWriter error)
+    internal static void ReportConnection(KissConnection connection, string name, TextWriter error)
     {
+        connection.Warning += (_, e) => ReportWarning(name, e, error);
         var lost = false;
         connection.StateChanged += (_, e) =>
         {
@@ -186,6 +188,14 @@ internal sealed class TncCommand(CliEnvironment environment)
             }
         };
     }
+
+    /// <summary>Prints a TNC's warning, or that it is over.</summary>
+    internal static void ReportWarning(string name, KissWarningEventArgs warning, TextWriter error) =>
+        error.WriteLine(
+            warning.IsActive
+                ? $"aprscli: warning: the TNC at {name}: {warning.Message}"
+                : $"aprscli: the TNC at {name}: {warning.Message}"
+        );
 
     private async Task<int> ListPortsAsync(ParseResult parseResult, CancellationToken cancellationToken)
     {
