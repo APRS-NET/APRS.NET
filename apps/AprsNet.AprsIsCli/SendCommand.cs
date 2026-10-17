@@ -230,26 +230,18 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
         var addressee = new Argument<string>("addressee") { Description = "Callsign to send the message to." };
         var messageText = new Argument<string>("text") { Description = "Message text, at most 67 characters." };
-        var message = toTnc
-            ? new Command(
-                "message",
-                "Transmit a message once. It carries no message number, so the recipient does not acknowledge it."
-            )
-            {
-                addressee,
-                messageText,
-            }
-            : new Command(
-                "message",
-                "Send a message and wait for the recipient's acknowledgement, resending it until then (see "
-                    + "--retry). Replies are acknowledged and printed."
-            )
-            {
-                addressee,
-                messageText,
-                _waitReplies,
-                _retry,
-            };
+        var message = new Command(
+            "message",
+            (toTnc ? "Transmit a message through the TNC" : "Send a message")
+                + " and wait for the recipient's acknowledgement, resending it until then (see --retry). Replies "
+                + "are acknowledged and printed."
+        )
+        {
+            addressee,
+            messageText,
+            _waitReplies,
+            _retry,
+        };
         _retry.AcceptOnlyFromAmong([.. RetryProfiles.Keys]);
         SetAction(
             message,
@@ -557,7 +549,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
         if (parseResult.GetValue(_dryRun))
         {
-            if (message is not null && !toTnc)
+            if (message is not null)
             {
                 // As the station sends it, with the message ID a real send would get.
                 using var station = new MessagingStation(address.Source);
@@ -577,18 +569,6 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             return ExitCodes.Success;
         }
 
-        if (toTnc)
-        {
-            return await TransmitAsync(
-                parseResult,
-                commandName,
-                packets,
-                frames,
-                message is not null,
-                cancellationToken
-            );
-        }
-
         var waitReplies = TimeSpan.Zero;
         if (message is not null)
         {
@@ -600,6 +580,20 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                     $"--wait-replies '{waitText}' is not valid. Use 0 or a duration such as 30s or 5m."
                 );
             }
+        }
+
+        if (toTnc)
+        {
+            return await TransmitAsync(
+                parseResult,
+                commandName,
+                address,
+                packets,
+                frames,
+                message,
+                waitReplies,
+                cancellationToken
+            );
         }
 
         if (!TryReadPasscode(parseResult, out var passcode, out var passcodeError))
@@ -652,7 +646,9 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             }
 
             return await SendMessageAsync(
-                connection,
+                (packet, token) => connection.SendAsync(packet, token),
+                ParseLines(connection.ReadLinesAsync(run.Token), CancellationToken.None), // stopped by the reader
+                "aprs-is",
                 address,
                 message,
                 RetryProfiles[parseResult.GetValue(_retry)!],
@@ -681,13 +677,18 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         }
     }
 
-    /// <summary>Sends each frame through the TNC, in order, waiting for the transmit limit between them.</summary>
+    /// <summary>
+    /// Sends each frame through the TNC, in order, waiting for the transmit limit between them; or holds a message
+    /// conversation through it, as on APRS-IS.
+    /// </summary>
     private async Task<int> TransmitAsync(
         ParseResult parseResult,
         string commandName,
+        PacketAddress source,
         AprsPacket[] packets,
         Ax25Frame[] frames,
-        bool isMessage,
+        MessagePayload? message,
+        TimeSpan waitReplies,
         CancellationToken cancellationToken
     )
     {
@@ -718,6 +719,22 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         try
         {
             client = await TncLink.OpenAsync(address, radioPort, limit, cancellationToken);
+            if (message is not null)
+            {
+                var link = client;
+                link.Warning += (_, e) => TncCommand.ReportWarning(address.ToString(), e, environment.Error);
+                return await SendMessageAsync(
+                    (packet, token) => link.SendFrameAsync(Ax25Frame.FromAprsPacket(packet), token),
+                    link.ReadPacketsAsync(cancellationToken),
+                    "rf",
+                    source,
+                    message,
+                    RetryProfiles[parseResult.GetValue(_retry)!],
+                    waitReplies,
+                    cancellationToken
+                );
+            }
+
             for (var i = 0; i < frames.Length; i++)
             {
                 if (i == limit.Burst && limit.IsOn)
@@ -752,13 +769,6 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             }
         }
 
-        if (isMessage)
-        {
-            await environment.Error.WriteLineAsync(
-                "aprscli: sent once, without a message number; no acknowledgement is expected."
-            );
-        }
-
         return ExitCodes.Success;
     }
 
@@ -775,8 +785,13 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
     /// Sends <paramref name="message"/> through a <see cref="MessagingStation"/> and waits until it is acknowledged,
     /// rejected or has run out of retries; then listens for <paramref name="waitReplies"/> more.
     /// </summary>
+    /// <param name="send">Sends a packet: to APRS-IS, or through the TNC.</param>
+    /// <param name="received">Every packet received, for the whole run, so acks and replies reach the station.</param>
+    /// <param name="source">Where <paramref name="received"/> comes from, for the station.</param>
     private async Task<int> SendMessageAsync(
-        AprsIsConnection connection,
+        Func<AprsPacket, CancellationToken, ValueTask> send,
+        IAsyncEnumerable<AprsPacket> received,
+        string source,
         PacketAddress address,
         MessagePayload message,
         RetryProfile retryProfile,
@@ -799,14 +814,15 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        // Everything the station hands out goes to APRS-IS and is printed: the message, its retries, and acks.
+        // Everything the station hands out is sent and printed: the message, its retries, and acks. It runs until the
+        // station is disposed, which ends it once what is queued has gone, so the last ack isn't lost.
         var sending = Task.Run(
             async () =>
             {
-                await foreach (var outgoing in station.ReadOutgoingAsync(stop.Token))
+                await foreach (var outgoing in station.ReadOutgoingAsync(cancellationToken))
                 {
                     var packet = address.Create(outgoing.Payload);
-                    await connection.SendAsync(packet, stop.Token);
+                    await send(packet, cancellationToken);
                     await environment.Out.WriteLineAsync(packet.ToString());
                 }
             },
@@ -817,9 +833,9 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         var reading = Task.Run(
             async () =>
             {
-                await foreach (var line in connection.ReadLinesAsync(stop.Token))
+                await foreach (var packet in received.WithCancellation(stop.Token))
                 {
-                    station.Receive(AprsPacket.Parse(line), "aprs-is");
+                    station.Receive(packet, source);
                 }
             },
             CancellationToken.None
@@ -888,11 +904,29 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
         try
         {
-            await Task.WhenAll(reading, sending);
+            await reading;
         }
         catch (OperationCanceledException) { } // the wait ended, or Ctrl+C: the message's outcome stands
 
+        station.Dispose(); // the sender sends what is still queued, such as the ack for a last reply, then ends
+        try
+        {
+            await sending;
+        }
+        catch (OperationCanceledException) { } // Ctrl+C
+
         return exitCode;
+    }
+
+    private static async IAsyncEnumerable<AprsPacket> ParseLines(
+        IAsyncEnumerable<string> lines,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        await foreach (var line in lines.WithCancellation(cancellationToken))
+        {
+            yield return AprsPacket.Parse(line);
+        }
     }
 
     private bool TryReadPasscode(ParseResult parseResult, out int passcode, out string error)
