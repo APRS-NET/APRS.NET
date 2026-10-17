@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\AprsNet.Packets.Json\AprsNet.Packets.Json.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Kiss\AprsNet.Kiss.csproj" />
     <ProjectReference Include="..\..\src\AprsNet.Kiss.Serial\AprsNet.Kiss.Serial.csproj" />
+    <ProjectReference Include="..\..\src\AprsNet.Messaging\AprsNet.Messaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

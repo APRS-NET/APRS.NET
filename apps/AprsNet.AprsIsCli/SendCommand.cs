@@ -3,6 +3,7 @@ using System.Globalization;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.Ax25;
 using AprsNet.Kiss;
+using AprsNet.Messaging;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 
@@ -110,6 +111,14 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             "After the message is answered, keep listening this long for replies, acknowledging and printing each, "
             + "for example 30s or 5m. 0 stops at once. Default: 2m.",
         DefaultValueFactory = _ => "2m",
+    };
+
+    private readonly Option<string> _retry = new("--retry")
+    {
+        Description =
+            "How the message is resent until it is acknowledged: default (30 s, 1, 2, 4 and 8 minutes), aprs-is "
+            + "(30 s, 2 and 5 minutes), slow-hf (2, 4, 8 and 16 minutes) or none (once). Default: default.",
+        DefaultValueFactory = _ => "default",
     };
 
     private readonly Option<bool> _kill = new("--kill") { Description = "Send the object as killed, to remove it." };
@@ -232,14 +241,16 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             }
             : new Command(
                 "message",
-                "Send a message and wait for the recipient's acknowledgement, resending at 30 s, 1, 2, 4 and 8 "
-                    + "minutes."
+                "Send a message and wait for the recipient's acknowledgement, resending it until then (see "
+                    + "--retry). Replies are acknowledged and printed."
             )
             {
                 addressee,
                 messageText,
                 _waitReplies,
+                _retry,
             };
+        _retry.AcceptOnlyFromAmong([.. RetryProfiles.Keys]);
         SetAction(
             message,
             parseResult => new MessagePayload
@@ -628,7 +639,14 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 return ExitCodes.Success;
             }
 
-            return await SendMessageAsync(connection, address, message, waitReplies, run.Token);
+            return await SendMessageAsync(
+                connection,
+                address,
+                message,
+                RetryProfiles[parseResult.GetValue(_retry)!],
+                waitReplies,
+                run.Token
+            );
         }
         catch (LoginException ex)
         {
@@ -732,51 +750,109 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         return ExitCodes.Success;
     }
 
+    /// <summary>The <c>--retry</c> choices.</summary>
+    private static readonly Dictionary<string, RetryProfile> RetryProfiles = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["default"] = RetryProfile.Default,
+        ["aprs-is"] = RetryProfile.AprsIs,
+        ["slow-hf"] = RetryProfile.SlowHf,
+        ["none"] = RetryProfile.None,
+    };
+
+    /// <summary>
+    /// Sends <paramref name="message"/> through a <see cref="MessagingStation"/> and waits until it is acknowledged,
+    /// rejected or has run out of retries; then listens for <paramref name="waitReplies"/> more.
+    /// </summary>
     private async Task<int> SendMessageAsync(
         AprsIsConnection connection,
         PacketAddress address,
         MessagePayload message,
+        RetryProfile retryProfile,
         TimeSpan waitReplies,
         CancellationToken cancellationToken
     )
     {
-        using var messenger = new AprsMessenger(
-            address,
-            async (packet, token) =>
+        // A one-off run: a failed message isn't kept for its station being heard again.
+        using var station = new MessagingStation(
+            address.Source,
+            new MessagingStationOptions
             {
-                await connection.SendAsync(packet, token);
-                await environment.Out.WriteLineAsync(packet.ToString());
-            },
-            environment.TimeProvider
+                RetryProfile = retryProfile,
+                RetryOnHeardWindow = TimeSpan.Zero,
+                TimeProvider = environment.TimeProvider,
+            }
         );
+        station.MessageReceived += (_, e) =>
+            environment.Out.WriteLine($"Reply from {e.Message.From}: {e.Message.Text}");
 
-        // Reads for the whole run, so replies are acknowledged both while the message is pending and afterwards.
-        using var stopReading = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var reading = Task.Run(
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        // Everything the station hands out goes to APRS-IS and is printed: the message, its retries, and acks.
+        var sending = Task.Run(
             async () =>
             {
-                await foreach (var line in connection.ReadLinesAsync(stopReading.Token))
+                await foreach (var outgoing in station.ReadOutgoingAsync(stop.Token))
                 {
-                    var packet = AprsPacket.Parse(line);
-                    if (await messenger.HandleAsync(packet, stopReading.Token) is { } reply)
-                    {
-                        await environment.Out.WriteLineAsync($"Reply from {packet.Source}: {reply.Text}");
-                    }
+                    var packet = address.Create(outgoing.Payload);
+                    await connection.SendAsync(packet, stop.Token);
+                    await environment.Out.WriteLineAsync(packet.ToString());
                 }
             },
             CancellationToken.None
         );
 
-        var delivery = await messenger.SendAsync(message.Addressee, message.Text, cancellationToken);
-        var attempts = delivery.Attempts == 1 ? "1 attempt" : $"{delivery.Attempts} attempts";
-        int exitCode;
-        switch (delivery.Status)
+        // Reads for the whole run, so replies are acknowledged while the message is pending and afterwards.
+        var reading = Task.Run(
+            async () =>
+            {
+                await foreach (var line in connection.ReadLinesAsync(stop.Token))
+                {
+                    station.Receive(AprsPacket.Parse(line), "aprs-is");
+                }
+            },
+            CancellationToken.None
+        );
+
+        var finished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sent = station.Send(Callsign.Parse(message.Addressee), message.Text);
+        sent.StateChanged += (_, _) =>
         {
-            case MessageDeliveryStatus.Acknowledged:
+            if (sent.IsFinished)
+            {
+                finished.TrySetResult();
+            }
+        };
+        if (sent.IsFinished)
+        {
+            finished.TrySetResult(); // answered before the handler was attached
+        }
+
+        try
+        {
+            // A connection that gives up ends the reader or the sender with an error, which ends the wait too.
+            await Task.WhenAny(finished.Task, reading, sending).Unwrap().WaitAsync(cancellationToken);
+            if (!sent.IsFinished)
+            {
+                await Task.WhenAll(reading, sending); // rethrows why the connection ended
+            }
+        }
+        finally
+        {
+            if (!sent.IsFinished)
+            {
+                await stop.CancelAsync();
+            }
+        }
+
+        var attempts = sent.Attempts == 1 ? "1 attempt" : $"{sent.Attempts} attempts";
+        int exitCode;
+        switch (sent.State)
+        {
+            case OutgoingMessageState.Delivered:
                 await environment.Out.WriteLineAsync($"Acknowledged by {message.Addressee} after {attempts}.");
                 exitCode = ExitCodes.Success;
                 break;
-            case MessageDeliveryStatus.Rejected:
+            case OutgoingMessageState.Rejected:
                 await environment.Error.WriteLineAsync($"aprscli: {message.Addressee} rejected the message.");
                 exitCode = ExitCodes.NotDelivered;
                 break;
@@ -791,16 +867,16 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             await environment.Error.WriteLineAsync(
                 $"Waiting {DurationParser.Format(waitReplies)} for replies (Ctrl+C to stop)."
             );
-            stopReading.CancelAfter(waitReplies);
+            stop.CancelAfter(waitReplies);
         }
         else
         {
-            await stopReading.CancelAsync();
+            await stop.CancelAsync();
         }
 
         try
         {
-            await reading;
+            await Task.WhenAll(reading, sending);
         }
         catch (OperationCanceledException) { } // the wait ended, or Ctrl+C: the message's outcome stands
 

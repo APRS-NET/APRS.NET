@@ -20,6 +20,9 @@ internal sealed class CliHarness
 
     private FixedTimeProvider Time { get; } = new(new DateTimeOffset(2026, 10, 11, 12, 0, 0, 123, TimeSpan.Zero));
 
+    /// <summary>A clock to use instead of the fixed one, for tests that move time on (message retries).</summary>
+    public TimeProvider? Clock { get; init; }
+
     /// <summary>The options the CLI built for the client, so tests can check endpoint, callsign and passcode.</summary>
     public AprsIsClientOptions? ClientOptions { get; private set; }
 
@@ -79,7 +82,7 @@ internal sealed class CliHarness
             In = Input is null ? TextReader.Null : new StringReader(Input),
             InIsTerminal = InIsTerminal,
             LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.Trace).AddProvider(Logs)),
-            TimeProvider = Time,
+            TimeProvider = Clock ?? Time,
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
             GetSerialPortNames = () => SerialPorts,

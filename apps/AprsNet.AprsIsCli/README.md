@@ -157,11 +157,13 @@ aprscli send telemetry -c KD9XYZ-11 --seq 5 --analog 199,0,255,73,123 --digital 
   --names Battery,Btemp,ATemp,Pres,Alt --equations "0,5.2,0;0,.53,-32;3,4.39,49;-32,3,18;1,2,3"
 ```
 
-`message` waits for the recipient's acknowledgement, resending after 30 s, 1, 2, 4 and 8 minutes. It then keeps
-listening for `--wait-replies` (default 2m; `0` stops at once), acknowledging and printing each reply
-(`Reply from WU2Z: Received`), so the other station is not left resending its answer. It exits 0 when the message
-was acknowledged and 5 when it was rejected or never acknowledged. If the connection drops meanwhile, `send`
-reconnects as `listen --reconnect` does and carries on waiting.
+`message` sends through `MessagingStation` (`AprsNet.Messaging`) and waits for the recipient's acknowledgement,
+resending on the `--retry` schedule: `default` (after 30 s, 1, 2, 4 and 8 minutes), `aprs-is` (30 s, 2 and 5
+minutes), `slow-hf` (2, 4, 8 and 16 minutes) or `none`. The message ID is in the APRS 1.1 reply-ack form (`{01}`), so a
+reply that carries the ack (`{7}01`) counts as one. It then keeps listening for `--wait-replies` (default 2m; `0`
+stops at once), acknowledging and printing each reply (`Reply from WU2Z: Received`), so the other station is not left
+resending its answer. It exits 0 when the message was acknowledged and 5 when it was rejected or never acknowledged.
+If the connection drops meanwhile, `send` reconnects as `listen --reconnect` does and carries on waiting.
 
 | Option | Meaning |
 | --- | --- |
