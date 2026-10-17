@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.2...v0.4.0-alpha.3) (2026-10-17)
+
+
+### Features
+
+* **aprs-is:** log in without a callsign as a listener ([d60a411](https://github.com/APRS-NET/APRS.NET/commit/d60a411c5e36dd2c9d94d96efd944bf71b068a52))
+* **aprs-is:** log in without a callsign as a listener ([122744e](https://github.com/APRS-NET/APRS.NET/commit/122744e595b818e4145dfe1543d3c5182f079db4)), closes [#227](https://github.com/APRS-NET/APRS.NET/issues/227)
+* **beacons:** answer when to beacon next with AprsNet.Beacons ([03f2774](https://github.com/APRS-NET/APRS.NET/commit/03f2774281066aeb60ab511059ee29ec956c21e0))
+* **beacons:** answer when to beacon next with AprsNet.Beacons ([886c290](https://github.com/APRS-NET/APRS.NET/commit/886c2900d87d16c45bbd2eb47708226086135243)), closes [#196](https://github.com/APRS-NET/APRS.NET/issues/196)
+* **cli:** listen and serve as a listener when no callsign is given ([1afc36d](https://github.com/APRS-NET/APRS.NET/commit/1afc36d9da3a4997ce9d4e966f87b9e96680cb2c)), closes [#227](https://github.com/APRS-NET/APRS.NET/issues/227)
+* **messaging:** report each retry of an outgoing message ([81d0afe](https://github.com/APRS-NET/APRS.NET/commit/81d0afe438f93eed9dbac56fa7989778e038e9d4))
+* **messaging:** report each retry of an outgoing message ([1904851](https://github.com/APRS-NET/APRS.NET/commit/1904851eb9b282be1d787b73f4a2ed98796f2102)), closes [#231](https://github.com/APRS-NET/APRS.NET/issues/231)
+
+
+### Bug Fixes
+
+* **cli:** show a message's ID in send --dry-run ([cf3588c](https://github.com/APRS-NET/APRS.NET/commit/cf3588c8b985c19e1eb225f6de6ef8284279c427)), closes [#194](https://github.com/APRS-NET/APRS.NET/issues/194)
+* **kiss:** raise DTR and RTS when opening a serial TNC ([fce40ec](https://github.com/APRS-NET/APRS.NET/commit/fce40ec3f2ae51c24f0d7c785a94b11f5d9b8ccc))
+* **kiss:** raise DTR and RTS when opening a serial TNC ([2f33c63](https://github.com/APRS-NET/APRS.NET/commit/2f33c6398883b773ca254874784ed132f9c5ddbd))
+
 ## [0.4.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.1...v0.4.0-alpha.2) (2026-10-17)
 
 
