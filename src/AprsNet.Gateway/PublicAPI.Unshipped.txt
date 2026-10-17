@@ -160,3 +160,6 @@ static AprsNet.Gateway.GatewayHealthReport.operator !=(AprsNet.Gateway.GatewayHe
 static AprsNet.Gateway.GatewayHealthReport.operator ==(AprsNet.Gateway.GatewayHealthReport? left, AprsNet.Gateway.GatewayHealthReport? right) -> bool
 static AprsNet.Gateway.GatewaySourceHealth.operator !=(AprsNet.Gateway.GatewaySourceHealth left, AprsNet.Gateway.GatewaySourceHealth right) -> bool
 static AprsNet.Gateway.GatewaySourceHealth.operator ==(AprsNet.Gateway.GatewaySourceHealth left, AprsNet.Gateway.GatewaySourceHealth right) -> bool
+AprsNet.Gateway.GatewayHealth.AddSource(string! name, System.Func<bool>! isConnected, System.Func<bool>? isQuiet) -> void
+AprsNet.Gateway.GatewaySourceHealth.IsQuiet.get -> bool
+AprsNet.Gateway.GatewaySourceHealth.IsQuiet.init -> void

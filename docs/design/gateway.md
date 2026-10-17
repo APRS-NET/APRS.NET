@@ -125,7 +125,7 @@ none, unhealthy.
 
 `GatewayWebServer` answers `GET /health` with it: `200` while healthy or degraded, `503` when unhealthy, so an
 orchestrator restarts only a gateway that serves nothing new. The body is JSON:
-`{"status":"degraded","checkedAt":…,"clients":{"aprsIs":2,"webSocket":1},"sources":{"aprs-is":{"connected":true,"lastPacket":…},"tnc":{"connected":false,"lastPacket":null}}}`.
+`{"status":"degraded","checkedAt":…,"clients":{"aprsIs":2,"webSocket":1},"sources":{"aprs-is":{"connected":true,"quiet":false,"lastPacket":…},"tnc":{"connected":false,"quiet":false,"lastPacket":null}}}`. `quiet` is true for a TNC with a quiet warning on (`--quiet-warning`) that has sent nothing for that long; it still counts as connected.
 `aprscli serve --http` serves both routes.
 
 ## Still to do
