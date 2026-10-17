@@ -51,6 +51,21 @@ public class SendTests
     }
 
     [Fact]
+    public async Task DryRunPrintsAMessageWithTheIdItWouldBeSentWith()
+    {
+        var harness = new CliHarness();
+
+        var result = await harness.RunAsync(
+            ["send", "message", "WU2Z", "Hello there", "-c", "kd9xyz-9", "--dry-run"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"KD9XYZ-9>APZNET::WU2Z     :Hello there{{01}}{Environment.NewLine}", result.Out);
+        Assert.Equal(0, harness.ConnectionAttempts);
+    }
+
+    [Fact]
     public async Task SendsAStatusOnAVerifiedLogin()
     {
         var harness = Verified();

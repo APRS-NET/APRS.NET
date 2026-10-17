@@ -133,4 +133,4 @@ no acks, retried on the `Default` schedule's decay.
 1. This note (#190).
 2. Sending (#191) and receiving (#192), side by side.
 3. Bulletins (#193).
-4. `aprscli message` (#194), the live check.
+4. `aprscli message` (#194), the live check: [messaging-validation.md](../messaging-validation.md).
