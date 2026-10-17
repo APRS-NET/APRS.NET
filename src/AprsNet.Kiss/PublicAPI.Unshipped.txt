@@ -137,3 +137,8 @@ AprsNet.Kiss.KissWarningEventArgs.IsActive.get -> bool
 AprsNet.Kiss.KissWarningEventArgs.Message.get -> string!
 AprsNet.Kiss.KissWarningEventArgs.Warning.get -> AprsNet.Kiss.KissWarning
 AprsNet.Kiss.KissWarning.TextNotKiss = 0 -> AprsNet.Kiss.KissWarning
+AprsNet.Kiss.KissConnection.QuietWarning.get -> System.TimeSpan?
+AprsNet.Kiss.KissTcpOptions.QuietWarning.get -> System.TimeSpan?
+AprsNet.Kiss.KissTcpOptions.QuietWarning.set -> void
+AprsNet.Kiss.KissWarning.Quiet = 1 -> AprsNet.Kiss.KissWarning
+AprsNet.Kiss.KissConnection.IsQuiet.get -> bool

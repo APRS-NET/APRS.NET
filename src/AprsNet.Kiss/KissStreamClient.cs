@@ -51,6 +51,9 @@ public sealed class KissStreamClient : IAsyncDisposable
     /// <summary>How fast frames may be sent; a send waits for its turn.</summary>
     public KissTransmitLimit TransmitLimit { get; }
 
+    /// <summary>Called after each read that brought bytes, before they are decoded.</summary>
+    internal Action? DataRead { get; init; }
+
     /// <summary>The <c>tnc</c> tag on this client's metrics: the TNC's <c>host:port</c> when a TCP client made it.</summary>
     internal string MetricsTnc { get; init; } = KissMetrics.StreamTnc;
 
@@ -83,6 +86,8 @@ public sealed class KissStreamClient : IAsyncDisposable
             {
                 yield break;
             }
+
+            DataRead?.Invoke();
 
             var (dropped, discarded, text, spotted) = (
                 _decoder.DroppedFrames,

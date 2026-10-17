@@ -8,6 +8,12 @@ public enum KissWarning
     /// or one that came back from a power cut with KISS off). Nothing it sends can be read until it is.
     /// </summary>
     TextNotKiss,
+
+    /// <summary>
+    /// The TNC has sent nothing for <see cref="KissConnection.QuietWarning"/>: it may be switched off behind a port
+    /// that stays open, or the channel may just be quiet. Only raised when that setting is on.
+    /// </summary>
+    Quiet,
 }
 
 /// <summary>A <see cref="KissWarning"/> starting or ending.</summary>
@@ -34,6 +40,8 @@ public sealed class KissWarningEventArgs : EventArgs
         {
             (KissWarning.TextNotKiss, true) => "The TNC is sending text, not KISS frames; is it in KISS mode?",
             (KissWarning.TextNotKiss, false) => "The TNC is sending KISS frames again.",
+            (KissWarning.Quiet, true) => "The TNC has sent nothing for a while; is it switched on?",
+            (KissWarning.Quiet, false) => "The TNC is sending again.",
             _ => Warning.ToString(),
         };
 }

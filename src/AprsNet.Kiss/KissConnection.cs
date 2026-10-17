@@ -29,6 +29,11 @@ public abstract class KissConnection : IAsyncDisposable
     private int _reading;
     private int _disposed;
     private int _textWarning;
+    private readonly ITimer _quietTimer;
+    private readonly Lock _quietLock = new();
+    private long _lastData;
+    private bool _quiet;
+    private bool _watchingQuiet;
 
     private protected KissConnection(
         Func<CancellationToken, Task<Stream>> connect,
@@ -37,9 +42,17 @@ public abstract class KissConnection : IAsyncDisposable
         TimeSpan reconnectDelay,
         TimeSpan maxReconnectDelay,
         TimeProvider timeProvider,
-        KissTransmitLimit transmitLimit
+        KissTransmitLimit transmitLimit,
+        TimeSpan? quietWarning
     )
     {
+        QuietWarning = quietWarning;
+        _quietTimer = timeProvider.CreateTimer(
+            _ => CheckQuiet(),
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan
+        );
         _connect = connect;
         _tnc = tnc;
         _tncPort = tncPort;
@@ -65,6 +78,24 @@ public abstract class KissConnection : IAsyncDisposable
 
     /// <summary>Whether the TNC is connected now (<see cref="State"/> is <see cref="KissConnectionState.Connected"/>).</summary>
     public bool IsConnected => Volatile.Read(ref _current) is not null;
+
+    /// <summary>
+    /// How long the TNC may send nothing before <see cref="Warning"/> reports <see cref="KissWarning.Quiet"/>, or
+    /// <see langword="null"/> when that is off. Only bytes count, so a TNC sending text in the wrong mode isn't quiet.
+    /// </summary>
+    public TimeSpan? QuietWarning { get; }
+
+    /// <summary>Whether the <see cref="KissWarning.Quiet"/> warning is on now: nothing has come for <see cref="QuietWarning"/>.</summary>
+    public bool IsQuiet
+    {
+        get
+        {
+            lock (_quietLock)
+            {
+                return _quiet;
+            }
+        }
+    }
 
     /// <summary>Connections made after the first: one each time the TNC was lost and reached again.</summary>
     public int Reconnects { get; private set; }
@@ -119,6 +150,7 @@ public abstract class KissConnection : IAsyncDisposable
                     )
                     {
                         MetricsTnc = _tnc,
+                        DataRead = DataArrived,
                     };
                     client.Warning += (_, e) => SetTextWarning(e.IsActive);
                 }
@@ -143,6 +175,7 @@ public abstract class KissConnection : IAsyncDisposable
                     Volatile.Write(ref _current, client);
                     KissMetrics.Active(_tnc, +1);
                     SetState(KissConnectionState.Connected);
+                    WatchQuiet(true);
                     await using (client.ConfigureAwait(false))
                     {
                         var frames = client.ReadFramesAsync(token).GetAsyncEnumerator(token);
@@ -174,6 +207,7 @@ public abstract class KissConnection : IAsyncDisposable
                         }
                         finally
                         {
+                            WatchQuiet(false);
                             Volatile.Write(ref _current, null);
                             KissMetrics.Active(_tnc, -1);
                             await frames.DisposeAsync().ConfigureAwait(false);
@@ -280,6 +314,7 @@ public abstract class KissConnection : IAsyncDisposable
 
         await _disposing.CancelAsync().ConfigureAwait(false);
         _disposing.Dispose();
+        await _quietTimer.DisposeAsync().ConfigureAwait(false);
         SetState(KissConnectionState.Closed);
         GC.SuppressFinalize(this);
     }
@@ -288,6 +323,77 @@ public abstract class KissConnection : IAsyncDisposable
     // or one another program holds or the user may not open.
     private static bool IsLinkFailure(Exception e) =>
         e is SocketException or IOException or TimeoutException or UnauthorizedAccessException;
+
+    /// <summary>Starts timing silence when a connection is made, and stops when it ends.</summary>
+    private void WatchQuiet(bool connected)
+    {
+        if (QuietWarning is not { } quiet)
+        {
+            return;
+        }
+
+        lock (_quietLock)
+        {
+            _watchingQuiet = connected;
+            _lastData = _timeProvider.GetTimestamp();
+            _quietTimer.Change(connected ? quiet : Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    private void DataArrived()
+    {
+        if (QuietWarning is not { } quiet)
+        {
+            return;
+        }
+
+        bool wasQuiet;
+        lock (_quietLock)
+        {
+            _lastData = _timeProvider.GetTimestamp();
+            wasQuiet = _quiet;
+            if (wasQuiet)
+            {
+                _quiet = false;
+                _quietTimer.Change(quiet, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        if (wasQuiet)
+        {
+            Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.Quiet, false));
+        }
+    }
+
+    /// <summary>The timer: warns if nothing came for <see cref="QuietWarning"/>, or waits out the rest of it.</summary>
+    private void CheckQuiet()
+    {
+        var quiet = QuietWarning!.Value;
+        bool warn;
+        lock (_quietLock)
+        {
+            if (!_watchingQuiet || _quiet || IsDisposed)
+            {
+                return;
+            }
+
+            var silent = _timeProvider.GetElapsedTime(_lastData);
+            warn = silent >= quiet;
+            if (warn)
+            {
+                _quiet = true; // stays set across reconnects until bytes arrive
+            }
+            else
+            {
+                _quietTimer.Change(quiet - silent, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        if (warn)
+        {
+            Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.Quiet, true));
+        }
+    }
 
     private void SetTextWarning(bool active)
     {
