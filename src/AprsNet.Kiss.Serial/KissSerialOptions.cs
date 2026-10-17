@@ -49,6 +49,14 @@ public sealed class KissSerialOptions
     /// </summary>
     public KissTransmitLimit? TransmitLimit { get; set; }
 
+    /// <summary>
+    /// How long the TNC may send nothing at all before <see cref="KissConnection.Warning"/> reports
+    /// <see cref="KissWarning.Quiet"/>; <see langword="null"/>, the default, never does. For a TNC whose port stays
+    /// open while it is switched off, such as a radio's built-in TNC behind a USB chip powered from the computer. Pick
+    /// longer than the channel is ever quiet, since a quiet channel looks the same.
+    /// </summary>
+    public TimeSpan? QuietWarning { get; set; }
+
     /// <summary>Throws <see cref="ArgumentException"/> if a setting is unusable.</summary>
     public void Validate()
     {
@@ -56,6 +64,10 @@ public sealed class KissSerialOptions
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(BaudRate, 0, nameof(BaudRate));
         ArgumentOutOfRangeException.ThrowIfNegative(TncPort, nameof(TncPort));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(TncPort, 15, nameof(TncPort));
+        if (QuietWarning is { } quiet)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(quiet, TimeSpan.Zero, nameof(QuietWarning));
+        }
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ReconnectDelay, TimeSpan.Zero, nameof(ReconnectDelay));
         ArgumentOutOfRangeException.ThrowIfLessThan(MaxReconnectDelay, ReconnectDelay, nameof(MaxReconnectDelay));
         ArgumentNullException.ThrowIfNull(TimeProvider, nameof(TimeProvider));

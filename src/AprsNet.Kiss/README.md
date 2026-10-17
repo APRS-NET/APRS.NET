@@ -56,6 +56,11 @@ A TNC that goes away without closing the connection, because its host lost power
 is noticed within `KissTcpOptions.DeadLinkTimeout` (60 seconds) through TCP keepalives. The TNC's host answers those
 even while the radio channel is quiet, so a quiet channel never looks like a dead link.
 
+A serial TNC has no such check. One behind a USB chip powered from the computer, such as a radio's built-in TNC, leaves
+its port open when switched off, and only silence shows it. Set `QuietWarning` (off by default) to hear about that:
+after that long with no bytes at all, `Warning` reports `KissWarning.Quiet` and `IsQuiet` is true, until bytes arrive
+again. Pick it longer than the channel is ever quiet.
+
 A TNC that isn't in KISS mode sends text lines instead of frames: a radio's built-in TNC in its APRS mode, or one that
 came back from a power cut with KISS off. Rather than drop them without a word, the clients raise `Warning`
 (`KissWarning.TextNotKiss`) when the text starts, and again with `IsActive` false once frames arrive:

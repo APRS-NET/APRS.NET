@@ -35,7 +35,8 @@ public sealed class KissSerialConnection : KissConnection
             options.ReconnectDelay,
             options.MaxReconnectDelay,
             options.TimeProvider,
-            options.CreateTransmitLimit()
+            options.CreateTransmitLimit(),
+            options.QuietWarning
         )
     {
         PortName = options.PortName;
