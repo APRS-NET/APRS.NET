@@ -5,7 +5,6 @@
 
 ### Features
 
-* **cli:** show what comes back while a message runs ([0e9fc27](https://github.com/APRS-NET/APRS.NET/commit/0e9fc27ccc3563f60065a75a63f47f39b098e8c0))
 * **cli:** show what comes back while a message runs ([f8e94a8](https://github.com/APRS-NET/APRS.NET/commit/f8e94a85154550b9e8fc7fcf4a9f8c9c8d412fbb))
 
 ## [0.4.0-alpha.9](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.8...v0.4.0-alpha.9) (2026-10-18)
@@ -13,7 +12,6 @@
 
 ### Features
 
-* **messaging:** a bulletin repeat schedule and ANSRVR commands ([3efb4ed](https://github.com/APRS-NET/APRS.NET/commit/3efb4ed536546897143451356531e0cf6804f541))
 * **messaging:** a bulletin repeat schedule and ANSRVR commands ([2b62ea9](https://github.com/APRS-NET/APRS.NET/commit/2b62ea99fe34891b856ea3a327291004ec1b9398))
 
 ## [0.4.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.7...v0.4.0-alpha.8) (2026-10-18)
@@ -28,7 +26,6 @@
 
 ### Features
 
-* **aprs-is:** report every line to and from the server as Traffic ([554c136](https://github.com/APRS-NET/APRS.NET/commit/554c136d8012e4a94c290d019d6ca091e6eac998))
 * **aprs-is:** report every line to and from the server as Traffic ([ffd1b49](https://github.com/APRS-NET/APRS.NET/commit/ffd1b4928f54f8f6dd046f213a5f654e745b48bd)), closes [#262](https://github.com/APRS-NET/APRS.NET/issues/262)
 * **cli:** read a radio in APRS mode with ,text in a serial address ([ea6e6fd](https://github.com/APRS-NET/APRS.NET/commit/ea6e6fda8e5d891fd10a5b352986cf341f21b152))
 * **kiss:** read a radio in its APRS mode as text ([e20ba6a](https://github.com/APRS-NET/APRS.NET/commit/e20ba6ab7c762ed9e7c17afde61a7b8f5eeb32a9))
@@ -40,12 +37,9 @@
 
 ### Features
 
-* **cli:** switch a radio's TNC into KISS, and a console on its command line ([dc32c2d](https://github.com/APRS-NET/APRS.NET/commit/dc32c2d0af2b3c3f1dca7a8a19b2cb7f2c50d2bd))
 * **cli:** switch a radio's TNC into KISS, and a console on its command line ([c50db29](https://github.com/APRS-NET/APRS.NET/commit/c50db29dcadaa7d4e2b3a6955c53948215f93ff2))
 * **kiss:** add a drain step that throws away what waited in the port ([577888c](https://github.com/APRS-NET/APRS.NET/commit/577888c038a272c345ad51b3020dde39982dc399))
-* **kiss:** report everything that crosses a KISS link as Traffic ([e1d9223](https://github.com/APRS-NET/APRS.NET/commit/e1d9223512797a319fa36cf6d7310b334d817769))
 * **kiss:** report everything that crosses a KISS link as Traffic ([9ca8753](https://github.com/APRS-NET/APRS.NET/commit/9ca8753ea926f2a87571e5bd2b0d3eb40fa8b902))
-* **kiss:** switch a radio's built-in TNC into KISS with a TncSetup ([87d680b](https://github.com/APRS-NET/APRS.NET/commit/87d680b6a786dc24e47a37573e195b3ed42ee4b5))
 * **kiss:** switch a radio's built-in TNC into KISS with a TncSetup ([7fc65ff](https://github.com/APRS-NET/APRS.NET/commit/7fc65ff93c45b75c59b6dc36096e4531dd267b61))
 
 ## [0.4.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.4...v0.4.0-alpha.5) (2026-10-18)
@@ -53,18 +47,13 @@
 
 ### Features
 
-* **aprs-is:** give a login that reaches a KISS TNC its own exception ([35217a8](https://github.com/APRS-NET/APRS.NET/commit/35217a8764ddd201301c06bf8516187fe70ca044))
 * **aprs-is:** give a login that reaches a KISS TNC its own exception ([d551ba1](https://github.com/APRS-NET/APRS.NET/commit/d551ba1e7447a1e8f2093c82ee60a45975ff52c7)), closes [#246](https://github.com/APRS-NET/APRS.NET/issues/246)
 * **cli:** stop and point to tnc listen when a server is a KISS TNC ([322721d](https://github.com/APRS-NET/APRS.NET/commit/322721d0c06dc5d0c215ebc73714355594edad39)), closes [#246](https://github.com/APRS-NET/APRS.NET/issues/246)
 * **cli:** take dtr=off and rts=off in a serial TNC address ([1c6134c](https://github.com/APRS-NET/APRS.NET/commit/1c6134ceabc657ef996d95deb67b619005af4d1c)), closes [#126](https://github.com/APRS-NET/APRS.NET/issues/126)
-* **corpus:** read, write and anonymize corpus captures with AprsNet.Corpus ([54b1e62](https://github.com/APRS-NET/APRS.NET/commit/54b1e6231495a5b532f2d8bf3a2c0c3fbbf442b6))
 * **corpus:** read, write and anonymize corpus captures with AprsNet.Corpus ([1b0d322](https://github.com/APRS-NET/APRS.NET/commit/1b0d32229a5fe9ff05bb4e57678b61a10f35f3cf))
-* **gateway:** count a TNC sending text as a protocol mismatch, not up ([aa1714b](https://github.com/APRS-NET/APRS.NET/commit/aa1714b4c95eafcdeb755425c216fdfd3ea8aa5c))
 * **gateway:** count a TNC sending text as a protocol mismatch, not up ([f03d9e1](https://github.com/APRS-NET/APRS.NET/commit/f03d9e12ac41b52c171240e69f842d3c7d7e7539)), closes [#254](https://github.com/APRS-NET/APRS.NET/issues/254)
-* **kiss:** let a serial TNC leave DTR and RTS low ([6ed7556](https://github.com/APRS-NET/APRS.NET/commit/6ed755672795049beb4cdbe5662dd8d9d9b12e80))
 * **kiss:** let a serial TNC leave DTR and RTS low ([1622ba2](https://github.com/APRS-NET/APRS.NET/commit/1622ba25e4974ad2f21a43f619a4e48b6f6f9870)), closes [#126](https://github.com/APRS-NET/APRS.NET/issues/126)
 * **kiss:** say how long a TNC has been quiet ([9931fda](https://github.com/APRS-NET/APRS.NET/commit/9931fdabbf4fa672286ca73c6b075cbbe7d8b0df)), closes [#255](https://github.com/APRS-NET/APRS.NET/issues/255)
-* **packets:** list the parts of a packet that parsed but weren't understood ([b6485d0](https://github.com/APRS-NET/APRS.NET/commit/b6485d02da470d8cd1ee34f3f19ef6e5a5291d66))
 * **packets:** list the parts of a packet that parsed but weren't understood ([35b88af](https://github.com/APRS-NET/APRS.NET/commit/35b88af3af46a3d0df3d1c611ae4217c96605aa4))
 
 ## [0.4.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.3...v0.4.0-alpha.4) (2026-10-17)
@@ -92,19 +81,15 @@
 
 ### Features
 
-* **aprs-is:** log in without a callsign as a listener ([d60a411](https://github.com/APRS-NET/APRS.NET/commit/d60a411c5e36dd2c9d94d96efd944bf71b068a52))
 * **aprs-is:** log in without a callsign as a listener ([122744e](https://github.com/APRS-NET/APRS.NET/commit/122744e595b818e4145dfe1543d3c5182f079db4)), closes [#227](https://github.com/APRS-NET/APRS.NET/issues/227)
-* **beacons:** answer when to beacon next with AprsNet.Beacons ([03f2774](https://github.com/APRS-NET/APRS.NET/commit/03f2774281066aeb60ab511059ee29ec956c21e0))
 * **beacons:** answer when to beacon next with AprsNet.Beacons ([886c290](https://github.com/APRS-NET/APRS.NET/commit/886c2900d87d16c45bbd2eb47708226086135243)), closes [#196](https://github.com/APRS-NET/APRS.NET/issues/196)
 * **cli:** listen and serve as a listener when no callsign is given ([1afc36d](https://github.com/APRS-NET/APRS.NET/commit/1afc36d9da3a4997ce9d4e966f87b9e96680cb2c)), closes [#227](https://github.com/APRS-NET/APRS.NET/issues/227)
-* **messaging:** report each retry of an outgoing message ([81d0afe](https://github.com/APRS-NET/APRS.NET/commit/81d0afe438f93eed9dbac56fa7989778e038e9d4))
 * **messaging:** report each retry of an outgoing message ([1904851](https://github.com/APRS-NET/APRS.NET/commit/1904851eb9b282be1d787b73f4a2ed98796f2102)), closes [#231](https://github.com/APRS-NET/APRS.NET/issues/231)
 
 
 ### Bug Fixes
 
 * **cli:** show a message's ID in send --dry-run ([cf3588c](https://github.com/APRS-NET/APRS.NET/commit/cf3588c8b985c19e1eb225f6de6ef8284279c427)), closes [#194](https://github.com/APRS-NET/APRS.NET/issues/194)
-* **kiss:** raise DTR and RTS when opening a serial TNC ([fce40ec](https://github.com/APRS-NET/APRS.NET/commit/fce40ec3f2ae51c24f0d7c785a94b11f5d9b8ccc))
 * **kiss:** raise DTR and RTS when opening a serial TNC ([2f33c63](https://github.com/APRS-NET/APRS.NET/commit/2f33c6398883b773ca254874784ed132f9c5ddbd))
 
 ## [0.4.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.1...v0.4.0-alpha.2) (2026-10-17)
@@ -117,11 +102,8 @@
 ### Features
 
 * **aprs-is:** remove AprsMessenger in favour of AprsNet.Messaging ([ea810a7](https://github.com/APRS-NET/APRS.NET/commit/ea810a7d33a5d0da06ecfc14ffea72597c1af75b))
-* **cli:** send messages through MessagingStation, with --retry ([6b68c14](https://github.com/APRS-NET/APRS.NET/commit/6b68c14ecbb181c747dacff4540c0d7eb6cec845))
 * **cli:** send messages through MessagingStation, with --retry ([1b14c52](https://github.com/APRS-NET/APRS.NET/commit/1b14c52efd4fdaf623522348f2bcb9805111d989))
-* **messaging:** hold APRS message conversations with AprsNet.Messaging ([cfb9a5e](https://github.com/APRS-NET/APRS.NET/commit/cfb9a5e053b226b4eb1dfd6267b12849ca49bf15))
 * **messaging:** hold APRS message conversations with AprsNet.Messaging ([9b3d3dd](https://github.com/APRS-NET/APRS.NET/commit/9b3d3dd78608e3b2dfbe3550e961b2fdb4dcd5b8))
-* **messaging:** keep the bulletins and announcements heard ([f1964f5](https://github.com/APRS-NET/APRS.NET/commit/f1964f5bd1abdce0283ea1a32a031573e235df61))
 * **messaging:** keep the bulletins and announcements heard ([d04a94a](https://github.com/APRS-NET/APRS.NET/commit/d04a94a60dccb4a21fe6ee3b921d7bd2d2ede978)), closes [#193](https://github.com/APRS-NET/APRS.NET/issues/193)
 
 ## [0.4.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.3...v0.4.0-alpha.1) (2026-10-16)
@@ -129,7 +111,6 @@
 
 ### Bug Fixes
 
-* **gateway:** don't miss packets right after a WebSocket greeting ([0f6662c](https://github.com/APRS-NET/APRS.NET/commit/0f6662cb248ec9303f619af2584211464ba35c73))
 * **gateway:** don't miss packets right after a WebSocket greeting ([8642aea](https://github.com/APRS-NET/APRS.NET/commit/8642aeaa7ce0d2a8ece9c313ee0e874709bc58f3))
 
 
@@ -142,7 +123,6 @@
 
 ### Bug Fixes
 
-* **kiss:** notice a TNC that went away without closing the link ([4a9c395](https://github.com/APRS-NET/APRS.NET/commit/4a9c395037f7e197be7b0c81870784d7ee7bef05))
 * **kiss:** notice a TNC that went away without closing the link ([4f09982](https://github.com/APRS-NET/APRS.NET/commit/4f09982025b860b407f968d0e23f40d305df87a5))
 
 ## [0.3.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.3.0-alpha.1...v0.3.0-alpha.2) (2026-10-16)
