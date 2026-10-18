@@ -138,6 +138,29 @@ public sealed class KissTrafficTests
     }
 
     [Fact]
+    public async Task AShortAnswerAfterAFrameIsTextAtOnce()
+    {
+        // A TNC's command line answers with a line break or a letter, never a KISS command byte, so even a short
+        // answer after a frame shows as text, without waiting for enough of it to look like text.
+        var tnc = new FakeTnc();
+        await using var client = new KissStreamClient(tnc, transmitLimit: KissTransmitLimit.Off);
+        var entries = Record(client);
+
+        tnc.Send(Kiss("N0CALL>APRS:>last KISS frame"));
+        tnc.Send(Text("\r\nMYCALL   NZ0P-9\r\ncmd:"));
+        tnc.Send(Kiss("N0CALL>APRS:>and another"));
+        tnc.End();
+        var frames = await ReadAll(client);
+
+        Assert.Equal(2, frames.Count);
+        Assert.Equal(
+            ["\r\n", "MYCALL   NZ0P-9\r\n", "cmd:"],
+            entries.Where(e => e.Kind == KissTrafficKind.Unframed).Select(e => e.Text)
+        );
+        Assert.Equal(0, client.DroppedFrames);
+    }
+
+    [Fact]
     public async Task NothingIsKeptOrReportedWhileNoOneListens()
     {
         var decoder = new KissDecoder();
