@@ -899,3 +899,27 @@ static AprsNet.Packets.TelemetryProfile.operator !=(AprsNet.Packets.TelemetryPro
 static AprsNet.Packets.TelemetryProfile.operator ==(AprsNet.Packets.TelemetryProfile? left, AprsNet.Packets.TelemetryProfile? right) -> bool
 static AprsNet.Packets.TelemetryReading.operator !=(AprsNet.Packets.TelemetryReading? left, AprsNet.Packets.TelemetryReading? right) -> bool
 static AprsNet.Packets.TelemetryReading.operator ==(AprsNet.Packets.TelemetryReading? left, AprsNet.Packets.TelemetryReading? right) -> bool
+AprsNet.Packets.AprsPacket.Unrecognized.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.UnrecognizedPart>!
+AprsNet.Packets.UnrecognizedPart
+AprsNet.Packets.UnrecognizedPartCode
+AprsNet.Packets.UnrecognizedPartCodeExtensions
+AprsNet.Packets.UnrecognizedPart.Code.get -> AprsNet.Packets.UnrecognizedPartCode
+AprsNet.Packets.UnrecognizedPart.Code.init -> void
+AprsNet.Packets.UnrecognizedPartCode.UnknownDataExtension = 0 -> AprsNet.Packets.UnrecognizedPartCode
+AprsNet.Packets.UnrecognizedPartCode.UnknownPathEntry = 1 -> AprsNet.Packets.UnrecognizedPartCode
+AprsNet.Packets.UnrecognizedPartCode.UnreadWeatherField = 2 -> AprsNet.Packets.UnrecognizedPartCode
+AprsNet.Packets.UnrecognizedPartCode.UserDefinedData = 3 -> AprsNet.Packets.UnrecognizedPartCode
+AprsNet.Packets.UnrecognizedPart.Deconstruct(out AprsNet.Packets.UnrecognizedPartCode Code, out int Offset, out int Length) -> void
+AprsNet.Packets.UnrecognizedPart.Equals(AprsNet.Packets.UnrecognizedPart other) -> bool
+AprsNet.Packets.UnrecognizedPart.Length.get -> int
+AprsNet.Packets.UnrecognizedPart.Length.init -> void
+AprsNet.Packets.UnrecognizedPart.Offset.get -> int
+AprsNet.Packets.UnrecognizedPart.Offset.init -> void
+AprsNet.Packets.UnrecognizedPart.UnrecognizedPart(AprsNet.Packets.UnrecognizedPartCode Code, int Offset, int Length) -> void
+AprsNet.Packets.UnrecognizedPart.UnrecognizedPart() -> void
+~override AprsNet.Packets.UnrecognizedPart.Equals(object obj) -> bool
+override AprsNet.Packets.UnrecognizedPart.GetHashCode() -> int
+~override AprsNet.Packets.UnrecognizedPart.ToString() -> string
+static AprsNet.Packets.UnrecognizedPartCodeExtensions.Describe(this AprsNet.Packets.UnrecognizedPartCode code) -> string!
+static AprsNet.Packets.UnrecognizedPart.operator !=(AprsNet.Packets.UnrecognizedPart left, AprsNet.Packets.UnrecognizedPart right) -> bool
+static AprsNet.Packets.UnrecognizedPart.operator ==(AprsNet.Packets.UnrecognizedPart left, AprsNet.Packets.UnrecognizedPart right) -> bool

@@ -126,6 +126,7 @@ internal static class WeatherDecoder
         }
 
         target.Weather = weather;
+        target.WeatherRestBytes = target.CommentBytes[used..];
         target.Comment = PositionDecoder.ApplyDao(target.Position, CommentTelemetry.Strip(text[used..], out _)).Comment;
     }
 

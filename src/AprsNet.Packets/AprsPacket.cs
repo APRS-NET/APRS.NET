@@ -31,7 +31,8 @@ public sealed partial class AprsPacket
         ReadOnlyMemory<byte> information,
         PacketType type,
         AprsPayload? payload,
-        IReadOnlyList<ParseIssue> issues
+        IReadOnlyList<ParseIssue> issues,
+        IReadOnlyList<UnrecognizedPart>? unrecognized = null
     )
     {
         _raw = raw;
@@ -42,6 +43,7 @@ public sealed partial class AprsPacket
         Type = type;
         Payload = payload;
         Issues = issues;
+        Unrecognized = unrecognized ?? [];
         Outcome =
             issues.Any(i => i.Severity == ParseIssueSeverity.Error) ? ParseOutcome.Malformed
             : Payload is null ? ParseOutcome.Unsupported
@@ -81,6 +83,14 @@ public sealed partial class AprsPacket
 
     /// <summary>Problems found while parsing, in the order they were found; empty for a clean packet.</summary>
     public IReadOnlyList<ParseIssue> Issues { get; }
+
+    /// <summary>
+    /// Parts of a packet that parsed but weren't understood, such as a data extension this library doesn't
+    /// know or a path entry no digipeater could have added; empty for most packets. The packet is still decoded: these
+    /// aren't errors, but they are the parts worth a closer look. A third-party packet's own parts are on
+    /// <see cref="ThirdPartyPayload.Packet"/>.
+    /// </summary>
+    public IReadOnlyList<UnrecognizedPart> Unrecognized { get; }
 
     /// <summary>
     /// Parses one TNC2-format line. A trailing CR, LF or CRLF is dropped; every other byte is kept. Never throws for
@@ -208,6 +218,7 @@ public sealed partial class AprsPacket
         var source = Station(raw, 0, gt, issues);
         Callsign? destination = null;
         var path = new List<PathEntry>();
+        var pathStarts = new List<int>();
         var serverFollows = false;
         var start = gt + 1;
         while (true)
@@ -239,6 +250,7 @@ public sealed partial class AprsPacket
                 var kind = Classify(station.Value, serverFollows);
                 serverFollows |= kind == PathEntryKind.QConstruct && station.Value[2] is 'C' or 'X' or 'U' or 'I';
                 path.Add(new PathEntry(station, repeated, kind));
+                pathStarts.Add(start);
             }
 
             if (comma < 0)
@@ -278,7 +290,8 @@ public sealed partial class AprsPacket
                 gt + 1,
                 issues
             );
-        return new AprsPacket(raw, source, destination, path, information, type, payload, issues);
+        var unrecognized = UnrecognizedParts.Find(path, pathStarts, colon + 1, information.Length, payload);
+        return new AprsPacket(raw, source, destination, path, information, type, payload, issues, unrecognized);
     }
 
     private static AprsPayload? Decode(

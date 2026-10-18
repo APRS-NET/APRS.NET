@@ -45,4 +45,7 @@ internal sealed class PositionFields
     public string Comment { get; set; } = "";
 
     public ReadOnlyMemory<byte> ExtensionBytes { get; set; }
+
+    /// <summary>The comment bytes after the weather readings, for a weather station.</summary>
+    public ReadOnlyMemory<byte> WeatherRestBytes { get; set; }
 }
