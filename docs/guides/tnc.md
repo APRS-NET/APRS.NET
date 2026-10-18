@@ -141,10 +141,9 @@ apart from a stand-alone TNC:
 
 - **KISS has to be switched on.** In its APRS mode the radio prints each packet as a line of text, which a KISS reader
   can't use; `aprscli` warns "the TNC is sending text, not KISS frames; is it in KISS mode?". Switch the radio's TNC to
-  its packet mode (PACKET12 on the TH-D72A), then send it `KISS ON` and `RESTART`, each ending in a carriage return.
-  The KISS exit frame (`C0 FF C0`) returns it to its `cmd:` prompt.
+  its packet mode (PACKET12 on the TH-D72A); the connection can then switch it to KISS itself (below).
 - **KISS doesn't survive a power cut.** Switched off and on again, the radio comes back in packet mode with KISS off,
-  sending text. Switch it on again.
+  sending text. With a setup, the connection notices and switches it back.
 - **Switching the radio off may not close the port.** The USB chip can be powered from the computer, so the port stays
   open and nothing fails; only silence shows it. `--quiet-warning 10m` (or `QuietWarning`) reports a TNC that has sent
   nothing for that long. Pick a time longer than your channel is ever quiet.
@@ -154,6 +153,39 @@ apart from a stand-alone TNC:
   (`serial:/dev/ttyUSB0@115200,dtr=off,rts=off`).
 - **Other output on the same port.** With GPS output switched on, NMEA sentences arrive between the packets, and the
   radio may cut a line short where the two meet.
+
+Set `KissSerialOptions.Setup` to the radio's `TncSetup` and the connection switches it into KISS each time it opens the
+port, including after a reconnect; opens the port again when the radio starts sending text, as after a power cut; and
+switches it back out of KISS when it closes. The scripts only talk to the TNC; nothing goes on the air.
+
+<!-- snippet: tnc-setup -->
+```csharp
+// A Kenwood TH-D72A with its TNC in packet mode (PACKET12): switched into KISS whenever the port opens.
+await using var tnc = new KissSerialConnection(
+    new KissSerialOptions { PortName = "/dev/ttyUSB0", Setup = TncSetup.KenwoodThD72 }
+);
+```
+
+`TncSetup.Known` lists the built-in setups for a settings picker. For another TNC, write the steps as a `TncScript`, in
+code or in its text form:
+
+```text
+# Leave KISS if it was on, throw away what waited in the port, then turn KISS on at the cmd: prompt.
+bytes C0 FF C0
+drain 500ms
+send
+expect 3s cmd:
+send KISS ON
+expect 3s cmd:
+send RESTART
+pause 1s
+```
+
+`drain` matters at a command line: a TNC at its prompt prints every packet it hears, and the port keeps that, old
+prompts included, until someone reads it. Without it, an `expect` can match a prompt left over from an earlier
+session. `new TncSetup("my-tnc", "My TNC", TncScript.Parse(enter), TncScript.Parse(leave))` makes it a setup. To work at a TNC's
+command line by hand, `KissSerialConnection.OpenTerminal` opens the port as a `TncTerminal`: send it commands with
+`SendLineAsync` and read what it says with `ReadAsync`.
 
 `tools/d72.sh` in this repository switches a TH-D72A into and out of KISS mode and shows what it is sending.
 

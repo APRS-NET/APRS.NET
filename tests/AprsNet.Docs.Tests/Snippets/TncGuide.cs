@@ -90,6 +90,16 @@ internal static class TncGuide
         #endregion
     }
 
+    public static async Task SetupAsync()
+    {
+        #region tnc-setup
+        // A Kenwood TH-D72A with its TNC in packet mode (PACKET12): switched into KISS whenever the port opens.
+        await using var tnc = new KissSerialConnection(
+            new KissSerialOptions { PortName = "/dev/ttyUSB0", Setup = TncSetup.KenwoodThD72 }
+        );
+        #endregion
+    }
+
     public static async Task ShareAsync(CancellationToken cancellationToken)
     {
         #region tnc-share

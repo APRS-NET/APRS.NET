@@ -144,3 +144,60 @@ AprsNet.Kiss.KissWarning.Quiet = 1 -> AprsNet.Kiss.KissWarning
 AprsNet.Kiss.KissConnection.IsQuiet.get -> bool
 AprsNet.Kiss.KissConnection.IsSendingText.get -> bool
 AprsNet.Kiss.KissWarningEventArgs.QuietFor.get -> System.TimeSpan?
+AprsNet.Kiss.TncScript
+AprsNet.Kiss.TncScriptException
+AprsNet.Kiss.TncScriptException.Step.get -> AprsNet.Kiss.TncScriptStep!
+AprsNet.Kiss.TncScriptException.Transcript.get -> string!
+AprsNet.Kiss.TncScript.RunAsync(System.IO.Stream! stream, System.TimeProvider? timeProvider = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+AprsNet.Kiss.TncScript.SentBytes() -> System.ReadOnlyMemory<byte>
+AprsNet.Kiss.TncScriptStep
+AprsNet.Kiss.TncScriptStep.Bytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Kiss.TncScriptStepKind
+AprsNet.Kiss.TncScriptStepKind.Expect = 1 -> AprsNet.Kiss.TncScriptStepKind
+AprsNet.Kiss.TncScriptStep.Kind.get -> AprsNet.Kiss.TncScriptStepKind
+AprsNet.Kiss.TncScriptStepKind.Pause = 2 -> AprsNet.Kiss.TncScriptStepKind
+AprsNet.Kiss.TncScriptStepKind.Send = 0 -> AprsNet.Kiss.TncScriptStepKind
+AprsNet.Kiss.TncScript.Steps.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Kiss.TncScriptStep!>!
+AprsNet.Kiss.TncScriptStep.Text.get -> string!
+AprsNet.Kiss.TncScriptStep.Time.get -> System.TimeSpan
+AprsNet.Kiss.TncScript.TncScript(System.Collections.Generic.IEnumerable<AprsNet.Kiss.TncScriptStep!>! steps) -> void
+AprsNet.Kiss.TncSetup
+AprsNet.Kiss.TncSetup.<Clone>$() -> AprsNet.Kiss.TncSetup!
+AprsNet.Kiss.TncSetup.Deconstruct(out string! Id, out string! Name, out AprsNet.Kiss.TncScript! EnterKiss, out AprsNet.Kiss.TncScript? LeaveKiss) -> void
+AprsNet.Kiss.TncSetup.EnterKiss.get -> AprsNet.Kiss.TncScript!
+AprsNet.Kiss.TncSetup.EnterKiss.init -> void
+AprsNet.Kiss.TncSetup.Equals(AprsNet.Kiss.TncSetup? other) -> bool
+AprsNet.Kiss.TncSetup.Hint.get -> string?
+AprsNet.Kiss.TncSetup.Hint.init -> void
+AprsNet.Kiss.TncSetup.Id.get -> string!
+AprsNet.Kiss.TncSetup.Id.init -> void
+AprsNet.Kiss.TncSetup.LeaveKiss.get -> AprsNet.Kiss.TncScript?
+AprsNet.Kiss.TncSetup.LeaveKiss.init -> void
+AprsNet.Kiss.TncSetup.Name.get -> string!
+AprsNet.Kiss.TncSetup.Name.init -> void
+AprsNet.Kiss.TncSetup.TncSetup(string! Id, string! Name, AprsNet.Kiss.TncScript! EnterKiss, AprsNet.Kiss.TncScript? LeaveKiss) -> void
+override AprsNet.Kiss.TncScriptStep.ToString() -> string!
+override AprsNet.Kiss.TncScript.ToString() -> string!
+override AprsNet.Kiss.TncSetup.Equals(object? obj) -> bool
+override AprsNet.Kiss.TncSetup.GetHashCode() -> int
+override AprsNet.Kiss.TncSetup.ToString() -> string!
+static AprsNet.Kiss.TncScript.Parse(string! text) -> AprsNet.Kiss.TncScript!
+static AprsNet.Kiss.TncScriptStep.Expect(string! text, System.TimeSpan timeout) -> AprsNet.Kiss.TncScriptStep!
+static AprsNet.Kiss.TncScriptStep.Pause(System.TimeSpan time) -> AprsNet.Kiss.TncScriptStep!
+static AprsNet.Kiss.TncScriptStep.SendLine(string! command) -> AprsNet.Kiss.TncScriptStep!
+static AprsNet.Kiss.TncScriptStep.Send(System.ReadOnlySpan<byte> bytes) -> AprsNet.Kiss.TncScriptStep!
+static AprsNet.Kiss.TncSetup.Find(string! id) -> AprsNet.Kiss.TncSetup?
+static AprsNet.Kiss.TncSetup.KenwoodThD72.get -> AprsNet.Kiss.TncSetup!
+static AprsNet.Kiss.TncSetup.KissExitFrame.get -> System.ReadOnlyMemory<byte>
+static AprsNet.Kiss.TncSetup.Known.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Kiss.TncSetup!>!
+static AprsNet.Kiss.TncSetup.operator !=(AprsNet.Kiss.TncSetup? left, AprsNet.Kiss.TncSetup? right) -> bool
+static AprsNet.Kiss.TncSetup.operator ==(AprsNet.Kiss.TncSetup? left, AprsNet.Kiss.TncSetup? right) -> bool
+AprsNet.Kiss.TncTerminal
+AprsNet.Kiss.TncTerminal.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.TncTerminal.ReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<string!>!
+AprsNet.Kiss.TncTerminal.RunAsync(AprsNet.Kiss.TncScript! script, System.TimeProvider? timeProvider = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+AprsNet.Kiss.TncTerminal.SendAsync(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Kiss.TncTerminal.SendLineAsync(string! command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Kiss.TncTerminal.TncTerminal(System.IO.Stream! stream, bool ownsStream = true) -> void
+AprsNet.Kiss.TncScriptStepKind.Drain = 3 -> AprsNet.Kiss.TncScriptStepKind
+static AprsNet.Kiss.TncScriptStep.Drain(System.TimeSpan time) -> AprsNet.Kiss.TncScriptStep!

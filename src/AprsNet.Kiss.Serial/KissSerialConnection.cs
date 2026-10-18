@@ -30,14 +30,15 @@ public sealed class KissSerialConnection : KissConnection
 
     internal KissSerialConnection(Func<CancellationToken, Task<Stream>> open, KissSerialOptions options)
         : base(
-            open,
+            WithSetup(open, Validated(options).Setup, options.TimeProvider),
             Validated(options).PortName,
             options.TncPort,
             options.ReconnectDelay,
             options.MaxReconnectDelay,
             options.TimeProvider,
             options.CreateTransmitLimit(),
-            options.QuietWarning
+            options.QuietWarning,
+            reopenWhenSendingText: options.Setup is not null
         )
     {
         PortName = options.PortName;
@@ -52,6 +53,20 @@ public sealed class KissSerialConnection : KissConnection
     /// </summary>
     public static IReadOnlyList<string> GetPortNames() =>
         SerialPort.GetPortNames().Distinct().Order(StringComparer.Ordinal).ToArray();
+
+    /// <summary>
+    /// Opens the port in <paramref name="options"/> as a console on the TNC's command line, with its speed and DTR and
+    /// RTS settings; <see cref="KissSerialOptions.Setup"/> isn't run. For setting up a TNC by hand. The port is the
+    /// console's alone until it is disposed.
+    /// </summary>
+    /// <exception cref="ArgumentException">A setting in <paramref name="options"/> is unusable.</exception>
+    /// <exception cref="IOException">The port can't be opened, or isn't there.</exception>
+    /// <exception cref="UnauthorizedAccessException">The port is held by another program, or may not be opened.</exception>
+    public static TncTerminal OpenTerminal(KissSerialOptions options)
+    {
+        Validated(options);
+        return new TncTerminal(OpenPort(options.PortName, options.BaudRate, options.DtrEnable, options.RtsEnable));
+    }
 
     private static KissSerialOptions Validated(KissSerialOptions options)
     {
@@ -71,6 +86,47 @@ public sealed class KissSerialConnection : KissConnection
     }
 
     /// <summary>
+    /// Wraps <paramref name="open"/> so each port it opens is switched into KISS by <paramref name="setup"/> first, and
+    /// told to leave KISS when it closes.
+    /// </summary>
+    private static Func<CancellationToken, Task<Stream>> WithSetup(
+        Func<CancellationToken, Task<Stream>> open,
+        TncSetup? setup,
+        TimeProvider timeProvider
+    ) =>
+        setup is null
+            ? open
+            : async token =>
+            {
+                var stream = await open(token).ConfigureAwait(false);
+                try
+                {
+                    await setup.EnterKiss.RunAsync(stream, timeProvider, token).ConfigureAwait(false);
+                }
+                catch (TncScriptException e)
+                {
+                    await stream.DisposeAsync().ConfigureAwait(false);
+                    throw new IOException(
+                        $"The TNC didn't switch to KISS mode ({setup.Name}): {e.Message}"
+                            + (setup.Hint is { } hint ? " " + hint : ""),
+                        e
+                    );
+                }
+                catch
+                {
+                    await stream.DisposeAsync().ConfigureAwait(false);
+                    throw;
+                }
+
+                if (stream is ISaysGoodbye polite && setup.LeaveKiss is { } leave)
+                {
+                    polite.Goodbye = leave.SentBytes();
+                }
+
+                return stream;
+            };
+
+    /// <summary>
     /// Opens a serial port at 8N1 with no handshaking, as a stream that reports the device going away as an
     /// <see cref="IOException"/>. The CLI's one-shot serial link opens ports this way too.
     /// </summary>
@@ -82,7 +138,7 @@ public sealed class KissSerialConnection : KissConnection
         try
         {
             port.Open();
-            return new SerialPortStream(port.BaseStream, port);
+            return new SerialPortStream(port.BaseStream, port) { Discard = port.DiscardInBuffer };
         }
         catch (ArgumentException e)
         {
@@ -122,9 +178,32 @@ public sealed class KissSerialConnection : KissConnection
     /// write throws <see cref="ObjectDisposedException"/> ("The port is closed") or
     /// <see cref="InvalidOperationException"/>; those become an <see cref="IOException"/>, a lost link to reconnect.
     /// </summary>
-    internal sealed class SerialPortStream(Stream stream, IDisposable port) : Stream
+    internal sealed class SerialPortStream(Stream stream, IDisposable port) : Stream, ISaysGoodbye, IDiscardsInput
     {
+        /// <summary>Throws away the driver's receive buffer: <c>SerialPort.DiscardInBuffer</c>.</summary>
+        public Action? Discard { get; init; }
+
+        /// <inheritdoc />
+        public void DiscardInput()
+        {
+            try
+            {
+                Discard?.Invoke();
+            }
+            catch (Exception e) when (e is IOException or InvalidOperationException)
+            {
+                throw Lost(e);
+            }
+        }
+
         private readonly Stream _stream = stream;
+        private byte[]? _goodbye;
+
+        /// <summary>Bytes written just before the port closes, however it closes, such as the KISS exit frame.</summary>
+        public ReadOnlyMemory<byte> Goodbye
+        {
+            set => Volatile.Write(ref _goodbye, value.IsEmpty ? null : value.ToArray());
+        }
 
         public override bool CanRead => true;
         public override bool CanSeek => false;
@@ -158,7 +237,7 @@ public sealed class KissSerialConnection : KissConnection
             CancellationToken cancellationToken = default
         )
         {
-            await using var closing = cancellationToken.Register(port.Dispose).ConfigureAwait(false);
+            await using var closing = cancellationToken.Register(ClosePort).ConfigureAwait(false);
             try
             {
                 return await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -208,10 +287,30 @@ public sealed class KissSerialConnection : KissConnection
         {
             if (disposing)
             {
-                port.Dispose();
+                ClosePort();
             }
 
             base.Dispose(disposing);
+        }
+
+        /// <summary>Says goodbye if there is anything to say, best effort, then closes the port.</summary>
+        private void ClosePort()
+        {
+            if (Interlocked.Exchange(ref _goodbye, null) is { } goodbye)
+            {
+                try
+                {
+                    _stream.Write(goodbye, 0, goodbye.Length);
+                    _stream.Flush();
+                }
+                catch (Exception e)
+                    when (e is IOException or InvalidOperationException or ObjectDisposedException or TimeoutException)
+                {
+                    // The port is already gone, such as a TNC that was unplugged: there is no one to say it to.
+                }
+            }
+
+            port.Dispose();
         }
 
         private static bool IsClosedPort(Exception e) => e is ObjectDisposedException or InvalidOperationException;
@@ -219,4 +318,11 @@ public sealed class KissSerialConnection : KissConnection
         private static IOException Lost(Exception e) =>
             new($"The serial port closed; the TNC was probably unplugged. ({e.Message})", e);
     }
+}
+
+/// <summary>A port that can send some bytes just before it closes, however it closes.</summary>
+internal interface ISaysGoodbye
+{
+    /// <summary>The bytes to send; empty for none.</summary>
+    ReadOnlyMemory<byte> Goodbye { set; }
 }

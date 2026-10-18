@@ -3,15 +3,26 @@ using System.Threading.Channels;
 namespace AprsNet.Kiss.Tests;
 
 /// <summary>A TNC's end of a KISS link: the test feeds what it "hears" and reads back what the client sent.</summary>
-internal sealed class FakeTnc : Stream
+internal sealed class FakeTnc : Stream, IDiscardsInput
 {
     private readonly Channel<object> _incoming = Channel.CreateUnbounded<object>();
 
     public MemoryStream Written { get; } = new();
 
+    /// <summary>Answers what is written, as a TNC's command line would; null for no answer.</summary>
+    public Func<byte[], byte[]?>? Answer { get; set; }
+
+    public bool Disposed { get; private set; }
+
     public void Send(byte[] bytes) => _incoming.Writer.TryWrite(bytes);
 
     public void End() => _incoming.Writer.TryComplete();
+
+    /// <summary>Throws away what is waiting, as a serial driver discards its receive buffer.</summary>
+    public void DiscardInput()
+    {
+        while (_incoming.Reader.TryRead(out _)) { }
+    }
 
     public void Fail(Exception error) => _incoming.Writer.TryWrite(error);
 
@@ -35,7 +46,16 @@ internal sealed class FakeTnc : Stream
 
     public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
     {
-        Written.Write(buffer.Span);
+        lock (Written)
+        {
+            Written.Write(buffer.Span);
+        }
+
+        if (Answer?.Invoke(buffer.ToArray()) is { } answer)
+        {
+            Send(answer);
+        }
+
         return ValueTask.CompletedTask;
     }
 
@@ -60,5 +80,13 @@ internal sealed class FakeTnc : Stream
 
     public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) =>
+        WriteAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
+
+    protected override void Dispose(bool disposing)
+    {
+        Disposed = true;
+        _incoming.Writer.TryComplete();
+        base.Dispose(disposing);
+    }
 }

@@ -29,6 +29,7 @@ public abstract class KissConnection : IAsyncDisposable
     private int _reading;
     private int _disposed;
     private int _textWarning;
+    private readonly bool _reopenWhenSendingText;
     private readonly ITimer _quietTimer;
     private readonly Lock _quietLock = new();
     private long _lastData;
@@ -43,9 +44,11 @@ public abstract class KissConnection : IAsyncDisposable
         TimeSpan maxReconnectDelay,
         TimeProvider timeProvider,
         KissTransmitLimit transmitLimit,
-        TimeSpan? quietWarning
+        TimeSpan? quietWarning,
+        bool reopenWhenSendingText = false
     )
     {
+        _reopenWhenSendingText = reopenWhenSendingText;
         QuietWarning = quietWarning;
         _quietTimer = timeProvider.CreateTimer(
             _ => CheckQuiet(),
@@ -146,6 +149,7 @@ public abstract class KissConnection : IAsyncDisposable
             {
                 Exception? failure = null;
                 KissStreamClient? client = null;
+                using var sendingText = CancellationTokenSource.CreateLinkedTokenSource(token);
                 try
                 {
                     // This connection applies the limit itself, so it holds across reconnects.
@@ -158,7 +162,15 @@ public abstract class KissConnection : IAsyncDisposable
                         MetricsTnc = _tnc,
                         DataRead = DataArrived,
                     };
-                    client.Warning += (_, e) => SetTextWarning(e.IsActive);
+                    client.Warning += (_, e) =>
+                    {
+                        SetTextWarning(e.IsActive);
+                        if (e.IsActive && _reopenWhenSendingText)
+                        {
+                            // A setup switches it into KISS each time the port opens: open it again.
+                            sendingText.Cancel();
+                        }
+                    };
                 }
                 catch (Exception e) when (IsLinkFailure(e))
                 {
@@ -184,7 +196,7 @@ public abstract class KissConnection : IAsyncDisposable
                     WatchQuiet(true);
                     await using (client.ConfigureAwait(false))
                     {
-                        var frames = client.ReadFramesAsync(token).GetAsyncEnumerator(token);
+                        var frames = client.ReadFramesAsync(sendingText.Token).GetAsyncEnumerator(sendingText.Token);
                         try
                         {
                             while (true)
@@ -199,6 +211,14 @@ public abstract class KissConnection : IAsyncDisposable
                                 catch (Exception e) when (IsLinkFailure(e))
                                 {
                                     failure = e;
+                                    break;
+                                }
+                                catch (OperationCanceledException)
+                                    when (sendingText.IsCancellationRequested && !token.IsCancellationRequested)
+                                {
+                                    failure = new IOException(
+                                        "The TNC is sending text, not KISS frames; opening it again to switch it to KISS."
+                                    );
                                     break;
                                 }
                                 catch (OperationCanceledException)
