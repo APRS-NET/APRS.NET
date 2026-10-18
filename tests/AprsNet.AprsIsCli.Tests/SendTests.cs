@@ -154,6 +154,48 @@ public class SendTests
     }
 
     [Fact]
+    public async Task AMessageCanShowEverythingReceivedThroughAWiderFilter()
+    {
+        var harness = Verified();
+
+        var run = harness.RunAsync(
+            [
+                "send",
+                "message",
+                "ANSRVR",
+                "J NZEVENT",
+                "-c",
+                Callsign,
+                "--wait-replies",
+                "0",
+                "--show-received",
+                "--filter",
+                " b/ANSRVR ",
+            ],
+            TestContext.Current.CancellationToken
+        );
+        var written = await WaitForWritten(harness, 2);
+        harness.Transport.Server("ANSRVR>APWW11,TCPIP*,qAS,KJ4ERJ-15::N1ABC    :N:NZEVENT Hello"); // not to us
+        harness.Transport.Server(
+            $"ANSRVR>APWW11,TCPIP*,qAS,KJ4ERJ-15::{Callsign} :ack{written[1][(written[1].LastIndexOf('{') + 1)..]}"
+        );
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"g/{Callsign} b/ANSRVR", harness.ClientOptions!.Filter);
+        Assert.Contains(
+            "< ANSRVR>APWW11,TCPIP*,qAS,KJ4ERJ-15::N1ABC    :N:NZEVENT Hello",
+            result.Out,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            $"< ANSRVR>APWW11,TCPIP*,qAS,KJ4ERJ-15::{Callsign} :ack01",
+            result.Out,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
     public async Task AMessageCarriesAReplyAckIdAndAReplyCanAcknowledgeIt()
     {
         var harness = Verified();

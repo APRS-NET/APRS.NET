@@ -113,6 +113,20 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         DefaultValueFactory = _ => "2m",
     };
 
+    private readonly Option<bool> _showReceived = new("--show-received")
+    {
+        Description =
+            "Also print every packet received while the message runs, as '< ' and the packet: what comes back, "
+            + "including what isn't a message to you.",
+    };
+
+    private readonly Option<string?> _alsoFilter = new("--filter")
+    {
+        Description =
+            "More APRS-IS filter terms while the message runs, added to g/<your callsign>: b/ANSRVR, for example, to "
+            + "also see everything a service sends. Use with --show-received.",
+    };
+
     private readonly Option<string> _retry = new("--retry")
     {
         Description =
@@ -241,7 +255,13 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             messageText,
             _waitReplies,
             _retry,
+            _showReceived,
         };
+        if (!toTnc)
+        {
+            message.Options.Add(_alsoFilter); // a TNC hears everything on the air, so there is nothing to filter
+        }
+
         _retry.AcceptOnlyFromAmong([.. RetryProfiles.Keys]);
         SetAction(
             message,
@@ -614,7 +634,9 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             Callsign = callsign,
             Passcode = passcode,
             // Messages addressed to us, so acknowledgements reach the messenger.
-            Filter = message is not null ? "g/" + callsign : null,
+            Filter = message is not null
+                ? ("g/" + callsign + " " + parseResult.GetValue(_alsoFilter)?.Trim()).TrimEnd()
+                : null,
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
         };
@@ -653,6 +675,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 message,
                 RetryProfiles[parseResult.GetValue(_retry)!],
                 waitReplies,
+                parseResult.GetValue(_showReceived),
                 run.Token
             );
         }
@@ -740,6 +763,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                     message,
                     RetryProfiles[parseResult.GetValue(_retry)!],
                     waitReplies,
+                    parseResult.GetValue(_showReceived),
                     cancellationToken
                 );
             }
@@ -805,9 +829,13 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         MessagePayload message,
         RetryProfile retryProfile,
         TimeSpan waitReplies,
+        bool showReceived,
         CancellationToken cancellationToken
     )
     {
+        // The reader (replies, --show-received) and the sender (each packet) print at the same time.
+        var output = TextWriter.Synchronized(environment.Out);
+
         // A one-off run: a failed message isn't kept for its station being heard again.
         using var station = new MessagingStation(
             address.Source,
@@ -818,8 +846,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 TimeProvider = environment.TimeProvider,
             }
         );
-        station.MessageReceived += (_, e) =>
-            environment.Out.WriteLine($"Reply from {e.Message.From}: {e.Message.Text}");
+        station.MessageReceived += (_, e) => output.WriteLine($"Reply from {e.Message.From}: {e.Message.Text}");
 
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -832,7 +859,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 {
                     var packet = address.Create(outgoing.Payload);
                     await send(packet, cancellationToken);
-                    await environment.Out.WriteLineAsync(packet.ToString());
+                    await output.WriteLineAsync(packet.ToString());
                 }
             },
             CancellationToken.None
@@ -844,6 +871,11 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             {
                 await foreach (var packet in received.WithCancellation(stop.Token))
                 {
+                    if (showReceived)
+                    {
+                        await output.WriteLineAsync("< " + packet);
+                    }
+
                     station.Receive(packet, source);
                 }
             },
@@ -886,7 +918,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         switch (sent.State)
         {
             case OutgoingMessageState.Delivered:
-                await environment.Out.WriteLineAsync($"Acknowledged by {message.Addressee} after {attempts}.");
+                await output.WriteLineAsync($"Acknowledged by {message.Addressee} after {attempts}.");
                 exitCode = ExitCodes.Success;
                 break;
             case OutgoingMessageState.Rejected:
