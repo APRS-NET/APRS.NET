@@ -18,7 +18,9 @@ namespace AprsNet.Kiss;
 /// 128 bytes with two line breaks, nine in ten of them printable. A good frame clears it. Bytes that look like text are
 /// not a frame, even after a <c>FEND</c>: from then until the next <c>FEND</c> they are discarded as outside any frame.
 /// So are bytes after a <c>FEND</c> whose first isn't a KISS command byte (low four bits 0 to 6, or <c>FF</c>), such as
-/// the answers of a TNC's command line, which start with a line break or a letter.
+/// the answers of a TNC's command line, which start with a line break or a letter. A letter can look like a command
+/// byte (<c>c</c> is slot time on port 6), so a segment that starts like TXDELAY, persistence, slot time, TXTAIL or
+/// full duplex and goes on past that command's one parameter byte is text too.
 /// </para>
 /// </remarks>
 public sealed class KissDecoder
@@ -138,6 +140,21 @@ public sealed class KissDecoder
                 _inFrame = false;
             }
 
+            if (_inFrame && !_discarding && _frame.Count == 2 && HasOneParameter(_frame[0]))
+            {
+                // TXDELAY, persistence, slot time, TXTAIL and full duplex carry exactly one byte, so a third means
+                // the segment is text whose first letter only looked like one of them: "cmd:" or "ESTART".
+                DiscardedBytes += _frame.Count;
+                if (trace is not null && _raw.Count > 1)
+                {
+                    _unframed.AddRange(_raw.Take(_raw.Count - 1).Skip(1)); // without the FEND, and b comes below
+                }
+
+                _frame.Clear();
+                _raw.Clear();
+                (_inFrame, _escaped) = (false, false);
+            }
+
             if (!_inFrame || _discarding)
             {
                 DiscardedBytes++;
@@ -197,6 +214,9 @@ public sealed class KissDecoder
     }
 
     private static bool IsCommandByte(byte b) => b == 0xFF || (b & 0x0F) <= (int)KissCommand.SetHardware;
+
+    private static bool HasOneParameter(byte b) =>
+        b != 0xFF && (b & 0x0F) is >= (int)KissCommand.TxDelay and <= (int)KissCommand.FullDuplex;
 
     /// <summary>Counts <paramref name="b"/> towards the run since the last <c>FEND</c>, to spot text lines.</summary>
     private void Sniff(byte b, IKissDecoderTrace? trace)

@@ -160,6 +160,45 @@ public sealed class KissTrafficTests
         Assert.Equal(0, client.DroppedFrames);
     }
 
+    [Theory]
+    [InlineData("cmd:KISS OFF\r\n")] // c is slot time on port 6
+    [InlineData("ESTART\r\ncmd:")] // E is full duplex on port 4
+    [InlineData("cmd:")]
+    public async Task TextWhoseFirstLetterLooksLikeACommandIsTextAtOnce(string text)
+    {
+        // A letter can have the low four bits of a KISS command, but those commands carry one parameter byte, so the
+        // third byte shows it is text without waiting for enough of it to look like text.
+        var tnc = new FakeTnc();
+        await using var client = new KissStreamClient(tnc, transmitLimit: KissTransmitLimit.Off);
+        var entries = Record(client);
+
+        tnc.Send(Kiss("N0CALL>APRS:>last KISS frame"));
+        tnc.Send(Text(text));
+        tnc.Send(Kiss("N0CALL>APRS:>and another"));
+        tnc.End();
+        var frames = await ReadAll(client);
+
+        Assert.Equal(2, frames.Count);
+        Assert.Equal(text, string.Concat(entries.Where(e => e.Kind == KissTrafficKind.Unframed).Select(e => e.Text)));
+        Assert.DoesNotContain(entries, e => e.Kind is KissTrafficKind.Command or KissTrafficKind.DroppedFrame);
+        Assert.Equal(0, client.DroppedFrames);
+    }
+
+    [Fact]
+    public void TextWhoseFirstLetterLooksLikeACommandIsNotAFrame()
+    {
+        var decoder = new KissDecoder();
+
+        var frames = decoder.Decode([0xC0, .. Text("cmd:"), 0xC0, 0x03, 0x0A, 0xC0, 0x01, 0xDB, 0xDC, 0xC0]);
+
+        Assert.Equal(
+            [(KissCommand.SlotTime, (byte)0x0A), (KissCommand.TxDelay, (byte)0xC0)],
+            frames.Select(f => (f.Command, f.Payload.Span[0]))
+        );
+        Assert.Equal(4L, decoder.DiscardedBytes);
+        Assert.Equal(0, decoder.DroppedFrames);
+    }
+
     [Fact]
     public async Task NothingIsKeptOrReportedWhileNoOneListens()
     {
