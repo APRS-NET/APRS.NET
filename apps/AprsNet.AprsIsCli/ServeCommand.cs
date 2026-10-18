@@ -318,6 +318,11 @@ internal sealed class ServeCommand(CliEnvironment environment)
             {
                 return ExitCodes.Success;
             }
+            catch (KissTncLoginException)
+            {
+                await environment.Error.WriteLineAsync(ConnectionReporter.KissTnc(options.Upstream!.Endpoint));
+                return ExitCodes.LoginFailed;
+            }
             catch (LoginException ex)
             {
                 await environment.Error.WriteLineAsync(

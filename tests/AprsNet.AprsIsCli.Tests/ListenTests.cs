@@ -898,6 +898,44 @@ public class ListenTests
     }
 
     [Fact]
+    public async Task AKissTncGivenAsAServerSaysHowToListenAndExits4()
+    {
+        var harness = new CliHarness();
+        harness.Transport.Server(KissFrame);
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-s", "localhost:8001"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(4, result.ExitCode);
+        Assert.Contains("localhost:8001 is a KISS TNC", result.Error, StringComparison.Ordinal);
+        Assert.Contains("aprscli tnc listen --tnc localhost:8001", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReconnectStopsWhenItReachesAKissTnc()
+    {
+        var harness = WithPackets(_packets[0]);
+        harness.Transport.Close();
+        var second = new FakeAprsTransport();
+        second.Server(KissFrame);
+        harness.Reconnects.Enqueue(second);
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "--reconnect", "-d", "5s"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(4, result.ExitCode);
+        Assert.Equal(2, harness.ConnectionAttempts);
+        Assert.Contains("is a KISS TNC", result.Error, StringComparison.Ordinal);
+    }
+
+    // What Dire Wolf's KISS port sends, read as Latin-1 text: frames that start and end with FEND (C0).
+    private const string KissFrame = "À\u0000\u0082 ¤¦@@`=3906.66N/09505.61W$À";
+
+    [Fact]
     public async Task MaxSilenceReconnectsWhenOnlyKeepalivesArrive()
     {
         var harness = WithPackets(_packets[0]);

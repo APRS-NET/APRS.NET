@@ -135,6 +135,11 @@ internal static class ListenRunner
 
             return ExitCodes.LoginFailed;
         }
+        catch (KissTncLoginException)
+        {
+            await environment.Error.WriteLineAsync(ConnectionReporter.KissTnc(options.Endpoint));
+            return ExitCodes.LoginFailed;
+        }
         catch (LoginException ex)
         {
             await environment.Error.WriteLineAsync($"aprscli: login failed on {options.Endpoint}: {ex.Message}");
