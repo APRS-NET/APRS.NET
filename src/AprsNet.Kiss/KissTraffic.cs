@@ -55,6 +55,12 @@ public enum KissTrafficKind
 
     /// <summary>A <see cref="TncSetup"/> script step that failed: an answer that didn't come in time.</summary>
     SetupFailed,
+
+    /// <summary>
+    /// Bytes sent to the TNC by hand, outside any frame (<see cref="KissConnection.SendRawAsync"/>): a command typed
+    /// at its command line.
+    /// </summary>
+    RawSent,
 }
 
 /// <summary>Why a frame was dropped (<see cref="KissTrafficKind.DroppedFrame"/>).</summary>
@@ -84,6 +90,7 @@ public static class KissTrafficKindExtensions
             KissTrafficKind.SetupSent => "Sent to the TNC's command line by its setup.",
             KissTrafficKind.SetupReceived => "The TNC's answer during its setup.",
             KissTrafficKind.SetupFailed => "The TNC's setup didn't get the answer it expected.",
+            KissTrafficKind.RawSent => "Sent to the TNC by hand.",
             _ => kind.ToString(),
         };
 }
@@ -108,7 +115,7 @@ public sealed class KissTrafficEventArgs : EventArgs
 
     /// <summary>Which way it went.</summary>
     public KissTrafficDirection Direction =>
-        Kind is KissTrafficKind.Sent or KissTrafficKind.SetupSent
+        Kind is KissTrafficKind.Sent or KissTrafficKind.SetupSent or KissTrafficKind.RawSent
             ? KissTrafficDirection.Sent
             : KissTrafficDirection.Received;
 

@@ -30,6 +30,8 @@ public abstract class KissConnection : IAsyncDisposable
     private int _disposed;
     private int _textWarning;
     private readonly bool _reopenWhenSendingText;
+    private int _manual;
+    private int _scriptRunning;
     private readonly ITimer _quietTimer;
     private readonly Lock _quietLock = new();
     private long _lastData;
@@ -132,6 +134,196 @@ public abstract class KissConnection : IAsyncDisposable
     /// </summary>
     public event EventHandler<KissTrafficEventArgs>? Traffic;
 
+    /// <summary>
+    /// Whether someone is working at the TNC's command line by hand (<see cref="BeginManual"/>). While they are, a
+    /// connection with a <c>TncSetup</c> doesn't reopen the port to switch a TNC sending text back into KISS, so it
+    /// doesn't fight them; the <see cref="KissWarning.TextNotKiss"/> warning still fires.
+    /// </summary>
+    public bool IsManual => Volatile.Read(ref _manual) > 0;
+
+    /// <summary>
+    /// Starts working at the TNC's command line by hand, over this open connection, for a troubleshooting console:
+    /// <see cref="SendRawAsync"/>, <see cref="SendLineAsync"/> and <see cref="RunScriptAsync"/> need it. Dispose the
+    /// result to stop. Nesting is fine; manual mode lasts until the last one is disposed.
+    /// </summary>
+    /// <remarks>
+    /// This is a setup and troubleshooting tool, not a way to send packets. Raw sends bypass
+    /// <see cref="TransmitLimit"/>. In KISS mode a TNC ignores text, and only the KISS exit frame (<c>C0 FF C0</c>)
+    /// reaches its command line; raw bytes that form a data frame are transmitted. At a TNC's command line some
+    /// commands transmit too, such as <c>ID</c>, <c>CONV</c> and <c>K</c> on TNC-2-style TNCs.
+    /// </remarks>
+    public IDisposable BeginManual()
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        Interlocked.Increment(ref _manual);
+        return new ManualMode(this);
+    }
+
+    /// <summary>
+    /// Sends <paramref name="bytes"/> to the TNC as they are, outside any frame, over the open connection: written
+    /// between frames, never inside one. Reported as <see cref="KissTrafficKind.RawSent"/>. See the warnings on
+    /// <see cref="BeginManual"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Not in manual mode, or the TNC is not connected now.</exception>
+    public async Task SendRawAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken = default)
+    {
+        RequireManual();
+        await Connected.SendRawAsync(bytes, KissTrafficKind.RawSent, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Sends <paramref name="command"/> and a carriage return, as typed at the TNC's prompt; see <see cref="SendRawAsync"/>.</summary>
+    /// <exception cref="InvalidOperationException">Not in manual mode, or the TNC is not connected now.</exception>
+    /// <exception cref="ArgumentException">The command holds a character above U+00FF.</exception>
+    public Task SendLineAsync(string command, CancellationToken cancellationToken = default) =>
+        SendRawAsync(TncScriptStep.SendLine(command).Bytes, cancellationToken);
+
+    /// <summary>
+    /// Runs <paramref name="script"/> over the open connection, without reopening the port: its sends go out between
+    /// frames, and its expect steps see the TNC's answers, which also come through <see cref="Traffic"/> as usual.
+    /// Switching a TNC into KISS (such as <c>TncSetup.KenwoodThD72.EnterKiss</c>) or out of it becomes one action.
+    /// Its sends are reported as <see cref="KissTrafficKind.SetupSent"/>, a failed step as
+    /// <see cref="KissTrafficKind.SetupFailed"/>. Returns what the TNC said meanwhile. One script at a time.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Not in manual mode, the TNC is not connected now, or another script is running.
+    /// </exception>
+    /// <exception cref="TncScriptException">An expected answer didn't come in time.</exception>
+    public async Task<string> RunScriptAsync(TncScript script, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(script);
+        RequireManual();
+        var client = Connected;
+        if (Interlocked.Exchange(ref _scriptRunning, 1) != 0)
+        {
+            throw new InvalidOperationException("Another script is running on this connection.");
+        }
+
+        var feed = System.Threading.Channels.Channel.CreateUnbounded<byte[]>();
+        client.ScriptFeed = feed.Writer;
+        try
+        {
+            return await script
+                .RunAsync(
+                    new ScriptStream(client, feed.Reader),
+                    _timeProvider,
+                    (step, kind, bytes) =>
+                    {
+                        // What the TNC answers already comes through as Unframed; report what the script did.
+                        if (kind != KissTrafficKind.SetupReceived && IsTracing)
+                        {
+                            RaiseTraffic(
+                                new KissTrafficEventArgs(_timeProvider.GetUtcNow(), kind, bytes.ToArray())
+                                {
+                                    SetupStep = step,
+                                }
+                            );
+                        }
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            client.ScriptFeed = null;
+            feed.Writer.TryComplete();
+            Volatile.Write(ref _scriptRunning, 0);
+        }
+    }
+
+    private void RequireManual()
+    {
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        if (!IsManual)
+        {
+            throw new InvalidOperationException(
+                "Sending to the TNC by hand needs manual mode: call BeginManual first. It is a setup and "
+                    + "troubleshooting tool, not a way to send packets."
+            );
+        }
+    }
+
+    /// <summary>Ends manual mode once, on the first dispose.</summary>
+    private sealed class ManualMode(KissConnection connection) : IDisposable
+    {
+        private int _disposed;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            {
+                Interlocked.Decrement(ref connection._manual);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The open connection as a stream for a script: reads come from a copy of what the connection reads, writes go
+    /// out between frames, and draining throws away what the script hasn't read. Nothing here closes the port.
+    /// </summary>
+    private sealed class ScriptStream(KissStreamClient client, System.Threading.Channels.ChannelReader<byte[]> feed)
+        : Stream,
+            IDiscardsInput
+    {
+        private byte[] _pending = [];
+        private int _pendingAt;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override async ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default
+        )
+        {
+            if (_pendingAt == _pending.Length)
+            {
+                if (!await feed.WaitToReadAsync(cancellationToken).ConfigureAwait(false) || !feed.TryRead(out var next))
+                {
+                    return 0;
+                }
+
+                (_pending, _pendingAt) = (next, 0);
+            }
+
+            var count = Math.Min(buffer.Length, _pending.Length - _pendingAt);
+            _pending.AsMemory(_pendingAt, count).CopyTo(buffer);
+            _pendingAt += count;
+            return count;
+        }
+
+        public override ValueTask WriteAsync(
+            ReadOnlyMemory<byte> buffer,
+            CancellationToken cancellationToken = default
+        ) => client.SendRawAsync(buffer, kind: null, cancellationToken);
+
+        public void DiscardInput()
+        {
+            (_pending, _pendingAt) = ([], 0);
+            while (feed.TryRead(out _)) { }
+        }
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override void Flush() { }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     /// <summary>Whether anyone listens to <see cref="Traffic"/>.</summary>
     private protected bool IsTracing => Traffic is not null;
 
@@ -197,7 +389,7 @@ public abstract class KissConnection : IAsyncDisposable
                     client.Warning += (_, e) =>
                     {
                         SetTextWarning(e.IsActive);
-                        if (e.IsActive && _reopenWhenSendingText)
+                        if (e.IsActive && _reopenWhenSendingText && !IsManual)
                         {
                             // A setup switches it into KISS each time the port opens: open it again.
                             sendingText.Cancel();

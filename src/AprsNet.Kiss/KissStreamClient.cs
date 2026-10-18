@@ -63,6 +63,12 @@ public sealed class KissStreamClient : IAsyncDisposable
 
     private bool Tracing => Traffic is not null && (WantsTraffic?.Invoke() ?? true);
 
+    /// <summary>
+    /// While a script runs on the open connection (<see cref="KissConnection.RunScriptAsync"/>): a copy of every read
+    /// goes here as well as to the decoder, so the script's expect steps see the TNC's answers.
+    /// </summary>
+    internal System.Threading.Channels.ChannelWriter<byte[]>? ScriptFeed { get; set; }
+
     /// <summary>The clock for <see cref="KissTrafficEventArgs.At"/>.</summary>
     internal TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 
@@ -108,6 +114,7 @@ public sealed class KissStreamClient : IAsyncDisposable
             }
 
             DataRead?.Invoke();
+            ScriptFeed?.TryWrite(buffer.AsSpan(0, read).ToArray());
 
             var (dropped, discarded, text, spotted) = (
                 _decoder.DroppedFrames,
@@ -206,6 +213,34 @@ public sealed class KissStreamClient : IAsyncDisposable
         finally
         {
             _writeLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Writes <paramref name="bytes"/> as they are, outside any frame, under the same lock as frames so they never
+    /// land inside one. Not limited by <see cref="TransmitLimit"/>. Reported as <paramref name="kind"/>, or not at all.
+    /// </summary>
+    internal async ValueTask SendRawAsync(
+        ReadOnlyMemory<byte> bytes,
+        KissTrafficKind? kind,
+        CancellationToken cancellationToken
+    )
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
+
+        if (kind is { } reported && Tracing)
+        {
+            Raise(new KissTrafficEventArgs(TimeProvider.GetUtcNow(), reported, bytes.ToArray()));
         }
     }
 
