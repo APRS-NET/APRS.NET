@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0-alpha.10](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.9...v0.4.0-alpha.10) (2026-10-18)
+
+
+### Features
+
+* **cli:** show what comes back while a message runs ([0e9fc27](https://github.com/APRS-NET/APRS.NET/commit/0e9fc27ccc3563f60065a75a63f47f39b098e8c0))
+* **cli:** show what comes back while a message runs ([f8e94a8](https://github.com/APRS-NET/APRS.NET/commit/f8e94a85154550b9e8fc7fcf4a9f8c9c8d412fbb))
+
 ## [0.4.0-alpha.9](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.8...v0.4.0-alpha.9) (2026-10-18)
 
 
