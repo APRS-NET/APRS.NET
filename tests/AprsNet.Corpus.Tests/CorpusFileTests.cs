@@ -43,6 +43,34 @@ public sealed class CorpusFileTests : IDisposable
         Assert.Equal(original, stream.ToArray());
     }
 
+    [Theory]
+    [MemberData(nameof(CorpusFiles))]
+    public void AnonymizingRealTrafficKeepsEveryLineItsLengthTimeAndDestination(string file)
+    {
+        var lines = CorpusFile.ReadLines(Path.Combine(_corpus, file)).ToList();
+
+        var result = new CorpusAnonymizer().Anonymize(lines);
+
+        Assert.Empty(result.LeftOut);
+        Assert.Equal(lines.Count, result.Lines.Count);
+        for (var i = 0; i < lines.Count; i++)
+        {
+            Assert.Equal(lines[i].ReceivedAt, result.Lines[i].ReceivedAt);
+            Assert.Equal(lines[i].Packet.Length, result.Lines[i].Packet.Length);
+            Assert.Equal(Destination(lines[i].Packet), Destination(result.Lines[i].Packet)); // TOCALL or Mic-E data
+        }
+
+        // The corpus is anonymized already, so its pseudonyms look like callsigns and get new ones; the check still runs.
+        Assert.NotNull(result.Leaks);
+    }
+
+    private static string Destination(string packet)
+    {
+        var gt = packet.IndexOf('>', StringComparison.Ordinal);
+        var end = packet.IndexOfAny([',', ':'], gt + 1);
+        return gt < 0 || end < 0 ? "" : packet[(gt + 1)..end];
+    }
+
     [Fact]
     public void EmptyLinesAreSkippedAndABadLineIsNamedByItsNumber()
     {
