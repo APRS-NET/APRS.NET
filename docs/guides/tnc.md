@@ -187,7 +187,9 @@ session. `new TncSetup("my-tnc", "My TNC", TncScript.Parse(enter), TncScript.Par
 command line by hand, `KissSerialConnection.OpenTerminal` opens the port as a `TncTerminal`: send it commands with
 `SendLineAsync` and read what it says with `ReadAsync`.
 
-`tools/d72.sh` in this repository switches a TH-D72A into and out of KISS mode and shows what it is sending.
+From the command line, add the setup to the port, `--tnc serial:/dev/ttyUSB0,setup=th-d72`, and every `tnc` command and
+`serve` use it. `aprscli tnc kiss on` and `off` switch the radio once, and `aprscli tnc terminal` is a console on its
+command line; see the [CLI README](../../apps/AprsNet.AprsIsCli/README.md#tnc-kiss-and-tnc-terminal).
 
 ## Share one TNC between apps
 

@@ -6,12 +6,13 @@ namespace AprsNet.AprsIsCli;
 /// <summary>
 /// Where a TNC is, as <c>--tnc</c> gives it: <c>host[:port]</c> for KISS over TCP, or <c>serial:PORT[@BAUD]</c> for a
 /// TNC on a serial port, such as <c>serial:/dev/ttyUSB0</c> or <c>serial:COM3@57600</c>. A serial address can end in
-/// <c>,dtr=off</c> and <c>,rts=off</c> to leave those lines low, for a board such as an ESP32 that resets on them.
+/// <c>,dtr=off</c> and <c>,rts=off</c> to leave those lines low, for a board such as an ESP32 that resets on them, and
+/// <c>,setup=th-d72</c> to switch a radio's built-in TNC into KISS (<see cref="TncSetup.Known"/>).
 /// </summary>
 internal sealed record TncAddress
 {
     /// <summary>The forms <c>--tnc</c> accepts, for help and error messages.</summary>
-    public const string Forms = "host[:port] or serial:PORT[@BAUD][,dtr=off][,rts=off]";
+    public const string Forms = "host[:port] or serial:PORT[@BAUD][,dtr=off][,rts=off][,setup=th-d72]";
 
     /// <summary>An example of each form, for error messages.</summary>
     public const string Examples = "localhost:8001 or serial:/dev/ttyUSB0";
@@ -38,6 +39,9 @@ internal sealed record TncAddress
     /// <summary>Whether to raise RTS on the serial port; <c>,rts=off</c> leaves it low.</summary>
     public bool Rts { get; private init; } = true;
 
+    /// <summary>How to switch the serial TNC into KISS, from <c>,setup=</c>; null for a TNC that only speaks KISS.</summary>
+    public TncSetup? Setup { get; private init; }
+
     /// <summary>Whether the TNC is on a serial port rather than TCP.</summary>
     public bool IsSerial => SerialPort is not null;
 
@@ -53,9 +57,22 @@ internal sealed record TncAddress
         {
             var parts = text[SerialPrefix.Length..].Split(',');
             var (dtr, rts) = (true, true);
+            TncSetup? setup = null;
             foreach (var setting in parts.AsSpan(1))
             {
-                switch (setting.Trim().ToLowerInvariant())
+                var trimmed = setting.Trim();
+                if (trimmed.StartsWith("setup=", StringComparison.OrdinalIgnoreCase))
+                {
+                    setup = TncSetup.Find(trimmed["setup=".Length..]);
+                    if (setup is null)
+                    {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                switch (trimmed.ToLowerInvariant())
                 {
                     case "dtr=on":
                         dtr = true;
@@ -100,6 +117,7 @@ internal sealed record TncAddress
                 BaudRate = baud,
                 Dtr = dtr,
                 Rts = rts,
+                Setup = setup,
             };
             return true;
         }

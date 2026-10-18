@@ -35,6 +35,19 @@ internal sealed class CliEnvironment
     /// <summary>The transmit limit for <c>tnc send</c>; tests replace it to avoid real waits.</summary>
     public Func<KissTransmitLimit> CreateTransmitLimit { get; init; } = () => new KissTransmitLimit();
 
+    /// <summary>A console on the command line of the serial TNC at an address, for <c>tnc terminal</c> and <c>tnc kiss</c>; tests replace it.</summary>
+    public Func<TncAddress, TncTerminal> OpenTncTerminal { get; init; } =
+        address =>
+            KissSerialConnection.OpenTerminal(
+                new KissSerialOptions
+                {
+                    PortName = address.SerialPort!,
+                    BaudRate = address.BaudRate,
+                    DtrEnable = address.Dtr,
+                    RtsEnable = address.Rts,
+                }
+            );
+
     /// <summary>A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP or a serial port.</summary>
     public KissConnection CreateTncConnection(TncAddress address, int radioPort = 0, TimeSpan? quietWarning = null) =>
         address.SerialPort is { } name
@@ -45,6 +58,7 @@ internal sealed class CliEnvironment
                     BaudRate = address.BaudRate,
                     DtrEnable = address.Dtr,
                     RtsEnable = address.Rts,
+                    Setup = address.Setup,
                     TncPort = radioPort,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,

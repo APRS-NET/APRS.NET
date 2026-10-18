@@ -99,32 +99,46 @@ public sealed class KissSerialConnection : KissConnection
             : async token =>
             {
                 var stream = await open(token).ConfigureAwait(false);
-                try
-                {
-                    await setup.EnterKiss.RunAsync(stream, timeProvider, token).ConfigureAwait(false);
-                }
-                catch (TncScriptException e)
-                {
-                    await stream.DisposeAsync().ConfigureAwait(false);
-                    throw new IOException(
-                        $"The TNC didn't switch to KISS mode ({setup.Name}): {e.Message}"
-                            + (setup.Hint is { } hint ? " " + hint : ""),
-                        e
-                    );
-                }
-                catch
-                {
-                    await stream.DisposeAsync().ConfigureAwait(false);
-                    throw;
-                }
-
-                if (stream is ISaysGoodbye polite && setup.LeaveKiss is { } leave)
-                {
-                    polite.Goodbye = leave.SentBytes();
-                }
-
+                await EnterKissAsync(stream, setup, timeProvider, token).ConfigureAwait(false);
                 return stream;
             };
+
+    /// <summary>
+    /// Runs <paramref name="setup"/>'s enter script on a port just opened, and has the port send its leave script
+    /// when it closes. On failure the port is closed and an <see cref="IOException"/> says why, with the setup's hint.
+    /// The CLI's one-shot serial link uses this too.
+    /// </summary>
+    internal static async Task EnterKissAsync(
+        Stream stream,
+        TncSetup setup,
+        TimeProvider timeProvider,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            await setup.EnterKiss.RunAsync(stream, timeProvider, cancellationToken).ConfigureAwait(false);
+        }
+        catch (TncScriptException e)
+        {
+            await stream.DisposeAsync().ConfigureAwait(false);
+            throw new IOException(
+                $"The TNC didn't switch to KISS mode ({setup.Name}): {e.Message}"
+                    + (setup.Hint is { } hint ? " " + hint : ""),
+                e
+            );
+        }
+        catch
+        {
+            await stream.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
+
+        if (stream is ISaysGoodbye polite && setup.LeaveKiss is { } leave)
+        {
+            polite.Goodbye = leave.SentBytes();
+        }
+    }
 
     /// <summary>
     /// Opens a serial port at 8N1 with no handshaking, as a stream that reports the device going away as an
