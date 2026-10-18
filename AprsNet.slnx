@@ -45,6 +45,7 @@
     <Project Path="src/AprsNet.AprsIsTcpClient/AprsNet.AprsIsTcpClient.csproj" />
     <Project Path="src/AprsNet.Ax25/AprsNet.Ax25.csproj" />
     <Project Path="src/AprsNet.Beacons/AprsNet.Beacons.csproj" />
+    <Project Path="src/AprsNet.Corpus/AprsNet.Corpus.csproj" />
     <Project Path="src/AprsNet.DeviceId/AprsNet.DeviceId.csproj" />
     <Project Path="src/AprsNet.Extensions.DependencyInjection/AprsNet.Extensions.DependencyInjection.csproj" />
     <Project Path="src/AprsNet.Filters/AprsNet.Filters.csproj" />
@@ -61,6 +62,7 @@
     <Project Path="tests/AprsNet.AprsIsTcpClient.Tests/AprsNet.AprsIsTcpClient.Tests.csproj" />
     <Project Path="tests/AprsNet.Ax25.Tests/AprsNet.Ax25.Tests.csproj" />
     <Project Path="tests/AprsNet.Beacons.Tests/AprsNet.Beacons.Tests.csproj" />
+    <Project Path="tests/AprsNet.Corpus.Tests/AprsNet.Corpus.Tests.csproj" />
     <Project Path="tests/AprsNet.DeviceId.Tests/AprsNet.DeviceId.Tests.csproj" />
     <Project Path="tests/AprsNet.Docs.Tests/AprsNet.Docs.Tests.csproj" />
     <Project Path="tests/AprsNet.Extensions.DependencyInjection.Tests/AprsNet.Extensions.DependencyInjection.Tests.csproj" />
