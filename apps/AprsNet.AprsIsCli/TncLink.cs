@@ -45,7 +45,7 @@ internal sealed class TncLink : IAsyncDisposable
         if (address.SerialPort is { } name)
         {
             // Opened as KissSerialConnection opens a port, so an unplug is a lost link here too.
-            var serial = KissSerialConnection.OpenPort(name, address.BaudRate);
+            var serial = KissSerialConnection.OpenPort(name, address.BaudRate, address.Dtr, address.Rts);
             return new TncLink(new KissStreamClient(serial, radioPort, ownsStream: true, transmitLimit));
         }
 

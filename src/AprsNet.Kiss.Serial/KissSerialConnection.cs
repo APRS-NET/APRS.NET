@@ -8,7 +8,8 @@ namespace AprsNet.Kiss;
 /// again when it fails or goes away, so unplugging the TNC and plugging it back in only pauses the reads.
 /// </summary>
 /// <remarks>
-/// The port is opened at 8 data bits, no parity, one stop bit and no handshaking, as KISS TNCs expect. A USB TNC that
+/// The port is opened at 8 data bits, no parity, one stop bit and no handshaking, as KISS TNCs expect, with DTR and RTS
+/// raised unless <see cref="KissSerialOptions.DtrEnable"/> or <see cref="KissSerialOptions.RtsEnable"/> says otherwise. A USB TNC that
 /// comes back under another name (<c>/dev/ttyUSB1</c> instead of <c>/dev/ttyUSB0</c>) isn't found; on Linux, name it
 /// by its stable link under <c>/dev/serial/by-id/</c>.
 /// </remarks>
@@ -61,11 +62,11 @@ public sealed class KissSerialConnection : KissConnection
 
     private static Func<CancellationToken, Task<Stream>> OpenSerial(KissSerialOptions options)
     {
-        var (portName, baudRate) = (options.PortName, options.BaudRate);
+        var (portName, baudRate, dtr, rts) = (options.PortName, options.BaudRate, options.DtrEnable, options.RtsEnable);
         return token =>
         {
             token.ThrowIfCancellationRequested();
-            return Task.FromResult(OpenPort(portName, baudRate));
+            return Task.FromResult(OpenPort(portName, baudRate, dtr, rts));
         };
     }
 
@@ -75,16 +76,9 @@ public sealed class KissSerialConnection : KissConnection
     /// </summary>
     /// <exception cref="IOException">The port can't be opened.</exception>
     /// <exception cref="UnauthorizedAccessException">The port is held by another program, or may not be opened.</exception>
-    internal static Stream OpenPort(string portName, int baudRate)
+    internal static Stream OpenPort(string portName, int baudRate, bool dtr = true, bool rts = true)
     {
-        // DTR and RTS raised, as a terminal program leaves them: some radios (the Kenwood TH-D72A among them)
-        // hold their output while RTS is low.
-        var port = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
-        {
-            Handshake = Handshake.None,
-            DtrEnable = true,
-            RtsEnable = true,
-        };
+        var port = CreatePort(portName, baudRate, dtr, rts);
         try
         {
             port.Open();
@@ -108,6 +102,19 @@ public sealed class KissSerialConnection : KissConnection
             throw;
         }
     }
+
+    /// <summary>
+    /// The port as <see cref="OpenPort"/> opens it. DTR and RTS are raised by default, as a terminal program leaves
+    /// them: some radios (the Kenwood TH-D72A among them) hold their output while RTS is low. Boards that use the lines
+    /// to reset, such as ESP32 TNCs, need them left low.
+    /// </summary>
+    internal static SerialPort CreatePort(string portName, int baudRate, bool dtr, bool rts) =>
+        new(portName, baudRate, Parity.None, 8, StopBits.One)
+        {
+            Handshake = Handshake.None,
+            DtrEnable = dtr,
+            RtsEnable = rts,
+        };
 
     /// <summary>
     /// A serial port's stream that closes the port with it. A serial read does not always notice cancellation, so

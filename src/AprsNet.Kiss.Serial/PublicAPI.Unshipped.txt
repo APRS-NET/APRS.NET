@@ -24,3 +24,7 @@ const AprsNet.Kiss.KissSerialOptions.DefaultBaudRate = 9600 -> int
 static AprsNet.Kiss.KissSerialConnection.GetPortNames() -> System.Collections.Generic.IReadOnlyList<string!>!
 AprsNet.Kiss.KissSerialOptions.QuietWarning.get -> System.TimeSpan?
 AprsNet.Kiss.KissSerialOptions.QuietWarning.set -> void
+AprsNet.Kiss.KissSerialOptions.DtrEnable.get -> bool
+AprsNet.Kiss.KissSerialOptions.DtrEnable.set -> void
+AprsNet.Kiss.KissSerialOptions.RtsEnable.get -> bool
+AprsNet.Kiss.KissSerialOptions.RtsEnable.set -> void

@@ -26,6 +26,19 @@ public sealed class TncSerialTests
     }
 
     [Theory]
+    [InlineData("serial:/dev/ttyUSB0", true, true)]
+    [InlineData("serial:/dev/ttyUSB0@115200,dtr=off,rts=off", false, false)]
+    [InlineData("serial:COM5,RTS=off", true, false)]
+    [InlineData("serial:COM5, dtr=off , rts=on", false, true)]
+    public void ASerialTncCanLeaveDtrAndRtsLow(string text, bool dtr, bool rts)
+    {
+        Assert.True(TncAddress.TryParse(text, out var address));
+        Assert.Equal(dtr, address.Dtr);
+        Assert.Equal(rts, address.Rts);
+        Assert.DoesNotContain(",", address.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("localhost", "localhost:8001")]
     [InlineData("127.0.0.1:8002", "127.0.0.1:8002")]
     public void ATcpTncIsAHostAndPort(string text, string shown)
@@ -41,6 +54,10 @@ public sealed class TncSerialTests
     [InlineData("serial:COM3@")]
     [InlineData("serial:COM3@fast")]
     [InlineData("serial:COM3@0")]
+    [InlineData("serial:COM3,dtr")]
+    [InlineData("serial:COM3,dtr=low")]
+    [InlineData("serial:COM3,cts=off")]
+    [InlineData("serial:,dtr=off")]
     public void AnUnusableSerialTncIsRefused(string text) => Assert.False(TncAddress.TryParse(text, out _));
 
     [Fact]
