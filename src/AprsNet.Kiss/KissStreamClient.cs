@@ -9,7 +9,7 @@ namespace AprsNet.Kiss;
 /// a Bluetooth link, or a network stream. It reads the AX.25 frames the TNC hears and sends APRS packets for it to
 /// transmit. <see cref="KissTcpClient"/> uses it for TCP.
 /// </summary>
-public sealed class KissStreamClient : IAsyncDisposable
+public sealed partial class KissStreamClient : IAsyncDisposable
 {
     private readonly Stream _stream;
     private readonly bool _ownsStream;
@@ -69,14 +69,25 @@ public sealed class KissStreamClient : IAsyncDisposable
     /// </summary>
     internal System.Threading.Channels.ChannelWriter<byte[]>? ScriptFeed { get; set; }
 
+    /// <summary>
+    /// Whether the TNC prints each packet it hears as a TNC-2 text line instead of speaking KISS, as a radio in its APRS
+    /// mode does (the TH-D72's APRS12): the lines are read as packets, receive only. See <c>KissSerialOptions.TextMode</c>.
+    /// </summary>
+    internal bool TextMode { get; init; }
+
+    private long _droppedLines;
+
     /// <summary>The clock for <see cref="KissTrafficEventArgs.At"/>.</summary>
     internal TimeProvider TimeProvider { get; init; } = TimeProvider.System;
 
     /// <summary>The <c>tnc</c> tag on this client's metrics: the TNC's <c>host:port</c> when a TCP client made it.</summary>
     internal string MetricsTnc { get; init; } = KissMetrics.StreamTnc;
 
-    /// <summary>KISS frames dropped for an invalid escape or for being too long: a sign of a noisy serial link.</summary>
-    public long DroppedFrames => _decoder.DroppedFrames;
+    /// <summary>
+    /// KISS frames dropped for an invalid escape or for being too long: a sign of a noisy serial link. In text mode,
+    /// packet lines dropped as damaged or not AX.25.
+    /// </summary>
+    public long DroppedFrames => _decoder.DroppedFrames + Interlocked.Read(ref _droppedLines);
 
     /// <summary>Bytes read that were not part of a frame passed on; see <see cref="KissDecoder.DiscardedBytes"/>.</summary>
     public long DiscardedBytes => _decoder.DiscardedBytes;
@@ -104,6 +115,16 @@ public sealed class KissStreamClient : IAsyncDisposable
     )
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        if (TextMode)
+        {
+            await foreach (var line in ReadTextFramesAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return line;
+            }
+
+            yield break;
+        }
+
         var buffer = new byte[4096];
         while (true)
         {
@@ -189,6 +210,14 @@ public sealed class KissStreamClient : IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(frame);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        if (TextMode)
+        {
+            throw new InvalidOperationException(
+                "This TNC prints packets as text (a radio in APRS mode) and takes nothing to transmit: switch it to "
+                    + "KISS mode to send."
+            );
+        }
+
         var bytes = KissFrame.ForAx25(frame, _tncPort).Encode();
         await TransmitLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -243,6 +272,134 @@ public sealed class KissStreamClient : IAsyncDisposable
             Raise(new KissTrafficEventArgs(TimeProvider.GetUtcNow(), reported, bytes.ToArray()));
         }
     }
+
+    /// <summary>
+    /// Text mode: reads TNC-2 lines and yields each packet as the AX.25 frame it came off the air as. GPS sentences
+    /// (<c>$GP…</c>) and other lines without a <c>SOURCE&gt;DESTINATION:</c> header are skipped; a packet line with a
+    /// sentence run into it, or one AX.25 can't carry, is dropped and counted.
+    /// </summary>
+    private async IAsyncEnumerable<Ax25Frame> ReadTextFramesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        const int maxLine = 1024;
+        var buffer = new byte[4096];
+        var line = new List<byte>(256);
+        var overlong = false;
+        while (true)
+        {
+            var read = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            if (read == 0)
+            {
+                yield break;
+            }
+
+            DataRead?.Invoke();
+            ScriptFeed?.TryWrite(buffer.AsSpan(0, read).ToArray());
+            for (var i = 0; i < read; i++)
+            {
+                var b = buffer[i];
+                if (b is not ((byte)'\r' or (byte)'\n'))
+                {
+                    if (line.Count < maxLine)
+                    {
+                        line.Add(b);
+                    }
+                    else
+                    {
+                        overlong = true;
+                    }
+
+                    continue;
+                }
+
+                if (line.Count == 0)
+                {
+                    continue;
+                }
+
+                var frame = TextLine([.. line], overlong);
+                line.Clear();
+                overlong = false;
+                if (frame is not null)
+                {
+                    KissMetrics.Received(MetricsTnc);
+                    yield return frame;
+                }
+            }
+        }
+    }
+
+    /// <summary>One text line: the frame of the packet it holds, or null for a line skipped or dropped.</summary>
+    private Ax25Frame? TextLine(byte[] bytes, bool overlong)
+    {
+        var text = System.Text.Encoding.Latin1.GetString(bytes);
+        if (overlong || TextLineDamage().IsMatch(text))
+        {
+            return DropLine(bytes, KissDropReason.DamagedLine);
+        }
+
+        var packet = AprsPacket.Parse(text);
+        if (text[0] == '$' || !packet.HasHeader)
+        {
+            if (Tracing)
+            {
+                Raise(
+                    new KissTrafficEventArgs(TimeProvider.GetUtcNow(), KissTrafficKind.Unframed, bytes)
+                    {
+                        LooksLikeText = true,
+                        EndsLine = true,
+                    }
+                );
+            }
+
+            return null; // a GPS sentence, a prompt, a blank: not a packet
+        }
+
+        Ax25Frame frame;
+        try
+        {
+            frame = Ax25Frame.FromAprsPacket(packet);
+        }
+        catch (ArgumentException)
+        {
+            return DropLine(bytes, KissDropReason.NotAx25);
+        }
+
+        if (Tracing)
+        {
+            Raise(
+                new KissTrafficEventArgs(TimeProvider.GetUtcNow(), KissTrafficKind.Frame, bytes)
+                {
+                    Frame = frame,
+                    Packet = packet,
+                }
+            );
+        }
+
+        return frame;
+    }
+
+    private Ax25Frame? DropLine(byte[] bytes, KissDropReason reason)
+    {
+        Interlocked.Increment(ref _droppedLines);
+        KissMetrics.Dropped(MetricsTnc, 1);
+        if (Tracing)
+        {
+            Raise(
+                new KissTrafficEventArgs(TimeProvider.GetUtcNow(), KissTrafficKind.DroppedFrame, bytes)
+                {
+                    DropReason = reason,
+                }
+            );
+        }
+
+        return null;
+    }
+
+    /// <summary>A GPS sentence that ran into a line, anywhere but its start: <c>$GPGGA,</c>, <c>$GNRMC,</c> and so on.</summary>
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<!^)\$G[A-Z][A-Z]{3},")]
+    private static partial System.Text.RegularExpressions.Regex TextLineDamage();
 
     /// <summary>Raises <see cref="Traffic"/>, ignoring an exception a handler throws so reading carries on.</summary>
     private void Raise(KissTrafficEventArgs entry)
