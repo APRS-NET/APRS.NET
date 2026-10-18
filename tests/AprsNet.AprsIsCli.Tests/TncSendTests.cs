@@ -63,7 +63,20 @@ public sealed class TncSendTests : IDisposable
     public async Task AMessageGoesOutWithAnIdAndAReplyFromTheRadioAcknowledgesIt()
     {
         var run = new CliHarness().RunAsync(
-            ["tnc", "send", "message", "N1ABC-7", "Hello", "-c", Callsign, "--tnc", Address, "--wait-replies", "0"],
+            [
+                "tnc",
+                "send",
+                "message",
+                "N1ABC-7",
+                "Hello",
+                "-c",
+                Callsign,
+                "--tnc",
+                Address,
+                "--wait-replies",
+                "0",
+                "--show-received",
+            ],
             Token
         );
         using var tnc = await _tnc.AcceptTcpClientAsync(Token);
@@ -79,6 +92,7 @@ public sealed class TncSendTests : IDisposable
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Reply from N1ABC-7: Hi back", result.Out, StringComparison.Ordinal);
         Assert.Contains("Acknowledged by N1ABC-7 after 1 attempt.", result.Out, StringComparison.Ordinal);
+        Assert.Contains($"< N1ABC-7>APRS,WIDE1-1::{Callsign} :Hi back{{AB}}01", result.Out, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -219,6 +233,7 @@ public sealed class TncSendTests : IDisposable
         new[] { "message", "N1ABC", "hi", "-c", Callsign, "--tnc", "tnc", "--wait-replies", "soon" },
         "--wait-replies"
     )]
+    [InlineData(new[] { "message", "N1ABC", "hi", "-c", Callsign, "--tnc", "tnc", "--filter", "b/ANSRVR" }, "--filter")]
     public async Task RefusesWhatItCannotSend(string[] args, string message)
     {
         var result = await new CliHarness().RunAsync(["tnc", "send", .. args], Token);

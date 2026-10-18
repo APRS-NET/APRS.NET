@@ -165,6 +165,14 @@ stops at once), acknowledging and printing each reply (`Reply from WU2Z: Receive
 resending its answer. It exits 0 when the message was acknowledged and 5 when it was rejected or never acknowledged.
 If the connection drops meanwhile, `send` reconnects as `listen --reconnect` does and carries on waiting.
 
+`--show-received` also prints every packet received while the message runs, as `< ` and the packet, so you can see
+what a service answers. Add `--filter` to see more than what is addressed to you: its terms go after `g/<callsign>`.
+To watch ANSRVR's notices and relays while joining a group:
+
+```sh
+aprscli send message ANSRVR "J NZEVENT" -c KD9XYZ-9 --show-received --filter b/ANSRVR --wait-replies 5m
+```
+
 | Option | Meaning |
 | --- | --- |
 | `-c`, `--callsign` | Your callsign, with optional SSID. Required; `N0CALL` is refused. |
@@ -278,6 +286,7 @@ aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --t
 | `-n`, `--dry-run` | Print the packets without connecting. |
 | `--retry` | For a message: `default`, `aprs-is`, `slow-hf` or `none`, as for `send message`. |
 | `--wait-replies` | For a message: how long to keep listening for replies once it is answered. Default `2m`. |
+| `--show-received` | For a message: also print every packet heard while it runs, as for `send message`. |
 
 Each packet is printed once the TNC has it. Frames are spread out by the transmit limit: three at once, then one every
 10 seconds, so telemetry with its definitions takes a few seconds. Exit code 2 when the TNC cannot be reached.
