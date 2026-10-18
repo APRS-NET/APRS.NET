@@ -14,6 +14,12 @@ public enum TncScriptStepKind
 
     /// <summary>Wait a set time, for a TNC that needs a moment between commands.</summary>
     Pause,
+
+    /// <summary>
+    /// Wait a set time, then throw away everything the TNC sent so far, such as prompts and packets it printed while no
+    /// one was reading, so a later expect only sees answers to the script's own commands.
+    /// </summary>
+    Drain,
 }
 
 /// <summary>
@@ -82,6 +88,18 @@ public sealed class TncScriptStep
         return new(TncScriptStepKind.Pause, [], "", time);
     }
 
+    /// <summary>
+    /// Waits <paramref name="time"/>, then throws away everything the TNC has sent so far. On a serial port that
+    /// includes what waited in the port before the script started; on a stream that can't discard what it holds,
+    /// such as a TCP connection, it is only a pause.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The time is negative.</exception>
+    public static TncScriptStep Drain(TimeSpan time)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(time, TimeSpan.Zero);
+        return new(TncScriptStepKind.Drain, [], "", time);
+    }
+
     /// <summary>The step as one line of a script's text form; see <see cref="TncScript.Parse"/>.</summary>
     public override string ToString() =>
         Kind switch
@@ -90,6 +108,7 @@ public sealed class TncScriptStep
             TncScriptStepKind.Send => $"bytes {Convert.ToHexString(Bytes.Span)}",
             TncScriptStepKind.Expect =>
                 $"expect {Time.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s {Text}",
+            TncScriptStepKind.Drain => $"drain {Time.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s",
             _ => $"pause {Time.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture)}s",
         };
 }

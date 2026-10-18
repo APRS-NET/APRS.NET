@@ -3,7 +3,7 @@ using System.Threading.Channels;
 namespace AprsNet.Kiss.Tests;
 
 /// <summary>A TNC's end of a KISS link: the test feeds what it "hears" and reads back what the client sent.</summary>
-internal sealed class FakeTnc : Stream
+internal sealed class FakeTnc : Stream, IDiscardsInput
 {
     private readonly Channel<object> _incoming = Channel.CreateUnbounded<object>();
 
@@ -17,6 +17,12 @@ internal sealed class FakeTnc : Stream
     public void Send(byte[] bytes) => _incoming.Writer.TryWrite(bytes);
 
     public void End() => _incoming.Writer.TryComplete();
+
+    /// <summary>Throws away what is waiting, as a serial driver discards its receive buffer.</summary>
+    public void DiscardInput()
+    {
+        while (_incoming.Reader.TryRead(out _)) { }
+    }
 
     public void Fail(Exception error) => _incoming.Writer.TryWrite(error);
 

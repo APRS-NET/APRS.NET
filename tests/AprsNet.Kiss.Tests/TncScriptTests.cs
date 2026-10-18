@@ -68,6 +68,7 @@ public sealed class TncScriptTests
 
     [Theory]
     [InlineData("send\nreset", "Line 2", "isn't a script step")]
+    [InlineData("drain", "Line 1", "isn't a time")]
     [InlineData("pause 5", "Line 1", "isn't a time")]
     [InlineData("pause soon", "Line 1", "isn't a time")]
     [InlineData("expect 3s", "Line 1", "needs a time and some text")]
@@ -126,12 +127,83 @@ public sealed class TncScriptTests
     }
 
     [Fact]
+    public async Task DrainThrowsAwayWhatWaitedInThePort()
+    {
+        // Prompts and packets the TNC printed while no one was reading: a stale cmd: must not answer the script.
+        var tnc = CommandLine();
+        tnc.Send(Text("\r\ncmd:N0CALL>APRS:>heard at the prompt\r\n"));
+        var script = TncScript.Parse("drain 500ms\nsend\nexpect 3s cmd:");
+
+        var transcript = await Pump(script.RunAsync(tnc, _time, TestContext.Current.CancellationToken));
+
+        Assert.Equal("\r\ncmd:", transcript);
+        Assert.Equal("drain 0.5s\nsend \nexpect 3s cmd:", script.ToString());
+    }
+
+    [Fact]
+    public async Task OnAStreamThatCannotDiscardDrainStillIgnoresWhatWasAlreadyRead()
+    {
+        var tcp = new NonDiscarding(CommandLine());
+        await using var tnc = new TncTerminal(tcp);
+        tcp.Inner.Send(Text("cmd: then cmd:"));
+
+        var ex = await Assert.ThrowsAsync<TncScriptException>(() =>
+            Pump(
+                tnc.RunAsync(
+                    TncScript.Parse("expect 1s cmd:\ndrain 0ms\nexpect 1s cmd:"),
+                    _time,
+                    TestContext.Current.CancellationToken
+                )
+            )
+        );
+
+        Assert.Equal("cmd: then cmd:", ex.Transcript); // the second prompt came before the drain, so it doesn't count
+    }
+
+    private sealed class NonDiscarding(FakeTnc inner) : Stream
+    {
+        public FakeTnc Inner => inner;
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            inner.ReadAsync(buffer, cancellationToken);
+
+        public override ValueTask WriteAsync(
+            ReadOnlyMemory<byte> buffer,
+            CancellationToken cancellationToken = default
+        ) => inner.WriteAsync(buffer, cancellationToken);
+
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() { }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    [Fact]
     public void StepsRefuseWhatCannotBeSent()
     {
         Assert.Throws<ArgumentException>(() => TncScriptStep.SendLine("€"));
         Assert.Throws<ArgumentException>(() => TncScriptStep.Expect("", TimeSpan.FromSeconds(1)));
         Assert.Throws<ArgumentOutOfRangeException>(() => TncScriptStep.Expect("cmd:", TimeSpan.Zero));
         Assert.Throws<ArgumentOutOfRangeException>(() => TncScriptStep.Pause(TimeSpan.FromSeconds(-1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TncScriptStep.Drain(TimeSpan.FromSeconds(-1)));
     }
 
     [Fact]

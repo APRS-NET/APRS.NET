@@ -170,8 +170,9 @@ await using var tnc = new KissSerialConnection(
 code or in its text form:
 
 ```text
-# Leave KISS if it was on, then turn it on at the cmd: prompt.
+# Leave KISS if it was on, throw away what waited in the port, then turn KISS on at the cmd: prompt.
 bytes C0 FF C0
+drain 500ms
 send
 expect 3s cmd:
 send KISS ON
@@ -180,7 +181,9 @@ send RESTART
 pause 1s
 ```
 
-`new TncSetup("my-tnc", "My TNC", TncScript.Parse(enter), TncScript.Parse(leave))` makes it a setup. To work at a TNC's
+`drain` matters at a command line: a TNC at its prompt prints every packet it hears, and the port keeps that, old
+prompts included, until someone reads it. Without it, an `expect` can match a prompt left over from an earlier
+session. `new TncSetup("my-tnc", "My TNC", TncScript.Parse(enter), TncScript.Parse(leave))` makes it a setup. To work at a TNC's
 command line by hand, `KissSerialConnection.OpenTerminal` opens the port as a `TncTerminal`: send it commands with
 `SendLineAsync` and read what it says with `ReadAsync`.
 

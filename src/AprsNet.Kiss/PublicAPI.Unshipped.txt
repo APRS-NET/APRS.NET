@@ -199,3 +199,5 @@ AprsNet.Kiss.TncTerminal.RunAsync(AprsNet.Kiss.TncScript! script, System.TimePro
 AprsNet.Kiss.TncTerminal.SendAsync(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 AprsNet.Kiss.TncTerminal.SendLineAsync(string! command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 AprsNet.Kiss.TncTerminal.TncTerminal(System.IO.Stream! stream, bool ownsStream = true) -> void
+AprsNet.Kiss.TncScriptStepKind.Drain = 3 -> AprsNet.Kiss.TncScriptStepKind
+static AprsNet.Kiss.TncScriptStep.Drain(System.TimeSpan time) -> AprsNet.Kiss.TncScriptStep!

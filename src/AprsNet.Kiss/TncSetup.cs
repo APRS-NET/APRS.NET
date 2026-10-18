@@ -36,7 +36,8 @@ public sealed record TncSetup(string Id, string Name, TncScript EnterKiss, TncSc
                 """
                 # Leave KISS if it was on: at the cmd: prompt the frame is a bad command, answered with ?EH.
                 bytes C0 FF C0
-                pause 500ms
+                # At its prompt it prints every packet it hears; throw away what waited in the port.
+                drain 500ms
                 send
                 expect 3s cmd:
                 # It answers "KISS     was OFF" (or ON), then prompts again.

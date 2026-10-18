@@ -201,6 +201,20 @@ public sealed class TncSetupTests
     }
 
     [Fact]
+    public void ThePortDiscardsWhatWaitedInItsDriver()
+    {
+        var discarded = 0;
+        using var stream = new KissSerialConnection.SerialPortStream(new FakeTnc(), new FakePort())
+        {
+            Discard = () => discarded++,
+        };
+
+        ((IDiscardsInput)stream).DiscardInput();
+
+        Assert.Equal(1, discarded);
+    }
+
+    [Fact]
     public void BuiltInSetupsAreFoundByTheirId()
     {
         Assert.Same(TncSetup.KenwoodThD72, TncSetup.Find("TH-D72"));

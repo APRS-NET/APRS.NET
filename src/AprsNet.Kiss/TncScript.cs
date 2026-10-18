@@ -21,8 +21,8 @@ namespace AprsNet.Kiss;
 /// <para>
 /// <c>send</c> sends the rest of the line and a carriage return (just a carriage return when there is nothing after
 /// it); <c>bytes</c> sends hex bytes as they are; <c>expect</c> waits up to a time for some text, without regard to
-/// case; <c>pause</c> waits. Times are in <c>ms</c> or <c>s</c>. Blank lines and lines starting with <c>#</c> are
-/// ignored.
+/// case; <c>pause</c> waits; <c>drain</c> waits, then throws away what the TNC sent so far. Times are in <c>ms</c> or
+/// <c>s</c>. Blank lines and lines starting with <c>#</c> are ignored.
 /// </para>
 /// </remarks>
 public sealed class TncScript
@@ -67,8 +67,9 @@ public sealed class TncScript
                     "bytes" => TncScriptStep.Send(Hex(rest, number)),
                     "expect" => Expect(rest, number),
                     "pause" => TncScriptStep.Pause(Duration(rest, number)),
+                    "drain" => TncScriptStep.Drain(Duration(rest, number)),
                     _ => throw new FormatException(
-                        $"Line {number}: '{word}' isn't a script step (send, bytes, expect or pause)."
+                        $"Line {number}: '{word}' isn't a script step (send, bytes, expect, pause or drain)."
                     ),
                 }
             );
@@ -113,6 +114,11 @@ public sealed class TncScript
                     break;
                 case TncScriptStepKind.Pause:
                     await Task.Delay(step.Time, timeProvider, cancellationToken).ConfigureAwait(false);
+                    break;
+                case TncScriptStepKind.Drain:
+                    await Task.Delay(step.Time, timeProvider, cancellationToken).ConfigureAwait(false);
+                    (stream as IDiscardsInput)?.DiscardInput();
+                    matchedUpTo = received.Length; // and nothing read already counts either
                     break;
                 default:
                     using (var deadline = new CancellationTokenSource(step.Time, timeProvider))
@@ -216,4 +222,14 @@ public sealed class TncScriptException : IOException
 
     /// <summary>Everything the TNC sent while the script ran, as Latin-1 text.</summary>
     public string Transcript { get; }
+}
+
+/// <summary>
+/// A port that can throw away what it has received but no one has read yet, without a read to cancel: a serial port
+/// (its driver's receive buffer). Cancelling a serial read closes the port, so this is the only way to drop stale bytes.
+/// </summary>
+internal interface IDiscardsInput
+{
+    /// <summary>Throws away what was received and not yet read.</summary>
+    void DiscardInput();
 }

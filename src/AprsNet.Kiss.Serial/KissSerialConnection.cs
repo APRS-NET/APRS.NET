@@ -138,7 +138,7 @@ public sealed class KissSerialConnection : KissConnection
         try
         {
             port.Open();
-            return new SerialPortStream(port.BaseStream, port);
+            return new SerialPortStream(port.BaseStream, port) { Discard = port.DiscardInBuffer };
         }
         catch (ArgumentException e)
         {
@@ -178,8 +178,24 @@ public sealed class KissSerialConnection : KissConnection
     /// write throws <see cref="ObjectDisposedException"/> ("The port is closed") or
     /// <see cref="InvalidOperationException"/>; those become an <see cref="IOException"/>, a lost link to reconnect.
     /// </summary>
-    internal sealed class SerialPortStream(Stream stream, IDisposable port) : Stream, ISaysGoodbye
+    internal sealed class SerialPortStream(Stream stream, IDisposable port) : Stream, ISaysGoodbye, IDiscardsInput
     {
+        /// <summary>Throws away the driver's receive buffer: <c>SerialPort.DiscardInBuffer</c>.</summary>
+        public Action? Discard { get; init; }
+
+        /// <inheritdoc />
+        public void DiscardInput()
+        {
+            try
+            {
+                Discard?.Invoke();
+            }
+            catch (Exception e) when (e is IOException or InvalidOperationException)
+            {
+                throw Lost(e);
+            }
+        }
+
         private readonly Stream _stream = stream;
         private byte[]? _goodbye;
 
