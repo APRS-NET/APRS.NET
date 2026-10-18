@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0-alpha.9](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.8...v0.4.0-alpha.9) (2026-10-18)
+
+
+### Features
+
+* **messaging:** a bulletin repeat schedule and ANSRVR commands ([3efb4ed](https://github.com/APRS-NET/APRS.NET/commit/3efb4ed536546897143451356531e0cf6804f541))
+* **messaging:** a bulletin repeat schedule and ANSRVR commands ([2b62ea9](https://github.com/APRS-NET/APRS.NET/commit/2b62ea99fe34891b856ea3a327291004ec1b9398))
+
 ## [0.4.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.7...v0.4.0-alpha.8) (2026-10-18)
 
 
