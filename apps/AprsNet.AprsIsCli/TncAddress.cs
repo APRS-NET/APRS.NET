@@ -7,12 +7,13 @@ namespace AprsNet.AprsIsCli;
 /// Where a TNC is, as <c>--tnc</c> gives it: <c>host[:port]</c> for KISS over TCP, or <c>serial:PORT[@BAUD]</c> for a
 /// TNC on a serial port, such as <c>serial:/dev/ttyUSB0</c> or <c>serial:COM3@57600</c>. A serial address can end in
 /// <c>,dtr=off</c> and <c>,rts=off</c> to leave those lines low, for a board such as an ESP32 that resets on them, and
-/// <c>,setup=th-d72</c> to switch a radio's built-in TNC into KISS (<see cref="TncSetup.Known"/>).
+/// <c>,setup=th-d72</c> to switch a radio's built-in TNC into KISS (<see cref="TncSetup.Known"/>), or <c>,text</c> to
+/// read a radio in its APRS mode, which prints packets as text (receive only).
 /// </summary>
 internal sealed record TncAddress
 {
     /// <summary>The forms <c>--tnc</c> accepts, for help and error messages.</summary>
-    public const string Forms = "host[:port] or serial:PORT[@BAUD][,dtr=off][,rts=off][,setup=th-d72]";
+    public const string Forms = "host[:port] or serial:PORT[@BAUD][,dtr=off][,rts=off][,setup=th-d72|,text]";
 
     /// <summary>An example of each form, for error messages.</summary>
     public const string Examples = "localhost:8001 or serial:/dev/ttyUSB0";
@@ -42,6 +43,9 @@ internal sealed record TncAddress
     /// <summary>How to switch the serial TNC into KISS, from <c>,setup=</c>; null for a TNC that only speaks KISS.</summary>
     public TncSetup? Setup { get; private init; }
 
+    /// <summary>Whether the TNC prints packets as text, from <c>,text</c>: a radio in APRS mode, receive only.</summary>
+    public bool TextMode { get; private init; }
+
     /// <summary>Whether the TNC is on a serial port rather than TCP.</summary>
     public bool IsSerial => SerialPort is not null;
 
@@ -58,6 +62,7 @@ internal sealed record TncAddress
             var parts = text[SerialPrefix.Length..].Split(',');
             var (dtr, rts) = (true, true);
             TncSetup? setup = null;
+            var textMode = false;
             foreach (var setting in parts.AsSpan(1))
             {
                 var trimmed = setting.Trim();
@@ -69,6 +74,12 @@ internal sealed record TncAddress
                         return false;
                     }
 
+                    continue;
+                }
+
+                if (trimmed.Equals("text", StringComparison.OrdinalIgnoreCase))
+                {
+                    textMode = true;
                     continue;
                 }
 
@@ -89,6 +100,11 @@ internal sealed record TncAddress
                     default:
                         return false;
                 }
+            }
+
+            if (textMode && setup is not null)
+            {
+                return false; // a radio read as text needs no setup
             }
 
             var rest = parts[0];
@@ -118,6 +134,7 @@ internal sealed record TncAddress
                 Dtr = dtr,
                 Rts = rts,
                 Setup = setup,
+                TextMode = textMode,
             };
             return true;
         }

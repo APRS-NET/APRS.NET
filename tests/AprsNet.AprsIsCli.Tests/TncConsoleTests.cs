@@ -14,6 +14,32 @@ public sealed class TncConsoleTests
         Assert.Equal("/dev/ttyUSB0", address.ToString());
     }
 
+    [Theory]
+    [InlineData("serial:/dev/ttyUSB0,text", true)]
+    [InlineData("serial:/dev/ttyUSB0@9600,TEXT,rts=off", true)]
+    [InlineData("serial:/dev/ttyUSB0", false)]
+    public void ASerialAddressCanReadARadioInAprsModeAsText(string text, bool textMode)
+    {
+        Assert.True(TncAddress.TryParse(text, out var address));
+        Assert.Equal(textMode, address.TextMode);
+    }
+
+    [Fact]
+    public void ARadioReadAsTextNeedsNoSetup() =>
+        Assert.False(TncAddress.TryParse("serial:/dev/ttyUSB0,text,setup=th-d72", out _));
+
+    [Fact]
+    public async Task NothingIsSentThroughARadioReadAsText()
+    {
+        var result = await new CliHarness().RunAsync(
+            ["tnc", "send", "status", "Testing", "-c", "KD9XYZ-9", "--tnc", "serial:/dev/ttyUSB0,text"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("takes nothing to transmit", result.Error, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void AnUnknownSetupIsRefused() =>
         Assert.False(TncAddress.TryParse("serial:/dev/ttyUSB0,setup=tnc-x", out _));

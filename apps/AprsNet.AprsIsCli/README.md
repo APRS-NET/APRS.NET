@@ -239,11 +239,14 @@ aprscli tnc listen --tnc serial:/dev/ttyUSB0 --reconnect     # a USB TNC; surviv
 aprscli tnc listen --tnc serial:COM3@57600          # a NinoTNC on Windows
 aprscli tnc ports                                   # the serial ports present
 aprscli tnc listen --tnc serial:/dev/ttyUSB0,setup=th-d72 --reconnect   # a TH-D72A, switched into KISS
+aprscli tnc listen --tnc serial:/dev/ttyUSB0,text --reconnect   # a TH-D72A in APRS mode, read as text
 ```
 
 A radio's built-in TNC has to be told to speak KISS. Add `,setup=th-d72` (a Kenwood TH-D72, in PACKET12 mode) and every
 TNC command switches it into KISS when it opens the port, does so again when the radio starts sending text after a
-power cut, and switches it back out when it closes. Without a setup, the TNC must already be in KISS mode.
+power cut, and switches it back out when it closes. Without a setup, the TNC must already be in KISS mode. Add `,text`
+instead to read a radio in its APRS mode, which prints each packet as a line of text: receive only, with no setup;
+`tnc send` refuses it.
 
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
