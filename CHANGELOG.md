@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0-alpha.6](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.5...v0.4.0-alpha.6) (2026-10-18)
+
+
+### Features
+
+* **cli:** switch a radio's TNC into KISS, and a console on its command line ([dc32c2d](https://github.com/APRS-NET/APRS.NET/commit/dc32c2d0af2b3c3f1dca7a8a19b2cb7f2c50d2bd))
+* **cli:** switch a radio's TNC into KISS, and a console on its command line ([c50db29](https://github.com/APRS-NET/APRS.NET/commit/c50db29dcadaa7d4e2b3a6955c53948215f93ff2))
+* **kiss:** add a drain step that throws away what waited in the port ([577888c](https://github.com/APRS-NET/APRS.NET/commit/577888c038a272c345ad51b3020dde39982dc399))
+* **kiss:** report everything that crosses a KISS link as Traffic ([e1d9223](https://github.com/APRS-NET/APRS.NET/commit/e1d9223512797a319fa36cf6d7310b334d817769))
+* **kiss:** report everything that crosses a KISS link as Traffic ([9ca8753](https://github.com/APRS-NET/APRS.NET/commit/9ca8753ea926f2a87571e5bd2b0d3eb40fa8b902))
+* **kiss:** switch a radio's built-in TNC into KISS with a TncSetup ([87d680b](https://github.com/APRS-NET/APRS.NET/commit/87d680b6a786dc24e47a37573e195b3ed42ee4b5))
+* **kiss:** switch a radio's built-in TNC into KISS with a TncSetup ([7fc65ff](https://github.com/APRS-NET/APRS.NET/commit/7fc65ff93c45b75c59b6dc36096e4531dd267b61))
+
 ## [0.4.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.4...v0.4.0-alpha.5) (2026-10-18)
 
 
