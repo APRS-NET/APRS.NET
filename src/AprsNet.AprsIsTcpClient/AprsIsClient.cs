@@ -113,7 +113,9 @@ public sealed class AprsIsClient : IAsyncDisposable
                 _options.Filter ?? "(none)"
             );
             await _transport.ConnectAsync(cancellationToken).ConfigureAwait(false);
-            await WriteLineAsync(BuildLoginLine(), cancellationToken).ConfigureAwait(false);
+            var loginLine = BuildLoginLine();
+            await WriteLineAsync(loginLine, cancellationToken).ConfigureAwait(false);
+            Trace(AprsIsTrafficKind.LoginSent, MaskLogin(loginLine));
             var result = await ReadLoginResponseAsync(cancellationToken).ConfigureAwait(false);
 
             Login = result;
@@ -176,6 +178,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         }
 
         await WriteLineAsync("#filter " + filter, cancellationToken).ConfigureAwait(false);
+        Trace(AprsIsTrafficKind.FilterSent, "#filter " + filter);
         _logger.FilterSet(filter);
     }
 
@@ -224,6 +227,7 @@ public sealed class AprsIsClient : IAsyncDisposable
 
         var line = packet.ToString(); // Latin-1, one character per byte: the transport writes the same bytes back
         await WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
+        Trace(AprsIsTrafficKind.PacketSent, line, packet);
         Interlocked.Increment(ref _packetsSent);
         ClientMetrics.PacketSent();
         _logger.PacketSent(line);
@@ -287,6 +291,46 @@ public sealed class AprsIsClient : IAsyncDisposable
         _shutdown.Dispose();
     }
 
+    /// <summary>
+    /// Every line to and from the server, for a troubleshooting console: the login (passcode masked), its answer,
+    /// server comments and keepalives, packets, filter changes and packets sent. Received lines are raised on the
+    /// receiving task, sent ones on the sending thread. Nothing extra is done while no one is subscribed, and nothing
+    /// is kept; an exception thrown by a handler is ignored.
+    /// </summary>
+    public event EventHandler<AprsIsTrafficEventArgs>? Traffic;
+
+    /// <summary>
+    /// For a client inside an <see cref="AprsIsConnection"/>, which forwards <see cref="Traffic"/>: whether anyone
+    /// listens to the connection, so the forwarding subscription alone doesn't turn tracing on.
+    /// </summary>
+    internal Func<bool>? WantsTraffic { get; set; }
+
+    private bool Tracing => Traffic is not null && (WantsTraffic?.Invoke() ?? true);
+
+    private void Trace(AprsIsTrafficKind kind, string line, AprsPacket? packet = null)
+    {
+        if (!Tracing)
+        {
+            return;
+        }
+
+        try
+        {
+            Traffic?.Invoke(
+                this,
+                new AprsIsTrafficEventArgs(_options.TimeProvider.GetUtcNow(), kind, line) { Packet = packet }
+            );
+        }
+        catch (Exception)
+        {
+            // A console's bug must not stop the feed.
+        }
+    }
+
+    /// <summary>The login line as a console may show it: the passcode masked, unless it is the read-only -1.</summary>
+    internal static string MaskLogin(string line) =>
+        System.Text.RegularExpressions.Regex.Replace(line, @"(?<= pass )(?!-1(?: |$))\S+", "*****");
+
     /// <summary>The error for a send on a listen-only login.</summary>
     internal static InvalidOperationException ListenOnlyRefusal(string login) =>
         new($"This login is listen-only ({login}): it can receive but not send. Transmitting needs a callsign.");
@@ -318,6 +362,7 @@ public sealed class AprsIsClient : IAsyncDisposable
 
                 if (line.StartsWith("# logresp", StringComparison.Ordinal))
                 {
+                    Trace(AprsIsTrafficKind.LoginResponse, line);
                     return LoginResult.TryParse(line) ?? throw new LoginException($"Unreadable login response: {line}");
                 }
 
@@ -328,6 +373,7 @@ public sealed class AprsIsClient : IAsyncDisposable
                 }
 
                 _logger.ServerLine(line);
+                Trace(AprsIsTrafficKind.ServerComment, line);
             }
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -388,11 +434,16 @@ public sealed class AprsIsClient : IAsyncDisposable
                     Interlocked.Increment(ref _serverCommentsReceived);
                     ClientMetrics.ServerComment();
                     _logger.ServerLine(line);
+                    Trace(AprsIsTrafficKind.ServerComment, line);
                     continue;
                 }
 
                 Interlocked.Increment(ref _packetsReceived);
                 ClientMetrics.Packet();
+                if (Tracing)
+                {
+                    Trace(AprsIsTrafficKind.Packet, line, AprsPacket.Parse(line));
+                }
                 await _channel.Writer.WriteAsync(line, cancellationToken).ConfigureAwait(false);
             }
 
@@ -412,6 +463,14 @@ public sealed class AprsIsClient : IAsyncDisposable
             _connectionEnded = true;
             ClientMetrics.ConnectionActive(-1);
         }
+    }
+
+    /// <summary>Sends a server command (a line starting with <c>#</c>) as it is; see <see cref="AprsIsConnection.SendCommandAsync"/>.</summary>
+    internal async ValueTask SendCommandAsync(string command, CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+        await WriteLineAsync(command, cancellationToken).ConfigureAwait(false);
+        Trace(AprsIsTrafficKind.CommandSent, command);
     }
 
     private async ValueTask WriteLineAsync(string line, CancellationToken cancellationToken)

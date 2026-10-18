@@ -132,6 +132,45 @@ public sealed class AprsIsConnection : IAsyncDisposable
     /// </summary>
     public event EventHandler<AprsIsConnectionStateChangedEventArgs>? StateChanged;
 
+    /// <summary>
+    /// Every line to and from the server, across reconnects, for a troubleshooting console; see
+    /// <see cref="AprsIsClient.Traffic"/>. The login line carries no passcode. Nothing extra is done while no one is
+    /// subscribed, and nothing is kept: a console that wants history keeps its own.
+    /// </summary>
+    public event EventHandler<AprsIsTrafficEventArgs>? Traffic;
+
+    /// <summary>
+    /// Sends a server command by hand, such as <c>#filter b/N0CALL</c>, for a troubleshooting console; reported as
+    /// <see cref="AprsIsTrafficKind.CommandSent"/>. Only lines starting with <c>#</c>: send packets with
+    /// <see cref="SendAsync"/>, which checks them. A filter sent this way lasts only until the next reconnect; use
+    /// <see cref="SetFilterAsync"/> to keep it.
+    /// </summary>
+    /// <exception cref="ArgumentException">The line doesn't start with <c>#</c>, or holds a control character.</exception>
+    /// <exception cref="InvalidOperationException">The connection is not up now.</exception>
+    public async ValueTask SendCommandAsync(string command, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        if (!command.StartsWith('#'))
+        {
+            throw new ArgumentException(
+                "Only server commands, starting with #, can be sent by hand; send packets with SendAsync.",
+                nameof(command)
+            );
+        }
+
+        if (command.AsSpan().IndexOfAnyInRange('\0', '\u001F') >= 0)
+        {
+            throw new ArgumentException("A server command can't hold a control character.", nameof(command));
+        }
+
+        if (State != AprsIsConnectionState.Connected || _client is not { IsConnectionEnded: false } client)
+        {
+            throw new InvalidOperationException("The connection to APRS-IS is not up now.");
+        }
+
+        await client.SendCommandAsync(command, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Where the connection is in its life.</summary>
     public AprsIsConnectionState State { get; private set; } = AprsIsConnectionState.NotStarted;
 
@@ -275,8 +314,15 @@ public sealed class AprsIsConnection : IAsyncDisposable
         }
     }
 
-    private AprsIsClient CreateClient() =>
-        new(_options.WithFilter(_filter), _logger, _transportFactory?.Invoke(), _sendLimiter);
+    private AprsIsClient CreateClient()
+    {
+        var client = new AprsIsClient(_options.WithFilter(_filter), _logger, _transportFactory?.Invoke(), _sendLimiter)
+        {
+            WantsTraffic = () => Traffic is not null,
+        };
+        client.Traffic += (_, e) => Traffic?.Invoke(this, e);
+        return client;
+    }
 
     private async Task RunAsync(AprsIsClient client)
     {
