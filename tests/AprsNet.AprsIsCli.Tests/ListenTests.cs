@@ -1072,8 +1072,10 @@ public class ListenTests
     public async Task DefaultsAreAListenerIdOnTheWorldwideRotate()
     {
         var harness = new CliHarness { Environment = { ["APRS_PASSCODE"] = "12345" } }.LoginAccepted("SWL482913");
+        harness.Transport.Server("N0CALL>APRS:>one packet");
 
-        await harness.RunAsync(["listen", "-d", "0.1s"], TestContext.Current.CancellationToken);
+        // Stops after the packet, not after a time: the login line is always written first.
+        await harness.RunAsync(["listen", "-n", "1"], TestContext.Current.CancellationToken);
 
         // A listener ID, listen-only: logged in with -1 even though a passcode is in the environment.
         Assert.Equal("SWL482913", harness.ClientOptions!.Callsign);
