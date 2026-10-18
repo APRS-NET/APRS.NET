@@ -21,6 +21,20 @@ public sealed class KissSerialOptions
     public int BaudRate { get; set; } = DefaultBaudRate;
 
     /// <summary>
+    /// Whether to raise DTR (Data Terminal Ready) while the port is open. Defaults to <see langword="true"/>, as a
+    /// terminal program leaves it. Turn it off for a TNC that wires DTR to something else, such as an ESP32 board whose
+    /// DTR and RTS lines reset it or put it in its bootloader.
+    /// </summary>
+    public bool DtrEnable { get; set; } = true;
+
+    /// <summary>
+    /// Whether to raise RTS (Request To Send) while the port is open. Defaults to <see langword="true"/>: some radios'
+    /// built-in TNCs, the Kenwood TH-D72A among them, send nothing while RTS is low. Turn it off for a board that uses
+    /// RTS to reset, such as an ESP32 TNC.
+    /// </summary>
+    public bool RtsEnable { get; set; } = true;
+
+    /// <summary>
     /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
     /// Defaults to 0.
     /// </summary>

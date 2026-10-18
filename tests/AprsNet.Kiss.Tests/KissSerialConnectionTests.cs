@@ -189,6 +189,8 @@ public sealed class KissSerialConnectionTests
     {
         var options = new KissSerialOptions();
         Assert.Equal(9600, options.BaudRate);
+        Assert.True(options.DtrEnable);
+        Assert.True(options.RtsEnable);
         Assert.Equal(TimeSpan.FromSeconds(2), options.ReconnectDelay);
         Assert.Equal(TimeSpan.FromSeconds(30), options.MaxReconnectDelay);
 
@@ -213,6 +215,19 @@ public sealed class KissSerialConnectionTests
             MaxReconnectDelay = TimeSpan.FromSeconds(maxDelay),
         };
         Assert.ThrowsAny<ArgumentException>(() => new KissSerialConnection(options));
+    }
+
+    [Theory]
+    [InlineData(true, true)] // the default: a TH-D72A sends nothing while RTS is low
+    [InlineData(false, false)] // an ESP32 board that resets on DTR and RTS
+    [InlineData(true, false)]
+    public void ThePortRaisesDtrAndRtsOnlyWhenAsked(bool dtr, bool rts)
+    {
+        using var port = KissSerialConnection.CreatePort("/dev/ttyUSB0", 9600, dtr, rts);
+
+        Assert.Equal(dtr, port.DtrEnable);
+        Assert.Equal(rts, port.RtsEnable);
+        Assert.Equal(System.IO.Ports.Handshake.None, port.Handshake);
     }
 
     [Fact]

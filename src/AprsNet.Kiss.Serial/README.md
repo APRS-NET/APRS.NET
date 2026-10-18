@@ -27,6 +27,10 @@ transmit limit, metrics (tagged with the port name) and `SendAsync`. `KissSerial
 rate, radio port, reconnect waits (2 seconds, doubling to 30), clock and transmit limit. The port is opened at 8 data
 bits, no parity, one stop bit and no handshaking.
 
+DTR and RTS are raised while the port is open, as a terminal program leaves them; some radios' built-in TNCs, such as
+the Kenwood TH-D72A, send nothing while RTS is low. A board that uses those lines to reset, such as an ESP32 TNC, needs
+them left low: set `DtrEnable` and `RtsEnable` to `false`.
+
 A USB TNC can come back under another name (`/dev/ttyUSB1` instead of `/dev/ttyUSB0`) when it is plugged back in. On
 Linux, name it by its stable link under `/dev/serial/by-id/` instead. Linux reports a port that is missing as access
 denied; both are retried.

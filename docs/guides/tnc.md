@@ -149,7 +149,9 @@ apart from a stand-alone TNC:
   open and nothing fails; only silence shows it. `--quiet-warning 10m` (or `QuietWarning`) reports a TNC that has sent
   nothing for that long. Pick a time longer than your channel is ever quiet.
 - **DTR and RTS.** Some radios send nothing while RTS is low; the serial connection raises DTR and RTS when it opens the
-  port, as a terminal program does.
+  port, as a terminal program does. A board that resets on those lines, such as an ESP32 TNC, needs them left low:
+  set `DtrEnable` and `RtsEnable` to `false`, or end the address in `,dtr=off,rts=off`
+  (`serial:/dev/ttyUSB0@115200,dtr=off,rts=off`).
 - **Other output on the same port.** With GPS output switched on, NMEA sentences arrive between the packets, and the
   radio may cut a line short where the two meet.
 
