@@ -4,7 +4,8 @@ namespace AprsNet.AprsIsCli;
 
 /// <summary>
 /// Reports an <see cref="AprsIsConnection"/>'s drops and reconnects on standard error, and closes it when the command
-/// should stop instead of reconnecting: always without <c>--reconnect</c>, and on a rejected login either way.
+/// should stop instead of reconnecting: always without <c>--reconnect</c>, and on a rejected login or a KISS TNC either
+/// way.
 /// </summary>
 /// <remarks>
 /// Stopping disposes the connection rather than cancelling the reader, so lines already received are still printed
@@ -56,7 +57,7 @@ internal sealed class ConnectionReporter : IDisposable
         _error.WriteLine(previous == AprsIsConnectionState.Connecting ? AttemptFailed(e.Error) : Lost(e.Error));
 
         int? exitCode =
-            e.Error is LoginRejectedException ? ExitCodes.LoginFailed
+            e.Error is LoginRejectedException or KissTncLoginException ? ExitCodes.LoginFailed
             : _reconnect ? null
             : ExitCodes.ConnectionFailed;
         if (exitCode is null)
@@ -79,7 +80,12 @@ internal sealed class ConnectionReporter : IDisposable
         error switch
         {
             LoginRejectedException rejected => $"aprscli: login rejected by {_endpoint}: {rejected.ServerMessage}",
+            KissTncLoginException => KissTnc(_endpoint),
             LoginException login => $"aprscli: login failed on {_endpoint}: {login.Message}",
             _ => $"aprscli: could not connect to {_endpoint}: {error?.Message}",
         };
+
+    /// <summary>What to say when an APRS-IS endpoint turns out to be a KISS TNC, such as Dire Wolf's port 8001.</summary>
+    public static string KissTnc(AprsIsEndpoint endpoint) =>
+        $"aprscli: {endpoint} is a KISS TNC, not an APRS-IS server. To hear it, run: aprscli tnc listen --tnc {endpoint}";
 }

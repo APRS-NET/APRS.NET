@@ -213,6 +213,23 @@ public sealed class AprsIsConnectionTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AReconnectThatReachesAKissTncSaysSoInTheStateEvent()
+    {
+        var first = Server();
+        var kiss = new FakeAprsTransport();
+        kiss.Server("À\u0000\u0082 ¤¦@@`=3906.66N/09505.61W$À");
+        _transports.Enqueue(kiss);
+        Server();
+        var connection = Connection();
+        await connection.StartAsync(TestContext.Current.CancellationToken);
+
+        first.Close();
+        await AdvanceUntil(() => connection.Reconnects == 1);
+
+        Assert.Contains(States, s => s.State == AprsIsConnectionState.Reconnecting && s.Error is KissTncLoginException);
+    }
+
+    [Fact]
     public async Task SendsTheCurrentFilterWithEveryLogin()
     {
         var first = Server();
