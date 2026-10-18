@@ -120,11 +120,13 @@ sender and ID, replaces one when a new copy differs, and forgets one not heard f
 `Changed` event says what was added, replaced or removed. NWS bulletins are kept per sender, addressee and message ID
 (or text, without one), since one sender sends many different warnings to `NWS-WARN`; `NWS_` addressees count too. At
 most `MaxBulletins` (1,000) are kept, dropping the one heard longest ago. Sending bulletins is a `MessagingStation` job with no ID and
-no acks, retried on the `Default` schedule's decay.
+no acks, repeated on a `BulletinSchedule` (#272): doubling waits from 1 minute to 20 for 4 hours for a bulletin, from
+10 minutes to an hour for 2 days for an announcement.
 
 ## Out of scope
 
-- The email gateway, ANSRVR and auto-reply rules (A11-AA): AprsMap builds them on `Send` and `MessageReceived`. An
+- The email gateway and auto-reply rules (A11-AA): AprsMap builds them on `Send` and `MessageReceived`. ANSRVR's
+  message forms are `AnsrvrCommand` (#272). An
   auto-reply has no message ID and no retries, which `Send` allows with `RetryProfile.None` and `withId: false`.
 - ITEM-in-MSG and the 1.2 message servers (A12-MSG-01, 02).
 - Gating messages between APRS-IS and RF: the two-way IGate (0.7.0, #214).

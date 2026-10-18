@@ -39,6 +39,26 @@ board.Changed += (_, e) => Console.WriteLine($"{e.Change}: {e.Bulletin.From} {e.
 board.Receive(packet, source: "aprs-is");
 ```
 
+To post your own, send it without an ID on a `BulletinSchedule`: often at first, then less often, for 4 hours
+(`ForBulletin`) or 2 days (`ForAnnouncement`). `Restart` after editing the text; `Stop` to take it down.
+
+```csharp
+var schedule = BulletinSchedule.ForBulletin();
+if (schedule.IsDue)
+{
+    station.Send(Callsign.Parse("BLN1"), "Club meeting Tuesday 7pm", withId: false);
+    schedule.Sent();
+}
+```
+
+`AnsrvrCommand` writes and reads the messages to ANSRVR, the announcement server: join (`J`), leave (`U`), post (`CQ`)
+and keep-alive (`K`). Send them to `AnsrvrCommand.Ansrvr`, and keep a joined group alive every 8 hours, since ANSRVR
+drops a member after 12 hours without one.
+
+```csharp
+station.Send(AnsrvrCommand.Ansrvr, AnsrvrCommand.Join("NZEVENT").Text);
+```
+
 See [the design](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/messaging.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
