@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0-alpha.7](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.6...v0.4.0-alpha.7) (2026-10-18)
+
+
+### Features
+
+* **aprs-is:** report every line to and from the server as Traffic ([554c136](https://github.com/APRS-NET/APRS.NET/commit/554c136d8012e4a94c290d019d6ca091e6eac998))
+* **aprs-is:** report every line to and from the server as Traffic ([ffd1b49](https://github.com/APRS-NET/APRS.NET/commit/ffd1b4928f54f8f6dd046f213a5f654e745b48bd)), closes [#262](https://github.com/APRS-NET/APRS.NET/issues/262)
+* **cli:** read a radio in APRS mode with ,text in a serial address ([ea6e6fd](https://github.com/APRS-NET/APRS.NET/commit/ea6e6fda8e5d891fd10a5b352986cf341f21b152))
+* **kiss:** read a radio in its APRS mode as text ([e20ba6a](https://github.com/APRS-NET/APRS.NET/commit/e20ba6ab7c762ed9e7c17afde61a7b8f5eeb32a9))
+* **kiss:** take bytes that don't start with a command byte as text ([82a1298](https://github.com/APRS-NET/APRS.NET/commit/82a1298d365fed9464972be80df1e66664db4f78))
+* **kiss:** type to a TNC's command line over an open connection ([8c17305](https://github.com/APRS-NET/APRS.NET/commit/8c173054debcc77001e6d569520cc772b59e8039))
+
 ## [0.4.0-alpha.6](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.5...v0.4.0-alpha.6) (2026-10-18)
 
 
