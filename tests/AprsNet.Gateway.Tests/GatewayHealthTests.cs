@@ -60,6 +60,27 @@ public sealed class GatewayHealthTests
     }
 
     [Fact]
+    public void ASourceSpeakingTheWrongProtocolIsReportedAndIsNotUp()
+    {
+        var mismatch = true;
+        var health = new GatewayHealth();
+        health.AddSource("tnc", () => true, null, () => mismatch);
+
+        var report = health.Check();
+        Assert.Equal(GatewayHealthStatus.Unhealthy, report.Status);
+        Assert.True(report.Sources["tnc"].IsConnected);
+        Assert.True(report.Sources["tnc"].IsProtocolMismatch);
+
+        health.AddSource("aprs-is", () => true);
+        Assert.Equal(GatewayHealthStatus.Degraded, health.Check().Status);
+
+        mismatch = false;
+        report = health.Check();
+        Assert.Equal(GatewayHealthStatus.Healthy, report.Status);
+        Assert.False(report.Sources["tnc"].IsProtocolMismatch);
+    }
+
+    [Fact]
     public void SourcesAreAddedOnceAndCanBeRemoved()
     {
         var health = new GatewayHealth();
@@ -102,7 +123,7 @@ public sealed class GatewayHealthTests
         await using var hub = new AprsWebSocketHub(server);
         var health = new GatewayHealth(timeProvider: _time);
         health.AddSource("aprs-is", () => oneUp);
-        health.AddSource("tnc", () => false, () => true);
+        health.AddSource("tnc", () => false, () => true, () => true);
         await using var web = new GatewayWebServer(
             hub,
             new GatewayWebServerOptions { EndPoint = new(IPAddress.Loopback, 0), Health = health }
@@ -121,6 +142,8 @@ public sealed class GatewayHealthTests
         Assert.Equal(oneUp, body.GetProperty("sources").GetProperty("aprs-is").GetProperty("connected").GetBoolean());
         Assert.False(body.GetProperty("sources").GetProperty("aprs-is").GetProperty("quiet").GetBoolean());
         Assert.True(body.GetProperty("sources").GetProperty("tnc").GetProperty("quiet").GetBoolean());
+        Assert.True(body.GetProperty("sources").GetProperty("tnc").GetProperty("protocolMismatch").GetBoolean());
+        Assert.False(body.GetProperty("sources").GetProperty("aprs-is").GetProperty("protocolMismatch").GetBoolean());
         Assert.Equal(
             JsonValueKind.Null,
             body.GetProperty("sources").GetProperty("tnc").GetProperty("lastPacket").ValueKind

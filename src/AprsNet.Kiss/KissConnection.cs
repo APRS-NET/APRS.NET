@@ -97,6 +97,12 @@ public abstract class KissConnection : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Whether the <see cref="KissWarning.TextNotKiss"/> warning is on now: the TNC is sending text, not KISS frames, so
+    /// nothing it sends can be read. It stays on across reconnects until a KISS frame arrives.
+    /// </summary>
+    public bool IsSendingText => Volatile.Read(ref _textWarning) == 1;
+
     /// <summary>Connections made after the first: one each time the TNC was lost and reached again.</summary>
     public int Reconnects { get; private set; }
 

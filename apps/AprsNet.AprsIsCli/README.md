@@ -206,7 +206,7 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
-| `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. |
+| `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up. |
 
 The upstream connection and each TNC always reconnect. A TNC sending text instead of KISS frames (not in KISS mode) is
 reported on stderr. When there is more than one source, the summary at the end
