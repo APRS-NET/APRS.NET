@@ -1,0 +1,54 @@
+#nullable enable
+AprsNet.Corpus.CorpusAnonymization
+AprsNet.Corpus.CorpusAnonymization.IsClean.get -> bool
+AprsNet.Corpus.CorpusAnonymization.Leaks.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Corpus.CorpusAnonymization.LeftOut.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Corpus.CorpusLine>!
+AprsNet.Corpus.CorpusAnonymization.Lines.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Corpus.CorpusLine>!
+AprsNet.Corpus.CorpusAnonymizer
+AprsNet.Corpus.CorpusAnonymizer.Anonymize(System.Collections.Generic.IEnumerable<AprsNet.Corpus.CorpusLine>! lines) -> AprsNet.Corpus.CorpusAnonymization!
+AprsNet.Corpus.CorpusAnonymizer.CorpusAnonymizer(AprsNet.Corpus.CorpusPseudonyms? pseudonyms = null) -> void
+AprsNet.Corpus.CorpusAnonymizer.FindLeaks(System.Collections.Generic.IEnumerable<string!>! packets) -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Corpus.CorpusAnonymizer.Learn(string! packet) -> void
+AprsNet.Corpus.CorpusAnonymizer.Pseudonyms.get -> AprsNet.Corpus.CorpusPseudonyms!
+AprsNet.Corpus.CorpusAnonymizer.Rewrite(string! packet) -> string!
+AprsNet.Corpus.CorpusFile
+AprsNet.Corpus.CorpusLine
+AprsNet.Corpus.CorpusLine.CorpusLine(System.DateTimeOffset receivedAt, string! packet) -> void
+AprsNet.Corpus.CorpusLine.CorpusLine(System.DateTimeOffset receivedAt, System.ReadOnlySpan<byte> packet) -> void
+AprsNet.Corpus.CorpusLine.CorpusLine() -> void
+AprsNet.Corpus.CorpusLine.Equals(AprsNet.Corpus.CorpusLine other) -> bool
+AprsNet.Corpus.CorpusLine.GetPacketBytes() -> byte[]!
+AprsNet.Corpus.CorpusLine.Packet.get -> string!
+AprsNet.Corpus.CorpusLine.ReceivedAt.get -> System.DateTimeOffset
+AprsNet.Corpus.CorpusPseudonyms
+AprsNet.Corpus.CorpusPseudonyms.Calls.get -> System.Collections.Generic.SortedDictionary<string!, string!>!
+AprsNet.Corpus.CorpusPseudonyms.Calls.set -> void
+AprsNet.Corpus.CorpusPseudonyms.CorpusPseudonyms() -> void
+AprsNet.Corpus.CorpusPseudonyms.Literals.get -> System.Collections.Generic.SortedDictionary<string!, string!>!
+AprsNet.Corpus.CorpusPseudonyms.Literals.set -> void
+AprsNet.Corpus.CorpusPseudonyms.Names.get -> System.Collections.Generic.SortedDictionary<string!, string!>!
+AprsNet.Corpus.CorpusPseudonyms.Names.set -> void
+AprsNet.Corpus.CorpusPseudonyms.ToJson() -> string!
+AprsNet.Corpus.CorpusWriter
+AprsNet.Corpus.CorpusWriter.CorpusWriter(System.IO.Stream! stream, bool leaveOpen = false, bool autoFlush = false) -> void
+AprsNet.Corpus.CorpusWriter.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Corpus.CorpusWriter.Dispose() -> void
+AprsNet.Corpus.CorpusWriter.FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Corpus.CorpusWriter.Write(AprsNet.Corpus.CorpusLine line) -> void
+AprsNet.Corpus.CorpusWriter.WriteAsync(AprsNet.Corpus.CorpusLine line, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+const AprsNet.Corpus.CorpusLine.TimestampFormat = "yyyy-MM-dd'T'HH:mm:ss.fff'Z'" -> string!
+~override AprsNet.Corpus.CorpusLine.Equals(object obj) -> bool
+override AprsNet.Corpus.CorpusLine.GetHashCode() -> int
+override AprsNet.Corpus.CorpusLine.ToString() -> string!
+static AprsNet.Corpus.CorpusAnonymizer.HasKissFrame(string! packet) -> bool
+static AprsNet.Corpus.CorpusFile.Encoding.get -> System.Text.Encoding!
+static AprsNet.Corpus.CorpusFile.OpenAppend(string! path) -> AprsNet.Corpus.CorpusWriter!
+static AprsNet.Corpus.CorpusFile.ReadLinesAsync(System.IO.Stream! stream, bool leaveOpen = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Corpus.CorpusLine>!
+static AprsNet.Corpus.CorpusFile.ReadLines(string! path) -> System.Collections.Generic.IEnumerable<AprsNet.Corpus.CorpusLine>!
+static AprsNet.Corpus.CorpusFile.ReadLines(System.IO.Stream! stream, bool leaveOpen = false) -> System.Collections.Generic.IEnumerable<AprsNet.Corpus.CorpusLine>!
+static AprsNet.Corpus.CorpusFile.WriteLines(string! path, System.Collections.Generic.IEnumerable<AprsNet.Corpus.CorpusLine>! lines, bool append = false) -> void
+static AprsNet.Corpus.CorpusLine.operator !=(AprsNet.Corpus.CorpusLine left, AprsNet.Corpus.CorpusLine right) -> bool
+static AprsNet.Corpus.CorpusLine.operator ==(AprsNet.Corpus.CorpusLine left, AprsNet.Corpus.CorpusLine right) -> bool
+static AprsNet.Corpus.CorpusLine.Parse(string! line) -> AprsNet.Corpus.CorpusLine
+static AprsNet.Corpus.CorpusLine.TryParse(string? line, out AprsNet.Corpus.CorpusLine result) -> bool
+static AprsNet.Corpus.CorpusPseudonyms.FromJson(string! json) -> AprsNet.Corpus.CorpusPseudonyms!

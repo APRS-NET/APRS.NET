@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Text;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Corpus;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 
@@ -37,12 +38,13 @@ internal static class ListenRunner
             MaxPacketSilence = options.MaxSilence,
         };
 
-        StreamWriter? capture = null;
+        CorpusWriter? capture = null;
         try
         {
             if (options.Capture is not null)
             {
-                capture = OpenCapture(options.Capture);
+                // The corpus format: Latin-1, so every byte of the raw line is kept, and flushed line by line.
+                capture = CorpusFile.OpenAppend(options.Capture);
             }
         }
         catch (Exception ex)
@@ -160,7 +162,7 @@ internal static class ListenRunner
         AprsIsConnection connection,
         ListenOptions options,
         CliEnvironment environment,
-        StreamWriter? capture,
+        CorpusWriter? capture,
         ILogger? packetLog,
         ListenStats? stats,
         CancellationToken cancellationToken
@@ -189,7 +191,7 @@ internal static class ListenRunner
 
                 if (capture is not null)
                 {
-                    await capture.WriteAsync($"{stamp} {line}\n");
+                    await capture.WriteAsync(new CorpusLine(receivedAt, line), CancellationToken.None); // a line read is kept
                 }
                 if (packetLog is not null && packetLog.IsEnabled(LogLevel.Information))
                 {
@@ -247,20 +249,6 @@ internal static class ListenRunner
     {
         var end = line.IndexOf('>', StringComparison.Ordinal);
         return end > 0 ? line[..end] : "";
-    }
-
-    private static StreamWriter OpenCapture(string path)
-    {
-        var fullPath = Path.GetFullPath(path);
-        if (Path.GetDirectoryName(fullPath) is { Length: > 0 } directory)
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        var stream = new FileStream(fullPath, FileMode.Append, FileAccess.Write, FileShare.Read);
-
-        // Latin-1 writes every byte of the raw line back out unchanged. AutoFlush keeps an interrupted capture intact.
-        return new StreamWriter(stream, Encoding.Latin1) { AutoFlush = true };
     }
 }
 

@@ -146,7 +146,8 @@ software tag. Beacons repeat, so there are far fewer distinct packets than lines
 
 ## Anonymization
 
-`tools/corpus/Anonymize.cs` rewrote the raw captures:
+`tools/corpus/Anonymize.cs` rewrote the raw captures. Its rules are in the `AprsNet.Corpus` package
+(`CorpusAnonymizer`), so an app that exports captures for this corpus applies the same ones:
 
 - **Callsigns** (source, path, IGate, object names, message addressees and mentions in text) became same-length
   pseudonyms starting with `Q`, keeping the call-area digit and SSID. Q is not an ITU national prefix, so no
