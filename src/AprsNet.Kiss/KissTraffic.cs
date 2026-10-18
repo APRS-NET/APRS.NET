@@ -71,6 +71,14 @@ public enum KissDropReason
 
     /// <summary>Longer than the decoder's <see cref="KissDecoder.MaxFrameLength"/>.</summary>
     TooLong,
+
+    /// <summary>
+    /// In text mode, a line damaged where a packet and another line collided, such as a GPS sentence run into it.
+    /// </summary>
+    DamagedLine,
+
+    /// <summary>In text mode, a packet line that AX.25 can't carry, so it can't have come off the air as printed.</summary>
+    NotAx25,
 }
 
 /// <summary>Text for <see cref="KissTrafficKind"/> values.</summary>

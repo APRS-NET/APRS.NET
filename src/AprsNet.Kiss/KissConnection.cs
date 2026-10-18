@@ -32,6 +32,7 @@ public abstract class KissConnection : IAsyncDisposable
     private readonly bool _reopenWhenSendingText;
     private int _manual;
     private int _scriptRunning;
+    private readonly bool _textMode;
     private readonly ITimer _quietTimer;
     private readonly Lock _quietLock = new();
     private long _lastData;
@@ -47,9 +48,11 @@ public abstract class KissConnection : IAsyncDisposable
         TimeProvider timeProvider,
         KissTransmitLimit transmitLimit,
         TimeSpan? quietWarning,
-        bool reopenWhenSendingText = false
+        bool reopenWhenSendingText = false,
+        bool textMode = false
     )
     {
+        _textMode = textMode;
         _reopenWhenSendingText = reopenWhenSendingText;
         QuietWarning = quietWarning;
         _quietTimer = timeProvider.CreateTimer(
@@ -384,6 +387,7 @@ public abstract class KissConnection : IAsyncDisposable
                         DataRead = DataArrived,
                         TimeProvider = _timeProvider,
                         WantsTraffic = () => IsTracing,
+                        TextMode = _textMode,
                     };
                     client.Traffic += (_, e) => RaiseTraffic(e);
                     client.Warning += (_, e) =>

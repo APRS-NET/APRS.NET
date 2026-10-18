@@ -251,3 +251,5 @@ AprsNet.Kiss.KissConnection.RunScriptAsync(AprsNet.Kiss.TncScript! script, Syste
 AprsNet.Kiss.KissConnection.SendLineAsync(string! command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 AprsNet.Kiss.KissConnection.SendRawAsync(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 AprsNet.Kiss.KissTrafficKind.RawSent = 10 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissDropReason.DamagedLine = 2 -> AprsNet.Kiss.KissDropReason
+AprsNet.Kiss.KissDropReason.NotAx25 = 3 -> AprsNet.Kiss.KissDropReason

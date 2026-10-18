@@ -35,4 +35,8 @@ A USB TNC can come back under another name (`/dev/ttyUSB1` instead of `/dev/ttyU
 Linux, name it by its stable link under `/dev/serial/by-id/` instead. Linux reports a port that is missing as access
 denied; both are retried.
 
+A radio in its APRS mode, such as a Kenwood TH-D72 in APRS12, prints each packet it hears as a line of text instead of
+speaking KISS. Set `TextMode` to read those lines as packets: receive only, with GPS sentences on the same port skipped
+and lines damaged where one ran into a packet dropped. The radio keeps working as an APRS station of its own.
+
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).

@@ -139,8 +139,11 @@ another one opening it gets "Device or resource busy".
 Some handhelds and mobiles, such as the Kenwood TH-D72A, have a TNC behind a USB serial port. A few things set them
 apart from a stand-alone TNC:
 
-- **KISS has to be switched on.** In its APRS mode the radio prints each packet as a line of text, which a KISS reader
-  can't use; `aprscli` warns "the TNC is sending text, not KISS frames; is it in KISS mode?". Switch the radio's TNC to
+- **Two ways to read it.** In its APRS mode the radio prints each packet as a line of text. Set
+  `KissSerialOptions.TextMode` (`serial:/dev/ttyUSB0,text` on the command line) to read those lines: receive only,
+  with no setup, and the radio keeps working as an APRS station of its own (display, beacons, message acks). To send,
+  use KISS mode instead.
+- **KISS has to be switched on.** A KISS reader can't use the text lines of APRS mode; `aprscli` warns "the TNC is sending text, not KISS frames; is it in KISS mode?". Switch the radio's TNC to
   its packet mode (PACKET12 on the TH-D72A); the connection can then switch it to KISS itself (below).
 - **KISS doesn't survive a power cut.** Switched off and on again, the radio comes back in packet mode with KISS off,
   sending text. With a setup, the connection notices and switches it back.

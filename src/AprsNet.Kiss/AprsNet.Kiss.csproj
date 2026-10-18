@@ -9,6 +9,7 @@
     <None Include="README.md" Pack="true" PackagePath="/" />
     <InternalsVisibleTo Include="AprsNet.Kiss.Tests" />
     <InternalsVisibleTo Include="AprsNet.Kiss.Serial" />
+    <InternalsVisibleTo Include="aprscli" />
   </ItemGroup>
 
   <ItemGroup>

@@ -43,6 +43,15 @@ public sealed class KissSerialOptions
     public TncSetup? Setup { get; set; }
 
     /// <summary>
+    /// Whether the TNC prints each packet it hears as a TNC-2 text line instead of speaking KISS, as a radio does in its
+    /// APRS mode (the Kenwood TH-D72's APRS12): the connection reads those lines as packets. Receive only: sending
+    /// throws. The radio keeps working as an APRS station of its own, its display, beacons and message acks included,
+    /// and needs no <see cref="Setup"/>. GPS sentences on the same port are skipped; a packet line damaged where one
+    /// ran into it is dropped and counted in <c>DroppedFrames</c>. Defaults to <see langword="false"/>, for KISS.
+    /// </summary>
+    public bool TextMode { get; set; }
+
+    /// <summary>
     /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
     /// Defaults to 0.
     /// </summary>
@@ -83,6 +92,14 @@ public sealed class KissSerialOptions
     public void Validate()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(PortName, nameof(PortName));
+        if (TextMode && Setup is not null)
+        {
+            throw new ArgumentException(
+                "A TNC read in text mode needs no setup: TextMode and Setup can't be used together.",
+                nameof(TextMode)
+            );
+        }
+
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(BaudRate, 0, nameof(BaudRate));
         ArgumentOutOfRangeException.ThrowIfNegative(TncPort, nameof(TncPort));
         ArgumentOutOfRangeException.ThrowIfGreaterThan(TncPort, 15, nameof(TncPort));
