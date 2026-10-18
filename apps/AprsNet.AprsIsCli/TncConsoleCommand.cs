@@ -25,7 +25,7 @@ internal sealed class TncConsoleCommand(CliEnvironment environment)
     {
         Description =
             "Run the script in this file instead of reading commands: lines of send TEXT, bytes HEX, expect TIME "
-            + "TEXT and pause TIME (see the CLI README). Prints what the TNC said.",
+            + "TEXT, pause TIME and drain TIME (see the CLI README). Prints what the TNC said.",
     };
 
     public IEnumerable<Command> Build()

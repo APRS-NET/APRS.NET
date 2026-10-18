@@ -309,6 +309,7 @@ if an expected answer doesn't come. A script has one step per line:
 | `bytes HEX` | Sends bytes as they are, such as `bytes C0 FF C0`. |
 | `expect TIME TEXT` | Waits up to the time (`500ms`, `3s`) for the TNC to send the text, without regard to case. |
 | `pause TIME` | Waits. |
+| `drain TIME` | Waits, then throws away what the TNC sent so far, such as packets it printed at its prompt, so an `expect` can't match an old prompt. |
 
 Lines starting with `#` are comments.
 
