@@ -17,6 +17,8 @@ namespace AprsNet.Kiss;
 /// without a trace. <see cref="LooksLikeText"/> says when the bytes since the last <c>FEND</c> look like that: at least
 /// 128 bytes with two line breaks, nine in ten of them printable. A good frame clears it. Bytes that look like text are
 /// not a frame, even after a <c>FEND</c>: from then until the next <c>FEND</c> they are discarded as outside any frame.
+/// So are bytes after a <c>FEND</c> whose first isn't a KISS command byte (low four bits 0 to 6, or <c>FF</c>), such as
+/// the answers of a TNC's command line, which start with a line break or a letter.
 /// </para>
 /// </remarks>
 public sealed class KissDecoder
@@ -123,6 +125,19 @@ public sealed class KissDecoder
                 _raw.Add(b); // the frame as it crossed the link, a dropped one too
             }
 
+            if (_inFrame && !_discarding && _frame.Count == 0 && !_escaped && !IsCommandByte(b))
+            {
+                // A frame starts with a command byte (low four bits 0 to 6, or FF). Anything else, such as the CR or
+                // letter a TNC's command line starts its answers with, is outside any frame until the next FEND.
+                if (trace is not null && _raw.Count > 0)
+                {
+                    _raw.RemoveAt(_raw.Count - 1); // b went in as the frame's first byte
+                }
+
+                _raw.Clear();
+                _inFrame = false;
+            }
+
             if (!_inFrame || _discarding)
             {
                 DiscardedBytes++;
@@ -180,6 +195,8 @@ public sealed class KissDecoder
             _unframed.Clear();
         }
     }
+
+    private static bool IsCommandByte(byte b) => b == 0xFF || (b & 0x0F) <= (int)KissCommand.SetHardware;
 
     /// <summary>Counts <paramref name="b"/> towards the run since the last <c>FEND</c>, to spot text lines.</summary>
     private void Sniff(byte b, IKissDecoderTrace? trace)
