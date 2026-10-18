@@ -238,7 +238,12 @@ aprscli tnc listen --tnc serial:/dev/ttyUSB0@115200,dtr=off,rts=off   # an ESP32
 aprscli tnc listen --tnc serial:/dev/ttyUSB0 --reconnect     # a USB TNC; survives unplugging it
 aprscli tnc listen --tnc serial:COM3@57600          # a NinoTNC on Windows
 aprscli tnc ports                                   # the serial ports present
+aprscli tnc listen --tnc serial:/dev/ttyUSB0,setup=th-d72 --reconnect   # a TH-D72A, switched into KISS
 ```
+
+A radio's built-in TNC has to be told to speak KISS. Add `,setup=th-d72` (a Kenwood TH-D72, in PACKET12 mode) and every
+TNC command switches it into KISS when it opens the port, does so again when the radio starts sending text after a
+power cut, and switches it back out when it closes. Without a setup, the TNC must already be in KISS mode.
 
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
@@ -278,5 +283,33 @@ Each packet is printed once the TNC has it. Frames are spread out by the transmi
 resent on the `--retry` schedule until the recipient's ack arrives over RF, and replies heard meanwhile and for
 `--wait-replies` afterwards are printed and acked. The transmit limit spaces out every send, acks included. Exit code 5
 when no ack comes.
+
+## tnc kiss and tnc terminal
+
+Set up a serial TNC by hand, at its own command line. Neither transmits anything on the air.
+
+```sh
+aprscli tnc kiss on --tnc serial:/dev/ttyUSB0,setup=th-d72    # switch a TH-D72A into KISS
+aprscli tnc kiss off --tnc serial:/dev/ttyUSB0,setup=th-d72   # and back to its cmd: prompt
+aprscli tnc terminal --tnc serial:/dev/ttyUSB0                # type commands, see the answers
+aprscli tnc terminal --tnc serial:/dev/ttyUSB0 --script tnc-setup.txt
+```
+
+`tnc kiss on|off` runs the setup's script once and says whether it worked. Exit code 2 when the TNC doesn't answer, with
+what to check (a TH-D72 in APRS mode can't switch).
+
+`tnc terminal` sends each line typed as a command, with a carriage return, and prints what the TNC says, with control
+bytes and KISS frames shown as `\xNN`. A line starting with `~` is a script step: `~bytes C0 FF C0` sends the KISS
+exit frame, `~pause 1s` waits. Ctrl+D ends it. `--script FILE` runs a script instead and prints the answers; exit code 2
+if an expected answer doesn't come. A script has one step per line:
+
+| Step | Does |
+| --- | --- |
+| `send TEXT` | Sends the text and a carriage return; `send` alone sends just the carriage return. |
+| `bytes HEX` | Sends bytes as they are, such as `bytes C0 FF C0`. |
+| `expect TIME TEXT` | Waits up to the time (`500ms`, `3s`) for the TNC to send the text, without regard to case. |
+| `pause TIME` | Waits. |
+
+Lines starting with `#` are comments.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>

@@ -49,6 +49,12 @@ internal sealed class CliHarness
     /// <summary>The serial ports <c>tnc ports</c> finds.</summary>
     public IReadOnlyList<string> SerialPorts { get; set; } = [];
 
+    /// <summary>The TNC <c>tnc terminal</c> and <c>tnc kiss</c> talk to; none by default.</summary>
+    public Stream? TncPort { get; set; }
+
+    /// <summary>The address <c>tnc terminal</c> or <c>tnc kiss</c> opened.</summary>
+    public TncAddress? OpenedTnc { get; private set; }
+
     /// <summary>How many transports the connection asked for, which is one per connection attempt.</summary>
     public int ConnectionAttempts { get; private set; }
 
@@ -89,6 +95,11 @@ internal sealed class CliHarness
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
             GetSerialPortNames = () => SerialPorts,
+            OpenTncTerminal = address =>
+            {
+                OpenedTnc = address;
+                return new TncTerminal(TncPort ?? throw new IOException($"The serial port {address} is not present."));
+            },
             NewListenerId = () => ListenerId,
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
             CreateConnection = (options, logger) =>
