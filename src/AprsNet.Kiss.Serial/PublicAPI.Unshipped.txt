@@ -28,3 +28,6 @@ AprsNet.Kiss.KissSerialOptions.DtrEnable.get -> bool
 AprsNet.Kiss.KissSerialOptions.DtrEnable.set -> void
 AprsNet.Kiss.KissSerialOptions.RtsEnable.get -> bool
 AprsNet.Kiss.KissSerialOptions.RtsEnable.set -> void
+AprsNet.Kiss.KissSerialOptions.Setup.get -> AprsNet.Kiss.TncSetup?
+AprsNet.Kiss.KissSerialOptions.Setup.set -> void
+static AprsNet.Kiss.KissSerialConnection.OpenTerminal(AprsNet.Kiss.KissSerialOptions! options) -> AprsNet.Kiss.TncTerminal!

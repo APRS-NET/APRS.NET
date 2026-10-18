@@ -9,6 +9,11 @@ internal sealed class FakeTnc : Stream
 
     public MemoryStream Written { get; } = new();
 
+    /// <summary>Answers what is written, as a TNC's command line would; null for no answer.</summary>
+    public Func<byte[], byte[]?>? Answer { get; set; }
+
+    public bool Disposed { get; private set; }
+
     public void Send(byte[] bytes) => _incoming.Writer.TryWrite(bytes);
 
     public void End() => _incoming.Writer.TryComplete();
@@ -35,7 +40,16 @@ internal sealed class FakeTnc : Stream
 
     public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
     {
-        Written.Write(buffer.Span);
+        lock (Written)
+        {
+            Written.Write(buffer.Span);
+        }
+
+        if (Answer?.Invoke(buffer.ToArray()) is { } answer)
+        {
+            Send(answer);
+        }
+
         return ValueTask.CompletedTask;
     }
 
@@ -60,5 +74,13 @@ internal sealed class FakeTnc : Stream
 
     public override void SetLength(long value) => throw new NotSupportedException();
 
-    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) =>
+        WriteAsync(buffer.AsMemory(offset, count)).AsTask().GetAwaiter().GetResult();
+
+    protected override void Dispose(bool disposing)
+    {
+        Disposed = true;
+        _incoming.Writer.TryComplete();
+        base.Dispose(disposing);
+    }
 }

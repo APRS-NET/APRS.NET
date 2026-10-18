@@ -71,6 +71,12 @@ came back from a power cut with KISS off. Rather than drop them without a word, 
 tnc.Warning += (_, e) => Console.WriteLine(e.Message); // "The TNC is sending text, not KISS frames; is it in KISS mode?"
 ```
 
+A radio's built-in TNC, or one with its own command line, has to be told to speak KISS, and forgets after a power
+cut. A `TncSetup` says how: `TncScript`s to enter and leave KISS (send a command, expect the prompt, pause), such as
+the built-in `TncSetup.KenwoodThD72`. `KissSerialOptions.Setup` (in `AprsNet.Kiss.Serial`) runs it each time the port
+opens and again when the TNC starts sending text. `TncTerminal` is a console on a TNC's command line, for setting one up
+by hand.
+
 The `AprsNet.Kiss` meter counts frames received, sent and dropped, bytes discarded outside frames, open connections and
 reconnects by cause, each tagged with the TNC (`host:port`, or the serial port's name); add it to OpenTelemetry with
 `AddMeter("AprsNet.Kiss")`.

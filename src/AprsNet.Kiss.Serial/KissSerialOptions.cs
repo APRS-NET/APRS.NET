@@ -35,6 +35,14 @@ public sealed class KissSerialOptions
     public bool RtsEnable { get; set; } = true;
 
     /// <summary>
+    /// How to switch the TNC into KISS mode, for a radio's built-in TNC or one with its own command line, such as
+    /// <see cref="TncSetup.KenwoodThD72"/>; <see langword="null"/>, the default, for a TNC that only speaks KISS. The
+    /// connection runs <see cref="TncSetup.EnterKiss"/> each time it opens the port, opens the port again when the TNC
+    /// starts sending text instead of frames, and sends <see cref="TncSetup.LeaveKiss"/> when it closes.
+    /// </summary>
+    public TncSetup? Setup { get; set; }
+
+    /// <summary>
     /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
     /// Defaults to 0.
     /// </summary>
