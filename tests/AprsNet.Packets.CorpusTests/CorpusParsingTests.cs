@@ -269,6 +269,28 @@ public class CorpusParsingTests
         Assert.True(paths.Count(p => p.Digipeaters.Count > 0) > 1_000, "too few digipeated packets");
     }
 
+    [Fact]
+    public void EveryUnrecognizedPartCodeHasACorpusLineThatShowsIt()
+    {
+        var seen = new HashSet<UnrecognizedPartCode>();
+        foreach (var file in CorpusFiles().Select(row => row.Data))
+        {
+            foreach (var (lineNumber, bytes) in Packets(file))
+            {
+                foreach (var part in AprsPacket.Parse(bytes).Unrecognized)
+                {
+                    Assert.True(
+                        part.Offset > 0 && part.Length > 0 && part.Offset + part.Length <= bytes.Length,
+                        $"{file}:{lineNumber}: {part} is outside the line"
+                    );
+                    seen.Add(part.Code);
+                }
+            }
+        }
+
+        Assert.Equal(Enum.GetValues<UnrecognizedPartCode>().ToHashSet(), seen);
+    }
+
     internal static IEnumerable<(int LineNumber, byte[] Bytes)> Packets(string file)
     {
         var lines = File.ReadAllBytes(Path.Combine(_directory, file)).AsMemory();

@@ -31,6 +31,7 @@ public abstract class PositionedPayload : AprsPayload
         CommentBytes = fields.CommentBytes;
         Comment = fields.Comment;
         ExtensionBytes = fields.ExtensionBytes;
+        WeatherRestBytes = fields.WeatherRestBytes;
     }
 
     /// <summary>
@@ -40,6 +41,9 @@ public abstract class PositionedPayload : AprsPayload
     /// Callers cannot set it.
     /// </summary>
     internal ReadOnlyMemory<byte> ExtensionBytes { get; init; }
+
+    /// <summary>For a weather station, the comment bytes after the readings: where reading stopped.</summary>
+    internal ReadOnlyMemory<byte> WeatherRestBytes { get; init; }
 
     /// <summary>The position. With a <c>!DAO!</c> token the extra precision is already applied.</summary>
     public AprsPosition Position { get; init; }

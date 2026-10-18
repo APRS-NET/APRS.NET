@@ -41,6 +41,15 @@ which APRS101 does not lay out). Station capabilities such as an IGate's `<IGATE
 sent). Other packet types (queries, raw NMEA, third-party…) come back with `Outcome == ParseOutcome.Unsupported`
 until their decoders land.
 
+`Unrecognized` lists the parts of a packet that parsed but weren't understood, each with a stable code and the
+bytes it covers in `Raw`. Unlike `Issues`, they are not errors, and the packet is still decoded. The codes cover:
+- a data extension that doesn't decode (`PHG1-220`, a course of `767`);
+- a path entry before the q-construct that no AX.25 digipeater could have added;
+- weather readings that stop at one this library can't read (`V117`);
+- user-defined data, whose format isn't decoded.
+
+They mark packets worth a closer look, for example to add to a test corpus.
+
 ```csharp
 if (packet.Payload is PositionedPayload report) // a position report, object, item or Mic-E report
 {
