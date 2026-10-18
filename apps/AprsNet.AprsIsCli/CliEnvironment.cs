@@ -43,6 +43,8 @@ internal sealed class CliEnvironment
                 {
                     PortName = name,
                     BaudRate = address.BaudRate,
+                    DtrEnable = address.Dtr,
+                    RtsEnable = address.Rts,
                     TncPort = radioPort,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,
