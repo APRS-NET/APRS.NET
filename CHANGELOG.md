@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.7...v0.4.0-alpha.8) (2026-10-18)
+
+
+### Bug Fixes
+
+* **kiss:** treat text whose first letter looks like a command as text ([d5bf9df](https://github.com/APRS-NET/APRS.NET/commit/d5bf9df3879b9d5dd9bd4a57af05252eaa2ebbc2)), closes [#269](https://github.com/APRS-NET/APRS.NET/issues/269)
+
 ## [0.4.0-alpha.7](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.6...v0.4.0-alpha.7) (2026-10-18)
 
 
