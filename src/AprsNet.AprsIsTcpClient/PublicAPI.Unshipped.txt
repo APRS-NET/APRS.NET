@@ -169,3 +169,26 @@ static AprsNet.AprsIsTcpClient.AprsIsLogin.IsListenerId(string? login) -> bool
 static AprsNet.AprsIsTcpClient.AprsIsLogin.NewListenerId(System.Random? random = null) -> string!
 AprsNet.AprsIsTcpClient.KissTncLoginException
 AprsNet.AprsIsTcpClient.KissTncLoginException.KissTncLoginException() -> void
+AprsNet.AprsIsTcpClient.AprsIsClient.Traffic -> System.EventHandler<AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs!>?
+AprsNet.AprsIsTcpClient.AprsIsConnection.SendCommandAsync(string! command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.AprsIsTcpClient.AprsIsConnection.Traffic -> System.EventHandler<AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs!>?
+AprsNet.AprsIsTcpClient.AprsIsTrafficDirection
+AprsNet.AprsIsTcpClient.AprsIsTrafficDirection.Received = 0 -> AprsNet.AprsIsTcpClient.AprsIsTrafficDirection
+AprsNet.AprsIsTcpClient.AprsIsTrafficDirection.Sent = 1 -> AprsNet.AprsIsTcpClient.AprsIsTrafficDirection
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs.At.get -> System.DateTimeOffset
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs.Direction.get -> AprsNet.AprsIsTcpClient.AprsIsTrafficDirection
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs.Kind.get -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs.Line.get -> string!
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs.Packet.get -> AprsNet.Packets.AprsPacket?
+AprsNet.AprsIsTcpClient.AprsIsTrafficEventArgs.Packet.init -> void
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.CommandSent = 6 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKindExtensions
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.FilterSent = 4 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.LoginResponse = 1 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.LoginSent = 0 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.Packet = 3 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.PacketSent = 5 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+AprsNet.AprsIsTcpClient.AprsIsTrafficKind.ServerComment = 2 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
+static AprsNet.AprsIsTcpClient.AprsIsTrafficKindExtensions.Describe(this AprsNet.AprsIsTcpClient.AprsIsTrafficKind kind) -> string!

@@ -88,6 +88,18 @@ A failed login is a `LoginException`. Two kinds have their own type, because ret
 TNC, such as Dire Wolf's port 8001, rather than a server. Connect to that with `AprsNet.Kiss` instead. Check
 `e.Error` in `StateChanged` for these types to tell the user what to change.
 
+## Traffic
+
+For a troubleshooting console, `Traffic` on `AprsIsClient` and `AprsIsConnection` reports every line to and from the
+server: the login (with the passcode masked by the library), the server's answer, comments and keepalives, packets,
+filter changes and packets sent. Nothing extra is done while no one listens, and nothing is kept: keep your own history.
+`AprsIsConnection.SendCommandAsync` sends a server command typed by hand, such as `#filter b/N0CALL`; only lines
+starting with `#`, so packets still go through `SendAsync` and its checks.
+
+```csharp
+connection.Traffic += (_, e) => console.Add($"{e.At:HH:mm:ss} {e.Direction} {e.Kind}: {e.Line}");
+```
+
 ## TLS
 
 Set `UseTls` to connect over TLS. The server must offer it, usually on port 24580 (`AprsIsPorts.Tls`), and its
