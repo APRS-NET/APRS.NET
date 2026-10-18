@@ -201,3 +201,47 @@ AprsNet.Kiss.TncTerminal.SendLineAsync(string! command, System.Threading.Cancell
 AprsNet.Kiss.TncTerminal.TncTerminal(System.IO.Stream! stream, bool ownsStream = true) -> void
 AprsNet.Kiss.TncScriptStepKind.Drain = 3 -> AprsNet.Kiss.TncScriptStepKind
 static AprsNet.Kiss.TncScriptStep.Drain(System.TimeSpan time) -> AprsNet.Kiss.TncScriptStep!
+AprsNet.Kiss.KissConnection.Traffic -> System.EventHandler<AprsNet.Kiss.KissTrafficEventArgs!>?
+AprsNet.Kiss.KissDropReason
+AprsNet.Kiss.KissDropReason.InvalidEscape = 0 -> AprsNet.Kiss.KissDropReason
+AprsNet.Kiss.KissDropReason.TooLong = 1 -> AprsNet.Kiss.KissDropReason
+AprsNet.Kiss.KissStreamClient.Traffic -> System.EventHandler<AprsNet.Kiss.KissTrafficEventArgs!>?
+AprsNet.Kiss.KissTcpClient.Traffic -> System.EventHandler<AprsNet.Kiss.KissTrafficEventArgs!>?
+AprsNet.Kiss.KissTrafficDirection
+AprsNet.Kiss.KissTrafficDirection.Received = 0 -> AprsNet.Kiss.KissTrafficDirection
+AprsNet.Kiss.KissTrafficDirection.Sent = 1 -> AprsNet.Kiss.KissTrafficDirection
+AprsNet.Kiss.KissTrafficEventArgs
+AprsNet.Kiss.KissTrafficEventArgs.At.get -> System.DateTimeOffset
+AprsNet.Kiss.KissTrafficEventArgs.Bytes.get -> System.ReadOnlyMemory<byte>
+AprsNet.Kiss.KissTrafficEventArgs.Command.get -> AprsNet.Kiss.KissCommand?
+AprsNet.Kiss.KissTrafficEventArgs.Command.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.Direction.get -> AprsNet.Kiss.KissTrafficDirection
+AprsNet.Kiss.KissTrafficEventArgs.DropReason.get -> AprsNet.Kiss.KissDropReason?
+AprsNet.Kiss.KissTrafficEventArgs.DropReason.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.EndsLine.get -> bool
+AprsNet.Kiss.KissTrafficEventArgs.EndsLine.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.Frame.get -> AprsNet.Ax25.Ax25Frame?
+AprsNet.Kiss.KissTrafficEventArgs.Frame.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.Kind.get -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficEventArgs.LooksLikeText.get -> bool
+AprsNet.Kiss.KissTrafficEventArgs.LooksLikeText.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.Packet.get -> AprsNet.Packets.AprsPacket?
+AprsNet.Kiss.KissTrafficEventArgs.Packet.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.Port.get -> int?
+AprsNet.Kiss.KissTrafficEventArgs.Port.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.SetupStep.get -> AprsNet.Kiss.TncScriptStep?
+AprsNet.Kiss.KissTrafficEventArgs.SetupStep.init -> void
+AprsNet.Kiss.KissTrafficEventArgs.Text.get -> string!
+AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.Command = 3 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.DroppedFrame = 4 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKindExtensions
+AprsNet.Kiss.KissTrafficKind.Frame = 0 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.NotAprs = 1 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.OtherPort = 2 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.Sent = 6 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.SetupFailed = 9 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.SetupReceived = 8 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.SetupSent = 7 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.Unframed = 5 -> AprsNet.Kiss.KissTrafficKind
+static AprsNet.Kiss.KissTrafficKindExtensions.Describe(this AprsNet.Kiss.KissTrafficKind kind) -> string!

@@ -77,6 +77,15 @@ the built-in `TncSetup.KenwoodThD72`. `KissSerialOptions.Setup` (in `AprsNet.Kis
 opens and again when the TNC starts sending text. `TncTerminal` is a console on a TNC's command line, for setting one up
 by hand.
 
+For a troubleshooting console, `Traffic` reports everything that crosses the link: each frame received (APRS, another
+protocol, another port, a KISS command, or dropped as damaged), bytes outside any frame a line at a time, each frame
+sent, and each step of a `TncSetup`. Each entry has its bytes as they crossed the link, and for a frame its port,
+command and parsed packet. Nothing extra is done while no one listens, and nothing is kept: keep your own history.
+
+```csharp
+tnc.Traffic += (_, e) => console.Add($"{e.At:HH:mm:ss} {e.Kind}: {e.Packet?.ToString() ?? e.Text}");
+```
+
 The `AprsNet.Kiss` meter counts frames received, sent and dropped, bytes discarded outside frames, open connections and
 reconnects by cause, each tagged with the TNC (`host:port`, or the serial port's name); add it to OpenTelemetry with
 `AddMeter("AprsNet.Kiss")`.

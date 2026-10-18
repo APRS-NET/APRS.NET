@@ -90,11 +90,16 @@ public sealed class KissTcpClient : IAsyncDisposable
             MetricsTnc = $"{_host}:{_port}",
         };
         _kiss.Warning += (_, e) => Warning?.Invoke(this, e);
+        _kiss.Traffic += (_, e) => Traffic?.Invoke(this, e);
+        _kiss.WantsTraffic = () => Traffic is not null;
         KissMetrics.Active(_kiss.MetricsTnc, +1);
     }
 
     /// <inheritdoc cref="KissStreamClient.Warning"/>
     public event EventHandler<KissWarningEventArgs>? Warning;
+
+    /// <inheritdoc cref="KissStreamClient.Traffic"/>
+    public event EventHandler<KissTrafficEventArgs>? Traffic;
 
     /// <inheritdoc cref="KissStreamClient.ReadFramesAsync"/>
     public IAsyncEnumerable<Ax25Frame> ReadFramesAsync(CancellationToken cancellationToken = default) =>

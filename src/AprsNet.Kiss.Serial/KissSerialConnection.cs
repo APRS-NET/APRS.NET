@@ -29,8 +29,15 @@ public sealed class KissSerialConnection : KissConnection
         : this(OpenSerial(Validated(options)), options) { }
 
     internal KissSerialConnection(Func<CancellationToken, Task<Stream>> open, KissSerialOptions options)
+        : this(open, options, new SetupTrace()) { }
+
+    private KissSerialConnection(
+        Func<CancellationToken, Task<Stream>> open,
+        KissSerialOptions options,
+        SetupTrace setupTrace
+    )
         : base(
-            WithSetup(open, Validated(options).Setup, options.TimeProvider),
+            WithSetup(open, Validated(options).Setup, options.TimeProvider, setupTrace),
             Validated(options).PortName,
             options.TncPort,
             options.ReconnectDelay,
@@ -42,6 +49,7 @@ public sealed class KissSerialConnection : KissConnection
         )
     {
         PortName = options.PortName;
+        setupTrace.Connection = this;
     }
 
     /// <summary>The serial port the TNC is on.</summary>
@@ -92,14 +100,15 @@ public sealed class KissSerialConnection : KissConnection
     private static Func<CancellationToken, Task<Stream>> WithSetup(
         Func<CancellationToken, Task<Stream>> open,
         TncSetup? setup,
-        TimeProvider timeProvider
+        TimeProvider timeProvider,
+        SetupTrace setupTrace
     ) =>
         setup is null
             ? open
             : async token =>
             {
                 var stream = await open(token).ConfigureAwait(false);
-                await EnterKissAsync(stream, setup, timeProvider, token).ConfigureAwait(false);
+                await EnterKissAsync(stream, setup, timeProvider, token, setupTrace.Callback).ConfigureAwait(false);
                 return stream;
             };
 
@@ -112,12 +121,13 @@ public sealed class KissSerialConnection : KissConnection
         Stream stream,
         TncSetup setup,
         TimeProvider timeProvider,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        Action<TncScriptStep, KissTrafficKind, ReadOnlyMemory<byte>>? trace = null
     )
     {
         try
         {
-            await setup.EnterKiss.RunAsync(stream, timeProvider, cancellationToken).ConfigureAwait(false);
+            await setup.EnterKiss.RunAsync(stream, timeProvider, trace, cancellationToken).ConfigureAwait(false);
         }
         catch (TncScriptException e)
         {
@@ -139,6 +149,27 @@ public sealed class KissSerialConnection : KissConnection
             polite.Goodbye = leave.SentBytes();
         }
     }
+
+    /// <summary>
+    /// Takes a setup script's steps to the connection's <see cref="KissConnection.Traffic"/>. The script runs inside
+    /// the open delegate, which is made before the connection exists, so the connection is filled in afterwards.
+    /// </summary>
+    private sealed class SetupTrace
+    {
+        public KissSerialConnection? Connection { get; set; }
+
+        public Action<TncScriptStep, KissTrafficKind, ReadOnlyMemory<byte>>? Callback =>
+            Connection is { IsTracing: true } connection ? connection.TraceSetup : null;
+    }
+
+    private void TraceSetup(TncScriptStep step, KissTrafficKind kind, ReadOnlyMemory<byte> bytes) =>
+        RaiseTraffic(
+            new KissTrafficEventArgs(Clock.GetUtcNow(), kind, bytes.ToArray())
+            {
+                SetupStep = step,
+                EndsLine = !bytes.IsEmpty && bytes.Span[^1] is (byte)'\r' or (byte)'\n',
+            }
+        );
 
     /// <summary>
     /// Opens a serial port at 8N1 with no handshaking, as a stream that reports the device going away as an

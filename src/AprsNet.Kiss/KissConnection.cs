@@ -123,6 +123,35 @@ public abstract class KissConnection : IAsyncDisposable
     public event EventHandler<KissWarningEventArgs>? Warning;
 
     /// <summary>
+    /// Everything that crosses the link, across reconnects, for a troubleshooting console: each frame received (APRS or
+    /// not, for this port or another, damaged), bytes outside any frame a line at a time, each frame sent, and each
+    /// step of a TNC's setup. Received entries are raised on the reading thread, sent ones on the sending thread, setup
+    /// steps while the port opens. Nothing extra is done while no one is subscribed, and nothing is kept: a console
+    /// that wants history keeps its own. An exception thrown by a handler is ignored. See
+    /// <see cref="KissTrafficKind"/>.
+    /// </summary>
+    public event EventHandler<KissTrafficEventArgs>? Traffic;
+
+    /// <summary>Whether anyone listens to <see cref="Traffic"/>.</summary>
+    private protected bool IsTracing => Traffic is not null;
+
+    /// <summary>Raises <see cref="Traffic"/>, ignoring an exception a handler throws so reading carries on.</summary>
+    private protected void RaiseTraffic(KissTrafficEventArgs entry)
+    {
+        try
+        {
+            Traffic?.Invoke(this, entry);
+        }
+        catch (Exception)
+        {
+            // A console's bug must not stop the packets.
+        }
+    }
+
+    /// <summary>The clock for traffic entries.</summary>
+    private protected TimeProvider Clock => _timeProvider;
+
+    /// <summary>
     /// Yields every AX.25 frame the TNC passes on, connecting and reconnecting as needed. Disposing the connection
     /// ends the stream; cancelling <paramref name="cancellationToken"/> throws <see cref="OperationCanceledException"/>.
     /// One reader at a time.
@@ -161,7 +190,10 @@ public abstract class KissConnection : IAsyncDisposable
                     {
                         MetricsTnc = _tnc,
                         DataRead = DataArrived,
+                        TimeProvider = _timeProvider,
+                        WantsTraffic = () => IsTracing,
                     };
+                    client.Traffic += (_, e) => RaiseTraffic(e);
                     client.Warning += (_, e) =>
                     {
                         SetTextWarning(e.IsActive);

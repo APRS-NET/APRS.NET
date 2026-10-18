@@ -38,7 +38,7 @@ public sealed class TncTerminal : IAsyncDisposable
 
     /// <summary>
     /// Runs <paramref name="script"/> on the port and returns what the TNC said meanwhile; see
-    /// <see cref="TncScript.RunAsync"/>. Don't run one while <see cref="ReadAsync"/> is reading.
+    /// <see cref="TncScript.RunAsync(Stream, TimeProvider?, CancellationToken)"/>. Don't run one while <see cref="ReadAsync"/> is reading.
     /// </summary>
     /// <exception cref="TncScriptException">An expected text didn't come in time.</exception>
     public Task<string> RunAsync(
