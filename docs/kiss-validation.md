@@ -104,6 +104,22 @@ while no program had the port open came out as fragments when it was next opened
 damaged sentence. These are notes for a reader of either format (#223, #232); the recordings aren't kept, since they
 carry the station's position.
 
+### The warnings and TNC messaging, on the radio
+
+Later on 17 October 2026, after #232, #234 and #235 shipped in 0.4.0-alpha.4, the same radio:
+
+| Check | Seen | Result |
+| --- | --- | --- |
+| The radio in APRS mode, `tnc listen -t serial:/dev/ttyUSB0` | "warning: the TNC at /dev/ttyUSB0: The TNC is sending text, not KISS frames; is it in KISS mode?" | Passed |
+| `serve -t serial:/dev/ttyUSB0 --quiet-warning 2m --http …`, radio switched off | The warning came 2 minutes after the last frame ("The TNC has sent nothing for a while; is it switched on?"); `/health` showed the source `connected` and `quiet` | Passed |
+| The radio switched back on | "The TNC is sending again" and `quiet` cleared, then the text warning, since the power cycle had left KISS off | Passed |
+| Unplug and replug under `serve` | "probably unplugged", "is not present" while it was out, retries after 2, 4 and 8 s, then "reconnected to the TNC at /dev/ttyUSB0" | Passed |
+| `tnc send -c NZ0P-3 -t 10.10.20.144 --path WIDE1-1 message NZ0P-9 …`, through Dire Wolf to the radio in APRS mode | `NZ0P-3>APZNET,WIDE1-1::NZ0P-9   :APRS.NET TNC message test{01}`, "Acknowledged by NZ0P-9 after 1 attempt" | Passed |
+
+The message went through Dire Wolf because a radio in KISS mode doesn't run its own APRS messaging, so it can't
+transmit a message and acknowledge it too; the serial transmit was checked above. Two things to improve: `/health`
+still says `healthy` while the TNC sends text, and the quiet warning could say how long it has been quiet.
+
 ## Result
 
 KISS over TCP receives, reconnects, notices a dead link and transmits through a real Dire Wolf. The one bug found, the
@@ -111,5 +127,7 @@ dead link reported as connected, was fixed in #184 and shipped in 0.3.0-alpha.3.
 
 KISS over USB serial receives and transmits through a TH-D72A, and survives the radio being unplugged and plugged back
 in, both under `tnc listen --reconnect` and in the gateway. Three bugs were found and fixed: DTR and RTS left low, an
-unplug taken for a crash, and a missing port reported as access denied. Two gaps remain, both about a TNC that is
-connected but not working: one switched off behind a powered USB chip (#234), and one sending text in KISS mode (#232).
+unplug taken for a crash, and a missing port reported as access denied. The two gaps found, a TNC switched off behind
+a powered USB chip and one sending text instead of KISS, now raise warnings (#234, #232), checked on the radio. A
+message conversation through a TNC, with its acknowledgement, works on the air (#235). Switching a radio's TNC back
+into KISS by itself after a power cut is #249.
