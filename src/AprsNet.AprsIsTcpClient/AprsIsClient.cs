@@ -92,6 +92,7 @@ public sealed class AprsIsClient : IAsyncDisposable
 
     /// <summary>Connects, sends the login line, waits for the server's response, and starts receiving.</summary>
     /// <exception cref="LoginRejectedException">The server refused the login, for example <c># Login by user not allowed</c>.</exception>
+    /// <exception cref="KissTncLoginException">The other end is a KISS TNC, not an APRS-IS server.</exception>
     /// <exception cref="LoginException">The server closed the connection, did not answer in time, or answered unreadably.</exception>
     public async Task<LoginResult> ConnectAsync(CancellationToken cancellationToken = default)
     {
@@ -323,9 +324,7 @@ public sealed class AprsIsClient : IAsyncDisposable
                 // FEND (C0), read as Latin-1: the other end is a KISS TNC, such as Dire Wolf's KISS port, not a server.
                 if (line.Contains('\u00C0', StringComparison.Ordinal))
                 {
-                    throw new LoginException(
-                        "The other end sent KISS frames: it is a KISS TNC, not an APRS-IS server. Connect to it as a TNC."
-                    );
+                    throw new KissTncLoginException();
                 }
 
                 _logger.ServerLine(line);

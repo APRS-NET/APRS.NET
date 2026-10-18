@@ -143,6 +143,7 @@ public sealed class AprsIsConnection : IAsyncDisposable
 
     /// <summary>Connects and logs in for the first time, then keeps the connection up until disposed.</summary>
     /// <exception cref="LoginRejectedException">The server refused the login.</exception>
+    /// <exception cref="KissTncLoginException">The other end is a KISS TNC, not an APRS-IS server.</exception>
     /// <exception cref="LoginException">The server closed the connection, did not answer in time, or answered unreadably.</exception>
     /// <exception cref="InvalidOperationException">The connection has already been started.</exception>
     public async Task<LoginResult> StartAsync(CancellationToken cancellationToken = default)

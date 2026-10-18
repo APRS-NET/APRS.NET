@@ -167,3 +167,5 @@ AprsNet.AprsIsTcpClient.AprsIsLogin
 const AprsNet.AprsIsTcpClient.AprsIsLogin.ListenerPrefix = "SWL" -> string!
 static AprsNet.AprsIsTcpClient.AprsIsLogin.IsListenerId(string? login) -> bool
 static AprsNet.AprsIsTcpClient.AprsIsLogin.NewListenerId(System.Random? random = null) -> string!
+AprsNet.AprsIsTcpClient.KissTncLoginException
+AprsNet.AprsIsTcpClient.KissTncLoginException.KissTncLoginException() -> void

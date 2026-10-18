@@ -83,6 +83,11 @@ await foreach (var packet in connection.ReadPacketsAsync()) // one stream across
 `SendAsync` waits while the connection is down and sends once it is back; `SetFilterAsync` applies now and on every
 later login; one send rate limit covers every connection.
 
+A failed login is a `LoginException`. Two kinds have their own type, because retrying won't help with either:
+`LoginRejectedException` when the server refuses the login, and `KissTncLoginException` when the other end is a KISS
+TNC, such as Dire Wolf's port 8001, rather than a server. Connect to that with `AprsNet.Kiss` instead. Check
+`e.Error` in `StateChanged` for these types to tell the user what to change.
+
 ## TLS
 
 Set `UseTls` to connect over TLS. The server must offer it, usually on port 24580 (`AprsIsPorts.Tls`), and its
