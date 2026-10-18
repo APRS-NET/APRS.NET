@@ -150,3 +150,44 @@ override AprsNet.Messaging.Bulletin.ToString() -> string!
 static AprsNet.Messaging.Bulletin.operator !=(AprsNet.Messaging.Bulletin? left, AprsNet.Messaging.Bulletin? right) -> bool
 static AprsNet.Messaging.Bulletin.operator ==(AprsNet.Messaging.Bulletin? left, AprsNet.Messaging.Bulletin? right) -> bool
 AprsNet.Messaging.OutgoingMessage.Attempted -> System.EventHandler?
+AprsNet.Messaging.AnsrvrCommand
+AprsNet.Messaging.AnsrvrCommand.Equals(AprsNet.Messaging.AnsrvrCommand? other) -> bool
+AprsNet.Messaging.AnsrvrCommand.Groups.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Messaging.AnsrvrCommandKind
+AprsNet.Messaging.AnsrvrCommand.Kind.get -> AprsNet.Messaging.AnsrvrCommandKind
+AprsNet.Messaging.AnsrvrCommandKind.Join = 0 -> AprsNet.Messaging.AnsrvrCommandKind
+AprsNet.Messaging.AnsrvrCommandKind.KeepAlive = 3 -> AprsNet.Messaging.AnsrvrCommandKind
+AprsNet.Messaging.AnsrvrCommandKind.Leave = 1 -> AprsNet.Messaging.AnsrvrCommandKind
+AprsNet.Messaging.AnsrvrCommandKind.Post = 2 -> AprsNet.Messaging.AnsrvrCommandKind
+AprsNet.Messaging.AnsrvrCommand.Message.get -> string?
+AprsNet.Messaging.AnsrvrCommand.Text.get -> string!
+AprsNet.Messaging.BulletinSchedule
+AprsNet.Messaging.BulletinSchedule.BulletinSchedule(System.TimeSpan firstRepeat, System.TimeSpan longestWait, System.TimeSpan lifetime, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Messaging.BulletinSchedule.DueIn.get -> System.TimeSpan?
+AprsNet.Messaging.BulletinSchedule.EndsAt.get -> System.DateTimeOffset
+AprsNet.Messaging.BulletinSchedule.FirstRepeat.get -> System.TimeSpan
+AprsNet.Messaging.BulletinSchedule.IsDue.get -> bool
+AprsNet.Messaging.BulletinSchedule.IsFinished.get -> bool
+AprsNet.Messaging.BulletinSchedule.LastSent.get -> System.DateTimeOffset?
+AprsNet.Messaging.BulletinSchedule.Lifetime.get -> System.TimeSpan
+AprsNet.Messaging.BulletinSchedule.LongestWait.get -> System.TimeSpan
+AprsNet.Messaging.BulletinSchedule.Next.get -> System.DateTimeOffset?
+AprsNet.Messaging.BulletinSchedule.Restart() -> void
+AprsNet.Messaging.BulletinSchedule.Sent() -> void
+AprsNet.Messaging.BulletinSchedule.StartedAt.get -> System.DateTimeOffset
+AprsNet.Messaging.BulletinSchedule.Stop() -> void
+AprsNet.Messaging.BulletinSchedule.Time.get -> System.TimeProvider!
+AprsNet.Messaging.BulletinSchedule.Upcoming() -> System.Collections.Generic.IReadOnlyList<System.DateTimeOffset>!
+override AprsNet.Messaging.AnsrvrCommand.Equals(object? obj) -> bool
+override AprsNet.Messaging.AnsrvrCommand.GetHashCode() -> int
+override AprsNet.Messaging.AnsrvrCommand.ToString() -> string!
+static AprsNet.Messaging.AnsrvrCommand.Ansrvr.get -> AprsNet.Packets.Callsign!
+static AprsNet.Messaging.AnsrvrCommand.Join(string! group) -> AprsNet.Messaging.AnsrvrCommand!
+static AprsNet.Messaging.AnsrvrCommand.KeepAliveInterval.get -> System.TimeSpan
+static AprsNet.Messaging.AnsrvrCommand.KeepAlive(params System.Collections.Generic.IEnumerable<string!>! groups) -> AprsNet.Messaging.AnsrvrCommand!
+static AprsNet.Messaging.AnsrvrCommand.Leave(string! group) -> AprsNet.Messaging.AnsrvrCommand!
+static AprsNet.Messaging.AnsrvrCommand.MembershipLifetime.get -> System.TimeSpan
+static AprsNet.Messaging.AnsrvrCommand.Post(string! group, string! text) -> AprsNet.Messaging.AnsrvrCommand!
+static AprsNet.Messaging.AnsrvrCommand.TryParse(string? text, out AprsNet.Messaging.AnsrvrCommand? command) -> bool
+static AprsNet.Messaging.BulletinSchedule.ForAnnouncement(System.TimeProvider? timeProvider = null) -> AprsNet.Messaging.BulletinSchedule!
+static AprsNet.Messaging.BulletinSchedule.ForBulletin(System.TimeProvider? timeProvider = null) -> AprsNet.Messaging.BulletinSchedule!
