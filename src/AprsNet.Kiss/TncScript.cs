@@ -93,10 +93,21 @@ public sealed class TncScript
     /// Latin-1 text. Bytes that came after the last expected text may still be unread in the stream.
     /// </summary>
     /// <exception cref="TncScriptException">An expected text didn't come in time, or the TNC closed the port.</exception>
-    public async Task<string> RunAsync(
+    public Task<string> RunAsync(
         Stream stream,
         TimeProvider? timeProvider = null,
         CancellationToken cancellationToken = default
+    ) => RunAsync(stream, timeProvider, trace: null, cancellationToken);
+
+    /// <summary>
+    /// <see cref="RunAsync(Stream, TimeProvider?, CancellationToken)"/>, telling <paramref name="trace"/> about each
+    /// thing sent, each piece received and a step that failed, for a connection's traffic.
+    /// </summary>
+    internal async Task<string> RunAsync(
+        Stream stream,
+        TimeProvider? timeProvider,
+        Action<TncScriptStep, KissTrafficKind, ReadOnlyMemory<byte>>? trace,
+        CancellationToken cancellationToken
     )
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -111,6 +122,7 @@ public sealed class TncScript
                 case TncScriptStepKind.Send:
                     await stream.WriteAsync(step.Bytes, cancellationToken).ConfigureAwait(false);
                     await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    trace?.Invoke(step, KissTrafficKind.SetupSent, step.Bytes);
                     break;
                 case TncScriptStepKind.Pause:
                     await Task.Delay(step.Time, timeProvider, cancellationToken).ConfigureAwait(false);
@@ -142,14 +154,17 @@ public sealed class TncScript
                             }
                             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                             {
+                                trace?.Invoke(step, KissTrafficKind.SetupFailed, ReadOnlyMemory<byte>.Empty);
                                 throw new TncScriptException(step, received.ToString(), closed: false);
                             }
 
                             if (read == 0)
                             {
+                                trace?.Invoke(step, KissTrafficKind.SetupFailed, ReadOnlyMemory<byte>.Empty);
                                 throw new TncScriptException(step, received.ToString(), closed: true);
                             }
 
+                            trace?.Invoke(step, KissTrafficKind.SetupReceived, buffer.AsSpan(0, read).ToArray());
                             received.Append(Encoding.Latin1.GetString(buffer, 0, read));
                         }
 
