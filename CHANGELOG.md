@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.4...v0.4.0-alpha.5) (2026-10-18)
+
+
+### Features
+
+* **aprs-is:** give a login that reaches a KISS TNC its own exception ([35217a8](https://github.com/APRS-NET/APRS.NET/commit/35217a8764ddd201301c06bf8516187fe70ca044))
+* **aprs-is:** give a login that reaches a KISS TNC its own exception ([d551ba1](https://github.com/APRS-NET/APRS.NET/commit/d551ba1e7447a1e8f2093c82ee60a45975ff52c7)), closes [#246](https://github.com/APRS-NET/APRS.NET/issues/246)
+* **cli:** stop and point to tnc listen when a server is a KISS TNC ([322721d](https://github.com/APRS-NET/APRS.NET/commit/322721d0c06dc5d0c215ebc73714355594edad39)), closes [#246](https://github.com/APRS-NET/APRS.NET/issues/246)
+* **cli:** take dtr=off and rts=off in a serial TNC address ([1c6134c](https://github.com/APRS-NET/APRS.NET/commit/1c6134ceabc657ef996d95deb67b619005af4d1c)), closes [#126](https://github.com/APRS-NET/APRS.NET/issues/126)
+* **corpus:** read, write and anonymize corpus captures with AprsNet.Corpus ([54b1e62](https://github.com/APRS-NET/APRS.NET/commit/54b1e6231495a5b532f2d8bf3a2c0c3fbbf442b6))
+* **corpus:** read, write and anonymize corpus captures with AprsNet.Corpus ([1b0d322](https://github.com/APRS-NET/APRS.NET/commit/1b0d32229a5fe9ff05bb4e57678b61a10f35f3cf))
+* **gateway:** count a TNC sending text as a protocol mismatch, not up ([aa1714b](https://github.com/APRS-NET/APRS.NET/commit/aa1714b4c95eafcdeb755425c216fdfd3ea8aa5c))
+* **gateway:** count a TNC sending text as a protocol mismatch, not up ([f03d9e1](https://github.com/APRS-NET/APRS.NET/commit/f03d9e12ac41b52c171240e69f842d3c7d7e7539)), closes [#254](https://github.com/APRS-NET/APRS.NET/issues/254)
+* **kiss:** let a serial TNC leave DTR and RTS low ([6ed7556](https://github.com/APRS-NET/APRS.NET/commit/6ed755672795049beb4cdbe5662dd8d9d9b12e80))
+* **kiss:** let a serial TNC leave DTR and RTS low ([1622ba2](https://github.com/APRS-NET/APRS.NET/commit/1622ba25e4974ad2f21a43f619a4e48b6f6f9870)), closes [#126](https://github.com/APRS-NET/APRS.NET/issues/126)
+* **kiss:** say how long a TNC has been quiet ([9931fda](https://github.com/APRS-NET/APRS.NET/commit/9931fdabbf4fa672286ca73c6b075cbbe7d8b0df)), closes [#255](https://github.com/APRS-NET/APRS.NET/issues/255)
+* **packets:** list the parts of a packet that parsed but weren't understood ([b6485d0](https://github.com/APRS-NET/APRS.NET/commit/b6485d02da470d8cd1ee34f3f19ef6e5a5291d66))
+* **packets:** list the parts of a packet that parsed but weren't understood ([35b88af](https://github.com/APRS-NET/APRS.NET/commit/35b88af3af46a3d0df3d1c611ae4217c96605aa4))
+
 ## [0.4.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.3...v0.4.0-alpha.4) (2026-10-17)
 
 
