@@ -142,3 +142,4 @@ AprsNet.Kiss.KissTcpOptions.QuietWarning.get -> System.TimeSpan?
 AprsNet.Kiss.KissTcpOptions.QuietWarning.set -> void
 AprsNet.Kiss.KissWarning.Quiet = 1 -> AprsNet.Kiss.KissWarning
 AprsNet.Kiss.KissConnection.IsQuiet.get -> bool
+AprsNet.Kiss.KissWarningEventArgs.QuietFor.get -> System.TimeSpan?

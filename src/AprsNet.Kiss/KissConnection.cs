@@ -391,7 +391,7 @@ public abstract class KissConnection : IAsyncDisposable
 
         if (warn)
         {
-            Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.Quiet, true));
+            Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.Quiet, true, quiet));
         }
     }
 
