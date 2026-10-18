@@ -59,6 +59,7 @@ internal sealed class CliEnvironment
                     DtrEnable = address.Dtr,
                     RtsEnable = address.Rts,
                     Setup = address.Setup,
+                    TextMode = address.TextMode,
                     TncPort = radioPort,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,

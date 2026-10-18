@@ -54,7 +54,9 @@ internal sealed class TncLink : IAsyncDisposable
                     .ConfigureAwait(false);
             }
 
-            return new TncLink(new KissStreamClient(serial, radioPort, ownsStream: true, transmitLimit));
+            return new TncLink(
+                new KissStreamClient(serial, radioPort, ownsStream: true, transmitLimit) { TextMode = address.TextMode }
+            );
         }
 
         var tcp = new KissTcpClient(

@@ -708,6 +708,15 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             );
         }
 
+        if (address.TextMode)
+        {
+            return await UsageAsync(
+                commandName,
+                "A TNC read as text (,text: a radio in APRS mode) takes nothing to transmit. Switch it to KISS mode, "
+                    + "with ,setup= if it has one."
+            );
+        }
+
         var radioPort = parseResult.GetValue(_radioPort);
         if (radioPort is < 0 or > 15)
         {
