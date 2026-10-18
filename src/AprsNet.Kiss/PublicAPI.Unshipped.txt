@@ -245,3 +245,9 @@ AprsNet.Kiss.KissTrafficKind.SetupReceived = 8 -> AprsNet.Kiss.KissTrafficKind
 AprsNet.Kiss.KissTrafficKind.SetupSent = 7 -> AprsNet.Kiss.KissTrafficKind
 AprsNet.Kiss.KissTrafficKind.Unframed = 5 -> AprsNet.Kiss.KissTrafficKind
 static AprsNet.Kiss.KissTrafficKindExtensions.Describe(this AprsNet.Kiss.KissTrafficKind kind) -> string!
+AprsNet.Kiss.KissConnection.BeginManual() -> System.IDisposable!
+AprsNet.Kiss.KissConnection.IsManual.get -> bool
+AprsNet.Kiss.KissConnection.RunScriptAsync(AprsNet.Kiss.TncScript! script, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<string!>!
+AprsNet.Kiss.KissConnection.SendLineAsync(string! command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Kiss.KissConnection.SendRawAsync(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+AprsNet.Kiss.KissTrafficKind.RawSent = 10 -> AprsNet.Kiss.KissTrafficKind

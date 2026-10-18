@@ -86,6 +86,23 @@ command and parsed packet. Nothing extra is done while no one listens, and nothi
 tnc.Traffic += (_, e) => console.Add($"{e.At:HH:mm:ss} {e.Kind}: {e.Packet?.ToString() ?? e.Text}");
 ```
 
+A console can also type back, over the same open connection. `BeginManual()` starts manual mode: `SendLineAsync` sends
+a command with a carriage return, `SendRawAsync` sends bytes as they are, and `RunScriptAsync` runs a `TncScript` whose
+expect steps see the TNC's answers. All of them are written between frames. That makes switching a radio's TNC into
+KISS one action, without reopening the port. While manual mode is on, a connection with a `TncSetup` doesn't reopen the
+port to undo what you typed.
+
+```csharp
+using (tnc.BeginManual())
+{
+    await tnc.RunScriptAsync(TncSetup.KenwoodThD72.EnterKiss); // KISS ON and RESTART, on the open port
+}
+```
+
+Manual mode is for setting up and troubleshooting, not for sending packets. Raw sends skip the transmit limit, raw
+bytes forming a data frame go on the air, and at a TNC's command line some commands transmit, such as `ID`, `CONV` and
+`K` on TNC-2-style TNCs.
+
 The `AprsNet.Kiss` meter counts frames received, sent and dropped, bytes discarded outside frames, open connections and
 reconnects by cause, each tagged with the TNC (`host:port`, or the serial port's name); add it to OpenTelemetry with
 `AddMeter("AprsNet.Kiss")`.
