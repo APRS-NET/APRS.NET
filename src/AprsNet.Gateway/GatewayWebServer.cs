@@ -232,6 +232,7 @@ public sealed class GatewayWebServer : IAsyncDisposable
                 json.WriteStartObject(name);
                 json.WriteBoolean("connected", source.IsConnected);
                 json.WriteBoolean("quiet", source.IsQuiet);
+                json.WriteBoolean("protocolMismatch", source.IsProtocolMismatch);
                 if (source.LastPacket is { } last)
                 {
                     json.WriteString("lastPacket", Utc(last));

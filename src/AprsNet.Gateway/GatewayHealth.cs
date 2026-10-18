@@ -14,9 +14,10 @@ namespace AprsNet.Gateway;
 /// </remarks>
 public sealed class GatewayHealth
 {
-    private readonly ConcurrentDictionary<string, (Func<bool> IsConnected, Func<bool>? IsQuiet)> _sources = new(
-        StringComparer.Ordinal
-    );
+    private readonly ConcurrentDictionary<
+        string,
+        (Func<bool> IsConnected, Func<bool>? IsQuiet, Func<bool>? IsProtocolMismatch)
+    > _sources = new(StringComparer.Ordinal);
     private readonly GatewayFeed? _feed;
     private readonly TimeProvider _timeProvider;
 
@@ -39,11 +40,20 @@ public sealed class GatewayHealth
     /// still counts as connected, since a quiet channel looks the same. Keep the checks quick.
     /// </summary>
     /// <exception cref="ArgumentException">A source with that name is already added, or the name is empty.</exception>
-    public void AddSource(string name, Func<bool> isConnected, Func<bool>? isQuiet)
+    public void AddSource(string name, Func<bool> isConnected, Func<bool>? isQuiet) =>
+        AddSource(name, isConnected, isQuiet, null);
+
+    /// <summary>
+    /// Adds a source with the checks above, and one that says whether it speaks the wrong protocol, such as a TNC's
+    /// <c>KissWarning.TextNotKiss</c> warning (text, not KISS frames). Such a source is connected, but nothing it sends
+    /// can be read, so it doesn't count as up. Keep the checks quick.
+    /// </summary>
+    /// <exception cref="ArgumentException">A source with that name is already added, or the name is empty.</exception>
+    public void AddSource(string name, Func<bool> isConnected, Func<bool>? isQuiet, Func<bool>? isProtocolMismatch)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentNullException.ThrowIfNull(isConnected);
-        if (!_sources.TryAdd(name, (isConnected, isQuiet)))
+        if (!_sources.TryAdd(name, (isConnected, isQuiet, isProtocolMismatch)))
         {
             throw new ArgumentException($"A source named '{name}' is already added.", nameof(name));
         }
@@ -53,21 +63,23 @@ public sealed class GatewayHealth
     public bool RemoveSource(string name) => _sources.TryRemove(name, out _);
 
     /// <summary>
-    /// Checks every source now. Healthy when all are connected (or there are none), degraded when some are, and
-    /// unhealthy when none are. A check that throws counts as not connected.
+    /// Checks every source now. Healthy when all are up (or there are none), degraded when some are, and unhealthy when
+    /// none are. A source is up when it is connected and not speaking the wrong protocol. A check that throws counts as
+    /// not connected, not quiet and no mismatch.
     /// </summary>
     public GatewayHealthReport Check()
     {
         var sources = new SortedDictionary<string, GatewaySourceHealth>(StringComparer.Ordinal);
-        foreach (var (name, (isConnected, isQuiet)) in _sources)
+        foreach (var (name, (isConnected, isQuiet, isProtocolMismatch)) in _sources)
         {
             sources[name] = new GatewaySourceHealth(Try(isConnected), _feed?.LastPacketAt(name))
             {
                 IsQuiet = isQuiet is not null && Try(isQuiet),
+                IsProtocolMismatch = isProtocolMismatch is not null && Try(isProtocolMismatch),
             };
         }
 
-        var up = sources.Values.Count(s => s.IsConnected);
+        var up = sources.Values.Count(s => s.IsConnected && !s.IsProtocolMismatch);
         var status =
             up == sources.Count ? GatewayHealthStatus.Healthy
             : up > 0 ? GatewayHealthStatus.Degraded
@@ -75,7 +87,7 @@ public sealed class GatewayHealth
         return new GatewayHealthReport(status, sources, _timeProvider.GetUtcNow());
     }
 
-    // A check that throws counts as false: not connected, or not known to be quiet.
+    // A check that throws counts as false: not connected, not known to be quiet, no known mismatch.
     private static bool Try(Func<bool> check)
     {
         try
@@ -92,13 +104,13 @@ public sealed class GatewayHealth
 /// <summary>How a gateway is doing.</summary>
 public enum GatewayHealthStatus
 {
-    /// <summary>Every source is connected.</summary>
+    /// <summary>Every source is up: connected, and speaking the protocol expected.</summary>
     Healthy,
 
-    /// <summary>Some sources are connected and some aren't: it serves, but not everything.</summary>
+    /// <summary>Some sources are up and some aren't: it serves, but not everything.</summary>
     Degraded,
 
-    /// <summary>No source is connected: it serves nothing new.</summary>
+    /// <summary>No source is up: it serves nothing new.</summary>
     Unhealthy,
 }
 
@@ -122,4 +134,10 @@ public readonly record struct GatewaySourceHealth(bool IsConnected, DateTimeOffs
     /// quiet check.
     /// </summary>
     public bool IsQuiet { get; init; }
+
+    /// <summary>
+    /// Whether it is connected but speaking the wrong protocol, such as a TNC sending text instead of KISS frames, so
+    /// nothing it sends can be read. Only known for a source added with a mismatch check.
+    /// </summary>
+    public bool IsProtocolMismatch { get; init; }
 }

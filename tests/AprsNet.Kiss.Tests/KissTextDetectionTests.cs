@@ -150,6 +150,37 @@ public sealed class KissTextDetectionTests
         {
             Assert.Equal([true, false], warnings);
         }
+
+        Assert.False(connection.IsSendingText);
+    }
+
+    [Fact]
+    public async Task TheConnectionSaysWhileTheTncIsSendingText()
+    {
+        var tnc = new FakeTnc();
+        await using var connection = new KissSerialConnection(
+            _ => Task.FromResult<Stream>(tnc),
+            new KissSerialOptions { PortName = "/dev/ttyUSB0", TimeProvider = new FakeTimeProvider() }
+        );
+        Assert.False(connection.IsSendingText);
+
+        tnc.Send(TncText);
+        tnc.Send(Kiss("N0CALL>APRS:>KISS at last"));
+        await using var packets = connection
+            .ReadPacketsAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+        var sawText = false;
+        connection.Warning += (_, e) =>
+            sawText |= e is { Warning: KissWarning.TextNotKiss, IsActive: true } && connection.IsSendingText;
+
+        Assert.True(
+            await packets
+                .MoveNextAsync()
+                .AsTask()
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)
+        );
+        Assert.True(sawText);
+        Assert.False(connection.IsSendingText);
     }
 
     private static async Task WaitUntil(Func<bool> condition)

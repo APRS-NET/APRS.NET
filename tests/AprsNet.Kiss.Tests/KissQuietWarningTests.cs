@@ -12,6 +12,7 @@ public sealed class KissQuietWarningTests
     private static readonly TimeSpan Quiet = TimeSpan.FromMinutes(5);
     private readonly FakeTimeProvider _time = new();
     private readonly List<(KissWarning Warning, bool IsActive)> _warnings = [];
+    private readonly List<string> _messages = [];
 
     private static byte[] Kiss(string line) =>
         KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse(line)), 0).Encode();
@@ -32,6 +33,7 @@ public sealed class KissQuietWarningTests
             lock (_warnings)
             {
                 _warnings.Add((e.Warning, e.IsActive));
+                _messages.Add(e.Message);
             }
         };
         return connection;
@@ -72,12 +74,24 @@ public sealed class KissQuietWarningTests
         Assert.True(await next.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
         Assert.Equal([(KissWarning.Quiet, true), (KissWarning.Quiet, false)], Warnings());
         Assert.False(connection.IsQuiet);
-        Assert.Contains(
-            "is it switched on?",
-            new KissWarningEventArgs(KissWarning.Quiet, true).Message,
-            StringComparison.Ordinal
-        );
+        lock (_warnings)
+        {
+            Assert.Equal(
+                ["The TNC has sent nothing for 5 minutes; is it switched on?", "The TNC is sending again."],
+                _messages
+            );
+        }
     }
+
+    [Theory]
+    [InlineData(120, "2 minutes")]
+    [InlineData(60, "1 minute")]
+    [InlineData(90, "90 seconds")]
+    [InlineData(3600, "1 hour")]
+    [InlineData(7200, "2 hours")]
+    [InlineData(5400, "90 minutes")]
+    public void TheQuietTimeIsSaidInWords(int seconds, string words) =>
+        Assert.Equal(words, KissWarningEventArgs.Describe(TimeSpan.FromSeconds(seconds)));
 
     [Fact]
     public async Task EachArrivalStartsTheQuietTimeAgain()

@@ -163,3 +163,6 @@ static AprsNet.Gateway.GatewaySourceHealth.operator ==(AprsNet.Gateway.GatewaySo
 AprsNet.Gateway.GatewayHealth.AddSource(string! name, System.Func<bool>! isConnected, System.Func<bool>? isQuiet) -> void
 AprsNet.Gateway.GatewaySourceHealth.IsQuiet.get -> bool
 AprsNet.Gateway.GatewaySourceHealth.IsQuiet.init -> void
+AprsNet.Gateway.GatewayHealth.AddSource(string! name, System.Func<bool>! isConnected, System.Func<bool>? isQuiet, System.Func<bool>? isProtocolMismatch) -> void
+AprsNet.Gateway.GatewaySourceHealth.IsProtocolMismatch.get -> bool
+AprsNet.Gateway.GatewaySourceHealth.IsProtocolMismatch.init -> void
