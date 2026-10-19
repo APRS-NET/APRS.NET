@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-alpha.11](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.10...v0.4.0-alpha.11) (2026-10-19)
+
+
+### Features
+
+* **deviceid:** update the device list to aprs-deviceid 368f5b8 ([aec4b7a](https://github.com/APRS-NET/APRS.NET/commit/aec4b7a4dd36f681c27acbb9c2a3631b8f62ae75))
+
 ## [0.4.0-alpha.10](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.9...v0.4.0-alpha.10) (2026-10-18)
 
 
