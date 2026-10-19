@@ -326,6 +326,12 @@
       "model": "Ailunce HA2",
       "vendor": "Retevis"
     },
+    "APALOC": {
+      "class": "software",
+      "model": "APRSlocus",
+      "os": "Multiple",
+      "vendor": "Darion, BG7LZQ"
+    },
     "APAM??": {
       "class": "tracker",
       "model": "AltOS",
@@ -404,6 +410,12 @@
       "os": "Windows",
       "vendor": "Mike, DL2MF"
     },
+    "APB730": {
+      "class": "app",
+      "model": "Beacon 73",
+      "os": "ios",
+      "vendor": "Bret Sanders, K6BAT"
+    },
     "APBCNF": {
       "class": "software",
       "model": "BEACONFIRE",
@@ -441,6 +453,11 @@
       "vendor": "hambsd.org"
     },
     "APBT*": {
+      "vendor": "BTECH"
+    },
+    "APBT50": {
+      "class": "rig",
+      "model": "UV-50 PRO Mobile",
       "vendor": "BTECH"
     },
     "APBT62": {
@@ -577,6 +594,12 @@
       "model": "APRSdroid",
       "os": "Android",
       "vendor": "Open Source"
+    },
+    "APDRMO": {
+      "class": "app",
+      "model": "APRSdroid Mod",
+      "os": "Android",
+      "vendor": "BD3QID"
     },
     "APDS??": {
       "model": "dsDIGI",
@@ -990,6 +1013,12 @@
       "os": "Android",
       "vendor": "VA3KJH"
     },
+    "APKPPR": {
+      "class": "daemon",
+      "model": "KP4PRA TNC",
+      "os": "Linux/Unix",
+      "vendor": "Open Source, KP3M"
+    },
     "APKRAM": {
       "class": "app",
       "model": "Ham Tracker",
@@ -1064,6 +1093,18 @@
       "model": "TROY LoRa Tracker/iGate",
       "os": "embedded",
       "vendor": "Ercan, TA3OER"
+    },
+    "APLEST": {
+      "class": "tracker",
+      "model": "ESP32 LoRa Tracker",
+      "os": "embedded",
+      "vendor": "Eawan, 9M2SES"
+    },
+    "APLESW": {
+      "class": "wx",
+      "model": "ESP32 LoRa Weather Station",
+      "os": "embedded",
+      "vendor": "Eawan, 9M2SES"
     },
     "APLETK": {
       "class": "tracker",
@@ -1182,15 +1223,15 @@
     },
     "APLRM?": {
       "class": "tracker",
-      "model": "Railab LoRa board",
+      "model": "ResQMesh",
       "os": "embedded",
-      "vendor": "Railab Srl, IU2TZK"
+      "vendor": "Railab Srl, IU2SNX - IU2TZK"
     },
     "APLRS?": {
       "class": "igate",
-      "model": "Railab LoRa board",
+      "model": "ResQMesh",
       "os": "embedded",
-      "vendor": "Railab Srl, IU2TZK"
+      "vendor": "Railab Srl, IU2SNX - IU2TZK"
     },
     "APLRT?": {
       "class": "tracker",
@@ -1376,6 +1417,12 @@
       "model": "KPC-9612",
       "vendor": "Kantronics"
     },
+    "APNAVP": {
+      "class": "software",
+      "model": "Ground Team",
+      "os": "Windows",
+      "vendor": "Navprise"
+    },
     "APNCM": {
       "class": "software",
       "model": "Net Control Manager",
@@ -1441,6 +1488,12 @@
       "model": "TNC",
       "vendor": "MFJ"
     },
+    "APNOCT": {
+      "class": "software",
+      "model": "NOCT (Networked Off-grid Communications Terminal)",
+      "os": "Linux",
+      "vendor": "The Comms Channel, LLC"
+    },
     "APNP??": {
       "model": "TNC",
       "vendor": "PacComm"
@@ -1492,6 +1545,12 @@
     "APOCSG": {
       "model": "POCSAG",
       "vendor": "N0AGI"
+    },
+    "APOCWA": {
+      "class": "app",
+      "model": "aprsCW",
+      "os": "Android",
+      "vendor": "9M2OCW"
     },
     "APODOT": {
       "class": "service",
@@ -1611,6 +1670,11 @@
     "APP6??": {
       "model": "APRSlib"
     },
+    "APPC10": {
+      "model": "TA2WI Infrastructure & Mobile Devices",
+      "os": "embedded",
+      "vendor": "TA2WI"
+    },
     "APPCO?": {
       "class": "tracker",
       "model": "PicoAPRSTracker",
@@ -1708,6 +1772,12 @@
       "class": "software",
       "model": "APRSdos",
       "vendor": "Bob Bruninga, WB4APR"
+    },
+    "APRAGT": {
+      "class": "service",
+      "model": "APRS-Agent",
+      "os": "Linux/Unix",
+      "vendor": "Hüseyin Erhan Özkan, TA3HX"
     },
     "APRARX": {
       "class": "software",
@@ -2252,6 +2322,12 @@
       "model": "UPRSx",
       "os": "Windows",
       "vendor": "Rich Beckwith, WN0X"
+    },
+    "APVCTR": {
+      "class": "app",
+      "model": "APRS Vector",
+      "os": "Multiple",
+      "vendor": "SP3LSN"
     },
     "APVE??": {
       "model": "EchoLink",
