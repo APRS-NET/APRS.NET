@@ -76,6 +76,46 @@ var options = new AprsIsServerOptions
 With a `StationStore`, the server remembers where stations were last heard, so clients can use `m/` (near me) and
 `f/` (near a friend) filters. A client that falls 1,000 lines behind is disconnected rather than slowing the others.
 
+## Gate to APRS-IS
+
+An IGate uploads what its TNC hears to APRS-IS. `RfToInternetGate` from `AprsNet.IGate` applies the aprs-is.net
+rules: it refuses packets that came from APRS-IS (`TCPIP`, `TCPXX`), that ask not to be gated (`NOGATE`, `RFONLY`),
+general queries and copies already sent, and adds `qAO` and the IGate's callsign to the rest. Send them over a
+verified login:
+
+<!-- snippet: gateway-igate -->
+```csharp
+// A verified login as the IGate. Nothing reads its lines here, so let old ones go rather than stall the link.
+await using var uplink = new AprsIsConnection(
+    new AprsIsClientOptions
+    {
+        Callsign = "N0CALL-10",
+        Passcode = passcode,
+        SendInterval = TimeSpan.FromMilliseconds(200), // a busy channel sends more than one station
+        OverflowPolicy = OverflowPolicy.DropOldest,
+    }
+);
+await uplink.StartAsync(cancellationToken);
+
+var gate = new RfToInternetGate(Callsign.Parse("N0CALL-10")); // receive-only: adds qAO
+await foreach (var heard in tnc.ReadPacketsAsync(cancellationToken))
+{
+    var decision = gate.Gate(heard);
+    if (decision.IsGated)
+    {
+        await uplink.SendAsync(decision.Packet, cancellationToken);
+    }
+}
+```
+
+`aprscli serve --igate` does this alongside serving, and beacons the IGate's position to APRS-IS as IGates are expected
+to. Each refusal has a reason (`decision.Refusal`), counted on the `AprsNet.IGate` meter.
+
+This is a receive-only IGate, and receive-only IGates break messaging. A station nearby sends a message, sees it reach
+APRS-IS and expects the reply on RF, but nothing brings the reply back. Run one only where no two-way IGate covers the
+area, or for a short while, and say so in the beacon comment (`aprscli` does). A two-way IGate, which gates messages
+back to RF, comes in a later release.
+
 ## Watch it
 
 The `AprsNet.Gateway` meter counts clients, logins, packets served and duplicates by source; add it to OpenTelemetry
@@ -85,4 +125,5 @@ the TNCs. [docs/metrics.md](../metrics.md) lists the instruments.
 ## Next
 
 - Clients are read-only for now: what they send is ignored.
+- The IGate is receive-only for now.
 - The [gateway design notes](../design/gateway.md) explain how filters, history and slow clients are handled.

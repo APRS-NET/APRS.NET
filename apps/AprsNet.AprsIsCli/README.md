@@ -201,6 +201,8 @@ aprscli serve --tnc localhost --tnc 192.168.1.20:8001                   # two TN
 aprscli serve -f "r/38.98/-94.67/300" --tnc serial:/dev/ttyUSB0         # APRS-IS and a USB TNC
 aprscli serve -f "r/38.98/-94.67/300" --http 127.0.0.1:14590           # also WebSocket and /health
 aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a client
+APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.0583 --lon -72.0292
+                                                                         # a receive-only IGate
 ```
 
 | Option | Meaning |
@@ -214,12 +216,33 @@ aprscli listen --server 127.0.0.1:14580 -f "r/38.98/-94.67/50 t/w"     # a clien
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
+| `--igate` | Also gate what the `--tnc` sources hear to APRS-IS as a receive-only IGate (below). Needs `-c`, its passcode in `APRS_PASSCODE` (or `--passcode`), `--lat` and `--lon`. |
+| `--lat`, `--lon` | With `--igate`: the IGate's position, which it beacons to APRS-IS. |
+| `--symbol` | With `--igate`: the beacon's symbol. Default: `R&`, a receive-only IGate. |
+| `--comment` | With `--igate`: text after `RX-only IGate` in the beacon's comment. |
+| `--beacon-interval` | With `--igate`: how often to beacon, at least `1m`. Default: `30m`. |
 | `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up. |
 
 The upstream connection and each TNC always reconnect. A TNC sending text instead of KISS frames (not in KISS mode) is
 reported on stderr. When there is more than one source, the summary at the end
 counts each one's packets and duplicates. Clients are read-only for now: anything they send is ignored. A client
 that falls 1,000 lines behind is disconnected, as on APRS-IS.
+
+### A receive-only IGate
+
+With `--igate`, `serve` also uploads what its TNCs hear to APRS-IS, following the aprs-is.net IGate rules (see
+[AprsNet.IGate](../../src/AprsNet.IGate/README.md)): each packet once, with its path as heard and `qAO` plus your
+callsign after it, and none with `TCPIP`, `TCPXX`, `NOGATE` or `RFONLY` in the path, no general queries, nothing
+that came from APRS-IS. It needs a verified login: it stops at once if the server doesn't accept the passcode. It
+beacons its position to APRS-IS when it starts and every `--beacon-interval`, with an `R&` symbol and a comment
+that says it is receive-only. It never transmits; a `-f` filter is optional and only feeds local clients.
+
+Receive-only IGates break messaging for stations nearby: they see their messages reach APRS-IS and expect replies,
+which never come back on RF. Run one where no two-way IGate covers the area, or only for a while, and say so in the
+comment. The [gateway guide](../../docs/guides/gateway.md#gate-to-aprs-is) says more.
+
+The summary at the end, and `/health` with `--http`, count what was gated, sent, dropped and refused, by reason
+(`"igate.refused.duplicate"` and so on); so do the `AprsNet.IGate` metrics.
 
 ## health
 

@@ -72,10 +72,10 @@ internal sealed class CliHarness
     /// <summary>The listener ID a run gets when no callsign is given.</summary>
     public string ListenerId { get; init; } = "SWL482913";
 
-    public CliHarness LoginAccepted(string callsign = "NZ0P")
+    public CliHarness LoginAccepted(string callsign = "NZ0P", bool verified = false)
     {
         Transport.Server("# aprsc 2.1.test");
-        Transport.Server($"# logresp {callsign} unverified, server T2TEST");
+        Transport.Server($"# logresp {callsign} {(verified ? "verified" : "unverified")}, server T2TEST");
         return this;
     }
 
