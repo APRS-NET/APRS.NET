@@ -52,6 +52,10 @@ with `PacketAddress`. Sends are spread out, 5 at once and then one every 6 secon
 `SendInterval`); a sender waits for its turn rather than failing. Unverified logins, packets received from APRS-IS
 (they carry a q-construct) and lines APRS-IS cannot carry are refused.
 
+An IGate's packets are the exception: a packet heard on RF whose path ends in `qAR` or `qAO` and the login callsign,
+as `RfToInternetGate` from [AprsNet.IGate](https://www.nuget.org/packages/AprsNet.IGate) builds it, is sent. An IGate
+on a busy channel gates more than one packet every 6 seconds, so give it a shorter `SendInterval`.
+
 ```csharp
 var address = PacketAddress.Parse("N0CALL-9", "APZ123", []);
 await client.SendAsync(address.Create(new StatusReport { Text = "On the air" }));
