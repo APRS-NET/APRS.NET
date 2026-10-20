@@ -17,7 +17,8 @@ internal sealed class TncCommand(CliEnvironment environment)
         Description =
             $"The TNC as host[:port] (default port {KissTcpClient.DefaultPort}, Dire Wolf's KISS port), or a serial "
             + $"TNC as serial:PORT[@BAUD], such as serial:/dev/ttyUSB0 or serial:COM3@57600 (default "
-            + $"{KissSerialOptions.DefaultBaudRate} baud). Add ,setup=th-d72 to switch a radio's built-in TNC into KISS.",
+            + $"{KissSerialOptions.DefaultBaudRate} baud). Add ,setup=th-d72 to switch a radio's built-in TNC into "
+            + "KISS, or ,text to read a radio in its APRS mode (receive only).",
         Required = true,
     };
 
