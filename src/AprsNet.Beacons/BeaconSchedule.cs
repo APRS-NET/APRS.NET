@@ -19,6 +19,9 @@ public enum BeaconReason
     /// The station has gone too far from where its last beacon makes others assume it is (<see cref="DeadReckoning"/>).
     /// </summary>
     Drift,
+
+    /// <summary>A moving station turned more than its speed allows without a beacon (SmartBeaconing's corner pegging).</summary>
+    Turn,
 }
 
 /// <summary>When the next beacon is due, and why.</summary>
@@ -144,6 +147,18 @@ public abstract class BeaconSchedule
         lock (_lock)
         {
             _next = first;
+        }
+    }
+
+    /// <summary>
+    /// Works out <see cref="Next"/> again from what the schedule has just learned, such as a new speed and course.
+    /// <paramref name="next"/> takes the time now and the current <see cref="Next"/>, and runs under the lock.
+    /// </summary>
+    private protected void Reschedule(Func<DateTimeOffset, BeaconDue, BeaconDue> next)
+    {
+        lock (_lock)
+        {
+            _next = next(Time.GetUtcNow(), _next);
         }
     }
 

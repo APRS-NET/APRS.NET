@@ -29,6 +29,9 @@ Console.WriteLine($"Next beacon in {position.DueIn:mm\\:ss} ({position.Next.Reas
 - **`DecayBeaconSchedule`** beacons now, then doubles the wait from a first step up to a ceiling, and starts again on
   `Changed()`. For objects, items and new information.
 
+- **`SmartBeaconSchedule`** beacons a moving station by its speed and turns, as SmartBeaconing does: give it each
+  GPS fix with `Update(fix)`. See below.
+
 `Drifted()` asks for a beacon now, as `Changed()` does, with the reason `Drift`: see dead reckoning below.
 
 Each beacon is timed from when the last one was actually sent, so after a gap (transmit off, the connection down, the
@@ -62,3 +65,32 @@ if (error.DistanceKm > 0.5)
 `PositionAt(time)` gives the assumed position alone, for showing where a heard station probably is now. A report with
 a course of `000` gives no dead reckoning, since APRS allows it to mean unknown. The estimate assumes the station never
 turns or stops, so how long to trust it is the app's choice.
+
+## SmartBeaconing
+
+A tracker in a vehicle beacons more often the faster it goes, and at once when it turns a corner, so others can follow
+it without it crowding the channel when parked:
+
+```csharp
+// Dire Wolf's defaults for a car, with a slower fast rate.
+var schedule = new SmartBeaconSchedule(new SmartBeaconSettings { FastRate = TimeSpan.FromMinutes(2) });
+
+// On each GPS fix:
+schedule.Update(fix); // its speed and course
+if (schedule.IsDue)
+{
+    await SendPositionAsync(fix);
+    schedule.Sent(); // Next.Reason was Start, Interval, Turn or Changed
+}
+```
+
+| Setting | Default | |
+|---|---|---|
+| `SlowSpeedKnots`, `SlowRate` | 5 mph, 30 min | At or below the slow speed, beacon every slow rate. |
+| `FastSpeedKnots`, `FastRate` | 60 mph, 90 s | At or above the fast speed, beacon every fast rate. In between, `FastRate × FastSpeed ÷ speed`. |
+| `TurnAngle`, `TurnSlope` | 30°, 255° × mph | A turn is a change of course since the last beacon of more than `TurnAngle + TurnSlope ÷ speed`. |
+| `TurnTime` | 10 s | A turn beacon comes no sooner than this after the last beacon. |
+
+The defaults are Dire Wolf's (User Guide, "SmartBeaconing"). Speeds are in knots, as in `GpsFix`, so the slope is in
+degrees × knots: 255 degrees × mph is 221.6. Below 1 mph a GPS's course is noise, so a stopped station never turns.
+Each interval runs from the last beacon, so pulling away after a stop beacons at once.
