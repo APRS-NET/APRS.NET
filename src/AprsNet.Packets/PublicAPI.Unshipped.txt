@@ -981,3 +981,42 @@ override AprsNet.Packets.NmeaSentence.ToString() -> string!
 static AprsNet.Packets.GpsFix.operator !=(AprsNet.Packets.GpsFix? left, AprsNet.Packets.GpsFix? right) -> bool
 static AprsNet.Packets.GpsFix.operator ==(AprsNet.Packets.GpsFix? left, AprsNet.Packets.GpsFix? right) -> bool
 static AprsNet.Packets.NmeaSentence.TryParse(string? text, out AprsNet.Packets.NmeaSentence? sentence) -> bool
+AprsNet.Packets.MessagePayload.QueryKind.get -> AprsNet.Packets.QueryKind
+AprsNet.Packets.PacketType.Query = 13 -> AprsNet.Packets.PacketType
+AprsNet.Packets.ParseIssueCode.InvalidQuery = 29 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidQueryFootprint = 30 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.QueryFootprint
+AprsNet.Packets.QueryFootprint.Center.get -> AprsNet.Packets.AprsPosition
+AprsNet.Packets.QueryFootprint.Center.init -> void
+AprsNet.Packets.QueryFootprint.Contains(AprsNet.Packets.AprsPosition position) -> bool
+AprsNet.Packets.QueryFootprint.Deconstruct(out AprsNet.Packets.AprsPosition Center, out int RadiusMiles) -> void
+AprsNet.Packets.QueryFootprint.Equals(AprsNet.Packets.QueryFootprint other) -> bool
+AprsNet.Packets.QueryFootprint.QueryFootprint(AprsNet.Packets.AprsPosition Center, int RadiusMiles) -> void
+AprsNet.Packets.QueryFootprint.QueryFootprint() -> void
+AprsNet.Packets.QueryFootprint.RadiusMiles.get -> int
+AprsNet.Packets.QueryFootprint.RadiusMiles.init -> void
+AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Heard = 7 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.HeardDirect = 6 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.IGate = 2 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Messages = 8 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Objects = 9 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Position = 4 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.PositionAndStatus = 1 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Status = 5 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Trace = 10 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Unknown = 0 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryKind.Weather = 3 -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryReport
+AprsNet.Packets.QueryReport.Argument.get -> string?
+AprsNet.Packets.QueryReport.Footprint.get -> AprsNet.Packets.QueryFootprint?
+AprsNet.Packets.QueryReport.Footprint.init -> void
+AprsNet.Packets.QueryReport.Kind.get -> AprsNet.Packets.QueryKind
+AprsNet.Packets.QueryReport.QueryReport() -> void
+AprsNet.Packets.QueryReport.QueryType.get -> string!
+AprsNet.Packets.QueryReport.QueryType.init -> void
+~override AprsNet.Packets.QueryFootprint.Equals(object obj) -> bool
+override AprsNet.Packets.QueryFootprint.GetHashCode() -> int
+~override AprsNet.Packets.QueryFootprint.ToString() -> string
+static AprsNet.Packets.QueryFootprint.operator !=(AprsNet.Packets.QueryFootprint left, AprsNet.Packets.QueryFootprint right) -> bool
+static AprsNet.Packets.QueryFootprint.operator ==(AprsNet.Packets.QueryFootprint left, AprsNet.Packets.QueryFootprint right) -> bool

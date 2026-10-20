@@ -315,6 +315,7 @@ public sealed partial class AprsPacket
             PacketType.Capabilities => CapabilitiesDecoder.Decode(information),
             PacketType.UserDefined => UserDefinedDecoder.Decode(information, offset, issues),
             PacketType.Nmea => Nmea(information, offset, issues),
+            PacketType.Query => QueryKinds.Decode(information, offset, issues),
             _ => null,
         };
 
@@ -393,6 +394,7 @@ public sealed partial class AprsPacket
                 (byte)'<' => PacketType.Capabilities,
                 (byte)'{' => PacketType.UserDefined,
                 (byte)'$' => PacketType.Nmea,
+                (byte)'?' => PacketType.Query,
                 (byte)'T' when information.Length > 1 && information[1] == (byte)'#' => PacketType.Telemetry,
                 _ => PacketType.Unknown,
             };

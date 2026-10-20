@@ -146,6 +146,9 @@ public static class AprsPacketJson
             case NmeaReport nmea:
                 Nmea(json, nmea);
                 break;
+            case QueryReport query:
+                Query(json, query);
+                break;
             case RawWeatherReport raw:
                 json.WriteStartObject("rawWeather");
                 json.WriteString("format", Name(raw.Format));
@@ -437,6 +440,28 @@ public static class AprsPacketJson
         WriteNumber(json, "luminosityWattsPerSquareMeter", w.LuminosityWattsPerSquareMeter);
         WriteNumber(json, "snowLast24HoursInches", w.SnowLast24HoursInches);
         WriteNumber(json, "rainCounter", w.RainCounter);
+    }
+
+    private static void Query(Utf8JsonWriter json, QueryReport query)
+    {
+        json.WriteStartObject("query");
+        json.WriteString("queryType", query.QueryType);
+        json.WriteString("kind", Name(query.Kind));
+        if (query.Footprint is { } footprint)
+        {
+            json.WriteStartObject("footprint");
+            json.WriteNumber("latitude", Math.Round(footprint.Center.Latitude, 6));
+            json.WriteNumber("longitude", Math.Round(footprint.Center.Longitude, 6));
+            json.WriteNumber("radiusMiles", footprint.RadiusMiles);
+            json.WriteEndObject();
+        }
+        else
+        {
+            json.WriteNull("footprint");
+        }
+
+        WriteString(json, "argument", query.Argument);
+        json.WriteEndObject();
     }
 
     private static void Nmea(Utf8JsonWriter json, NmeaReport nmea)

@@ -101,4 +101,13 @@ public enum ParseIssueCode
 
     /// <summary>An NMEA field can't be read (a time, number or coordinate); it is left out of the fix.</summary>
     InvalidNmeaField,
+
+    /// <summary>A <c>?</c> packet is not a general query: <c>?</c>, a query type of letters or digits, then <c>?</c>.</summary>
+    InvalidQuery,
+
+    /// <summary>
+    /// What follows a general query is not a target footprint (<c>lat,long,radius</c>); the query is still read, without
+    /// its area.
+    /// </summary>
+    InvalidQueryFootprint,
 }

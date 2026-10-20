@@ -28,6 +28,7 @@ internal static class AprsEncoder
             CapabilitiesReport capabilities => Capabilities(capabilities),
             UserDefinedPayload userDefined => UserDefined(userDefined),
             ThirdPartyPayload thirdParty => ThirdParty(thirdParty),
+            QueryReport query => QueryKinds.Encode(query),
             _ => throw new NotSupportedException(
                 $"Encoding {payload.GetType().Name} is not supported; raw weather station data is only decoded."
             ),
@@ -61,6 +62,7 @@ internal static class AprsEncoder
             (ThirdPartyPayload e, ThirdPartyPayload a) => !e.Packet.Raw.Span.SequenceEqual(a.Packet.Raw.Span)
                 ? "the carried packet does not survive encoding"
                 : null,
+            (QueryReport e, QueryReport a) => QueryKinds.Mismatch(e, a),
             (UserDefinedPayload e, UserDefinedPayload a) => e.UserId != a.UserId || e.UserPacketType != a.UserPacketType
                 ? "the user ID or packet type does not survive encoding"
             : e.Data != a.Data ? "the data does not survive encoding"

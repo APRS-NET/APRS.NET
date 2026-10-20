@@ -89,6 +89,14 @@ internal static class PacketFormatter
             case NmeaReport nmea:
                 Nmea(line, nmea);
                 break;
+            case QueryReport query:
+                line.Append("query ").Append(query.QueryType).Append(" to all");
+                if (Footprint(query) is { } area)
+                {
+                    line.Append("  ").Append(area);
+                }
+
+                break;
             case RawWeatherReport raw:
                 line.Append("raw weather  ").Append(RawWeather(raw.Format)).Append("  ").Append(raw.Data);
                 break;
@@ -485,6 +493,15 @@ internal static class PacketFormatter
         user.IsExperimental
             ? $"experimental, type {user.UserPacketType}"
             : $"user {user.UserId}, type {user.UserPacketType}";
+
+    /// <summary>A general query's area, <c>within 200 mi of 34.02000 -117.15000</c>, or what was sent if unreadable.</summary>
+    internal static string? Footprint(QueryReport query) =>
+        query.Footprint is { } footprint
+            ? string.Create(
+                CultureInfo.InvariantCulture,
+                $"within {footprint.RadiusMiles} mi of {footprint.Center.Latitude:0.00000} {footprint.Center.Longitude:0.00000}"
+            )
+            : query.Argument;
 
     private static void Nmea(StringBuilder line, NmeaReport nmea)
     {

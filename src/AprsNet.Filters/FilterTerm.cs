@@ -285,7 +285,7 @@ internal abstract class FilterTerm
                 'i' => packet.Payload is ItemReport,
                 // As on APRS-IS: every message, NWS bulletins included, and telemetry definitions, which are messages.
                 'm' => packet.Payload is MessagePayload or TelemetryDefinition,
-                'q' => packet.Payload is MessagePayload { Kind: MessageKind.Query } || IsGeneralQuery(packet),
+                'q' => packet.Payload is MessagePayload { Kind: MessageKind.Query } || packet.Type == PacketType.Query,
                 's' => packet.Payload is StatusReport,
                 't' => packet.Payload is TelemetryReport or TelemetryDefinition,
                 'u' => packet.Payload is UserDefinedPayload,
@@ -297,10 +297,6 @@ internal abstract class FilterTerm
         // APRS-IS servers count NWS_ addressees (the compressed bulletin format) as NWS too.
         private static bool IsNwsUnderscore(AprsPacket packet) =>
             packet.Payload is MessagePayload message && message.Addressee.StartsWith("NWS_", StringComparison.Ordinal);
-
-        // A '?' query (?APRS?, ?IGATE?) is not decoded yet, so it has no payload.
-        private static bool IsGeneralQuery(AprsPacket packet) =>
-            packet.Payload is null && packet.Information.Span is [(byte)'?', ..];
     }
 
     /// <summary><c>s/pri/alt/over</c>: symbols from the primary table, the alternate table, and overlays.</summary>

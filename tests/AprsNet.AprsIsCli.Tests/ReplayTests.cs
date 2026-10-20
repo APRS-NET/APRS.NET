@@ -69,12 +69,12 @@ public sealed class ReplayTests : IDisposable
     [Fact]
     public async Task GroupsUndecodedPacketsByDataTypeIdentifier()
     {
-        var file = WriteFile("undecoded.log", _gridBeacon, _gridBeacon, "N0CALL>APRS:?APRS?", "N0CALL>APRS:\x01?");
+        var file = WriteFile("undecoded.log", _gridBeacon, _gridBeacon, "N0CALL>APRS:%DF data", "N0CALL>APRS:\x01?");
 
         var result = await RunAsync(new CliHarness(), file);
 
         Assert.Matches(@"'\['\s+2", result.Out);
-        Assert.Matches(@"'\?'\s+1", result.Out);
+        Assert.Matches(@"'%'\s+1", result.Out);
         Assert.Matches(@"0x01\s+1", result.Out); // unprintable identifiers are shown in hex
         Assert.Contains(@"\x01?", result.Out, StringComparison.Ordinal); // and escaped in examples
     }

@@ -90,6 +90,12 @@ no checksum), then what it says about the fix: `mode` (`unknown`, `noFix`, `fix`
 `longitude` (null without a fix), `utcDate` (`yyyy-MM-dd`, RMC only), `utcTime` (`HH:mm:ss` with any fraction),
 `speedKnots`, `course`, `altitudeMeters`, `satellites` and `hdop`. Values the sentence doesn't give are null.
 
+## `query`
+
+A general query (`?`): `queryType` as sent (`APRS`, `IGATE`, `WX` …), `kind` (`positionAndStatus`, `iGate`,
+`weather`, `unknown` …), `footprint` (`latitude`, `longitude`, `radiusMiles`, or null for every station) and `argument`,
+the text after the closing `?` as sent. Queries directed at one station are a `message` of kind `query`.
+
 ## `capabilities`, `userDefined`, `rawWeather`
 
 - `capabilities`: an array of `token` and, when given, `value`.

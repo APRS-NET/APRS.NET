@@ -67,6 +67,28 @@ public sealed class ParseTests : IDisposable
     }
 
     [Fact]
+    public async Task PrintsGeneralQueries()
+    {
+        var result = await RunAsync(
+            new CliHarness(),
+            "--format",
+            "decoded",
+            "N0CALL>APRS:?APRS?",
+            "N0CALL>APRS:?APRS? 34.02,-117.15,0200",
+            "N0CALL>APRS:?WX? somewhere"
+        );
+
+        Assert.Equal(
+            [
+                "N0CALL>APRS  query APRS to all",
+                "N0CALL>APRS  query APRS to all  within 200 mi of 34.02000 -117.15000",
+                "N0CALL>APRS  query WX to all  somewhere  [warning InvalidQueryFootprint at 16]",
+            ],
+            OutputLines(result)
+        );
+    }
+
+    [Fact]
     public async Task PrintsCapabilitiesUserDefinedDataAndRawWeather()
     {
         var result = await RunAsync(
