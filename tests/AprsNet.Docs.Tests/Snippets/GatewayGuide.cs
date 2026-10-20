@@ -1,7 +1,9 @@
 using System.Net;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.Gateway;
+using AprsNet.IGate;
 using AprsNet.Kiss;
+using AprsNet.Packets;
 
 namespace AprsNet.Docs.Tests.Snippets;
 
@@ -43,6 +45,33 @@ internal static class GatewayGuide
         #endregion
 
         await hearing;
+    }
+
+    public static async Task GateAsync(KissConnection tnc, int passcode, CancellationToken cancellationToken)
+    {
+        #region gateway-igate
+        // A verified login as the IGate. Nothing reads its lines here, so let old ones go rather than stall the link.
+        await using var uplink = new AprsIsConnection(
+            new AprsIsClientOptions
+            {
+                Callsign = "N0CALL-10",
+                Passcode = passcode,
+                SendInterval = TimeSpan.FromMilliseconds(200), // a busy channel sends more than one station
+                OverflowPolicy = OverflowPolicy.DropOldest,
+            }
+        );
+        await uplink.StartAsync(cancellationToken);
+
+        var gate = new RfToInternetGate(Callsign.Parse("N0CALL-10")); // receive-only: adds qAO
+        await foreach (var heard in tnc.ReadPacketsAsync(cancellationToken))
+        {
+            var decision = gate.Gate(heard);
+            if (decision.IsGated)
+            {
+                await uplink.SendAsync(decision.Packet, cancellationToken);
+            }
+        }
+        #endregion
     }
 
     public static AprsIsServerOptions History()

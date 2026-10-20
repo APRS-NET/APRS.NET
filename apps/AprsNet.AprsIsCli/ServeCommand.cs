@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.Filters;
 using AprsNet.Gateway;
+using AprsNet.IGate;
 using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
@@ -19,11 +20,58 @@ internal sealed class ServeCommand(CliEnvironment environment)
 {
     private const string _defaultListen = "127.0.0.1:14580";
     private const string _defaultName = "APRSNET";
+    private const string _passcodeVariable = "APRS_PASSCODE";
+    private const string _defaultIGateSymbol = "R&";
+    private const string _defaultBeaconInterval = "30m";
+    private const string _receiveOnly = "RX-only IGate";
 
     private readonly Option<string?> _callsign = new("--callsign", "-c")
     {
         Description =
-            "Callsign for the read-only upstream login, with optional SSID. Default: a listener ID such as SWL482913.",
+            "Callsign for the upstream login, with optional SSID: read-only, or the IGate's own with --igate. "
+            + "Default: a listener ID such as SWL482913.",
+    };
+
+    private readonly Option<bool> _igate = new("--igate")
+    {
+        Description =
+            "Also gate what the --tnc sources hear to APRS-IS as a receive-only IGate, and beacon its position "
+            + $"there. Needs --callsign, its passcode in {_passcodeVariable}, --lat and --lon. Receive-only IGates "
+            + "break messaging for stations nearby: see the gateway guide.",
+    };
+
+    private readonly Option<int?> _passcode = new("--passcode")
+    {
+        Description =
+            $"APRS-IS passcode for the callsign, for --igate. Prefer the {_passcodeVariable} environment variable; an "
+            + "option value is visible in the process list and your shell history. Never printed or logged.",
+    };
+
+    private readonly Option<double?> _latitude = new("--lat")
+    {
+        Description = "The IGate's latitude for its beacon, in degrees, north positive.",
+    };
+
+    private readonly Option<double?> _longitude = new("--lon")
+    {
+        Description = "The IGate's longitude for its beacon, in degrees, east positive.",
+    };
+
+    private readonly Option<string> _symbol = new("--symbol")
+    {
+        Description = $"The IGate's symbol, as table and code. Default: {_defaultIGateSymbol} (receive-only IGate).",
+        DefaultValueFactory = _ => _defaultIGateSymbol,
+    };
+
+    private readonly Option<string?> _comment = new("--comment")
+    {
+        Description = $"Text for the beacon's comment, after \"{_receiveOnly}\".",
+    };
+
+    private readonly Option<string> _beaconInterval = new("--beacon-interval")
+    {
+        Description = $"How often the IGate beacons its position to APRS-IS. Default: {_defaultBeaconInterval}.",
+        DefaultValueFactory = _ => _defaultBeaconInterval,
     };
 
     private readonly Option<string?> _server = new("--server", "-s")
@@ -106,6 +154,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 _history,
                 _duration,
                 _quietWarning,
+                _igate,
+                _passcode,
+                _latitude,
+                _longitude,
+                _symbol,
+                _comment,
+                _beaconInterval,
             }
         )
         {
@@ -134,8 +189,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
         AprsIsServerOptions Local,
         IPEndPoint? Http,
         TimeSpan? Duration,
-        TimeSpan? QuietWarning
+        TimeSpan? QuietWarning,
+        IGateOptions? IGate
     );
+
+    /// <summary>What <c>--igate</c> gates as and beacons.</summary>
+    private sealed record IGateOptions(Callsign Callsign, AprsPacket Beacon, TimeSpan BeaconInterval);
 
     private bool TryBind(ParseResult parseResult, out ServeOptions options, out string error)
     {
@@ -179,6 +238,41 @@ internal sealed class ServeCommand(CliEnvironment environment)
         else if (tncs.Count == 0)
         {
             error = "nothing to serve: give --filter for an APRS-IS feed, --tnc for a TNC, or both.";
+            return false;
+        }
+
+        var igate = parseResult.GetValue(_igate);
+        var passcode = -1;
+        TimeSpan beaconInterval = default;
+        AprsPosition? position = null;
+        AprsSymbol? symbol = null;
+        if (igate)
+        {
+            if (
+                !TryBindIGate(
+                    parseResult,
+                    listenOnly,
+                    tncs.Count,
+                    out passcode,
+                    out beaconInterval,
+                    out var place,
+                    out error
+                )
+            )
+            {
+                return false;
+            }
+
+            (position, symbol) = (place.Position, place.Symbol);
+        }
+        else if (
+            new Option[] { _passcode, _latitude, _longitude, _symbol, _comment, _beaconInterval }.FirstOrDefault(
+                option => parseResult.GetResult(option) is { Implicit: false }
+            ) is
+            { } stray
+        )
+        {
+            error = $"{stray.Name} only applies with --igate.";
             return false;
         }
 
@@ -230,18 +324,27 @@ internal sealed class ServeCommand(CliEnvironment environment)
             quietWarning = quiet;
         }
 
-        var upstream = parsedFilter is null
-            ? null
-            : new AprsIsClientOptions
-            {
-                Endpoint = endpoint,
-                Callsign = callsign,
-                ListenOnly = listenOnly,
-                Filter = parsedFilter.ToString(),
-                SoftwareName = "aprscli",
-                TimeProvider = environment.TimeProvider,
-                ReconnectDelay = environment.ReconnectDelay,
-            };
+        var upstream =
+            parsedFilter is null && !igate
+                ? null
+                : new AprsIsClientOptions
+                {
+                    Endpoint = endpoint,
+                    Callsign = callsign,
+                    ListenOnly = listenOnly,
+                    Passcode = passcode,
+                    Filter = parsedFilter?.ToString(),
+                    SoftwareName = "aprscli",
+                    TimeProvider = environment.TimeProvider,
+                    ReconnectDelay = environment.ReconnectDelay,
+                };
+        if (igate)
+        {
+            // A busy channel brings several packets a minute, far more than one station's own sends.
+            upstream!.SendBurst = 20;
+            upstream.SendInterval = TimeSpan.FromMilliseconds(200);
+        }
+
         var local = new AprsIsServerOptions
         {
             ServerName = parseResult.GetValue(_name)!,
@@ -250,10 +353,30 @@ internal sealed class ServeCommand(CliEnvironment environment)
             SoftwareName = "aprscli",
             TimeProvider = environment.TimeProvider,
         };
+        IGateOptions? igateOptions = null;
         try
         {
             upstream?.Validate();
             local.Validate();
+            if (igate)
+            {
+                var igateCall = Callsign.Parse(callsign);
+                var comment = parseResult.GetValue(_comment) is { Length: > 0 } extra
+                    ? $"{_receiveOnly} {extra}"
+                    : _receiveOnly;
+                var beacon = AprsPacket.Create(
+                    igateCall,
+                    Callsign.Parse(SendCommand.DefaultTocall),
+                    [],
+                    new PositionReport
+                    {
+                        Position = position!.Value,
+                        Symbol = symbol!.Value,
+                        Comment = comment,
+                    }
+                );
+                igateOptions = new IGateOptions(igateCall, beacon, beaconInterval);
+            }
         }
         catch (ArgumentException ex)
         {
@@ -261,7 +384,88 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, tncs, local, http, duration, quietWarning);
+        options = new ServeOptions(upstream, tncs, local, http, duration, quietWarning, igateOptions);
+        error = "";
+        return true;
+    }
+
+    private bool TryBindIGate(
+        ParseResult parseResult,
+        bool listenOnly,
+        int tncCount,
+        out int passcode,
+        out TimeSpan beaconInterval,
+        out (AprsPosition Position, AprsSymbol Symbol) place,
+        out string error
+    )
+    {
+        passcode = -1;
+        beaconInterval = default;
+        place = default;
+        if (listenOnly)
+        {
+            error = "--igate needs --callsign: the IGate's callsign, which it logs in and gates as.";
+            return false;
+        }
+
+        if (tncCount == 0)
+        {
+            error = "--igate needs a --tnc to gate from.";
+            return false;
+        }
+
+        if (parseResult.GetValue(_passcode) is { } explicitPasscode)
+        {
+            passcode = explicitPasscode;
+        }
+        else if (
+            environment.GetEnvironmentVariable(_passcodeVariable) is not { Length: > 0 } fromEnvironment
+            || !int.TryParse(fromEnvironment, NumberStyles.None, CultureInfo.InvariantCulture, out passcode)
+        )
+        {
+            passcode = -1;
+        }
+
+        if (passcode is < 0 or > 0x7FFF)
+        {
+            error =
+                $"--igate needs a verified login: set {_passcodeVariable} to the passcode for your callsign "
+                + "(aprscli passcode <callsign>).";
+            return false;
+        }
+
+        if (
+            parseResult.GetValue(_latitude) is not { } latitude
+            || parseResult.GetValue(_longitude) is not { } longitude
+        )
+        {
+            error = "--igate needs --lat and --lon: the IGate's position, which it beacons to APRS-IS.";
+            return false;
+        }
+
+        if (latitude is < -90 or > 90 || longitude is < -180 or > 180)
+        {
+            error = "--lat must be -90 to 90 and --lon -180 to 180.";
+            return false;
+        }
+
+        if (
+            parseResult.GetValue(_symbol) is not [var table, var code]
+            || !AprsSymbol.TryCreate(table, code, out var symbol)
+        )
+        {
+            error = $"--symbol must be a table and a code, for example {_defaultIGateSymbol} or I&.";
+            return false;
+        }
+
+        var intervalText = parseResult.GetValue(_beaconInterval)!;
+        if (!DurationParser.TryParse(intervalText, out beaconInterval) || beaconInterval < TimeSpan.FromMinutes(1))
+        {
+            error = $"--beacon-interval '{intervalText}' is not valid. Use 1m or more, for example 30m.";
+            return false;
+        }
+
+        place = (new AprsPosition(latitude, longitude), symbol);
         error = "";
         return true;
     }
@@ -312,7 +516,15 @@ internal sealed class ServeCommand(CliEnvironment environment)
         {
             try
             {
-                await connection.StartAsync(run.Token);
+                var login = await connection.StartAsync(run.Token);
+                if (options.IGate is not null && login.Status != LoginStatus.Verified)
+                {
+                    await environment.Error.WriteLineAsync(
+                        $"aprscli: the server did not accept the passcode for {options.Upstream!.Callsign}, so it "
+                            + "would drop what the IGate gates. Check APRS_PASSCODE (aprscli passcode <callsign>)."
+                    );
+                    return ExitCodes.LoginFailed;
+                }
             }
             catch (OperationCanceledException) when (run.IsCancellationRequested)
             {
@@ -343,10 +555,30 @@ internal sealed class ServeCommand(CliEnvironment environment)
         var described = new List<string>();
         if (connection is not null)
         {
+            // Without a filter (an IGate that only uploads) the server sends little, but its lines must still be read.
             sources.Add(feed.AddSource(AprsIsSource, PacketsAsync(connection.ReadLinesAsync(run.Token))));
             health.AddSource(AprsIsSource, () => connection.State == AprsIsConnectionState.Connected);
-            described.Add($"{options.Upstream!.Endpoint} ({options.Upstream.Filter})");
+            if (options.Upstream!.Filter is { } upstreamFilter)
+            {
+                described.Add($"{options.Upstream.Endpoint} ({upstreamFilter})");
+            }
         }
+
+        var uplink = options.IGate is null
+            ? null
+            : new IGateUplink(
+                connection!,
+                new RfToInternetGate(
+                    options.IGate.Callsign,
+                    new RfToInternetGateOptions { TimeProvider = environment.TimeProvider }
+                ),
+                options.IGate.Beacon,
+                options.IGate.BeaconInterval,
+                environment.TimeProvider,
+                logger
+            );
+        uplink?.AddTo(health);
+        var uploading = uplink?.RunAsync(run.Token) ?? Task.CompletedTask;
 
         var tncs = new List<KissConnection>();
         try
@@ -357,7 +589,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 tncs.Add(tnc);
                 var name = address.ToString();
                 TncCommand.ReportConnection(tnc, name, environment.Error);
-                sources.Add(feed.AddSource(name, tnc.ReadPacketsAsync(run.Token)));
+                var heard = tnc.ReadPacketsAsync(run.Token);
+                sources.Add(feed.AddSource(name, uplink is null ? heard : uplink.TapAsync(heard)));
                 health.AddSource(name, () => tnc.IsConnected, () => tnc.IsQuiet, () => tnc.IsSendingText);
                 described.Add($"the TNC at {name}");
             }
@@ -371,6 +604,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
                             : $", and on http://{web.LocalEndPoint} (WebSocket clients at /aprs, health at /health)"
                     )
             );
+            if (options.IGate is { } igate)
+            {
+                await environment.Error.WriteLineAsync(
+                    $"aprscli: gating what the TNCs hear to {options.Upstream!.Endpoint} as {igate.Callsign} "
+                        + $"(receive-only, qAO), beaconing every {DurationParser.Format(igate.BeaconInterval)}"
+                );
+            }
 
             try
             {
@@ -383,6 +623,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
             }
 
             await feed.DisposeAsync();
+            await uploading;
         }
         finally
         {
@@ -408,6 +649,20 @@ internal sealed class ServeCommand(CliEnvironment environment)
                             .OrderBy(c => c.Key == AprsIsSource ? 0 : 1)
                             .ThenBy(c => c.Key, StringComparer.Ordinal)
                             .Select(c => $"{c.Key} {c.Value.Packets} ({c.Value.Duplicates} duplicates)")
+                    )
+            );
+        }
+
+        if (uplink is not null)
+        {
+            var refused = uplink.RefusedCounts().ToList();
+            await environment.Error.WriteLineAsync(
+                $"aprscli: gated {uplink.Gated} packets to APRS-IS ({uplink.Sent} sent, {uplink.Dropped} dropped), "
+                    + $"{uplink.Beacons} beacons; refused "
+                    + (
+                        refused.Count == 0
+                            ? "none"
+                            : string.Join(", ", refused.Select(r => $"{IGateUplink.ReasonName(r.Reason)} {r.Count}"))
                     )
             );
         }
