@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Read a GPS through gpsd, on this machine or another, as GPS fixes: position, time, speed, course, altitude, satellites and whether there is a 2D or 3D fix. Reconnects when gpsd restarts.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+    <None Include="README.md" Pack="true" PackagePath="/" />
+    <InternalsVisibleTo Include="AprsNet.Gps.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Packets/AprsNet.Packets.csproj" />
+  </ItemGroup>
+</Project>
