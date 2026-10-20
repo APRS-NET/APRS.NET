@@ -35,6 +35,7 @@ dotnet add package AprsNet.Kiss.Serial --prerelease
 dotnet add package AprsNet.Messaging --prerelease
 dotnet add package AprsNet.Beacons --prerelease
 dotnet add package AprsNet.Gps --prerelease
+dotnet add package AprsNet.IGate --prerelease
 dotnet add package AprsNet.Corpus --prerelease
 dotnet add package AprsNet.Gateway --prerelease
 dotnet add package AprsNet.Extensions.DependencyInjection --prerelease
@@ -71,6 +72,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `src/AprsNet.Messaging`       | Message conversations: IDs, retries until an ack, reply-acks, each message delivered once |
 | `src/AprsNet.Beacons`         | Beacon schedules: when to beacon next and why; dead reckoning             |
 | `src/AprsNet.Gps`             | A GPS through gpsd, on this machine or another, with reconnects           |
+| `src/AprsNet.IGate`           | IGate rules: which packets heard on RF go to APRS-IS, and why not         |
 | `src/AprsNet.Corpus`          | Packet captures for a test corpus: the line format, and an anonymizer     |
 | `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
 | `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |
