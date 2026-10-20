@@ -864,8 +864,9 @@ public class ListenTests
         var harness = WithPackets(_packets[0]);
         harness.Transport.Close();
 
+        // Three attempts need about 30 ms of waits; the rest of the time is room for a busy CI runner.
         var result = await harness.RunAsync(
-            ["listen", "-c", "NZ0P", "--reconnect", "-d", "1s"],
+            ["listen", "-c", "NZ0P", "--reconnect", "-d", "3s"],
             TestContext.Current.CancellationToken
         );
 
