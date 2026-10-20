@@ -92,6 +92,24 @@ public sealed class GatewayHealthTests
     }
 
     [Fact]
+    public void CountersAreReportedWithEveryCheck()
+    {
+        var gated = 0L;
+        var health = new GatewayHealth();
+        health.AddSource("tnc", () => false);
+        health.AddCounter("igate.gated", () => gated);
+        health.AddCounter("broken", () => throw new InvalidOperationException());
+        Assert.Throws<ArgumentException>(() => health.AddCounter("igate.gated", () => 0));
+
+        gated = 12;
+        var report = health.Check();
+
+        Assert.Equal(GatewayHealthStatus.Unhealthy, report.Status); // counters don't change the status
+        Assert.Equal(new Dictionary<string, long> { ["igate.gated"] = 12 }, report.Counters);
+        Assert.Empty(new GatewayHealth().Check().Counters);
+    }
+
+    [Fact]
     public async Task TheFeedSaysWhenEachSourceLastDeliveredAPacket()
     {
         await using var server = Server();
@@ -124,6 +142,7 @@ public sealed class GatewayHealthTests
         var health = new GatewayHealth(timeProvider: _time);
         health.AddSource("aprs-is", () => oneUp);
         health.AddSource("tnc", () => false, () => true, () => true);
+        health.AddCounter("igate.gated", () => 7);
         await using var web = new GatewayWebServer(
             hub,
             new GatewayWebServerOptions { EndPoint = new(IPAddress.Loopback, 0), Health = health }
@@ -148,6 +167,7 @@ public sealed class GatewayHealthTests
             JsonValueKind.Null,
             body.GetProperty("sources").GetProperty("tnc").GetProperty("lastPacket").ValueKind
         );
+        Assert.Equal(7, body.GetProperty("counters").GetProperty("igate.gated").GetInt64());
     }
 
     [Fact]

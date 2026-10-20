@@ -18,6 +18,7 @@ public sealed class GatewayHealth
         string,
         (Func<bool> IsConnected, Func<bool>? IsQuiet, Func<bool>? IsProtocolMismatch)
     > _sources = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Func<long>> _counters = new(StringComparer.Ordinal);
     private readonly GatewayFeed? _feed;
     private readonly TimeProvider _timeProvider;
 
@@ -63,9 +64,24 @@ public sealed class GatewayHealth
     public bool RemoveSource(string name) => _sources.TryRemove(name, out _);
 
     /// <summary>
+    /// Adds a count to report with every check, such as the packets an IGate has gated (<c>igate.gated</c>). It says
+    /// what the gateway has done, and doesn't change the status. Keep the read quick.
+    /// </summary>
+    /// <exception cref="ArgumentException">A counter with that name is already added, or the name is empty.</exception>
+    public void AddCounter(string name, Func<long> read)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(read);
+        if (!_counters.TryAdd(name, read))
+        {
+            throw new ArgumentException($"A counter named '{name}' is already added.", nameof(name));
+        }
+    }
+
+    /// <summary>
     /// Checks every source now. Healthy when all are up (or there are none), degraded when some are, and unhealthy when
     /// none are. A source is up when it is connected and not speaking the wrong protocol. A check that throws counts as
-    /// not connected, not quiet and no mismatch.
+    /// not connected, not quiet and no mismatch; a counter whose read throws is left out.
     /// </summary>
     public GatewayHealthReport Check()
     {
@@ -84,7 +100,20 @@ public sealed class GatewayHealth
             up == sources.Count ? GatewayHealthStatus.Healthy
             : up > 0 ? GatewayHealthStatus.Degraded
             : GatewayHealthStatus.Unhealthy;
-        return new GatewayHealthReport(status, sources, _timeProvider.GetUtcNow());
+        var counters = new SortedDictionary<string, long>(StringComparer.Ordinal);
+        foreach (var (name, read) in _counters)
+        {
+            try
+            {
+                counters[name] = read();
+            }
+            catch (Exception)
+            {
+                // Left out, as a source check that throws counts as down.
+            }
+        }
+
+        return new GatewayHealthReport(status, sources, _timeProvider.GetUtcNow()) { Counters = counters };
     }
 
     // A check that throws counts as false: not connected, not known to be quiet, no known mismatch.
@@ -122,7 +151,11 @@ public sealed record GatewayHealthReport(
     GatewayHealthStatus Status,
     IReadOnlyDictionary<string, GatewaySourceHealth> Sources,
     DateTimeOffset CheckedAt
-);
+)
+{
+    /// <summary>Each counter added with <see cref="GatewayHealth.AddCounter"/>, by name; empty when there are none.</summary>
+    public IReadOnlyDictionary<string, long> Counters { get; init; } = new Dictionary<string, long>();
+}
 
 /// <summary>One source's health.</summary>
 /// <param name="IsConnected">Whether it is connected now.</param>

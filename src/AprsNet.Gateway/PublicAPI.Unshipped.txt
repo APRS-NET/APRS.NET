@@ -166,3 +166,6 @@ AprsNet.Gateway.GatewaySourceHealth.IsQuiet.init -> void
 AprsNet.Gateway.GatewayHealth.AddSource(string! name, System.Func<bool>! isConnected, System.Func<bool>? isQuiet, System.Func<bool>? isProtocolMismatch) -> void
 AprsNet.Gateway.GatewaySourceHealth.IsProtocolMismatch.get -> bool
 AprsNet.Gateway.GatewaySourceHealth.IsProtocolMismatch.init -> void
+AprsNet.Gateway.GatewayHealth.AddCounter(string! name, System.Func<long>! read) -> void
+AprsNet.Gateway.GatewayHealthReport.Counters.get -> System.Collections.Generic.IReadOnlyDictionary<string!, long>!
+AprsNet.Gateway.GatewayHealthReport.Counters.init -> void

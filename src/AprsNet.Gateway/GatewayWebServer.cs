@@ -246,6 +246,17 @@ public sealed class GatewayWebServer : IAsyncDisposable
             }
 
             json.WriteEndObject();
+            if (report.Counters.Count > 0)
+            {
+                json.WriteStartObject("counters");
+                foreach (var (name, value) in report.Counters)
+                {
+                    json.WriteNumber(name, value);
+                }
+
+                json.WriteEndObject();
+            }
+
             json.WriteEndObject();
         }
 
