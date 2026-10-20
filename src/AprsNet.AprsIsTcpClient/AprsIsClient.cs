@@ -198,13 +198,15 @@ public sealed class AprsIsClient : IAsyncDisposable
     /// </exception>
     /// <exception cref="ArgumentException">
     /// The packet has no header, holds a line break or NUL byte, is longer than an APRS-IS line (510 bytes), or
-    /// already carries a q-construct (it was received from APRS-IS, and sending it again would loop it).
+    /// already carries a q-construct (it was received from APRS-IS, and sending it again would loop it). The one
+    /// q-construct allowed is an IGate's: a packet heard on RF ending its path with <c>qAR</c> or <c>qAO</c> and the
+    /// login callsign, as <c>RfToInternetGate</c> in <c>AprsNet.IGate</c> builds it.
     /// </exception>
     public async ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(packet);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
-        CheckSendable(packet);
+        CheckSendable(packet, _options.Callsign);
         if (_options.ListenOnly)
         {
             throw ListenOnlyRefusal(_options.Callsign);
@@ -233,7 +235,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         _logger.PacketSent(line);
     }
 
-    private static void CheckSendable(AprsPacket packet)
+    private static void CheckSendable(AprsPacket packet, string login)
     {
         if (!packet.HasHeader)
         {
@@ -254,7 +256,11 @@ public sealed class AprsIsClient : IAsyncDisposable
             );
         }
 
-        if (packet.Path is { } path && path.Any(entry => entry.Kind is PathEntryKind.QConstruct))
+        if (
+            packet.Path is { } path
+            && path.Any(entry => entry.Kind is PathEntryKind.QConstruct)
+            && !IsGated(path, login)
+        )
         {
             throw new ArgumentException(
                 "The packet already carries an APRS-IS q-construct, so it came from APRS-IS; sending it again would "
@@ -263,6 +269,16 @@ public sealed class AprsIsClient : IAsyncDisposable
             );
         }
     }
+
+    /// <summary>
+    /// Whether <paramref name="path"/> is an IGate's for a packet heard on RF: its only q-construct is <c>qAR</c> or
+    /// <c>qAO</c>, second to last, followed by <paramref name="login"/>.
+    /// </summary>
+    private static bool IsGated(IReadOnlyList<PathEntry> path, string login) =>
+        path.Count >= 2
+        && path[^2].Station.Value is "qAR" or "qAO"
+        && path[^1].Station.Value.Equals(login, StringComparison.OrdinalIgnoreCase)
+        && path.Count(entry => entry.Kind is PathEntryKind.QConstruct) == 1;
 
     /// <summary>APRS-IS lines are at most 512 bytes including the CR LF.</summary>
     private const int MaxLineLength = 510;

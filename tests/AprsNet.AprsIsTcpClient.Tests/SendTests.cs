@@ -106,6 +106,9 @@ public class SendTests
 
     [Theory]
     [InlineData("N0CALL>APRS,TCPIP*,qAC,T2TEST:>relayed", "q-construct")]
+    [InlineData("N0CALL>APRS,WIDE1-1,qAR,N0CALL-10:>gated by another IGate", "q-construct")]
+    [InlineData("N0CALL>APRS,qAS,N0CALL-9:>passed on by a server", "q-construct")]
+    [InlineData("N0CALL>APRS,qAR,N0CALL-9,T2TEST:>more after the IGate", "q-construct")]
     [InlineData("N0CALL>APRS:>one\nline", "line break")]
     [InlineData("not a packet", "header")]
     public async Task RefusesPacketsThatCannotGoOnTheConnection(string line, string reason)
@@ -119,6 +122,19 @@ public class SendTests
 
         Assert.Contains(reason, ex.Message, StringComparison.Ordinal);
         Assert.Single(transport.Written);
+    }
+
+    [Theory]
+    [InlineData("N0CALL>APRS,WIDE1-1,qAO,N0CALL-9:>heard on RF")]
+    [InlineData("N0CALL>APRS,WIDE1*,WIDE2-1,qAR,n0call-9:>heard on RF")]
+    public async Task SendsWhatTheLoginGatedFromRf(string line)
+    {
+        var (client, transport) = await Connected();
+        await using var _ = client;
+
+        await client.SendAsync(AprsPacket.Parse(line), TestContext.Current.CancellationToken);
+
+        Assert.Equal(line, transport.Written[^1]);
     }
 
     [Fact]
