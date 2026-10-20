@@ -7,8 +7,7 @@ public sealed class ReplayTests : IDisposable
 {
     private const string _position = "N0CALL-9>APRS,WIDE1-1:=4903.50N/07201.75W>088/036 Hi";
     private const string _badLatitude = "N0CALL>APRS,TCPIP*:!9903.50N/07201.75W-";
-    private const string _nmea =
-        "N0CALL>APRS,TCPIP*:$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A";
+    private const string _gridBeacon = "N0CALL>APRS,TCPIP*:[IO91SX] 35 miles NNW of London"; // not decoded yet
     private const string _status = "N0CALL>APRS,TCPIP*:>status text";
 
     private readonly string _directory = Directory.CreateTempSubdirectory("aprscli-replay-").FullName;
@@ -37,7 +36,7 @@ public sealed class ReplayTests : IDisposable
             "2026-10-14T05:34:02.728Z " + _position,
             "",
             _badLatitude,
-            _nmea
+            _gridBeacon
         );
 
         var result = await RunAsync(new CliHarness(), file);
@@ -70,11 +69,11 @@ public sealed class ReplayTests : IDisposable
     [Fact]
     public async Task GroupsUndecodedPacketsByDataTypeIdentifier()
     {
-        var file = WriteFile("undecoded.log", _nmea, _nmea, "N0CALL>APRS:?APRS?", "N0CALL>APRS:\x01?");
+        var file = WriteFile("undecoded.log", _gridBeacon, _gridBeacon, "N0CALL>APRS:?APRS?", "N0CALL>APRS:\x01?");
 
         var result = await RunAsync(new CliHarness(), file);
 
-        Assert.Matches(@"'\$'\s+2", result.Out);
+        Assert.Matches(@"'\['\s+2", result.Out);
         Assert.Matches(@"'\?'\s+1", result.Out);
         Assert.Matches(@"0x01\s+1", result.Out); // unprintable identifiers are shown in hex
         Assert.Contains(@"\x01?", result.Out, StringComparison.Ordinal); // and escaped in examples
@@ -122,7 +121,7 @@ public sealed class ReplayTests : IDisposable
     [Fact]
     public async Task WritesAJsonSummary()
     {
-        var file = WriteFile("summary.log", "# keepalive", _position, _badLatitude, _nmea);
+        var file = WriteFile("summary.log", "# keepalive", _position, _badLatitude, _gridBeacon);
 
         var result = await RunAsync(new CliHarness(), file, "--format", "json");
 
@@ -143,8 +142,8 @@ public sealed class ReplayTests : IDisposable
         Assert.Equal($"{file}:3", issue.GetProperty("examples")[0].GetProperty("location").GetString());
 
         var undecoded = root.GetProperty("undecoded")[0];
-        Assert.Equal("'$'", undecoded.GetProperty("identifier").GetString());
-        Assert.Equal(_nmea, undecoded.GetProperty("examples")[0].GetProperty("line").GetString());
+        Assert.Equal("'['", undecoded.GetProperty("identifier").GetString());
+        Assert.Equal(_gridBeacon, undecoded.GetProperty("examples")[0].GetProperty("line").GetString());
     }
 
     [Fact]

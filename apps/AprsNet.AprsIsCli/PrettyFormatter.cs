@@ -122,6 +122,9 @@ internal static class PrettyFormatter
                 }
 
                 break;
+            case NmeaReport nmea:
+                Nmea(fields, nmea, style);
+                break;
             case RawWeatherReport raw:
                 fields.Add(("raw wx", PacketFormatter.RawWeather(raw.Format)));
                 fields.Add(("data", Safe(raw.Data)));
@@ -394,6 +397,63 @@ internal static class PrettyFormatter
         if (message.ReplyAck is { } replyAck)
         {
             fields.Add(("reply-ack", replyAck.Length > 0 ? $"also acknowledges {Safe(replyAck)}" : "supported"));
+        }
+    }
+
+    private static void Nmea(List<(string Label, string Value)> fields, NmeaReport nmea, Style style)
+    {
+        var fix = nmea.Fix;
+        fields.Add(("nmea", $"{Safe(nmea.Sentence.Talker + nmea.Sentence.Type)}, {PacketFormatter.FixMode(fix)}"));
+        if (fix.Position is { } position)
+        {
+            fields.Add(
+                (
+                    "position",
+                    style.Bold(
+                        string.Create(
+                            CultureInfo.InvariantCulture,
+                            $"{position.Latitude:0.00000}  {position.Longitude:0.00000}"
+                        )
+                    )
+                )
+            );
+        }
+
+        if (PacketFormatter.FixTime(fix) is { } time)
+        {
+            fields.Add(("time", time));
+        }
+
+        if (fix.Course is not null || fix.SpeedKnots is not null)
+        {
+            var course = fix.Course is { } c ? c.ToString("000", CultureInfo.InvariantCulture) + "°" : "course unknown";
+            var speed = fix.SpeedKnots is { } s
+                ? string.Create(CultureInfo.InvariantCulture, $" at {s:0.#} kn ({s * 1.852:0.#} km/h)")
+                : "";
+            fields.Add(("course", course + speed));
+        }
+
+        if (fix.AltitudeMeters is { } altitude)
+        {
+            fields.Add(
+                (
+                    "altitude",
+                    string.Create(CultureInfo.InvariantCulture, $"{altitude:N0} m ({altitude / 0.3048:N0} ft)")
+                )
+            );
+        }
+
+        if (fix.Satellites is not null || fix.Hdop is not null)
+        {
+            fields.Add(
+                (
+                    "gps",
+                    string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"{fix.Satellites?.ToString(CultureInfo.InvariantCulture) ?? "?"} satellites{(fix.Hdop is { } hdop ? $", HDOP {hdop:0.0#}" : "")}"
+                    )
+                )
+            );
         }
     }
 

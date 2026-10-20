@@ -86,6 +86,9 @@ internal static class PacketFormatter
                 }
 
                 break;
+            case NmeaReport nmea:
+                Nmea(line, nmea);
+                break;
             case RawWeatherReport raw:
                 line.Append("raw weather  ").Append(RawWeather(raw.Format)).Append("  ").Append(raw.Data);
                 break;
@@ -482,6 +485,52 @@ internal static class PacketFormatter
         user.IsExperimental
             ? $"experimental, type {user.UserPacketType}"
             : $"user {user.UserId}, type {user.UserPacketType}";
+
+    private static void Nmea(StringBuilder line, NmeaReport nmea)
+    {
+        var fix = nmea.Fix;
+        line.Append("NMEA ").Append(nmea.Sentence.Talker).Append(nmea.Sentence.Type).Append("  ").Append(FixMode(fix));
+        if (fix.Position is { } position)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  {position.Latitude:0.00000} {position.Longitude:0.00000}");
+        }
+
+        if (fix.Course is not null || fix.SpeedKnots is not null)
+        {
+            line.Append("  ")
+                .Append(fix.Course is { } course ? course.ToString("000", CultureInfo.InvariantCulture) + "°" : "---");
+            if (fix.SpeedKnots is { } speed)
+            {
+                line.Append(CultureInfo.InvariantCulture, $" {speed:0.#} kn");
+            }
+        }
+
+        if (fix.AltitudeMeters is { } altitude)
+        {
+            line.Append(CultureInfo.InvariantCulture, $"  {altitude:0.#} m");
+        }
+
+        if (FixTime(fix) is { } time)
+        {
+            line.Append("  at ").Append(time);
+        }
+    }
+
+    /// <summary>Whether a GPS has a fix, in words.</summary>
+    internal static string FixMode(GpsFix fix) =>
+        fix.Mode switch
+        {
+            GpsFixMode.NoFix => "no fix",
+            GpsFixMode.Fix => "fix",
+            GpsFixMode.Fix2D => "2D fix",
+            GpsFixMode.Fix3D => "3D fix",
+            _ => "fix not given",
+        };
+
+    /// <summary>When a GPS fix was taken: the date and time, the time alone, or null.</summary>
+    internal static string? FixTime(GpsFix fix) =>
+        fix.Time?.ToString("yyyy-MM-dd HH:mm:ss 'UTC'", CultureInfo.InvariantCulture)
+        ?? fix.UtcTime?.ToString("HH:mm:ss 'UTC'", CultureInfo.InvariantCulture);
 
     internal static string RawWeather(RawWeatherFormat format) =>
         format switch

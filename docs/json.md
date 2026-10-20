@@ -83,6 +83,13 @@ characters, or null), `comment`.
 
 The carried packet, as a whole object of this format.
 
+## `nmea`
+
+A raw NMEA sentence (`$`): `talker` (`GP`, `GN` …), `sentence` (`RMC`, `GGA` …), `checksumValid` (true when there is
+no checksum), then what it says about the fix: `mode` (`unknown`, `noFix`, `fix`, `fix2D`, `fix3D`), `latitude` and
+`longitude` (null without a fix), `utcDate` (`yyyy-MM-dd`, RMC only), `utcTime` (`HH:mm:ss` with any fraction),
+`speedKnots`, `course`, `altitudeMeters`, `satellites` and `hdop`. Values the sentence doesn't give are null.
+
 ## `capabilities`, `userDefined`, `rawWeather`
 
 - `capabilities`: an array of `token` and, when given, `value`.

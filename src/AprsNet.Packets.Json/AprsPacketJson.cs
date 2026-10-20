@@ -143,6 +143,9 @@ public static class AprsPacketJson
                 json.WriteString("data", user.Data);
                 json.WriteEndObject();
                 break;
+            case NmeaReport nmea:
+                Nmea(json, nmea);
+                break;
             case RawWeatherReport raw:
                 json.WriteStartObject("rawWeather");
                 json.WriteString("format", Name(raw.Format));
@@ -434,6 +437,35 @@ public static class AprsPacketJson
         WriteNumber(json, "luminosityWattsPerSquareMeter", w.LuminosityWattsPerSquareMeter);
         WriteNumber(json, "snowLast24HoursInches", w.SnowLast24HoursInches);
         WriteNumber(json, "rainCounter", w.RainCounter);
+    }
+
+    private static void Nmea(Utf8JsonWriter json, NmeaReport nmea)
+    {
+        var fix = nmea.Fix;
+        json.WriteStartObject("nmea");
+        json.WriteString("talker", nmea.Sentence.Talker);
+        json.WriteString("sentence", nmea.Sentence.Type);
+        json.WriteBoolean("checksumValid", nmea.Sentence.IsChecksumValid);
+        json.WriteString("mode", Name(fix.Mode));
+        if (fix.Position is { } position)
+        {
+            json.WriteNumber("latitude", Math.Round(position.Latitude, 6));
+            json.WriteNumber("longitude", Math.Round(position.Longitude, 6));
+        }
+        else
+        {
+            json.WriteNull("latitude");
+            json.WriteNull("longitude");
+        }
+
+        WriteString(json, "utcDate", fix.UtcDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        WriteString(json, "utcTime", fix.UtcTime?.ToString("HH:mm:ss.FFF", CultureInfo.InvariantCulture));
+        WriteNumber(json, "speedKnots", fix.SpeedKnots);
+        WriteNumber(json, "course", fix.Course);
+        WriteNumber(json, "altitudeMeters", fix.AltitudeMeters);
+        WriteNumber(json, "satellites", fix.Satellites);
+        WriteNumber(json, "hdop", fix.Hdop);
+        json.WriteEndObject();
     }
 
     private static void WriteNumber(Utf8JsonWriter json, string name, double? value)

@@ -46,4 +46,7 @@ public enum PacketType
 
     /// <summary>User-defined data: <c>{</c>, a user ID and a packet type chosen by the sending program.</summary>
     UserDefined,
+
+    /// <summary>A raw NMEA sentence from a GPS: <c>$</c>, other than the Ultimeter's <c>$ULTW</c>.</summary>
+    Nmea,
 }

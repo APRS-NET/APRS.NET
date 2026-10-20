@@ -923,3 +923,61 @@ override AprsNet.Packets.UnrecognizedPart.GetHashCode() -> int
 static AprsNet.Packets.UnrecognizedPartCodeExtensions.Describe(this AprsNet.Packets.UnrecognizedPartCode code) -> string!
 static AprsNet.Packets.UnrecognizedPart.operator !=(AprsNet.Packets.UnrecognizedPart left, AprsNet.Packets.UnrecognizedPart right) -> bool
 static AprsNet.Packets.UnrecognizedPart.operator ==(AprsNet.Packets.UnrecognizedPart left, AprsNet.Packets.UnrecognizedPart right) -> bool
+AprsNet.Packets.GpsFix
+AprsNet.Packets.GpsFix.AltitudeMeters.get -> double?
+AprsNet.Packets.GpsFix.AltitudeMeters.init -> void
+AprsNet.Packets.GpsFix.<Clone>$() -> AprsNet.Packets.GpsFix!
+AprsNet.Packets.GpsFix.Course.get -> double?
+AprsNet.Packets.GpsFix.Course.init -> void
+AprsNet.Packets.GpsFix.Equals(AprsNet.Packets.GpsFix? other) -> bool
+AprsNet.Packets.GpsFix.GpsFix() -> void
+AprsNet.Packets.GpsFix.Hdop.get -> double?
+AprsNet.Packets.GpsFix.Hdop.init -> void
+AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFixMode.Fix = 2 -> AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFixMode.Fix2D = 3 -> AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFixMode.Fix3D = 4 -> AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFix.Mode.get -> AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFix.Mode.init -> void
+AprsNet.Packets.GpsFixMode.NoFix = 1 -> AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFixMode.Unknown = 0 -> AprsNet.Packets.GpsFixMode
+AprsNet.Packets.GpsFix.Position.get -> AprsNet.Packets.AprsPosition?
+AprsNet.Packets.GpsFix.Position.init -> void
+AprsNet.Packets.GpsFix.Satellites.get -> int?
+AprsNet.Packets.GpsFix.Satellites.init -> void
+AprsNet.Packets.GpsFix.SpeedKnots.get -> double?
+AprsNet.Packets.GpsFix.SpeedKnots.init -> void
+AprsNet.Packets.GpsFix.Time.get -> System.DateTimeOffset?
+AprsNet.Packets.GpsFix.UtcDate.get -> System.DateOnly?
+AprsNet.Packets.GpsFix.UtcDate.init -> void
+AprsNet.Packets.GpsFix.UtcTime.get -> System.TimeOnly?
+AprsNet.Packets.GpsFix.UtcTime.init -> void
+AprsNet.Packets.NmeaFixTracker
+AprsNet.Packets.NmeaFixTracker.Fix.get -> AprsNet.Packets.GpsFix!
+AprsNet.Packets.NmeaFixTracker.NmeaFixTracker() -> void
+AprsNet.Packets.NmeaFixTracker.Reset() -> void
+AprsNet.Packets.NmeaFixTracker.Update(AprsNet.Packets.NmeaSentence! sentence) -> bool
+AprsNet.Packets.NmeaReport
+AprsNet.Packets.NmeaReport.Fix.get -> AprsNet.Packets.GpsFix!
+AprsNet.Packets.NmeaReport.Sentence.get -> AprsNet.Packets.NmeaSentence!
+AprsNet.Packets.NmeaSentence
+AprsNet.Packets.NmeaSentence.Checksum.get -> byte?
+AprsNet.Packets.NmeaSentence.Fields.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Packets.NmeaSentence.Fix.get -> AprsNet.Packets.GpsFix!
+AprsNet.Packets.NmeaSentence.HasFix.get -> bool
+AprsNet.Packets.NmeaSentence.IsChecksumValid.get -> bool
+AprsNet.Packets.NmeaSentence.Issues.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.ParseIssue>!
+AprsNet.Packets.NmeaSentence.Talker.get -> string!
+AprsNet.Packets.NmeaSentence.Text.get -> string!
+AprsNet.Packets.NmeaSentence.Type.get -> string!
+AprsNet.Packets.PacketType.Nmea = 12 -> AprsNet.Packets.PacketType
+AprsNet.Packets.ParseIssueCode.InvalidNmeaField = 28 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.InvalidNmeaSentence = 26 -> AprsNet.Packets.ParseIssueCode
+AprsNet.Packets.ParseIssueCode.NmeaChecksumMismatch = 27 -> AprsNet.Packets.ParseIssueCode
+override AprsNet.Packets.GpsFix.Equals(object? obj) -> bool
+override AprsNet.Packets.GpsFix.GetHashCode() -> int
+override AprsNet.Packets.GpsFix.ToString() -> string!
+override AprsNet.Packets.NmeaSentence.ToString() -> string!
+static AprsNet.Packets.GpsFix.operator !=(AprsNet.Packets.GpsFix? left, AprsNet.Packets.GpsFix? right) -> bool
+static AprsNet.Packets.GpsFix.operator ==(AprsNet.Packets.GpsFix? left, AprsNet.Packets.GpsFix? right) -> bool
+static AprsNet.Packets.NmeaSentence.TryParse(string? text, out AprsNet.Packets.NmeaSentence? sentence) -> bool

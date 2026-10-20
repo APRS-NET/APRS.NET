@@ -29,6 +29,7 @@ public class VectorParsingTests
         ["thirdParty"] = PacketType.ThirdParty,
         ["capabilities"] = PacketType.Capabilities,
         ["userDefined"] = PacketType.UserDefined,
+        ["nmea"] = PacketType.Nmea,
         ["rawWeather"] = PacketType.Weather,
         ["unknown"] = PacketType.Unknown,
         ["invalid"] = PacketType.Unknown,
