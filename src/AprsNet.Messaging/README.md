@@ -59,6 +59,24 @@ drops a member after 12 hours without one.
 station.Send(AnsrvrCommand.Ansrvr, AnsrvrCommand.Join("NZEVENT").Text);
 ```
 
+`QueryResponder` answers the queries of APRS101 ch. 15 from what the app gives it in a `QueryState`: its position and
+status, weather, IGate capabilities, objects, the stations it has heard and the messages waiting. It does no I/O; it
+returns the payloads to send and how long to wait first. Directed queries (`?APRSP`, `?APRSD`, `?PING?` …) are answered
+straight away, general queries (`?APRS?`, `?IGATE?`, `?WX?`) after a random wait of 2 to 60 seconds and only inside
+their footprint, and each query once however many copies arrive.
+
+```csharp
+var responder = new QueryResponder(address.Source);
+if (responder.Answer(packet, new QueryState { Position = beacon, Status = status }) is { } answer)
+{
+    await Task.Delay(answer.Delay, cancellationToken);
+    foreach (var payload in answer.Payloads)
+    {
+        await SendAsync(address.Create(payload), cancellationToken);
+    }
+}
+```
+
 See [the design](https://github.com/APRS-NET/APRS.NET/blob/main/docs/design/messaging.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
