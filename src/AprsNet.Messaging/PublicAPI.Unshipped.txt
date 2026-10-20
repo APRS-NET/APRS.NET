@@ -191,3 +191,57 @@ static AprsNet.Messaging.AnsrvrCommand.Post(string! group, string! text) -> Aprs
 static AprsNet.Messaging.AnsrvrCommand.TryParse(string? text, out AprsNet.Messaging.AnsrvrCommand? command) -> bool
 static AprsNet.Messaging.BulletinSchedule.ForAnnouncement(System.TimeProvider? timeProvider = null) -> AprsNet.Messaging.BulletinSchedule!
 static AprsNet.Messaging.BulletinSchedule.ForBulletin(System.TimeProvider? timeProvider = null) -> AprsNet.Messaging.BulletinSchedule!
+AprsNet.Messaging.HeardStation
+AprsNet.Messaging.HeardStation.HeardStation() -> void
+AprsNet.Messaging.HeardStation.LastHeard.get -> System.DateTimeOffset?
+AprsNet.Messaging.HeardStation.LastHeard.init -> void
+AprsNet.Messaging.HeardStation.PacketsPerHour.get -> System.Collections.Generic.IReadOnlyList<int>!
+AprsNet.Messaging.HeardStation.PacketsPerHour.init -> void
+AprsNet.Messaging.HeardStation.Position.get -> AprsNet.Packets.AprsPosition?
+AprsNet.Messaging.HeardStation.Position.init -> void
+AprsNet.Messaging.HeardStation.Symbol.get -> AprsNet.Packets.AprsSymbol
+AprsNet.Messaging.HeardStation.Symbol.init -> void
+AprsNet.Messaging.QueryAnswer
+AprsNet.Messaging.QueryAnswer.Delay.get -> System.TimeSpan
+AprsNet.Messaging.QueryAnswer.IsGeneral.get -> bool
+AprsNet.Messaging.QueryAnswer.Kind.get -> AprsNet.Packets.QueryKind
+AprsNet.Messaging.QueryAnswer.Payloads.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.AprsPayload!>!
+AprsNet.Messaging.QueryAnswer.Querier.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.QueryResponder
+AprsNet.Messaging.QueryResponder.Answer(AprsNet.Packets.AprsPacket! packet, AprsNet.Messaging.QueryState! state) -> AprsNet.Messaging.QueryAnswer?
+AprsNet.Messaging.QueryResponder.MaximumDelay.get -> System.TimeSpan
+AprsNet.Messaging.QueryResponder.MinimumDelay.get -> System.TimeSpan
+AprsNet.Messaging.QueryResponderOptions
+AprsNet.Messaging.QueryResponderOptions.MaximumDelay.get -> System.TimeSpan
+AprsNet.Messaging.QueryResponderOptions.MaximumDelay.set -> void
+AprsNet.Messaging.QueryResponderOptions.MinimumDelay.get -> System.TimeSpan
+AprsNet.Messaging.QueryResponderOptions.MinimumDelay.set -> void
+AprsNet.Messaging.QueryResponderOptions.QueryResponderOptions() -> void
+AprsNet.Messaging.QueryResponderOptions.Random.get -> System.Random!
+AprsNet.Messaging.QueryResponderOptions.Random.set -> void
+AprsNet.Messaging.QueryResponderOptions.RepeatWindow.get -> System.TimeSpan
+AprsNet.Messaging.QueryResponderOptions.RepeatWindow.set -> void
+AprsNet.Messaging.QueryResponderOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Messaging.QueryResponderOptions.TimeProvider.set -> void
+AprsNet.Messaging.QueryResponderOptions.Validate() -> void
+AprsNet.Messaging.QueryResponder.QueryResponder(AprsNet.Packets.Callsign! station, AprsNet.Messaging.QueryResponderOptions? options = null) -> void
+AprsNet.Messaging.QueryResponder.RepeatWindow.get -> System.TimeSpan
+AprsNet.Messaging.QueryResponder.Station.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.QueryState
+AprsNet.Messaging.QueryState.Capabilities.get -> AprsNet.Packets.CapabilitiesReport?
+AprsNet.Messaging.QueryState.Capabilities.init -> void
+AprsNet.Messaging.QueryState.HeardDirect.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.Callsign!>!
+AprsNet.Messaging.QueryState.HeardDirect.init -> void
+AprsNet.Messaging.QueryState.Heard.get -> System.Func<AprsNet.Packets.Callsign!, AprsNet.Messaging.HeardStation?>?
+AprsNet.Messaging.QueryState.Heard.init -> void
+AprsNet.Messaging.QueryState.MessagesWaiting.get -> System.Func<AprsNet.Packets.Callsign!, System.Collections.Generic.IReadOnlyList<AprsNet.Packets.MessagePayload!>!>?
+AprsNet.Messaging.QueryState.MessagesWaiting.init -> void
+AprsNet.Messaging.QueryState.Objects.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PositionedPayload!>!
+AprsNet.Messaging.QueryState.Objects.init -> void
+AprsNet.Messaging.QueryState.Position.get -> AprsNet.Packets.PositionedPayload?
+AprsNet.Messaging.QueryState.Position.init -> void
+AprsNet.Messaging.QueryState.QueryState() -> void
+AprsNet.Messaging.QueryState.Status.get -> AprsNet.Packets.StatusReport?
+AprsNet.Messaging.QueryState.Status.init -> void
+AprsNet.Messaging.QueryState.Weather.get -> AprsNet.Packets.AprsPayload?
+AprsNet.Messaging.QueryState.Weather.init -> void
