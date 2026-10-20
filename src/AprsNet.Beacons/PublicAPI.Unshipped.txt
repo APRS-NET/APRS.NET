@@ -35,3 +35,41 @@ override AprsNet.Beacons.BeaconDue.GetHashCode() -> int
 static AprsNet.Beacons.BeaconDue.operator !=(AprsNet.Beacons.BeaconDue left, AprsNet.Beacons.BeaconDue right) -> bool
 static AprsNet.Beacons.BeaconDue.operator ==(AprsNet.Beacons.BeaconDue left, AprsNet.Beacons.BeaconDue right) -> bool
 static readonly AprsNet.Beacons.FixedBeaconSchedule.MaxStartDelay -> System.TimeSpan
+AprsNet.Beacons.BeaconReason.Drift = 4 -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.BeaconSchedule.Drifted() -> void
+AprsNet.Beacons.DeadReckoning
+AprsNet.Beacons.DeadReckoning.At.get -> System.DateTimeOffset
+AprsNet.Beacons.DeadReckoning.At.init -> void
+AprsNet.Beacons.DeadReckoning.Course.get -> double
+AprsNet.Beacons.DeadReckoning.DeadReckoning(AprsNet.Packets.AprsPosition Position, double Course, double SpeedKnots, System.DateTimeOffset At) -> void
+AprsNet.Beacons.DeadReckoning.DeadReckoning() -> void
+AprsNet.Beacons.DeadReckoning.Deconstruct(out AprsNet.Packets.AprsPosition Position, out double Course, out double SpeedKnots, out System.DateTimeOffset At) -> void
+AprsNet.Beacons.DeadReckoning.DistanceKmAt(System.DateTimeOffset time) -> double
+AprsNet.Beacons.DeadReckoning.Equals(AprsNet.Beacons.DeadReckoning other) -> bool
+AprsNet.Beacons.DeadReckoningError
+AprsNet.Beacons.DeadReckoningError.Assumed.get -> AprsNet.Packets.AprsPosition
+AprsNet.Beacons.DeadReckoningError.Assumed.init -> void
+AprsNet.Beacons.DeadReckoning.ErrorAt(AprsNet.Packets.AprsPosition actual, System.DateTimeOffset time) -> AprsNet.Beacons.DeadReckoningError
+AprsNet.Beacons.DeadReckoningError.Bearing.get -> double
+AprsNet.Beacons.DeadReckoningError.Bearing.init -> void
+AprsNet.Beacons.DeadReckoningError.DeadReckoningError(double DistanceKm, double Bearing, AprsNet.Packets.AprsPosition Assumed) -> void
+AprsNet.Beacons.DeadReckoningError.DeadReckoningError() -> void
+AprsNet.Beacons.DeadReckoningError.Deconstruct(out double DistanceKm, out double Bearing, out AprsNet.Packets.AprsPosition Assumed) -> void
+AprsNet.Beacons.DeadReckoningError.DistanceKm.get -> double
+AprsNet.Beacons.DeadReckoningError.DistanceKm.init -> void
+AprsNet.Beacons.DeadReckoningError.Equals(AprsNet.Beacons.DeadReckoningError other) -> bool
+AprsNet.Beacons.DeadReckoning.PositionAt(System.DateTimeOffset time) -> AprsNet.Packets.AprsPosition
+AprsNet.Beacons.DeadReckoning.Position.get -> AprsNet.Packets.AprsPosition
+AprsNet.Beacons.DeadReckoning.Position.init -> void
+AprsNet.Beacons.DeadReckoning.SpeedKnots.get -> double
+~override AprsNet.Beacons.DeadReckoning.Equals(object obj) -> bool
+~override AprsNet.Beacons.DeadReckoningError.Equals(object obj) -> bool
+override AprsNet.Beacons.DeadReckoningError.GetHashCode() -> int
+~override AprsNet.Beacons.DeadReckoningError.ToString() -> string
+override AprsNet.Beacons.DeadReckoning.GetHashCode() -> int
+~override AprsNet.Beacons.DeadReckoning.ToString() -> string
+static AprsNet.Beacons.DeadReckoningError.operator !=(AprsNet.Beacons.DeadReckoningError left, AprsNet.Beacons.DeadReckoningError right) -> bool
+static AprsNet.Beacons.DeadReckoningError.operator ==(AprsNet.Beacons.DeadReckoningError left, AprsNet.Beacons.DeadReckoningError right) -> bool
+static AprsNet.Beacons.DeadReckoning.operator !=(AprsNet.Beacons.DeadReckoning left, AprsNet.Beacons.DeadReckoning right) -> bool
+static AprsNet.Beacons.DeadReckoning.operator ==(AprsNet.Beacons.DeadReckoning left, AprsNet.Beacons.DeadReckoning right) -> bool
+static AprsNet.Beacons.DeadReckoning.TryFromReport(AprsNet.Packets.PositionedPayload! report, System.DateTimeOffset at, out AprsNet.Beacons.DeadReckoning deadReckoning) -> bool

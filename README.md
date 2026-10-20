@@ -68,7 +68,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit and a KISS TCP server |
 | `src/AprsNet.Kiss.Serial`     | KISS TNCs on a serial port, reopened after an unplug, and the ports present |
 | `src/AprsNet.Messaging`       | Message conversations: IDs, retries until an ack, reply-acks, each message delivered once |
-| `src/AprsNet.Beacons`         | Beacon schedules: when to beacon next and why, fixed or decaying          |
+| `src/AprsNet.Beacons`         | Beacon schedules: when to beacon next and why; dead reckoning             |
 | `src/AprsNet.Corpus`          | Packet captures for a test corpus: the line format, and an anonymizer     |
 | `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
 | `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |

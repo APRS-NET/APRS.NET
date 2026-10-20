@@ -14,6 +14,11 @@ public enum BeaconReason
 
     /// <summary>The content changed, so it should go out now.</summary>
     Changed,
+
+    /// <summary>
+    /// The station has gone too far from where its last beacon makes others assume it is (<see cref="DeadReckoning"/>).
+    /// </summary>
+    Drift,
 }
 
 /// <summary>When the next beacon is due, and why.</summary>
@@ -109,6 +114,27 @@ public abstract class BeaconSchedule
         {
             var now = Time.GetUtcNow();
             _next = OnChanged(now);
+        }
+    }
+
+    /// <summary>
+    /// Tells the schedule the station has drifted too far from where its last beacon makes others assume it is, so it
+    /// asks for a beacon now (<see cref="BeaconReason.Drift"/>). Otherwise the same as <see cref="Changed"/>.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// if (lastBeacon.ErrorAt(gpsFix, now).DistanceKm > 0.5)
+    /// {
+    ///     schedule.Drifted();
+    /// }
+    /// </code>
+    /// </example>
+    public void Drifted()
+    {
+        lock (_lock)
+        {
+            var now = Time.GetUtcNow();
+            _next = OnChanged(now) with { Reason = BeaconReason.Drift };
         }
     }
 

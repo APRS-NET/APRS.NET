@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>When an APRS station should beacon next, and why: fixed intervals with a random start, and decay schedules for objects and changed information. No I/O; driven by a TimeProvider.</Description>
+    <Description>When an APRS station should beacon next, and why: fixed intervals with a random start, and decay schedules for objects and changed information, and dead reckoning from the last beacon. No I/O; driven by a TimeProvider.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="MinVer" PrivateAssets="all" />
     <None Include="README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsNet.Packets/AprsNet.Packets.csproj" />
   </ItemGroup>
 </Project>
