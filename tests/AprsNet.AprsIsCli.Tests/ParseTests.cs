@@ -45,6 +45,28 @@ public sealed class ParseTests : IDisposable
     }
 
     [Fact]
+    public async Task PrintsWhatARawNmeaSentenceSays()
+    {
+        var result = await RunAsync(
+            new CliHarness(),
+            "--format",
+            "decoded",
+            "N0CALL>APRS:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+            "N0CALL>APRS:$GPGGA,102705,5157.9762,N,00029.3256,W,1,04,2.0,75.7,M,47.6,M,,*62",
+            "N0CALL>APRS:$GPRMC,063909,V,,,,,,,291099,,*3E"
+        );
+
+        Assert.Equal(
+            [
+                "N0CALL>APRS  NMEA GPRMC  fix  33.82384 -117.00620  089° 43 kn  at 1999-10-29 06:39:09 UTC",
+                "N0CALL>APRS  NMEA GPGGA  fix  51.96627 -0.48876  75.7 m  at 10:27:05 UTC",
+                "N0CALL>APRS  NMEA GPRMC  no fix  at 1999-10-29 06:39:09 UTC",
+            ],
+            OutputLines(result)
+        );
+    }
+
+    [Fact]
     public async Task PrintsCapabilitiesUserDefinedDataAndRawWeather()
     {
         var result = await RunAsync(

@@ -92,4 +92,13 @@ public enum ParseIssueCode
     /// <c>EL-</c> nodes); the object is still read.
     /// </summary>
     UnpaddedObjectName,
+
+    /// <summary>A <c>$</c> packet is not an NMEA sentence: <c>$</c>, an address of letters and digits, then a comma.</summary>
+    InvalidNmeaSentence,
+
+    /// <summary>An NMEA sentence's checksum doesn't match it; the sentence is still read.</summary>
+    NmeaChecksumMismatch,
+
+    /// <summary>An NMEA field can't be read (a time, number or coordinate); it is left out of the fix.</summary>
+    InvalidNmeaField,
 }

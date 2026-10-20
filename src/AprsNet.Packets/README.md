@@ -38,8 +38,24 @@ and items with the weather station symbol (`PositionedPayload.Weather`), and in 
 (`WeatherReport`); raw weather station data is recognised as `RawWeatherReport` (the station format and its data,
 which APRS101 does not lay out). Station capabilities such as an IGate's `<IGATE,MSG_CNT=0,LOC_CNT=1` are decoded as
 `CapabilitiesReport`, and user-defined packets (`{`) as `UserDefinedPayload` (user ID, packet type and the data as
-sent). Other packet types (queries, raw NMEA, third-party…) come back with `Outcome == ParseOutcome.Unsupported`
-until their decoders land.
+sent). Raw NMEA (`$GPRMC` …) is decoded as `NmeaReport`: the sentence and the `GpsFix` it gives. Other packet types
+(general queries, grid beacons…) come back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+
+`NmeaSentence` and `NmeaFixTracker` also read a GPS's own output. Reading the serial port or socket stays in the app:
+
+```csharp
+var gps = new NmeaFixTracker();
+while (await reader.ReadLineAsync() is { } line)
+{
+    if (NmeaSentence.TryParse(line, out var sentence) && gps.Update(sentence))
+    {
+        Console.WriteLine($"{gps.Fix.Mode} {gps.Fix.Position} {gps.Fix.SpeedKnots} kn at {gps.Fix.Time}");
+    }
+}
+```
+
+GGA, RMC, GLL, VTG and GSA give a fix, from any talker (`GP`, `GN`, `GL`, `GA`, `GB`). A wrong checksum or a field
+that can't be read is a warning in `Issues`, never an exception, and the tracker ignores a damaged sentence.
 
 `Unrecognized` lists the parts of a packet that parsed but weren't understood, each with a stable code and the
 bytes it covers in `Raw`. Unlike `Issues`, they are not errors, and the packet is still decoded. The codes cover:

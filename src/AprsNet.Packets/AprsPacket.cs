@@ -314,6 +314,7 @@ public sealed partial class AprsPacket
             PacketType.Weather => WeatherDecoder.Decode(information, offset, issues),
             PacketType.Capabilities => CapabilitiesDecoder.Decode(information),
             PacketType.UserDefined => UserDefinedDecoder.Decode(information, offset, issues),
+            PacketType.Nmea => Nmea(information, offset, issues),
             _ => null,
         };
 
@@ -342,6 +343,19 @@ public sealed partial class AprsPacket
     }
 
     private static ParseIssue Error(ParseIssueCode code, int offset) => new(code, ParseIssueSeverity.Error, offset);
+
+    /// <summary>Reads a raw NMEA sentence; its warnings are moved to where the sentence sits in Raw.</summary>
+    private static NmeaReport? Nmea(ReadOnlyMemory<byte> information, int offset, List<ParseIssue> issues)
+    {
+        if (NmeaSentence.Parse(information.Span) is not { } sentence)
+        {
+            issues.Add(Error(ParseIssueCode.InvalidNmeaSentence, offset));
+            return null;
+        }
+
+        issues.AddRange(sentence.Issues.Select(issue => issue with { Offset = offset + issue.Offset }));
+        return new NmeaReport(sentence);
+    }
 
     private static Callsign Station(byte[] raw, int start, int end, List<ParseIssue> issues)
     {
@@ -378,6 +392,7 @@ public sealed partial class AprsPacket
                 (byte)'}' => PacketType.ThirdParty,
                 (byte)'<' => PacketType.Capabilities,
                 (byte)'{' => PacketType.UserDefined,
+                (byte)'$' => PacketType.Nmea,
                 (byte)'T' when information.Length > 1 && information[1] == (byte)'#' => PacketType.Telemetry,
                 _ => PacketType.Unknown,
             };

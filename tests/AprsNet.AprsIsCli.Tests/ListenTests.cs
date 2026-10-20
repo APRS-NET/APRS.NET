@@ -238,8 +238,17 @@ public class ListenTests
         Assert.Contains("status    \"^B7\"", blocks[1], StringComparison.Ordinal);
         Assert.Contains("locator   IO91SX", blocks[1], StringComparison.Ordinal);
         Assert.Contains("beam      110°, 490 W ERP", blocks[1], StringComparison.Ordinal);
-        Assert.Contains("unknown   not decoded yet", blocks[2], StringComparison.Ordinal);
-        Assert.Contains("data      $GPRMC,123519", blocks[2], StringComparison.Ordinal);
+        Assert.Equal(
+            string.Join(
+                Environment.NewLine,
+                "12:00:00  N0CALL → APRS",
+                "          nmea      GPRMC, fix",
+                "          position  48.11730  11.51667",
+                "          time      1994-03-23 12:35:19 UTC",
+                "          course    084° at 22.4 kn (41.5 km/h)"
+            ),
+            blocks[2]
+        );
         Assert.Contains(
             "station   25 W, antenna 20 ft, 3 dBi toward 090°, range 7.9 mi",
             blocks[3],

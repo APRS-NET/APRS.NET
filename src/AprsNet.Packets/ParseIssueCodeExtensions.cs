@@ -36,6 +36,9 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.InvalidThirdParty => "The third-party packet after '}' has no SOURCE>DESTINATION: header.",
             ParseIssueCode.ThirdPartyTooDeep => "Third-party packets are nested too deeply to unwrap.",
             ParseIssueCode.UnpaddedObjectName => "The object name is not padded to 9 characters; it is still read.",
+            ParseIssueCode.InvalidNmeaSentence => "The '$' packet is not an NMEA sentence.",
+            ParseIssueCode.NmeaChecksumMismatch => "The NMEA sentence's checksum doesn't match; it is still read.",
+            ParseIssueCode.InvalidNmeaField => "An NMEA field can't be read; it is left out of the fix.",
             _ => code.ToString(),
         };
 }
