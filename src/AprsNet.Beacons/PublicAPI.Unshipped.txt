@@ -73,3 +73,34 @@ static AprsNet.Beacons.DeadReckoningError.operator ==(AprsNet.Beacons.DeadReckon
 static AprsNet.Beacons.DeadReckoning.operator !=(AprsNet.Beacons.DeadReckoning left, AprsNet.Beacons.DeadReckoning right) -> bool
 static AprsNet.Beacons.DeadReckoning.operator ==(AprsNet.Beacons.DeadReckoning left, AprsNet.Beacons.DeadReckoning right) -> bool
 static AprsNet.Beacons.DeadReckoning.TryFromReport(AprsNet.Packets.PositionedPayload! report, System.DateTimeOffset at, out AprsNet.Beacons.DeadReckoning deadReckoning) -> bool
+AprsNet.Beacons.BeaconReason.Turn = 5 -> AprsNet.Beacons.BeaconReason
+AprsNet.Beacons.SmartBeaconSchedule
+AprsNet.Beacons.SmartBeaconSchedule.IntervalAt(double speedKnots) -> System.TimeSpan
+AprsNet.Beacons.SmartBeaconSchedule.Settings.get -> AprsNet.Beacons.SmartBeaconSettings!
+AprsNet.Beacons.SmartBeaconSchedule.SmartBeaconSchedule(AprsNet.Beacons.SmartBeaconSettings? settings = null, System.TimeProvider? timeProvider = null) -> void
+AprsNet.Beacons.SmartBeaconSchedule.TurnThresholdAt(double speedKnots) -> double
+AprsNet.Beacons.SmartBeaconSchedule.Update(AprsNet.Packets.GpsFix! fix) -> void
+AprsNet.Beacons.SmartBeaconSettings
+AprsNet.Beacons.SmartBeaconSettings.<Clone>$() -> AprsNet.Beacons.SmartBeaconSettings!
+AprsNet.Beacons.SmartBeaconSettings.Equals(AprsNet.Beacons.SmartBeaconSettings? other) -> bool
+AprsNet.Beacons.SmartBeaconSettings.FastRate.get -> System.TimeSpan
+AprsNet.Beacons.SmartBeaconSettings.FastRate.init -> void
+AprsNet.Beacons.SmartBeaconSettings.FastSpeedKnots.get -> double
+AprsNet.Beacons.SmartBeaconSettings.FastSpeedKnots.init -> void
+AprsNet.Beacons.SmartBeaconSettings.SlowRate.get -> System.TimeSpan
+AprsNet.Beacons.SmartBeaconSettings.SlowRate.init -> void
+AprsNet.Beacons.SmartBeaconSettings.SlowSpeedKnots.get -> double
+AprsNet.Beacons.SmartBeaconSettings.SlowSpeedKnots.init -> void
+AprsNet.Beacons.SmartBeaconSettings.SmartBeaconSettings() -> void
+AprsNet.Beacons.SmartBeaconSettings.TurnAngle.get -> double
+AprsNet.Beacons.SmartBeaconSettings.TurnAngle.init -> void
+AprsNet.Beacons.SmartBeaconSettings.TurnSlope.get -> double
+AprsNet.Beacons.SmartBeaconSettings.TurnSlope.init -> void
+AprsNet.Beacons.SmartBeaconSettings.TurnTime.get -> System.TimeSpan
+AprsNet.Beacons.SmartBeaconSettings.TurnTime.init -> void
+AprsNet.Beacons.SmartBeaconSettings.Validate() -> void
+override AprsNet.Beacons.SmartBeaconSettings.Equals(object? obj) -> bool
+override AprsNet.Beacons.SmartBeaconSettings.GetHashCode() -> int
+override AprsNet.Beacons.SmartBeaconSettings.ToString() -> string!
+static AprsNet.Beacons.SmartBeaconSettings.operator !=(AprsNet.Beacons.SmartBeaconSettings? left, AprsNet.Beacons.SmartBeaconSettings? right) -> bool
+static AprsNet.Beacons.SmartBeaconSettings.operator ==(AprsNet.Beacons.SmartBeaconSettings? left, AprsNet.Beacons.SmartBeaconSettings? right) -> bool
