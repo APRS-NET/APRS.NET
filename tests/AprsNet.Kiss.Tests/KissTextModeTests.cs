@@ -94,6 +94,53 @@ public sealed class KissTextModeTests
         }
     }
 
+    /// <summary>
+    /// Five minutes recorded from a TH-D72A in APRS mode with its GPS output on (2026-10-20), each GPS position and
+    /// altitude replaced with APRS101's example, fed in as a serial port reads it. One packet ran into the middle of a
+    /// satellite sentence: that line starts as a sentence, so it is skipped with the GPS output and gives no packet.
+    /// </summary>
+    [Fact]
+    public async Task ARecordingFromATHD72AGivesItsPacketsAndSkipsTheGpsOutput()
+    {
+        var recording = File.ReadAllBytes(
+            Path.Combine(AppContext.BaseDirectory, "Recordings", "th-d72a-aprs-mode.txt")
+        );
+        var lines = Encoding.Latin1.GetString(recording).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+        string[] expected =
+        [
+            .. lines.Where(line => !line.StartsWith('$') && !line.Contains("$GP", StringComparison.Ordinal)),
+            "W1AW>APRS:>end of recording",
+        ];
+        var tnc = new FakeTnc();
+        await using var connection = Connection(tnc);
+        var traffic = new List<KissTrafficEventArgs>();
+        connection.Traffic += (_, e) =>
+        {
+            lock (traffic)
+            {
+                traffic.Add(e);
+            }
+        };
+        foreach (var chunk in recording.Chunk(64))
+        {
+            tnc.Send(chunk);
+        }
+
+        tnc.Send(Text("W1AW>APRS:>end of recording\r\n"));
+
+        var packets = await ReadUntilEnd(connection, expected.Length)
+            .WaitAsync(Wait, TestContext.Current.CancellationToken);
+
+        Assert.Equal(17, expected.Length);
+        Assert.Equal(expected, packets.Select(p => p.ToString()));
+        Assert.All(packets, p => Assert.DoesNotContain(p.Issues, i => i.Severity == ParseIssueSeverity.Error));
+        lock (traffic)
+        {
+            Assert.DoesNotContain(traffic, e => e.DropReason is not null);
+            Assert.Equal(1359, traffic.Count(e => e.Kind == KissTrafficKind.Unframed && e.Text.StartsWith('$')));
+        }
+    }
+
     [Fact]
     public async Task ARadioInAprsModeTakesNothingToTransmit()
     {
