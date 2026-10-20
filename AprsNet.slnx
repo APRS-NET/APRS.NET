@@ -46,6 +46,7 @@
     <Project Path="src/AprsNet.Ax25/AprsNet.Ax25.csproj" />
     <Project Path="src/AprsNet.Beacons/AprsNet.Beacons.csproj" />
     <Project Path="src/AprsNet.Gps/AprsNet.Gps.csproj" />
+    <Project Path="src/AprsNet.IGate/AprsNet.IGate.csproj" />
     <Project Path="src/AprsNet.Corpus/AprsNet.Corpus.csproj" />
     <Project Path="src/AprsNet.DeviceId/AprsNet.DeviceId.csproj" />
     <Project Path="src/AprsNet.Extensions.DependencyInjection/AprsNet.Extensions.DependencyInjection.csproj" />
@@ -64,6 +65,7 @@
     <Project Path="tests/AprsNet.Ax25.Tests/AprsNet.Ax25.Tests.csproj" />
     <Project Path="tests/AprsNet.Beacons.Tests/AprsNet.Beacons.Tests.csproj" />
     <Project Path="tests/AprsNet.Gps.Tests/AprsNet.Gps.Tests.csproj" />
+    <Project Path="tests/AprsNet.IGate.Tests/AprsNet.IGate.Tests.csproj" />
     <Project Path="tests/AprsNet.Corpus.Tests/AprsNet.Corpus.Tests.csproj" />
     <Project Path="tests/AprsNet.DeviceId.Tests/AprsNet.DeviceId.Tests.csproj" />
     <Project Path="tests/AprsNet.Docs.Tests/AprsNet.Docs.Tests.csproj" />

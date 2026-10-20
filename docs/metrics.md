@@ -1,7 +1,8 @@
 # Metrics
 
 The packages publish counters through `System.Diagnostics.Metrics`, each on a meter named after the package:
-**`AprsNet.AprsIsTcpClient`**, **`AprsNet.Kiss`** ([below](#kiss)) and **`AprsNet.Gateway`** ([below](#gateway)).
+**`AprsNet.AprsIsTcpClient`**, **`AprsNet.Kiss`** ([below](#kiss)), **`AprsNet.Gateway`** ([below](#gateway)) and
+**`AprsNet.IGate`** ([below](#igate)).
 Nothing is recorded unless something listens: add the meters to an OpenTelemetry `MeterProvider`
 (`.AddMeter("AprsNet.AprsIsTcpClient")`), or use a `MeterListener`. `aprscli` exports them over OTLP when
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
@@ -79,6 +80,15 @@ from a `GatewayFeed` also have a `source` tag, the name the app gave the source.
 | `aprsnet.gateway.packets.published` | `{packet}` | `server` | Packets given to the server to send |
 | `aprsnet.gateway.packets.queued` | `{packet}` | `server`, `protocol` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
 
+## IGate
+
+On the meter `AprsNet.IGate`. Every instrument has an `igate` tag, the IGate's callsign.
+
+| Instrument | Unit | Tags | Counts |
+| --- | --- | --- | --- |
+| `aprsnet.igate.packets.gated` | `{packet}` | `igate` | Packets heard on RF that `RfToInternetGate` passed to APRS-IS |
+| `aprsnet.igate.packets.refused` | `{packet}` | `igate`, `reason`: `not_aprs`, `unreadable`, `from_internet`, `no_gate`, `already_gated`, `general_query`, `empty`, `too_long`, `duplicate` | Packets heard on RF and not passed on, by the `GateRefusal` |
+
 ## Useful queries
 
 - **Feed health:** `rate(lines.received{kind="packet"})` should be steady for a fixed filter; a drop to zero while
@@ -89,6 +99,8 @@ from a `GatewayFeed` also have a `source` tag, the name the app gave the source.
   fault. The KISS causes match, so one query covers APRS-IS and TNCs.
 - **RF against APRS-IS:** in a gateway, `packets.duplicates{source="tnc"}` against `packets.received{source="tnc"}`
   shows how much of what the TNC hears already reached APRS-IS through other IGates.
+- **IGate coverage:** `packets.gated` against `packets.refused{reason="duplicate"}` shows how often digipeaters repeat
+  what the IGate hears; a high `from_internet` count is a two-way IGate nearby transmitting APRS-IS traffic.
 
 ## Not yet
 

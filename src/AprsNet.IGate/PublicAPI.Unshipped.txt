@@ -1,0 +1,31 @@
+#nullable enable
+AprsNet.IGate.GateDecision
+AprsNet.IGate.GateDecision.Heard.get -> AprsNet.Packets.AprsPacket!
+AprsNet.IGate.GateDecision.IsGated.get -> bool
+AprsNet.IGate.GateDecision.Packet.get -> AprsNet.Packets.AprsPacket?
+AprsNet.IGate.GateDecision.Refusal.get -> AprsNet.IGate.GateRefusal?
+AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.AlreadyGated = 4 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.Duplicate = 8 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.Empty = 6 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.FromInternet = 2 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.GeneralQuery = 5 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.NoGate = 3 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.NotAprs = 0 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.TooLong = 7 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.GateRefusal.Unreadable = 1 -> AprsNet.IGate.GateRefusal
+AprsNet.IGate.RfToInternetGate
+AprsNet.IGate.RfToInternetGate.Gate(AprsNet.Ax25.Ax25Frame! frame) -> AprsNet.IGate.GateDecision!
+AprsNet.IGate.RfToInternetGate.Gate(AprsNet.Packets.AprsPacket! heard) -> AprsNet.IGate.GateDecision!
+AprsNet.IGate.RfToInternetGate.IGate.get -> AprsNet.Packets.Callsign!
+AprsNet.IGate.RfToInternetGateOptions
+AprsNet.IGate.RfToInternetGateOptions.DuplicateWindow.get -> System.TimeSpan
+AprsNet.IGate.RfToInternetGateOptions.DuplicateWindow.set -> void
+AprsNet.IGate.RfToInternetGateOptions.ReceiveOnly.get -> bool
+AprsNet.IGate.RfToInternetGateOptions.ReceiveOnly.set -> void
+AprsNet.IGate.RfToInternetGateOptions.RfToInternetGateOptions() -> void
+AprsNet.IGate.RfToInternetGateOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.IGate.RfToInternetGateOptions.TimeProvider.set -> void
+AprsNet.IGate.RfToInternetGateOptions.Validate() -> void
+AprsNet.IGate.RfToInternetGate.ReceiveOnly.get -> bool
+AprsNet.IGate.RfToInternetGate.RfToInternetGate(AprsNet.Packets.Callsign! igate, AprsNet.IGate.RfToInternetGateOptions? options = null) -> void
