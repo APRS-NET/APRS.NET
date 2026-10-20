@@ -33,6 +33,7 @@ web.Start();
 var health = new GatewayHealth(feed);
 health.AddSource("aprs-is", () => aprsIs.State == AprsIsConnectionState.Connected);
 health.AddSource("tnc", () => tnc.IsConnected);
+health.AddCounter("igate.gated", () => gated); // counts reported with each check, such as an IGate's
 await using var withHealth = new GatewayWebServer(hub, new GatewayWebServerOptions { Health = health });
 
 // Or, in an ASP.NET Core app:
