@@ -1,0 +1,43 @@
+#nullable enable
+AprsNet.Gps.GpsdConnection
+AprsNet.Gps.GpsdConnection.DisposeAsync() -> System.Threading.Tasks.ValueTask
+AprsNet.Gps.GpsdConnection.GpsdConnection(AprsNet.Gps.GpsdOptions! options) -> void
+AprsNet.Gps.GpsdConnection.GpsdConnection(string! host = "localhost", int port = 2947) -> void
+AprsNet.Gps.GpsdConnection.IsConnected.get -> bool
+AprsNet.Gps.GpsdConnection.LastError.get -> string?
+AprsNet.Gps.GpsdConnection.MaxReconnectDelay.get -> System.TimeSpan
+AprsNet.Gps.GpsdConnection.ReadFixesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Packets.GpsFix!>!
+AprsNet.Gps.GpsdConnection.ReconnectDelay.get -> System.TimeSpan
+AprsNet.Gps.GpsdConnection.Reconnects.get -> int
+AprsNet.Gps.GpsdConnection.Release.get -> string?
+AprsNet.Gps.GpsdConnection.Server.get -> string!
+AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnectionStateChangedEventArgs
+AprsNet.Gps.GpsdConnectionStateChangedEventArgs.Error.get -> System.Exception?
+AprsNet.Gps.GpsdConnectionStateChangedEventArgs.RetryIn.get -> System.TimeSpan?
+AprsNet.Gps.GpsdConnectionStateChangedEventArgs.State.get -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnection.StateChanged -> System.EventHandler<AprsNet.Gps.GpsdConnectionStateChangedEventArgs!>?
+AprsNet.Gps.GpsdConnectionState.Closed = 4 -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnectionState.Connected = 2 -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnectionState.Connecting = 1 -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnection.State.get -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnectionState.Idle = 0 -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdConnectionState.Reconnecting = 3 -> AprsNet.Gps.GpsdConnectionState
+AprsNet.Gps.GpsdOptions
+AprsNet.Gps.GpsdOptions.ConnectTimeout.get -> System.TimeSpan
+AprsNet.Gps.GpsdOptions.ConnectTimeout.set -> void
+AprsNet.Gps.GpsdOptions.Device.get -> string?
+AprsNet.Gps.GpsdOptions.Device.set -> void
+AprsNet.Gps.GpsdOptions.GpsdOptions() -> void
+AprsNet.Gps.GpsdOptions.Host.get -> string!
+AprsNet.Gps.GpsdOptions.Host.set -> void
+AprsNet.Gps.GpsdOptions.MaxReconnectDelay.get -> System.TimeSpan
+AprsNet.Gps.GpsdOptions.MaxReconnectDelay.set -> void
+AprsNet.Gps.GpsdOptions.Port.get -> int
+AprsNet.Gps.GpsdOptions.Port.set -> void
+AprsNet.Gps.GpsdOptions.ReconnectDelay.get -> System.TimeSpan
+AprsNet.Gps.GpsdOptions.ReconnectDelay.set -> void
+AprsNet.Gps.GpsdOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Gps.GpsdOptions.TimeProvider.set -> void
+AprsNet.Gps.GpsdOptions.Validate() -> void
+const AprsNet.Gps.GpsdOptions.DefaultPort = 2947 -> int
