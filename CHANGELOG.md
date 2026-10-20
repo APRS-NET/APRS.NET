@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0-alpha.12](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.11...v0.4.0-alpha.12) (2026-10-20)
+
+
+### Features
+
+* **aprs-is:** send packets an IGate gated from RF ([0a9c8dc](https://github.com/APRS-NET/APRS.NET/commit/0a9c8dcfd5efb13d996ed6b5ffcda3f6a189da55))
+* **beacons:** dead reckoning from the last beacon ([54d4713](https://github.com/APRS-NET/APRS.NET/commit/54d47138eb3bb723eca3947a4eade62e4a25f08a)), closes [#198](https://github.com/APRS-NET/APRS.NET/issues/198)
+* **cli:** serve --igate as a receive-only IGate ([b7c6613](https://github.com/APRS-NET/APRS.NET/commit/b7c6613056113326fa86f317b003cecd41f6ece1))
+* **deviceid:** update the device list to aprs-deviceid be890f1 ([658e706](https://github.com/APRS-NET/APRS.NET/commit/658e706be72d318364d9af8dc3bbaa7a31a3a0f5))
+* **gateway:** counters on the health report ([ed17bb4](https://github.com/APRS-NET/APRS.NET/commit/ed17bb43aa98b8a359b2ed1fbac41cbbb36381d0))
+* **gps:** read a GPS through gpsd with AprsNet.Gps ([9cd5a93](https://github.com/APRS-NET/APRS.NET/commit/9cd5a938d3f2fd2fd97418b9328551e84caabce2)), closes [#127](https://github.com/APRS-NET/APRS.NET/issues/127)
+* **igate:** RF-to-internet gating rules in AprsNet.IGate ([dccb41d](https://github.com/APRS-NET/APRS.NET/commit/dccb41d2b6fd8d39fc91a90d7b813b8498106cbc)), closes [#207](https://github.com/APRS-NET/APRS.NET/issues/207)
+* **messaging:** answer APRS queries with QueryResponder ([2fbd157](https://github.com/APRS-NET/APRS.NET/commit/2fbd15778d998b6534db61c5854a6fce06f6395f))
+* **packets:** general queries as QueryReport ([4d2d3c1](https://github.com/APRS-NET/APRS.NET/commit/4d2d3c103641fdf8176d9544d1a21afec2cdbc04))
+* **packets:** NMEA sentences, GPS fixes and $ packets ([1e2aadb](https://github.com/APRS-NET/APRS.NET/commit/1e2aadbe7a326c45e4fccf57006704b543dbdbda)), closes [#204](https://github.com/APRS-NET/APRS.NET/issues/204)
+
 ## [0.4.0-alpha.11](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.10...v0.4.0-alpha.11) (2026-10-19)
 
 
