@@ -648,6 +648,12 @@
       "os": "embedded",
       "vendor": "Hiperion"
     },
+    "APE3HC": {
+      "class": "gadget",
+      "model": "ESP32-HAM-CLOCK",
+      "os": "embedded",
+      "vendor": "Konrad, SP3KON"
+    },
     "APE???": {
       "model": "Telemetry devices"
     },
@@ -721,6 +727,18 @@
       "model": "TBTracker Balloon Telemetry Tracker",
       "os": "embedded",
       "vendor": "PD7R"
+    },
+    "APEXRE": {
+      "class": "app",
+      "model": "DESMA Remus",
+      "os": "Android",
+      "vendor": "N2PWG"
+    },
+    "APEXRO": {
+      "class": "app",
+      "model": "DESMA Romulus",
+      "os": "ios",
+      "vendor": "N2PWG"
     },
     "APFG??": {
       "class": "software",
@@ -811,6 +829,12 @@
       "class": "software",
       "model": "HBLink D-APRS Gateway",
       "vendor": "KF7EEL"
+    },
+    "APHC01": {
+      "class": "daemon",
+      "model": "HamTetra-Core",
+      "os": "Linux/Unix",
+      "vendor": "HamTetra-CT"
     },
     "APHH?": {
       "class": "tracker",
@@ -1024,6 +1048,12 @@
       "model": "Ham Tracker",
       "os": "ios",
       "vendor": "kramstuff.com"
+    },
+    "APKSXI": {
+      "class": "software",
+      "model": "KISAXI",
+      "os": "Multiple",
+      "vendor": "JR2TTA"
     },
     "APKTY1": {
       "class": "software",
@@ -1785,6 +1815,11 @@
       "os": "Linux/Unix",
       "vendor": "Open Source"
     },
+    "APRCAC": {
+      "model": "APRScaching",
+      "os": "Multiple",
+      "vendor": "Andreas Pachler, OE8APR"
+    },
     "APREAL": {
       "class": "software",
       "model": "Real Packet",
@@ -2074,6 +2109,12 @@
       "model": "embedded Weather Station",
       "os": "embedded",
       "vendor": "F5OPV, SFCP_LABS"
+    },
+    "APSHRT": {
+      "class": "software",
+      "model": "ShackRat",
+      "os": "Multiple",
+      "vendor": "Patrick Narkinsky, NB8K"
     },
     "APSIGK": {
       "class": "service",
@@ -2374,6 +2415,21 @@
       "model": "WeeWX Weather Software",
       "os": "Linux/Unix",
       "vendor": "Tom Keffer and Matthew Wall"
+    },
+    "APWFD2": {
+      "class": "digi",
+      "model": "Whiskey Fox Digi (TAPR TNC2)",
+      "vendor": "Kenneth W. Finnegan, W6KWF"
+    },
+    "APWFD?": {
+      "class": "digi",
+      "model": "Whiskey Fox Digi",
+      "vendor": "Kenneth W. Finnegan, W6KWF"
+    },
+    "APWFDP": {
+      "class": "digi",
+      "model": "Whiskey Fox Digi (AEA PK-88)",
+      "vendor": "Kenneth W. Finnegan, W6KWF"
     },
     "APWHE?": {
       "class": "wx",
