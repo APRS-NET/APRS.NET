@@ -38,8 +38,9 @@ and items with the weather station symbol (`PositionedPayload.Weather`), and in 
 (`WeatherReport`); raw weather station data is recognised as `RawWeatherReport` (the station format and its data,
 which APRS101 does not lay out). Station capabilities such as an IGate's `<IGATE,MSG_CNT=0,LOC_CNT=1` are decoded as
 `CapabilitiesReport`, and user-defined packets (`{`) as `UserDefinedPayload` (user ID, packet type and the data as
-sent). Raw NMEA (`$GPRMC` …) is decoded as `NmeaReport`: the sentence and the `GpsFix` it gives. Other packet types
-(general queries, grid beacons…) come back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
+sent). Raw NMEA (`$GPRMC` …) is decoded as `NmeaReport`: the sentence and the `GpsFix` it gives. General queries
+(`?APRS?`, `?IGATE?`, `?WX?`) are decoded as `QueryReport`, with the target footprint when there is one, and every
+query, general or directed, names what it asks for as a `QueryKind`. Other packet types (grid beacons…) come back with `Outcome == ParseOutcome.Unsupported` until their decoders land.
 
 `NmeaSentence` and `NmeaFixTracker` also read a GPS's own output. Reading the serial port or socket stays in the app:
 

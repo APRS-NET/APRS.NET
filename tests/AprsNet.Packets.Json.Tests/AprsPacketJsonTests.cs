@@ -26,6 +26,7 @@ public sealed class AprsPacketJsonTests
         "N0CALL>APRS:{Q1hello",
         "N0CALL>APRS:!!006B005803500000----03E9--------002105140000005D",
         "N0CALL>APRS:$GPRMC,063909,A,3349.4302,N,11700.3721,W,43.022,89.3,291099,13.6,E*52",
+        "N0CALL>APRS:?APRS? 34.02,-117.15,0200",
         "N0CALL>APRS:not a packet type",
     ];
 

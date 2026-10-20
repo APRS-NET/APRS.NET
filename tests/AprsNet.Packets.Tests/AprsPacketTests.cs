@@ -267,6 +267,7 @@ public class AprsPacketTests
     [InlineData("T", PacketType.Unknown)]
     [InlineData(" <UI>:>status", PacketType.Unknown)]
     [InlineData("$GPRMC,063909,A", PacketType.Nmea)]
+    [InlineData("?APRS?", PacketType.Query)]
     public void TheFirstInformationByteGivesTheType(string information, PacketType type)
     {
         Assert.Equal(type, AprsPacket.Parse("N0CALL>APRS:" + information).Type);

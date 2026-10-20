@@ -125,6 +125,14 @@ internal static class PrettyFormatter
             case NmeaReport nmea:
                 Nmea(fields, nmea, style);
                 break;
+            case QueryReport query:
+                fields.Add(("query", style.Bold($"{Safe(query.QueryType)} to all")));
+                if (PacketFormatter.Footprint(query) is { } area)
+                {
+                    fields.Add(("area", Safe(area)));
+                }
+
+                break;
             case RawWeatherReport raw:
                 fields.Add(("raw wx", PacketFormatter.RawWeather(raw.Format)));
                 fields.Add(("data", Safe(raw.Data)));

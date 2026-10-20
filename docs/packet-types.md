@@ -26,7 +26,7 @@ What `AprsPacket.Parse` decodes and `AprsPacket.Create` builds, by APRS data typ
 | User-defined | `{` | ch. 18 | `UserDefinedPayload` | ✅ | ✅ | 764 of 764 |
 | Third-party | `}` | ch. 17 | `ThirdPartyPayload` (the carried packet) | ✅ | ✅ | none (IGates unwrap it) |
 | Raw GPS (NMEA) | `$GPRMC` … | ch. 8, p. 34 | `NmeaReport` (`Sentence`, `Fix`) | ✅ | ❌ | none (about 0.01% of the full feed) |
-| General query | `?` | ch. 15 | — | ❌ | ❌ | none |
+| General query | `?APRS?` `?IGATE?` `?WX?` | ch. 15 | `QueryReport` (`Kind`, `Footprint`) | ✅ | ✅ | none |
 | Maidenhead grid beacon (obsolete) | `[` | ch. 5 | — | ❌ | ❌ | none |
 | Agrelo DFJr / MicroFinder | `%` | ch. 5 | — | ❌ | ❌ | none |
 | Anything else | | | `Payload` is null, `Outcome = Unsupported` | — | — | 163 (beacon text) |

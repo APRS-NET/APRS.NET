@@ -86,4 +86,7 @@ public sealed class MessagePayload : AprsPayload
 
     /// <summary>What follows the query type, such as the callsign in <c>?APRSH N0CALL</c>.</summary>
     public string? QueryArgument { get; internal init; }
+
+    /// <summary>What a directed query asks for, from <see cref="QueryType"/>; <see cref="QueryKind.Unknown"/> otherwise.</summary>
+    public QueryKind QueryKind => Kind == MessageKind.Query ? QueryKinds.Of(QueryType) : QueryKind.Unknown;
 }

@@ -39,6 +39,9 @@ public static class ParseIssueCodeExtensions
             ParseIssueCode.InvalidNmeaSentence => "The '$' packet is not an NMEA sentence.",
             ParseIssueCode.NmeaChecksumMismatch => "The NMEA sentence's checksum doesn't match; it is still read.",
             ParseIssueCode.InvalidNmeaField => "An NMEA field can't be read; it is left out of the fix.",
+            ParseIssueCode.InvalidQuery => "The '?' packet is not a general query such as ?APRS?.",
+            ParseIssueCode.InvalidQueryFootprint =>
+                "The general query's target footprint can't be read; the query is read without it.",
             _ => code.ToString(),
         };
 }

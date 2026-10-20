@@ -49,4 +49,10 @@ public enum PacketType
 
     /// <summary>A raw NMEA sentence from a GPS: <c>$</c>, other than the Ultimeter's <c>$ULTW</c>.</summary>
     Nmea,
+
+    /// <summary>
+    /// A general query to every station: <c>?</c>, such as <c>?APRS?</c> or <c>?IGATE?</c>. Queries directed at one
+    /// station are messages.
+    /// </summary>
+    Query,
 }
