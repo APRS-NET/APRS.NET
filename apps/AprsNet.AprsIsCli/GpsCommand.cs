@@ -8,11 +8,13 @@ using AprsNet.Packets;
 namespace AprsNet.AprsIsCli;
 
 /// <summary>
-/// The <c>gps</c> command: read a GPS through gpsd, or its NMEA sentences over TCP, and print a line for each fix, with
+/// The <c>gps</c> command: read a GPS through gpsd, or its NMEA sentences over TCP or from a serial port, and print a line for each fix, with
 /// the satellites or the lines as read when asked. A check of a GPS setup, and the live proof of the GPS capability.
 /// </summary>
 internal sealed class GpsCommand(CliEnvironment environment)
 {
+    private const int DefaultBaudRate = 4800;
+
     private static readonly TimeSpan MaxReconnectDelay = TimeSpan.FromMinutes(1);
 
     private readonly Option<string?> _gpsd = new("--gpsd")
@@ -25,6 +27,13 @@ internal sealed class GpsCommand(CliEnvironment environment)
     {
         Description =
             "Read NMEA sentences over TCP from host:port, as a GPS-to-network bridge or gpsd's NMEA port sends them.",
+    };
+
+    private readonly Option<string?> _serial = new("--serial")
+    {
+        Description =
+            $"Read NMEA sentences from a GPS on a serial port, as PORT[@BAUD], such as /dev/ttyACM0 or COM4@9600 "
+            + $"(default {DefaultBaudRate} baud, NMEA's standard speed).",
     };
 
     private readonly Option<string?> _device = new("--device")
@@ -53,13 +62,14 @@ internal sealed class GpsCommand(CliEnvironment environment)
     {
         var command = new Command(
             "gps",
-            "Read a GPS through gpsd or as NMEA over TCP and print its fixes: time, fix, position, altitude, speed, "
+            "Read a GPS through gpsd, as NMEA over TCP or on a serial port, and print its fixes: time, fix, position, altitude, speed, "
                 + "course, satellites, HDOP and error. It keeps trying when the GPS source goes away (waiting 5s, "
                 + "doubling to 60s) until --count, --duration or Ctrl+C."
         )
         {
             _gpsd,
             _nmea,
+            _serial,
             _device,
             _count,
             _duration,
@@ -74,9 +84,12 @@ internal sealed class GpsCommand(CliEnvironment environment)
     {
         var gpsd = parseResult.GetResult(_gpsd) is not null;
         var nmea = parseResult.GetValue(_nmea);
-        if (gpsd == nmea is not null)
+        var serial = parseResult.GetValue(_serial);
+        if ((gpsd ? 1 : 0) + (nmea is null ? 0 : 1) + (serial is null ? 0 : 1) != 1)
         {
-            return await UsageAsync("Give one GPS source: --gpsd [host[:port]] or --nmea host:port.");
+            return await UsageAsync(
+                "Give one GPS source: --gpsd [host[:port]], --nmea host:port or --serial PORT[@BAUD]."
+            );
         }
 
         if (parseResult.GetValue(_device) is not null && !gpsd)
@@ -84,16 +97,42 @@ internal sealed class GpsCommand(CliEnvironment environment)
             return await UsageAsync("--device only applies with --gpsd.");
         }
 
-        string host;
-        int port;
-        if (gpsd)
+        string host = "";
+        int port = 0;
+        var baudRate = DefaultBaudRate;
+        if (serial is not null)
+        {
+            var at = serial.LastIndexOf('@');
+            if (
+                at == 0
+                || (
+                    at > 0
+                    && !int.TryParse(
+                        serial.AsSpan(at + 1),
+                        NumberStyles.None,
+                        CultureInfo.InvariantCulture,
+                        out baudRate
+                    )
+                )
+                || baudRate <= 0
+                || string.IsNullOrWhiteSpace(serial)
+            )
+            {
+                return await UsageAsync(
+                    $"--serial '{serial}' is not valid. Use PORT[@BAUD], such as /dev/ttyACM0@9600."
+                );
+            }
+
+            serial = at > 0 ? serial[..at] : serial;
+        }
+        else if (gpsd)
         {
             if (!TryParseHost(parseResult.GetValue(_gpsd) ?? "localhost", GpsdOptions.DefaultPort, out host, out port))
             {
                 return await UsageAsync($"--gpsd '{parseResult.GetValue(_gpsd)}' is not valid. Use host[:port].");
             }
         }
-        else if (!TryParseHost(nmea!, null, out host, out port))
+        else if (nmea is not null && !TryParseHost(nmea, null, out host, out port))
         {
             return await UsageAsync($"--nmea '{nmea}' is not valid. Use host:port, such as 192.168.1.20:10110.");
         }
@@ -126,6 +165,17 @@ internal sealed class GpsCommand(CliEnvironment environment)
             if (gpsd)
             {
                 await ReadGpsdAsync(host, port, parseResult.GetValue(_device), printer, run.Token);
+            }
+            else if (serial is not null)
+            {
+                var (name, speed) = (serial, baudRate);
+                await ReadNmeaLinesAsync(
+                    name,
+                    "the port closed",
+                    _ => Task.FromResult(environment.OpenGpsPort(name, speed)),
+                    printer,
+                    run.Token
+                );
             }
             else
             {
@@ -194,6 +244,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
         var where = $"{host}:{port}";
         await ReadNmeaLinesAsync(
             where,
+            "it closed the connection",
             async token =>
             {
                 var client = new TcpClient { NoDelay = true };
@@ -219,6 +270,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
     /// </summary>
     private async Task ReadNmeaLinesAsync(
         string where,
+        string ended,
         Func<CancellationToken, Task<Stream>> open,
         FixPrinter printer,
         CancellationToken cancellationToken
@@ -253,7 +305,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
                     }
                 }
 
-                why = "it closed the connection";
+                why = ended;
             }
             catch (Exception ex) when (ex is SocketException or IOException or UnauthorizedAccessException)
             {

@@ -77,6 +77,10 @@ internal sealed class CliEnvironment
                 }
             );
 
+    /// <summary>Opens a GPS's serial port (name, baud rate) for <c>gps --serial</c>; tests replace it.</summary>
+    public Func<string, int, Stream> OpenGpsPort { get; init; } =
+        (name, baudRate) => KissSerialConnection.OpenPort(name, baudRate);
+
     /// <summary>The serial ports present, for <c>tnc ports</c>; tests replace it.</summary>
     public Func<IReadOnlyList<string>> GetSerialPortNames { get; init; } = KissSerialConnection.GetPortNames;
 

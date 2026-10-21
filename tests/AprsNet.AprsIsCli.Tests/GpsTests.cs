@@ -174,7 +174,58 @@ public sealed class GpsTests : IDisposable
         Assert.Equal(0, result.ExitCode);
     }
 
+    private static MemoryStream Port(params string[] lines) =>
+        new(Encoding.ASCII.GetBytes(string.Concat(lines.Select(l => l + "\r\n"))));
+
+    [Fact]
+    public async Task ASerialGpsIsReadAtTheBaudRateGiven()
+    {
+        var harness = new CliHarness();
+        harness.GpsPorts.Enqueue(Port(Nmea));
+
+        var result = await harness.RunAsync(
+            ["gps", "--serial", "/dev/ttyACM0@9600", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal([("/dev/ttyACM0", 9600)], harness.OpenedGpsPorts);
+        Assert.StartsWith(
+            "2026-10-20 14:00:01Z 3D 49.05833 -72.02917 105.3 m 48.6 kn 90° 2/3 sats HDOP 0.92 ±2.0 m",
+            result.Out,
+            StringComparison.Ordinal
+        );
+        Assert.Contains("reading NMEA from /dev/ttyACM0", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ASerialGpsIsReadAgainAfterItIsUnpluggedAndPluggedIn()
+    {
+        var harness = new CliHarness();
+        harness.GpsPorts.Enqueue(Port(Nmea[..6])); // a second's fix, then the port goes away
+        harness.GpsPorts.Enqueue(new IOException("The serial port /dev/ttyACM0 is not present."));
+        harness.GpsPorts.Enqueue(Port(Nmea[5..]));
+
+        var result = await harness.RunAsync(
+            ["gps", "--serial", "/dev/ttyACM0", "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(3, harness.OpenedGpsPorts.Count);
+        Assert.All(harness.OpenedGpsPorts, port => Assert.Equal(4800, port.BaudRate)); // NMEA's standard speed
+        Assert.Equal(2, result.Out.Split(NewLine, StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Contains("lost /dev/ttyACM0 (the port closed)", result.Error, StringComparison.Ordinal);
+        Assert.Contains(
+            "lost /dev/ttyACM0 (The serial port /dev/ttyACM0 is not present.)",
+            result.Error,
+            StringComparison.Ordinal
+        );
+    }
+
     [Theory]
+    [InlineData(new[] { "gps", "--serial", "/dev/ttyACM0@fast" }, "--serial '/dev/ttyACM0@fast' is not valid")]
+    [InlineData(new[] { "gps", "--serial", "COM4", "--gpsd" }, "Give one GPS source")]
     [InlineData(new[] { "gps" }, "Give one GPS source")]
     [InlineData(new[] { "gps", "--gpsd", "--nmea", "host:10110" }, "Give one GPS source")]
     [InlineData(new[] { "gps", "--nmea", "host" }, "Use host:port")]
