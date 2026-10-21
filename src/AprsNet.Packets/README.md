@@ -58,6 +58,16 @@ while (await reader.ReadLineAsync() is { } line)
 GGA, RMC, GLL, VTG and GSA give a fix, from any talker (`GP`, `GN`, `GL`, `GA`, `GB`). A wrong checksum or a field
 that can't be read is a warning in `Issues`, never an exception, and the tracker ignores a damaged sentence.
 
+For a GPS status view the tracker also gathers:
+
+- `Satellites`: the `GpsSatellite`s in view from GSV, each talker's and (NMEA 4.1) each signal's latest complete group
+  kept apart, with the system (`GnssSystem`), ID, elevation, azimuth and SNR, marked `Used` from GSA.
+- `Quality` (`GpsQuality`): the satellites used (GGA) and in view, PDOP, HDOP and VDOP (GSA), and the error
+  estimates in metres from GST (one standard deviation, where gpsd gives 95%).
+
+`Update` returns whether the fix changed; GSV and GST change only `Satellites` and `Quality`. `Satellites` is
+replaced when it changes, so comparing references tells a new list.
+
 `Unrecognized` lists the parts of a packet that parsed but weren't understood, each with a stable code and the
 bytes it covers in `Raw`. Unlike `Issues`, they are not errors, and the packet is still decoded. The codes cover:
 - a data extension that doesn't decode (`PHG1-220`, a course of `767`);
