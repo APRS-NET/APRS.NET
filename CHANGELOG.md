@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.12...v0.5.0-alpha.1) (2026-10-21)
+
+
+### Features
+
+* **beacons:** SmartBeaconing schedule for moving stations ([5728ea2](https://github.com/APRS-NET/APRS.NET/commit/5728ea2f808b3fbf0d3484a1257629fede58b9c4)), closes [#197](https://github.com/APRS-NET/APRS.NET/issues/197)
+
+
+### Bug Fixes
+
+* **cli:** mention ,text in the --tnc help ([07a1573](https://github.com/APRS-NET/APRS.NET/commit/07a1573c05016f59b8bce8983fa1c5666ea914d0))
+
 ## [0.4.0-alpha.12](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.11...v0.4.0-alpha.12) (2026-10-20)
 
 
