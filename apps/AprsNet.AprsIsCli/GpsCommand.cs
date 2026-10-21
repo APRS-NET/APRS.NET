@@ -414,10 +414,15 @@ internal sealed class GpsCommand(CliEnvironment environment)
     }
 }
 
-/// <summary>Prints fixes, satellites or raw lines for <c>aprscli gps</c>, and ends the run after <c>--count</c> fixes.</summary>
+/// <summary>
+/// Prints fixes, satellites or raw lines for <c>aprscli gps</c>, and ends the run after <c>--count</c> fixes. A fix
+/// that would print the same as the one before is skipped, and not counted: gpsd's u-blox driver, for one, sends
+/// several identical TPV reports each second.
+/// </summary>
 internal sealed class FixPrinter(TextWriter output, bool satellites, bool raw, int? count, CancellationTokenSource run)
 {
     private IReadOnlyList<GpsSatellite>? _shown;
+    private string? _last;
     private int _fixes;
 
     public void Line(string line)
@@ -430,10 +435,18 @@ internal sealed class FixPrinter(TextWriter output, bool satellites, bool raw, i
 
     public void Fix(GpsFix fix, GpsQuality quality, IReadOnlyList<GpsSatellite> inView)
     {
+        var line = Format(fix, quality);
+        var newSatellites = satellites && !ReferenceEquals(inView, _shown);
+        if (line == _last && !newSatellites)
+        {
+            return;
+        }
+
+        _last = line;
         if (!raw)
         {
-            output.WriteLine(Format(fix, quality));
-            if (satellites && !ReferenceEquals(inView, _shown))
+            output.WriteLine(line);
+            if (newSatellites)
             {
                 _shown = inView;
                 foreach (var satellite in inView)
