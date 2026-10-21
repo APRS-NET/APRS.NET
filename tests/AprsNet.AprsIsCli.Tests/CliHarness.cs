@@ -55,6 +55,15 @@ internal sealed class CliHarness
     /// <summary>The address <c>tnc terminal</c> or <c>tnc kiss</c> opened.</summary>
     public TncAddress? OpenedTnc { get; private set; }
 
+    /// <summary>
+    /// What each opening of a GPS's serial port gives, in order: a stream, or an exception to throw. Once used up, the
+    /// port is not present.
+    /// </summary>
+    public Queue<object> GpsPorts { get; } = new();
+
+    /// <summary>The GPS ports opened, as (name, baud rate).</summary>
+    public List<(string Name, int BaudRate)> OpenedGpsPorts { get; } = [];
+
     /// <summary>How many transports the connection asked for, which is one per connection attempt.</summary>
     public int ConnectionAttempts { get; private set; }
 
@@ -116,6 +125,16 @@ internal sealed class CliHarness
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
             GetSerialPortNames = () => SerialPorts,
+            OpenGpsPort = (name, baudRate) =>
+            {
+                lock (OpenedGpsPorts)
+                {
+                    OpenedGpsPorts.Add((name, baudRate));
+                    return GpsPorts.TryDequeue(out var next)
+                        ? next as Stream ?? throw (Exception)next
+                        : throw new IOException($"The serial port {name} is not present.");
+                }
+            },
             OpenTncTerminal = address =>
             {
                 OpenedTnc = address;

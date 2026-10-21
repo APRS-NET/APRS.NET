@@ -351,12 +351,15 @@ Lines starting with `#` are comments.
 ## gps
 
 Read a GPS and print a line for each fix: a quick check of a GPS setup. It reads gpsd, or the NMEA sentences a GPS
-sends over TCP (a GPS-to-network bridge, or gpsd's own NMEA port):
+sends over TCP (a GPS-to-network bridge, or gpsd's own NMEA port) or on a serial port (a USB GPS, or a radio's GPS
+output) with no gpsd running:
 
 ```sh
 aprscli gps --gpsd                          # gpsd on this machine, port 2947
 aprscli gps --gpsd raspberrypi.local --device /dev/ttyACM0 -n 10
 aprscli gps --nmea 192.168.1.20:10110 --satellites
+aprscli gps --serial /dev/ttyACM0                # 4800 baud, NMEA's standard speed
+aprscli gps --serial COM4@9600
 ```
 
 ```text
@@ -373,7 +376,8 @@ second's fix is printed when the next second starts, once all of its sentences a
 - `--raw` prints the lines as read instead: gpsd's JSON or the NMEA sentences.
 - `-n` stops after that many fixes, `-d` after that long.
 
-When the source goes away it keeps trying, waiting 5 seconds and doubling to a minute, and says so on standard error.
+When the source goes away (gpsd restarts, the bridge drops, the GPS is unplugged) it keeps trying, waiting 5 seconds
+and doubling to a minute, and says so on standard error.
 Ctrl+C ends it with exit code 0.
 
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>
