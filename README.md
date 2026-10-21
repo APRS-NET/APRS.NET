@@ -65,7 +65,7 @@ pre-release. See [docs/versioning.md](docs/versioning.md) for how versions are c
 | `src/AprsNet.AprsIsTcpClient` | APRS-IS client                                                            |
 | `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
 | `src/AprsNet.Filters`         | APRS-IS filters: build them from typed terms, and evaluate them locally   |
-| `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0) |
+| `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0), and fetching a newer list |
 | `src/AprsNet.Ax25`            | AX.25 UI frames: decode and encode what a TNC sends and receives          |
 | `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit and a KISS TCP server |
 | `src/AprsNet.Kiss.Serial`     | KISS TNCs on a serial port, reopened after an unplug, and the ports present |

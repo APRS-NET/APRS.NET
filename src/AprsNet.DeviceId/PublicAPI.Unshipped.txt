@@ -42,3 +42,37 @@ static AprsNet.DeviceId.AprsDevices.FromTocall(string! destination) -> AprsNet.D
 static AprsNet.DeviceId.AprsDevices.Identify(AprsNet.Packets.AprsPacket! packet) -> AprsNet.DeviceId.AprsDevice?
 static AprsNet.DeviceId.AprsDevices.ListCommit.get -> string!
 static AprsNet.DeviceId.AprsDevices.ListDate.get -> System.DateOnly
+AprsNet.DeviceId.AprsDeviceList
+AprsNet.DeviceId.AprsDeviceList.Commit.get -> string?
+AprsNet.DeviceId.AprsDeviceList.FromTocall(string! destination) -> AprsNet.DeviceId.AprsDevice?
+AprsNet.DeviceId.AprsDeviceList.GeneratedAt.get -> System.DateTimeOffset?
+AprsNet.DeviceId.AprsDeviceList.Identify(AprsNet.Packets.AprsPacket! packet) -> AprsNet.DeviceId.AprsDevice?
+AprsNet.DeviceId.AprsDeviceList.IsNewerThan(AprsNet.DeviceId.AprsDeviceList! other) -> bool
+AprsNet.DeviceId.AprsDeviceList.TocallCount.get -> int
+static AprsNet.DeviceId.AprsDeviceList.BuiltIn.get -> AprsNet.DeviceId.AprsDeviceList!
+static AprsNet.DeviceId.AprsDeviceList.Parse(string! json) -> AprsNet.DeviceId.AprsDeviceList!
+static AprsNet.DeviceId.AprsDeviceList.Parse(System.IO.Stream! json) -> AprsNet.DeviceId.AprsDeviceList!
+static AprsNet.DeviceId.AprsDeviceList.TryParse(System.IO.Stream! json, out AprsNet.DeviceId.AprsDeviceList? list, out string? reason) -> bool
+static AprsNet.DeviceId.AprsDevices.ListGeneratedAt.get -> System.DateTimeOffset
+AprsNet.DeviceId.AprsDeviceListFetch
+AprsNet.DeviceId.AprsDeviceListFetch.Content.get -> System.ReadOnlyMemory<byte>
+AprsNet.DeviceId.AprsDeviceListFetch.Content.init -> void
+AprsNet.DeviceId.AprsDeviceListFetch.Error.get -> string?
+AprsNet.DeviceId.AprsDeviceListFetch.ETag.get -> string?
+AprsNet.DeviceId.AprsDeviceListFetch.ETag.init -> void
+AprsNet.DeviceId.AprsDeviceListFetch.List.get -> AprsNet.DeviceId.AprsDeviceList?
+AprsNet.DeviceId.AprsDeviceListFetch.List.init -> void
+AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetchOutcome.Fetched = 0 -> AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetch.Outcome.get -> AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetchOutcome.Unchanged = 1 -> AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetchOutcome.UnexpectedAnswer = 3 -> AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetchOutcome.Unreachable = 2 -> AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetchOutcome.Unreadable = 4 -> AprsNet.DeviceId.AprsDeviceListFetchOutcome
+AprsNet.DeviceId.AprsDeviceListFetch.StatusCode.get -> System.Net.HttpStatusCode?
+AprsNet.DeviceId.AprsDeviceListFetch.StatusCode.init -> void
+AprsNet.DeviceId.AprsDeviceListSource
+AprsNet.DeviceId.AprsDeviceListSource.AprsDeviceListSource(System.Net.Http.HttpClient! httpClient, System.Uri? url = null) -> void
+AprsNet.DeviceId.AprsDeviceListSource.FetchAsync(string? etag = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<AprsNet.DeviceId.AprsDeviceListFetch!>!
+AprsNet.DeviceId.AprsDeviceListSource.Url.get -> System.Uri!
+static AprsNet.DeviceId.AprsDeviceListSource.DefaultUrl.get -> System.Uri!

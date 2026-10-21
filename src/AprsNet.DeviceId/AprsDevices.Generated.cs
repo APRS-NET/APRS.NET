@@ -16,6 +16,8 @@ public static partial class AprsDevices
 
     private static readonly DateOnly _listDate = new(2026, 10, 19);
 
+    private static readonly DateTimeOffset _listGeneratedAt = new(2026, 10, 19, 17, 19, 53, TimeSpan.Zero);
+
     private static readonly Dictionary<string, AprsDevice> _tocalls = new(StringComparer.Ordinal)
     {
         ["AP1WWX"] = new() { Vendor = "TAPR", Model = "T-238+", Class = AprsDeviceClass.Weather },
