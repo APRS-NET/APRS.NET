@@ -16,6 +16,7 @@ internal static class AprsCli
         root.Subcommands.Add(new TncCommand(environment).Build());
         root.Subcommands.Add(new ServeCommand(environment).Build());
         root.Subcommands.Add(new HealthCommand(environment).Build());
+        root.Subcommands.Add(new GpsCommand(environment).Build());
         return root;
     }
 
