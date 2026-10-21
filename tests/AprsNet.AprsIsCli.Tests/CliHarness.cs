@@ -79,6 +79,27 @@ internal sealed class CliHarness
         return this;
     }
 
+    /// <summary>
+    /// Moves <paramref name="clock"/> on a step at a time until <paramref name="run"/> ends. A single jump can come
+    /// before the command starts the timer it is meant to fire (the ack wait starts once a send returns), and the
+    /// timer would then never fire.
+    /// </summary>
+    public static async Task<CliResult> AdvanceUntilDoneAsync(
+        Microsoft.Extensions.Time.Testing.FakeTimeProvider clock,
+        Task<CliResult> run,
+        TimeSpan step,
+        CancellationToken cancellationToken
+    )
+    {
+        for (var i = 0; i < 1000 && !run.IsCompleted; i++)
+        {
+            clock.Advance(step);
+            await Task.WhenAny(run, Task.Delay(20, cancellationToken));
+        }
+
+        return await run;
+    }
+
     public async Task<CliResult> RunAsync(string[] args, CancellationToken cancellationToken = default)
     {
         await using var output = new StringWriter();
