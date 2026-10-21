@@ -4,6 +4,8 @@ name: packages
 # weekly, because new advisories appear without any change here. On pull requests it keeps one comment with the report
 # up to date.
 # Versions a project pins with VersionOverride are marked and listed with the reason from the comment above the pin.
+# It also makes the release's SBOM, without attaching it anywhere, so a dependency change that breaks it shows up here
+# rather than in a release.
 on:
   push:
     branches: [main]
@@ -46,6 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0 # MinVer needs tags to version the packages the SBOM lists
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -76,6 +79,11 @@ jobs:
           else
             gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file package-report.md
           fi
+      - name: Make the SBOM, as a release does
+        run: |
+          dotnet tool restore
+          dotnet pack AprsNet.slnx -c Release -o artifacts -p:NuGetAudit=false
+          dotnet run tools/ci/Sbom.cs -- --packages artifacts
       - name: Fail on vulnerable packages
         if: steps.report.outputs.vulnerable != '0'
         run: |
