@@ -56,11 +56,16 @@ jobs:
           if [ -n "$stable" ]; then
             echo "::error::Packages without a pre-release suffix:"; echo "$stable"; exit 1
           fi
+      - name: Make the SBOM
+        # One CycloneDX file for the release's packages and everything they depend on, attached with them below.
+        run: |
+          dotnet tool restore
+          dotnet run tools/ci/Sbom.cs -- --packages artifacts
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: packages
           path: artifacts/*
-      - name: Attach packages to the GitHub release
+      - name: Attach the packages and the SBOM to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}

@@ -12,7 +12,7 @@ pre-release.
    every commit lands on `main` as written and release-please reads each one: the `commits` workflow checks every
    commit in a pull request, and `pr-title` checks the title.
 2. `release-please` (the `release` workflow) keeps a release PR open that bumps the version and updates `CHANGELOG.md`.
-3. Merging that PR creates the `vX.Y.Z` tag and a GitHub release. The `pack` job then builds the tag, runs the tests, and attaches the `.nupkg` and `.snupkg` files to the release.
+3. Merging that PR creates the `vX.Y.Z` tag and a GitHub release. The `pack` job then builds the tag, runs the tests, and attaches the `.nupkg` and `.snupkg` files to the release, with the [SBOM](#software-bill-of-materials).
 4. [MinVer](https://github.com/adamralph/minver) derives each assembly and package version from the nearest tag, so no version number is stored in the repo. Builds between releases look like `0.1.1-alpha.0.3`.
 
 ## Commit types
@@ -71,3 +71,24 @@ One-time setup:
    and tags* limited to the `main` branch (the release workflow runs on pushes to `main`, not on the tag).
 
 `--skip-duplicate` makes a re-run safe: versions that are already on nuget.org are skipped.
+
+## Software bill of materials
+
+Each GitHub release carries `aprsnet-<version>.cdx.json`, a [CycloneDX](https://cyclonedx.org) JSON SBOM of every
+package in the release, `aprscli` included. It lists:
+
+- each of the release's packages, with its SHA-512, licence and the commit it was built from;
+- every NuGet package they depend on, directly or not, at the version restore chose, with its hash and licence;
+- what each package depends on directly.
+
+Build-only packages, such as analyzers and MinVer, are left out because they don't ship.
+
+The `pack` job makes it with [`tools/ci/Sbom.cs`](../tools/ci/Sbom.cs), which runs the CycloneDX .NET tool pinned in
+`.config/dotnet-tools.json`. The `packages` workflow makes it too on pull requests that change a dependency, without
+attaching it, so a change that breaks it shows up before a release. To make one locally:
+
+```sh
+dotnet pack -c Release -o artifacts
+dotnet tool restore
+dotnet run tools/ci/Sbom.cs -- --packages artifacts
+```
