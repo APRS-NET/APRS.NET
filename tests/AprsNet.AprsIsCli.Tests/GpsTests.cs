@@ -78,6 +78,32 @@ public sealed class GpsTests : IDisposable
     }
 
     [Fact]
+    public async Task AFixGpsdSendsMoreThanOnceIsPrintedOnce()
+    {
+        // gpsd's u-blox driver sends several identical TPV reports a second.
+        var run = new CliHarness().RunAsync(
+            ["gps", "--gpsd", Address, "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve([
+            Gpsd[0],
+            Gpsd[3],
+            Gpsd[3],
+            Gpsd[3],
+            Gpsd[3].Replace("14:00:02", "14:00:03", StringComparison.Ordinal),
+        ]);
+        var result = await run;
+
+        Assert.Equal(
+            [
+                "2026-10-20 14:00:02Z 3D 49.05833 -72.02917 105.3 m 48.6 kn 90° ±3.1 m",
+                "2026-10-20 14:00:03Z 3D 49.05833 -72.02917 105.3 m 48.6 kn 90° ±3.1 m",
+            ],
+            result.Out.Split(NewLine, StringSplitOptions.RemoveEmptyEntries)
+        );
+    }
+
+    [Fact]
     public async Task SatellitesAreListedWhenTheyChange()
     {
         var run = new CliHarness().RunAsync(
