@@ -348,4 +348,32 @@ if an expected answer doesn't come. A script has one step per line:
 
 Lines starting with `#` are comments.
 
+## gps
+
+Read a GPS and print a line for each fix: a quick check of a GPS setup. It reads gpsd, or the NMEA sentences a GPS
+sends over TCP (a GPS-to-network bridge, or gpsd's own NMEA port):
+
+```sh
+aprscli gps --gpsd                          # gpsd on this machine, port 2947
+aprscli gps --gpsd raspberrypi.local --device /dev/ttyACM0 -n 10
+aprscli gps --nmea 192.168.1.20:10110 --satellites
+```
+
+```text
+2026-10-20 14:00:02Z 3D 49.05833 -72.02917 105.3 m 48.6 kn 90° 9/12 sats HDOP 0.92 ±3.1 m
+```
+
+Each line has the time, the fix (`no fix`, `fix`, `2D` or `3D`), then whatever the GPS gave: the position, the altitude
+above mean sea level, speed and course, the satellites used and in view, HDOP and the estimated horizontal error.
+gpsd's error is at 95% confidence; from NMEA it is GST's one standard deviation, when the GPS sends GST. From NMEA a
+second's fix is printed when the next second starts, once all of its sentences are in.
+
+- `--satellites` (`-s`) lists the satellites in view after a fix, when they have changed: the system, number, signal,
+  elevation, azimuth, signal-to-noise ratio and whether the fix uses it.
+- `--raw` prints the lines as read instead: gpsd's JSON or the NMEA sentences.
+- `-n` stops after that many fixes, `-d` after that long.
+
+When the source goes away it keeps trying, waiting 5 seconds and doubling to a minute, and says so on standard error.
+Ctrl+C ends it with exit code 0.
+
 <sub>Developed with AI assistance; see the [AI declaration](https://github.com/APRS-NET/APRS.NET/blob/main/AI-DECLARATION.md).</sub>
