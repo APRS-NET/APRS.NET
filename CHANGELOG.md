@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.5.0-alpha.1...v0.5.0-alpha.2) (2026-10-21)
+
+
+### Features
+
+* **cli:** aprscli gps prints a GPS's fixes from gpsd or NMEA over TCP ([1c0174b](https://github.com/APRS-NET/APRS.NET/commit/1c0174b5519a2214ed5337eec525697989fa2a85))
+* **cli:** aprscli gps reads a GPS on a serial port ([d2540b2](https://github.com/APRS-NET/APRS.NET/commit/d2540b2c151d29f8ac183c29603c33204e924c04))
+* **cli:** send beacon keeps a station on the map ([e6a0921](https://github.com/APRS-NET/APRS.NET/commit/e6a092112ecbe3a914c62224b13563e4ac72948f)), closes [#199](https://github.com/APRS-NET/APRS.NET/issues/199)
+* **deviceid:** load and fetch a newer device list ([a85599f](https://github.com/APRS-NET/APRS.NET/commit/a85599f2443d7a9c46bdf653a500ca269a12821e)), closes [#280](https://github.com/APRS-NET/APRS.NET/issues/280)
+* **gps:** satellites, DOPs and error estimates for a GPS status view ([4680b87](https://github.com/APRS-NET/APRS.NET/commit/4680b876ed8a8194408209ed46ff2e42b531ee48)), closes [#299](https://github.com/APRS-NET/APRS.NET/issues/299)
+
 ## [0.5.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.4.0-alpha.12...v0.5.0-alpha.1) (2026-10-21)
 
 
