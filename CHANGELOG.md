@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.5.0-alpha.2...v0.6.0-alpha.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **cli:** aprscli gps prints a fix gpsd repeats only once ([cae82c3](https://github.com/APRS-NET/APRS.NET/commit/cae82c3feee73ab7f2866cc8af195a22062e6ab2)), closes [#205](https://github.com/APRS-NET/APRS.NET/issues/205)
+
 ## [0.5.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.5.0-alpha.1...v0.5.0-alpha.2) (2026-10-21)
 
 
