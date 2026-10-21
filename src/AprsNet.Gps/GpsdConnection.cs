@@ -90,6 +90,25 @@ public sealed class GpsdConnection : IAsyncDisposable
     /// </summary>
     public string? LastError { get; private set; }
 
+    /// <summary>
+    /// How good the fix is: the satellites used and in view and the DOPs from gpsd's latest SKY report, and the error
+    /// estimates (<c>eph</c>, <c>epx</c>, <c>epy</c>, <c>epv</c>, <c>eps</c>) from its latest TPV. It is updated
+    /// before each fix is yielded, and kept while reconnecting.
+    /// </summary>
+    public GpsQuality Quality { get; private set; } = new();
+
+    /// <summary>
+    /// The satellites in view, from gpsd's latest SKY report that listed them; kept while reconnecting. The list is
+    /// replaced, never changed, so a new list means a new report.
+    /// </summary>
+    public IReadOnlyList<GpsSatellite> Satellites { get; private set; } = [];
+
+    /// <summary>
+    /// Raised for each line gpsd sends, as it came, before it is read: for a console showing gpsd's output. It is
+    /// raised on the reading thread; keep handlers short.
+    /// </summary>
+    public event EventHandler<GpsdLineEventArgs>? LineRead;
+
     /// <summary>Raised when <see cref="State"/> changes. It is raised on the reading thread; keep handlers short.</summary>
     public event EventHandler<GpsdConnectionStateChangedEventArgs>? StateChanged;
 
@@ -182,7 +201,14 @@ public sealed class GpsdConnection : IAsyncDisposable
                                 break; // gpsd closed the connection
                             }
 
+                            LineRead?.Invoke(this, new GpsdLineEventArgs(line));
+                            var (quality, satellites) = (reports.Quality, reports.Satellites);
                             var fix = reports.Read(line);
+                            // A new connection starts its reports afresh; keep what the last one said until gpsd says more.
+                            Quality = ReferenceEquals(reports.Quality, quality) ? Quality : reports.Quality;
+                            Satellites = ReferenceEquals(reports.Satellites, satellites)
+                                ? Satellites
+                                : reports.Satellites;
                             Release = reports.Release ?? Release;
                             LastError = reports.LastError ?? LastError;
                             if (fix is not null)
@@ -323,6 +349,18 @@ public enum GpsdConnectionState
 
     /// <summary>Disposed.</summary>
     Closed,
+}
+
+/// <summary>A line gpsd sent: see <see cref="GpsdConnection.LineRead"/>.</summary>
+public sealed class GpsdLineEventArgs : EventArgs
+{
+    internal GpsdLineEventArgs(string line)
+    {
+        Line = line;
+    }
+
+    /// <summary>The line, without its line ending: one JSON report.</summary>
+    public string Line { get; }
 }
 
 /// <summary>A change of <see cref="GpsdConnection.State"/>.</summary>

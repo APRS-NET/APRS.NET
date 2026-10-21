@@ -29,5 +29,24 @@ connection is doing; `Release` is gpsd's version, and `LastError` the last error
 - Satellites and HDOP come from gpsd's latest sky report, which it sends less often, so they can be a few seconds old.
 - Speed is in knots, as in APRS: gpsd's metres per second are converted.
 
+For a GPS status view, `Quality` and `Satellites` hold what gpsd last said, updated before each fix is yielded:
+
+- `Quality` (`GpsQuality`): the satellites used and in view, the DOPs (PDOP, HDOP, VDOP, TDOP, GDOP) from the sky
+  report, and gpsd's error estimates in metres (`eph`, `epx`, `epy`, `epv`, at 95% confidence) and in knots (`eps`)
+  from the position report.
+- `Satellites`: each `GpsSatellite` in view with its system (`GnssSystem`: GPS, GLONASS, Galileo, BeiDou …), PRN,
+  signal, elevation, azimuth, signal-to-noise ratio, and whether the fix uses it. A sky report with the DOPs alone,
+  as some drivers send, keeps the last list.
+- `LineRead` is raised for each line gpsd sends, for a console showing its output.
+
+```csharp
+gps.LineRead += (_, e) => console.Add(e.Line);
+await foreach (var fix in gps.ReadFixesAsync(cancellationToken))
+{
+    var q = gps.Quality;
+    Console.WriteLine($"{q.SatellitesUsed}/{q.SatellitesInView} satellites, HDOP {q.Hdop}, ±{q.HorizontalErrorMeters} m");
+}
+```
+
 A GPS on a serial port without gpsd sends NMEA sentences instead: read those with `NmeaSentence` and
-`NmeaFixTracker` in `AprsNet.Packets`, which give the same `GpsFix`.
+`NmeaFixTracker` in `AprsNet.Packets`, which give the same `GpsFix`, `GpsQuality` and `GpsSatellite`.

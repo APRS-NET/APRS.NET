@@ -41,3 +41,8 @@ AprsNet.Gps.GpsdOptions.TimeProvider.get -> System.TimeProvider!
 AprsNet.Gps.GpsdOptions.TimeProvider.set -> void
 AprsNet.Gps.GpsdOptions.Validate() -> void
 const AprsNet.Gps.GpsdOptions.DefaultPort = 2947 -> int
+AprsNet.Gps.GpsdConnection.LineRead -> System.EventHandler<AprsNet.Gps.GpsdLineEventArgs!>?
+AprsNet.Gps.GpsdConnection.Quality.get -> AprsNet.Packets.GpsQuality!
+AprsNet.Gps.GpsdConnection.Satellites.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.GpsSatellite!>!
+AprsNet.Gps.GpsdLineEventArgs
+AprsNet.Gps.GpsdLineEventArgs.Line.get -> string!

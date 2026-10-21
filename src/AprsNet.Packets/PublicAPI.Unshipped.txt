@@ -1020,3 +1020,70 @@ override AprsNet.Packets.QueryFootprint.GetHashCode() -> int
 ~override AprsNet.Packets.QueryFootprint.ToString() -> string
 static AprsNet.Packets.QueryFootprint.operator !=(AprsNet.Packets.QueryFootprint left, AprsNet.Packets.QueryFootprint right) -> bool
 static AprsNet.Packets.QueryFootprint.operator ==(AprsNet.Packets.QueryFootprint left, AprsNet.Packets.QueryFootprint right) -> bool
+AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.BeiDou = 5 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.Galileo = 4 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.Glonass = 3 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.Gps = 1 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.NavIC = 7 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.Qzss = 6 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.Sbas = 2 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GnssSystem.Unknown = 0 -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GpsQuality
+AprsNet.Packets.GpsQuality.AltitudeErrorMeters.get -> double?
+AprsNet.Packets.GpsQuality.AltitudeErrorMeters.init -> void
+AprsNet.Packets.GpsQuality.<Clone>$() -> AprsNet.Packets.GpsQuality!
+AprsNet.Packets.GpsQuality.Equals(AprsNet.Packets.GpsQuality? other) -> bool
+AprsNet.Packets.GpsQuality.Gdop.get -> double?
+AprsNet.Packets.GpsQuality.Gdop.init -> void
+AprsNet.Packets.GpsQuality.GpsQuality() -> void
+AprsNet.Packets.GpsQuality.Hdop.get -> double?
+AprsNet.Packets.GpsQuality.Hdop.init -> void
+AprsNet.Packets.GpsQuality.HorizontalErrorMeters.get -> double?
+AprsNet.Packets.GpsQuality.HorizontalErrorMeters.init -> void
+AprsNet.Packets.GpsQuality.LatitudeErrorMeters.get -> double?
+AprsNet.Packets.GpsQuality.LatitudeErrorMeters.init -> void
+AprsNet.Packets.GpsQuality.LongitudeErrorMeters.get -> double?
+AprsNet.Packets.GpsQuality.LongitudeErrorMeters.init -> void
+AprsNet.Packets.GpsQuality.Pdop.get -> double?
+AprsNet.Packets.GpsQuality.Pdop.init -> void
+AprsNet.Packets.GpsQuality.SatellitesInView.get -> int?
+AprsNet.Packets.GpsQuality.SatellitesInView.init -> void
+AprsNet.Packets.GpsQuality.SatellitesUsed.get -> int?
+AprsNet.Packets.GpsQuality.SatellitesUsed.init -> void
+AprsNet.Packets.GpsQuality.SpeedErrorKnots.get -> double?
+AprsNet.Packets.GpsQuality.SpeedErrorKnots.init -> void
+AprsNet.Packets.GpsQuality.Tdop.get -> double?
+AprsNet.Packets.GpsQuality.Tdop.init -> void
+AprsNet.Packets.GpsQuality.Vdop.get -> double?
+AprsNet.Packets.GpsQuality.Vdop.init -> void
+AprsNet.Packets.GpsSatellite
+AprsNet.Packets.GpsSatellite.AzimuthDegrees.get -> double?
+AprsNet.Packets.GpsSatellite.AzimuthDegrees.init -> void
+AprsNet.Packets.GpsSatellite.<Clone>$() -> AprsNet.Packets.GpsSatellite!
+AprsNet.Packets.GpsSatellite.ElevationDegrees.get -> double?
+AprsNet.Packets.GpsSatellite.ElevationDegrees.init -> void
+AprsNet.Packets.GpsSatellite.Equals(AprsNet.Packets.GpsSatellite? other) -> bool
+AprsNet.Packets.GpsSatellite.GpsSatellite() -> void
+AprsNet.Packets.GpsSatellite.Id.get -> int
+AprsNet.Packets.GpsSatellite.Id.init -> void
+AprsNet.Packets.GpsSatellite.SignalId.get -> int?
+AprsNet.Packets.GpsSatellite.SignalId.init -> void
+AprsNet.Packets.GpsSatellite.SnrDbHz.get -> double?
+AprsNet.Packets.GpsSatellite.SnrDbHz.init -> void
+AprsNet.Packets.GpsSatellite.System.get -> AprsNet.Packets.GnssSystem
+AprsNet.Packets.GpsSatellite.System.init -> void
+AprsNet.Packets.GpsSatellite.Used.get -> bool
+AprsNet.Packets.GpsSatellite.Used.init -> void
+AprsNet.Packets.NmeaFixTracker.Quality.get -> AprsNet.Packets.GpsQuality!
+AprsNet.Packets.NmeaFixTracker.Satellites.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.GpsSatellite!>!
+override AprsNet.Packets.GpsQuality.Equals(object? obj) -> bool
+override AprsNet.Packets.GpsQuality.GetHashCode() -> int
+override AprsNet.Packets.GpsQuality.ToString() -> string!
+override AprsNet.Packets.GpsSatellite.Equals(object? obj) -> bool
+override AprsNet.Packets.GpsSatellite.GetHashCode() -> int
+override AprsNet.Packets.GpsSatellite.ToString() -> string!
+static AprsNet.Packets.GpsQuality.operator !=(AprsNet.Packets.GpsQuality? left, AprsNet.Packets.GpsQuality? right) -> bool
+static AprsNet.Packets.GpsQuality.operator ==(AprsNet.Packets.GpsQuality? left, AprsNet.Packets.GpsQuality? right) -> bool
+static AprsNet.Packets.GpsSatellite.operator !=(AprsNet.Packets.GpsSatellite? left, AprsNet.Packets.GpsSatellite? right) -> bool
+static AprsNet.Packets.GpsSatellite.operator ==(AprsNet.Packets.GpsSatellite? left, AprsNet.Packets.GpsSatellite? right) -> bool
