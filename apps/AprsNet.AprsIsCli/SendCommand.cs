@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Globalization;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.Ax25;
+using AprsNet.Beacons;
 using AprsNet.Kiss;
 using AprsNet.Messaging;
 using AprsNet.Packets;
@@ -133,6 +134,31 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             "How the message is resent until it is acknowledged: default (30 s, 1, 2, 4 and 8 minutes), aprs-is "
             + "(30 s, 2 and 5 minutes), slow-hf (2, 4, 8 and 16 minutes) or none (once). Default: default.",
         DefaultValueFactory = _ => "default",
+    };
+
+    private readonly Option<string> _every = new("--every")
+    {
+        Description = "How often to beacon, 1m or more. With --decay, the longest wait. Default: 30m.",
+        DefaultValueFactory = _ => "30m",
+    };
+
+    private readonly Option<string?> _decay = new("--decay")
+    {
+        Description =
+            "Beacon on a decay schedule instead: wait this long after the first beacon, then double the wait up to "
+            + "--every, for example 1m (1, 2, 4, 8 … minutes).",
+    };
+
+    private readonly Option<string?> _beaconStatus = new("--status")
+    {
+        Description = "Also send this status text with each beacon.",
+    };
+
+    private readonly Option<int?> _beaconCount = new("--count") { Description = "Stop after this many beacons." };
+
+    private readonly Option<string?> _beaconDuration = new("--duration", "-d")
+    {
+        Description = "Stop after this long, for example 2h.",
     };
 
     private readonly Option<bool> _kill = new("--kill") { Description = "Send the object as killed, to remove it." };
@@ -282,6 +308,61 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 Comment = parseResult.GetValue(_comment) ?? "",
             }
         );
+
+        if (!toTnc)
+        {
+            var beacon = new Command(
+                "beacon",
+                "Beacon a position to APRS-IS on a schedule until --count, --duration or Ctrl+C: every --every, or on "
+                    + "a decay schedule with --decay. The first beacon goes at once."
+            )
+            {
+                _latitude,
+                _longitude,
+                _symbol,
+                _comment,
+                _beaconStatus,
+                _every,
+                _decay,
+                _beaconCount,
+                _beaconDuration,
+            };
+            beacon.SetAction(
+                async (parseResult, cancellationToken) =>
+                {
+                    if (!TryBeaconPlan(parseResult, out var plan, out var error))
+                    {
+                        return await UsageAsync(beacon.Name, error);
+                    }
+
+                    return await RunAsync(
+                        parseResult,
+                        beacon.Name,
+                        _ =>
+                        {
+                            List<AprsPayload> payloads =
+                            [
+                                new PositionReport
+                                {
+                                    Position = Position(parseResult),
+                                    Symbol = Symbol(parseResult),
+                                    Comment = parseResult.GetValue(_comment) ?? "",
+                                },
+                            ];
+                            if (parseResult.GetValue(_beaconStatus) is { Length: > 0 } status)
+                            {
+                                payloads.Add(new StatusReport { Text = status });
+                            }
+
+                            return payloads;
+                        },
+                        cancellationToken,
+                        plan
+                    );
+                }
+            );
+            command.Subcommands.Add(beacon);
+        }
 
         var objectName = new Argument<string>("name") { Description = "Object name, 1 to 9 characters." };
         var @object = new Command("object", "Send an object, timestamped now; --kill removes it.")
@@ -525,7 +606,8 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         ParseResult parseResult,
         string commandName,
         Func<PacketAddress, IReadOnlyList<AprsPayload>> build,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        BeaconPlan? beacon = null
     )
     {
         if (parseResult.GetValue(_callsign)?.Trim().ToUpperInvariant() is not { Length: > 0 } callsign)
@@ -653,6 +735,11 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                     $"aprscli: the server did not accept the passcode for {callsign}, so it would drop the packet."
                 );
                 return ExitCodes.LoginFailed;
+            }
+
+            if (beacon is not null)
+            {
+                return await BeaconAsync(connection, packets, beacon, reporter, run.Token);
             }
 
             if (message is null)
@@ -968,6 +1055,99 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         {
             yield return AprsPacket.Parse(line);
         }
+    }
+
+    /// <summary>When <c>send beacon</c> sends, and when it stops.</summary>
+    private sealed record BeaconPlan(Func<TimeProvider, BeaconSchedule> Schedule, int? Count, TimeSpan? Duration);
+
+    private bool TryBeaconPlan(ParseResult parseResult, out BeaconPlan plan, out string error)
+    {
+        plan = null!;
+        var everyText = parseResult.GetValue(_every)!;
+        if (!DurationParser.TryParse(everyText, out var every) || every < TimeSpan.FromMinutes(1))
+        {
+            error = $"--every '{everyText}' is not valid. Use 1m or more, for example 30m.";
+            return false;
+        }
+
+        Func<TimeProvider, BeaconSchedule> schedule = clock => new FixedBeaconSchedule(every, TimeSpan.Zero, clock);
+        if (parseResult.GetValue(_decay) is { } decayText)
+        {
+            if (!DurationParser.TryParse(decayText, out var first) || first < TimeSpan.FromMinutes(1) || first > every)
+            {
+                error = $"--decay '{decayText}' is not valid. Use 1m or more, up to --every ({everyText}).";
+                return false;
+            }
+
+            schedule = clock => new DecayBeaconSchedule(first, every, clock);
+        }
+
+        if (parseResult.GetValue(_beaconCount) is <= 0)
+        {
+            error = "--count must be at least 1.";
+            return false;
+        }
+
+        TimeSpan? duration = null;
+        if (parseResult.GetValue(_beaconDuration) is { } durationText)
+        {
+            if (!DurationParser.TryParse(durationText, out var parsed))
+            {
+                error = $"--duration '{durationText}' is not valid. Use a duration such as 2h.";
+                return false;
+            }
+
+            duration = parsed;
+        }
+
+        plan = new BeaconPlan(schedule, parseResult.GetValue(_beaconCount), duration);
+        error = "";
+        return true;
+    }
+
+    /// <summary>
+    /// Sends <paramref name="packets"/> each time the schedule comes due, printing each with the time it went, until
+    /// the plan's count or duration, or cancellation. A dropped connection is reconnected meanwhile.
+    /// </summary>
+    private async Task<int> BeaconAsync(
+        AprsIsConnection connection,
+        AprsPacket[] packets,
+        BeaconPlan plan,
+        ConnectionReporter reporter,
+        CancellationToken cancellationToken
+    )
+    {
+        var clock = environment.TimeProvider;
+        var schedule = plan.Schedule(clock);
+        using var limit = plan.Duration is { } duration
+            ? new CancellationTokenSource(duration, clock)
+            : new CancellationTokenSource();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, limit.Token);
+        var sent = 0;
+        try
+        {
+            while (plan.Count is not { } count || sent < count)
+            {
+                await Task.Delay(schedule.DueIn, clock, stop.Token);
+                foreach (var packet in packets)
+                {
+                    await connection.SendAsync(packet, stop.Token);
+                    var now = clock.GetUtcNow().ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture);
+                    await environment.Out.WriteLineAsync($"{now} {packet}");
+                }
+
+                schedule.Sent();
+                sent++;
+            }
+        }
+        catch (OperationCanceledException)
+            when (limit.IsCancellationRequested && !reporter.Stopped.IsCancellationRequested)
+        {
+            // --duration reached.
+        }
+
+        await environment.Error.WriteLineAsync($"aprscli: sent {sent} beacon{(sent == 1 ? "" : "s")}.");
+        return ExitCodes.Success;
     }
 
     private bool TryReadPasscode(ParseResult parseResult, out int passcode, out string error)
