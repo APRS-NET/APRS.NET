@@ -173,6 +173,20 @@ To watch ANSRVR's notices and relays while joining a group:
 aprscli send message ANSRVR "J NZEVENT" -c KD9XYZ-9 --show-received --filter b/ANSRVR --wait-replies 5m
 ```
 
+`beacon` keeps sending a position, and with `--status` a status report, on a schedule from `AprsNet.Beacons`, printing
+each packet with the time it went:
+
+```sh
+aprscli send beacon --lat 49.05833 --lon -72.02917 --symbol "/-" --comment "Home" -c KD9XYZ-9   # every 30m
+aprscli send beacon --lat 49.05833 --lon -72.02917 -c KD9XYZ-9 --every 10m --count 6
+aprscli send beacon --lat 49.05833 --lon -72.02917 -c KD9XYZ-9 --decay 1m --every 30m      # 1, 2, 4 … 30 minutes
+```
+
+The first beacon goes at once (APRS-IS costs no airtime). `--every` sets the interval, 1m or more (default 30m); with
+`--decay` the wait starts at that and doubles after each beacon up to `--every`. It runs until `--count` beacons,
+`--duration` or Ctrl+C, reconnecting if the connection drops, and exits 0. It is for APRS-IS only; `tnc send` has no
+`beacon`.
+
 | Option | Meaning |
 | --- | --- |
 | `-c`, `--callsign` | Your callsign, with optional SSID. Required; `N0CALL` is refused. |
