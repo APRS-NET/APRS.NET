@@ -228,8 +228,12 @@ public class SendTests
             TestContext.Current.CancellationToken
         );
         await WaitForWritten(harness, 2);
-        clock.Advance(TimeSpan.FromMinutes(2));
-        var result = await run;
+        var result = await CliHarness.AdvanceUntilDoneAsync(
+            clock,
+            run,
+            TimeSpan.FromSeconds(30),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Equal(5, result.ExitCode);
         Assert.Contains("no acknowledgement after 1 attempt.", result.Error, StringComparison.Ordinal);

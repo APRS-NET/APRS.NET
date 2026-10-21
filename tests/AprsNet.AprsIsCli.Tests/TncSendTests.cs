@@ -121,8 +121,7 @@ public sealed class TncSendTests : IDisposable
         var heard = new Heard(tnc.GetStream());
         Assert.EndsWith(":Hello{01}", await heard.NextAsync(), StringComparison.Ordinal);
 
-        clock.Advance(TimeSpan.FromMinutes(2));
-        var result = await run;
+        var result = await CliHarness.AdvanceUntilDoneAsync(clock, run, TimeSpan.FromSeconds(30), Token);
 
         Assert.Equal(5, result.ExitCode);
         Assert.Contains("no acknowledgement after 1 attempt.", result.Error, StringComparison.Ordinal);
