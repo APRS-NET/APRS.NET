@@ -57,6 +57,7 @@ if (
     return 1;
 }
 
+var utc = time.UtcDateTime;
 var list = JsonNode.Parse(File.ReadAllText(listPath))!.AsObject();
 var classes = new Dictionary<string, string>
 {
@@ -110,6 +111,8 @@ code.AppendLine(
         private const string _listCommit = "{{commit}}";
 
         private static readonly DateOnly _listDate = new({{time.Year}}, {{time.Month}}, {{time.Day}});
+
+        private static readonly DateTimeOffset _listGeneratedAt = new({{utc.Year}}, {{utc.Month}}, {{utc.Day}}, {{utc.Hour}}, {{utc.Minute}}, {{utc.Second}}, TimeSpan.Zero);
 
     """
 );
