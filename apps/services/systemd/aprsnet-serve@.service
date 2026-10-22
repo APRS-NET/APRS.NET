@@ -1,0 +1,53 @@
+# Serves APRS-IS, TNCs or both to APRS clients, optionally as an IGate: aprscli serve, reading
+# /etc/aprsnet/serve/<name>.toml. An IGate's passcode goes in /etc/aprsnet/secrets.env.
+#
+#   sudo systemctl enable --now aprsnet-serve@gateway      # /etc/aprsnet/serve/gateway.toml
+#
+# Installed by apps/services/install.sh. Change it with `systemctl edit`, not here: install.sh replaces this file.
+
+[Unit]
+Description=APRS.NET APRS-IS server %i
+Documentation=https://github.com/APRS-NET/APRS.NET/tree/main/apps/services
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/aprsnet/serve/%i.toml
+
+[Service]
+Type=exec
+User=aprsnet
+Group=aprsnet
+# For a --tnc on a serial port, which belongs to the dialout group.
+SupplementaryGroups=dialout
+EnvironmentFile=/etc/aprsnet/environment
+EnvironmentFile=-/etc/aprsnet/secrets.env
+ExecStart=/opt/aprsnet/aprscli serve --config /etc/aprsnet/serve/%i.toml
+# Lost connections are reconnected inside aprscli; this restarts it when it stops for anything else. Exit code 3 is a
+# mistake in the settings and 4 a passcode APRS-IS refused, which a restart won't fix.
+Restart=on-failure
+RestartSec=10
+RestartPreventExitStatus=3 4
+SyslogIdentifier=aprsnet-serve@%i
+
+StateDirectory=aprsnet
+Environment=HOME=/var/lib/aprsnet DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+LockPersonality=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

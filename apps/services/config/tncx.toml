@@ -1,0 +1,49 @@
+# aprsnet-tnc-share@tncx reads this as /etc/aprsnet/tnc-share/tncx.toml. Name the file after the TNC; for a second
+# TNC, copy it to another name and start aprsnet-tnc-share@<that name>.
+#
+# Shares a hardware TNC on a serial port with KISS apps over TCP, as Dire Wolf serves its own on port 8001. Every app
+# hears what the TNC hears, and each frame an app sends reaches the TNC whole, one at a time, paced for the air.
+# Nothing else may have the serial port open while this runs: stop ser2net, Dire Wolf or a terminal on it first.
+#
+# Each key is one of `aprscli tnc share`'s options without the dashes (`aprscli tnc share --help` lists them). The
+# [tables] only group them for reading. After changing this file:
+#
+#   sudo aprsnet-check tncx
+#   sudo systemctl restart aprsnet-tnc-share@tncx
+
+[tnc]
+# The TNC, as serial:PORT@BAUD. Use its name under /dev/serial/by-id/ (ls -l /dev/serial/by-id/), which stays the
+# same when USB devices are plugged in a different order. The baud is the TNC's serial speed, not the radio's.
+tnc = "serial:/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A1234567-if00-port0@1200"
+
+# The radio port on a multi-port TNC, 0 to 15.
+# radio-port = 0
+
+[air]
+# The radio's data rate in bit/s: 1200 for VHF APRS, 300 for HF. With the serial speed, this tells how long the TNC
+# needs to send each frame before it can take the next.
+air-rate = 1200
+
+# How much longer to wait after each frame's time on the air, for the TNC's keyup delay (TXDELAY) and a busy channel:
+# a duration such as 500ms or 1s, or 0.
+gap = "500ms"
+
+# Cap what all apps send together at 3 frames at once, then one every 10 s. Off by default, as apps pace themselves.
+# transmit-limit = true
+
+[apps]
+# Where KISS apps connect. 0.0.0.0 is every network this machine is on. There is no login, and any app that connects
+# can transmit, so keep this port on your own network.
+listen = "0.0.0.0:8001"
+
+# How many apps may be connected at once.
+max-clients = 16
+
+[logging]
+# Each frame heard and sent goes to the journal (aprsnet-logs --packets tncx). true logs only apps connecting and
+# leaving and the TNC's state.
+quiet = false
+
+# Warn when the TNC sends nothing at all for this long: it may be switched off behind a USB port that stays open.
+# Pick longer than the channel is ever quiet.
+quiet-warning = "30m"

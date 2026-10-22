@@ -55,6 +55,8 @@ SBOM of them, and is marked as a pre-release. See [docs/versioning.md](docs/vers
 - [Getting started with a TNC](docs/guides/tnc.md): read and send packets through Dire Wolf or a serial TNC.
 - [Getting started with the gateway](docs/guides/gateway.md): serve APRS-IS and your TNCs to APRS-IS clients.
 - [Run the gateway in a container](docs/guides/container.md): the `aprscli` image, and a compose sample with Dire Wolf.
+- [Run as Linux services](apps/services/README.md): share a serial TNC and serve a gateway with systemd, set up in TOML
+  files, with an installer and scripts to check them and read their logs.
 
 ## Layout
 
@@ -77,6 +79,7 @@ SBOM of them, and is marked as a pre-release. See [docs/versioning.md](docs/vers
 | `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
 | `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |
 | `apps/AprsNet.AprsIsCli`      | The `aprscli` command-line tool                                           |
+| `apps/services`               | systemd services for `aprscli`: units, example configs, scripts         |
 | `tests/`                      | Unit tests and the packet corpus                                          |
 
 ## Build

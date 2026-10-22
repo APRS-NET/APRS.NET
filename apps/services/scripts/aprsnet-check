@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# Checks the APRS.NET services: that aprscli accepts each config file in /etc/aprsnet (as the service would read it),
+# that each shared TNC's serial port is there and free, and, for each service that is running, that it listens where
+# its config says and answers its health check.
+#
+#   sudo aprsnet-check                  every config
+#   sudo aprsnet-check tncx gateway     these only, by file name
+#   sudo aprsnet-check --config-only    the settings only, as before enabling a service
+#
+# Exits 0 when nothing failed, 1 when something did. Warnings don't fail.
+set -euo pipefail
+
+etc=/etc/aprsnet
+aprscli=/opt/aprsnet/aprscli
+user=aprsnet
+
+config_only=''
+names=()
+while (($#)); do
+  case "$1" in
+    --config-only) config_only=1; shift ;;
+    -h | --help) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) echo "aprsnet-check: unknown option '$1'. Try --help." >&2; exit 2 ;;
+    *) names+=("${1%.toml}"); shift ;;
+  esac
+done
+
+if [[ $EUID -ne 0 ]]; then
+  echo "aprsnet-check: run it as root (sudo), to read $etc/secrets.env and check as the $user user." >&2
+  exit 2
+fi
+
+failed=0
+if [[ -t 1 ]]; then
+  ok=$'\e[32mok\e[0m' bad=$'\e[31mFAIL\e[0m' warn=$'\e[33mwarn\e[0m'
+else
+  ok=ok bad=FAIL warn=warn
+fi
+
+pass() { printf '  %-4s  %s\n' "$ok" "$*"; }
+problem() { printf '  %-4s  %s\n' "$bad" "$*"; failed=1; }
+caution() { printf '  %-4s  %s\n' "$warn" "$*"; }
+indent() { sed 's/^/          /'; }
+
+# A string setting from a config file, such as listen, or the default. Enough for the simple values these files hold.
+setting() {
+  local value
+  value=$(sed -nE "s/^[[:space:]]*$2[[:space:]]*=[[:space:]]*\"([^\"]*)\".*/\1/p" "$1" | head -n 1)
+  echo "${value:-$3}"
+}
+
+# Runs aprscli as the services do: as the aprsnet user, with /etc/aprsnet/environment and, for serve, the secrets.
+as_service() {
+  (
+    set -a
+    # shellcheck source=/dev/null
+    source "$etc/environment"
+    if [[ $1 == serve && -r $etc/secrets.env ]]; then
+      # shellcheck source=/dev/null
+      source "$etc/secrets.env"
+    fi
+    set +a
+    runuser -u "$user" -- "$aprscli" "$@"
+  )
+}
+
+# Whether something listens on the port of an address:port.
+listening() {
+  [[ -n $(ss -Hltn "sport = :${1##*:}") ]]
+}
+
+check_serial() {
+  local file=$1 unit=$2 tnc device holders
+  tnc=$(setting "$file" tnc '')
+  [[ $tnc == serial:* ]] || return 0
+  device=${tnc#serial:}
+  device=${device%%[@,]*}
+  if [[ ! -e $device ]]; then
+    problem "$device is not there: is the TNC plugged in? (ls -l /dev/serial/by-id/)"
+    return
+  fi
+
+  if runuser -u "$user" -- test -r "$device" -a -w "$device"; then
+    pass "$device is there, and the $user user can open it"
+  else
+    problem "the $user user can't open $device ($(stat -c '%U:%G %a' "$(readlink -f "$device")"))"
+  fi
+
+  if command -v fuser >/dev/null; then
+    local main
+    main=$(systemctl show -p MainPID --value "$unit")
+    holders=$(fuser "$(readlink -f "$device")" 2>/dev/null | tr -s ' ' '\n' | grep -vx "${main:-0}" | grep . || true)
+    for pid in $holders; do
+      caution "$device is also open in $(ps -o comm= -p "$pid") (pid $pid), which will fight over the TNC"
+    done
+  fi
+
+  if systemctl is-active --quiet ser2net 2>/dev/null; then
+    caution "ser2net is running; make sure it doesn't use $device (sudo systemctl disable --now ser2net)"
+  fi
+}
+
+check_service() {
+  local kind=$1 file=$2 unit=$3 name listen http
+  name=$(basename "$file" .toml)
+  if ! systemctl is-enabled --quiet "$unit" 2>/dev/null; then
+    caution "$unit is not enabled (sudo systemctl enable --now $unit)"
+  fi
+
+  if ! systemctl is-active --quiet "$unit"; then
+    problem "$unit is not running (systemctl status $unit; aprsnet-logs $name)"
+    return
+  fi
+
+  pass "$unit is running, since $(systemctl show -p ActiveEnterTimestamp --value "$unit")"
+  if [[ $kind == serve ]]; then
+    listen=$(setting "$file" listen 127.0.0.1:14580)
+  else
+    listen=$(setting "$file" listen 127.0.0.1:8001)
+  fi
+
+  if listening "$listen"; then
+    pass "listening on $listen"
+  else
+    problem "nothing listens on $listen"
+  fi
+
+  if [[ $kind == serve ]]; then
+    http=$(setting "$file" http '')
+    if [[ -n $http ]]; then
+      local report
+      if report=$(as_service health "http://127.0.0.1:${http##*:}/health" 2>&1); then
+        pass "/health on $http says a source is connected"
+      else
+        problem "/health on $http says no source is connected, or didn't answer:"
+        echo "$report" | indent
+      fi
+    fi
+  else
+    # The last word on the TNC since the service started: trouble, or its end.
+    local last invocation
+    invocation=$(systemctl show -p InvocationID --value "$unit")
+    last=$(journalctl "_SYSTEMD_INVOCATION_ID=$invocation" -o cat --no-pager 2>/dev/null |
+      grep -E '^aprscli: ((reconnected to|lost) the TNC|the TNC at|warning: the TNC)' | tail -n 1 || true)
+    case "$last" in
+      '') pass "the TNC has been connected since the service started" ;;
+      *'reconnected to the TNC'*) pass "the TNC is connected again: ${last#aprscli: }" ;;
+      *lost* | *closed* | *warning:*) problem "the TNC: ${last#aprscli: }" ;;
+      *) pass "the TNC: ${last#aprscli: }" ;;
+    esac
+  fi
+}
+
+[[ -x $aprscli ]] || { echo "aprsnet-check: $aprscli is missing. Run install.sh." >&2; exit 2; }
+id "$user" &>/dev/null || { echo "aprsnet-check: there is no $user user. Run install.sh." >&2; exit 2; }
+echo "aprscli $(as_service --version)"
+
+shopt -s nullglob
+found=0
+for kind in tnc-share serve; do
+  for file in "$etc/$kind"/*.toml; do
+    name=$(basename "$file" .toml)
+    if ((${#names[@]})) && [[ ! " ${names[*]} " == *" $name "* ]]; then
+      continue
+    fi
+
+    found=1
+    unit="aprsnet-$kind@$name.service"
+    echo
+    echo "$unit ($file)"
+    command=(serve)
+    [[ $kind == tnc-share ]] && command=(tnc share)
+    if output=$(as_service "${command[@]}" --config "$file" --check 2>&1); then
+      pass "${output#aprscli: the settings are good. }"
+    else
+      problem "aprscli doesn't accept the settings:"
+      echo "$output" | indent
+      continue
+    fi
+
+    [[ $kind == tnc-share ]] && check_serial "$file" "$unit"
+    [[ -z $config_only ]] && check_service "$kind" "$file" "$unit"
+  done
+done
+
+if ((!found)); then
+  echo "aprsnet-check: no config files to check in $etc/serve or $etc/tnc-share${names[*]:+ named ${names[*]}}." >&2
+  exit 1
+fi
+
+exit "$failed"

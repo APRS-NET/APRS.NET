@@ -124,6 +124,7 @@ the TNCs. [docs/metrics.md](../metrics.md) lists the instruments.
 
 ## Next
 
+- To run the gateway as a service on Linux, see [apps/services](../../apps/services/README.md).
 - Clients are read-only for now: what they send is ignored.
 - The IGate is receive-only for now.
 - The [gateway design notes](../design/gateway.md) explain how filters, history and slow clients are handled.

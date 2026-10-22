@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Shows the APRS.NET services' logs from the systemd journal: the last 100 lines of every aprsnet service, or of the
+# ones named.
+#
+#   aprsnet-logs                        every service
+#   aprsnet-logs -f tncx                follow one, by its config file's name
+#   aprsnet-logs --packets tncx         only the frames heard and sent (tnc share with quiet = false)
+#   aprsnet-logs --events               no frames: apps and clients, the TNC and APRS-IS, warnings and errors
+#   aprsnet-logs --since "1 hour ago"   everything since then, instead of the last 100 lines
+#   aprsnet-logs --since today --packets tncx -- -o cat > heard.txt
+#                                       anything after -- goes to journalctl, here to save the day's frames
+#
+# Run it as root, or as a user in the adm or systemd-journal group, to see the services' logs.
+set -euo pipefail
+
+follow='' since='' only=''
+names=() extra=()
+while (($#)); do
+  case "$1" in
+    -f | --follow) follow=1; shift ;;
+    --since) since=${2:?--since needs a time, such as today or "1 hour ago"}; shift 2 ;;
+    --packets) only=packets; shift ;;
+    --events) only=events; shift ;;
+    --) shift; extra=("$@"); break ;;
+    -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) echo "aprsnet-logs: unknown option '$1'. Try --help." >&2; exit 2 ;;
+    *) names+=("${1%.toml}"); shift ;;
+  esac
+done
+
+arguments=(--no-pager -o short-iso)
+if ((${#names[@]})); then
+  for name in "${names[@]}"; do
+    arguments+=(-u "aprsnet-*@$name.service")
+  done
+else
+  arguments+=(-u 'aprsnet-*@*.service')
+fi
+
+if [[ -n $since ]]; then
+  arguments+=(--since "$since")
+elif [[ -z $follow ]]; then
+  arguments+=(-n 100)
+fi
+
+[[ -n $follow ]] && arguments+=(-f)
+
+# tnc share writes each frame as "<time>Z heard <packet>" or "<time>Z sent <packet>"; the rest are events.
+frames='Z (heard|sent) '
+case "$only" in
+  packets) journalctl "${arguments[@]}" "${extra[@]}" | grep --line-buffered -E "$frames" ;;
+  events) journalctl "${arguments[@]}" "${extra[@]}" | grep --line-buffered -vE "$frames" ;;
+  *) exec journalctl "${arguments[@]}" "${extra[@]}" ;;
+esac
