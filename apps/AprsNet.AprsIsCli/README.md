@@ -236,6 +236,8 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `--comment` | With `--igate`: text after `RX-only IGate` in the beacon's comment. |
 | `--beacon-interval` | With `--igate`: how often to beacon, at least `1m`. Default: `30m`. |
 | `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up. |
+| `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
+| `--check` | Check the options and any `--config` file, say what would be served, and exit without connecting. |
 
 The upstream connection and each TNC always reconnect. A TNC sending text instead of KISS frames (not in KISS mode) is
 reported on stderr. When there is more than one source, the summary at the end
@@ -405,10 +407,39 @@ leaving, the TNC's state and a summary at the end go to stderr.
 | `-q`, `--quiet` | Don't print each frame. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
 | `--quiet-warning` | Warn when the TNC sends nothing for this long, as for `tnc listen`. |
+| `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
+| `--check` | Check the options and any `--config` file, say what would be shared, and exit without connecting. |
 
 KISS over TCP has no login: anyone who can reach the port can transmit through your TNC. Keep `--listen` on
-`127.0.0.1` or a trusted network, behind a firewall. To run it as a service, see the
-[TNC guide](../../docs/guides/tnc.md#share-a-hardware-tnc-over-the-network).
+`127.0.0.1` or a trusted network, behind a firewall. To run it as a service, see [the services](../services/README.md).
+
+### Config files
+
+`serve` and `tnc share` can read their options from a TOML file with `--config`, which is how the
+[services](../services/README.md) run them. Each key is an option's long name without the dashes, a list repeats an
+option, and `[tables]` only group the keys for reading. An option on the command line wins over the file.
+
+```toml
+# gateway.toml
+[aprs-is]
+callsign = "N0CALL"
+filter = "r/35/-97/300"
+
+[sources]
+tnc = ["localhost:8001", "192.168.1.20:8001"]
+
+[clients]
+listen = "0.0.0.0:14580"
+history = "30m"
+```
+
+```sh
+aprscli serve --config gateway.toml --check        # aprscli: the settings are good. Would serve …
+aprscli serve --config gateway.toml -l 127.0.0.1:14581
+```
+
+A key that isn't one of the command's options, a key set twice, or a value that isn't a string, a number, `true` or
+`false`, or a list of them, is refused with its line number. A file can't hold `passcode`: set `APRS_PASSCODE` instead.
 
 ## gps
 

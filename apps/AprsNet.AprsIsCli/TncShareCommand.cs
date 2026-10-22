@@ -84,6 +84,10 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             + "port that stays open. Default: off.",
     };
 
+    private readonly Option<string?> _config = ConfigFile.CreateOption();
+
+    private readonly Option<bool> _check = ConfigFile.CreateCheckOption();
+
     public Command Build()
     {
         var command = new Command(
@@ -102,6 +106,8 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             _quiet,
             _duration,
             _quietWarning,
+            _config,
+            _check,
         };
         command.SetAction(RunAsync);
         return command;
@@ -177,6 +183,18 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             }
 
             quietWarning = quiet;
+        }
+
+        if (parseResult.GetValue(_check))
+        {
+            var baud = address.IsSerial ? $" at {address.BaudRate.ToString(CultureInfo.InvariantCulture)} baud" : "";
+            await environment.Error.WriteLineAsync(
+                $"aprscli: the settings are good. Would share the TNC at {address}{baud} on {listen} with up to "
+                    + $"{maxClients.ToString(CultureInfo.InvariantCulture)} apps, pacing frames for "
+                    + $"{airRate.ToString(CultureInfo.InvariantCulture)} bit/s on the air with a "
+                    + $"{gap.TotalMilliseconds.ToString(CultureInfo.InvariantCulture)} ms gap."
+            );
+            return ExitCodes.Success;
         }
 
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

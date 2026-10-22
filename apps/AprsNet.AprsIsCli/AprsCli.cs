@@ -26,7 +26,18 @@ internal static class AprsCli
         CancellationToken cancellationToken
     )
     {
-        var parseResult = Build(environment).Parse(args);
+        var root = Build(environment);
+        var parseResult = root.Parse(args);
+        if (!ConfigFile.TryExpand(parseResult, args, out var expanded, out var configError))
+        {
+            await environment.Error.WriteLineAsync($"aprscli: {configError}");
+            return ExitCodes.Usage;
+        }
+
+        if (expanded != args)
+        {
+            parseResult = root.Parse(expanded);
+        }
 
         if (parseResult.Errors.Count > 0)
         {
