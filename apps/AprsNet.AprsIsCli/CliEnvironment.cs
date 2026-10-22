@@ -48,8 +48,16 @@ internal sealed class CliEnvironment
                 }
             );
 
-    /// <summary>A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP or a serial port.</summary>
-    public KissConnection CreateTncConnection(TncAddress address, int radioPort = 0, TimeSpan? quietWarning = null) =>
+    /// <summary>
+    /// A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP or a serial port, with the
+    /// library's default transmit limit unless <paramref name="transmitLimit"/> is given.
+    /// </summary>
+    public KissConnection CreateTncConnection(
+        TncAddress address,
+        int radioPort = 0,
+        TimeSpan? quietWarning = null,
+        KissTransmitLimit? transmitLimit = null
+    ) =>
         address.SerialPort is { } name
             ? new KissSerialConnection(
                 new KissSerialOptions
@@ -63,6 +71,7 @@ internal sealed class CliEnvironment
                     TncPort = radioPort,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,
+                    TransmitLimit = transmitLimit,
                 }
             )
             : new KissTcpConnection(
@@ -74,6 +83,7 @@ internal sealed class CliEnvironment
                     ReconnectDelay = ReconnectDelay,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,
+                    TransmitLimit = transmitLimit,
                 }
             );
 
