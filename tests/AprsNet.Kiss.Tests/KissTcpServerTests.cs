@@ -161,6 +161,61 @@ public sealed class KissTcpServerTests
     }
 
     [Fact]
+    public async Task ReportsAppsConnectingLeavingAndTurnedAway()
+    {
+        await using var server = new KissTcpServer(AnyPort, maxClients: 1);
+        var events = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        server.ClientConnected += (_, e) => events.Enqueue($"connected {e.RemoteEndPoint.Address}");
+        server.ClientRefused += (_, e) => events.Enqueue($"refused {e.RemoteEndPoint.Address}");
+        server.ClientDisconnected += (_, e) =>
+            events.Enqueue($"disconnected {e.RemoteEndPoint.Address} fell behind: {e.FellBehind}");
+        server.ClientDisconnected += (_, _) => throw new InvalidOperationException("a handler that throws");
+        server.Start();
+
+        var first = await App.ConnectAsync(server);
+        await WaitUntil(() => server.ClientCount == 1);
+        await using (var second = await App.ConnectAsync(server))
+        {
+            Assert.True(await second.ClosedAsync());
+        }
+
+        await first.DisposeAsync();
+        await WaitUntil(() => server.ClientCount == 0);
+        await using var third = await App.ConnectAsync(server);
+        await WaitUntil(() => server.ClientCount == 1);
+
+        Assert.Equal(
+            [
+                "connected 127.0.0.1",
+                "refused 127.0.0.1",
+                "disconnected 127.0.0.1 fell behind: False",
+                "connected 127.0.0.1",
+            ],
+            events
+        );
+        Assert.Equal(1, server.ClientsRefused);
+    }
+
+    [Fact]
+    public async Task AnAppDroppedForFallingBehindIsReportedSo()
+    {
+        await using var server = new KissTcpServer(AnyPort, clientQueueLength: 4);
+        var fellBehind = new TaskCompletionSource<bool>();
+        server.ClientDisconnected += (_, e) => fellBehind.TrySetResult(e.FellBehind);
+        server.Start();
+        await using var slow = await App.ConnectAsync(server);
+        await WaitUntil(() => server.ClientCount == 1);
+        var frame = Frame("N0CALL>APRS:>" + new string('x', 200));
+
+        for (var i = 0; i < 100_000 && server.ClientsDroppedForOverflow == 0; i++)
+        {
+            server.Publish(frame);
+        }
+
+        Assert.True(await fellBehind.Task.WaitAsync(Wait, Token));
+    }
+
+    [Fact]
     public void RefusesBadSettings()
     {
         Assert.Throws<ArgumentNullException>(() => new KissTcpServer(null!));

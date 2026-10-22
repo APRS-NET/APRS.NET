@@ -42,6 +42,7 @@ public sealed class KissTcpServer : IAsyncDisposable
     private long _fromClients;
     private long _transmitFailures;
     private long _overflowed;
+    private long _refused;
 
     /// <summary>Creates a server; <see cref="Start"/> begins listening.</summary>
     /// <param name="endPoint">Where to listen; port 0 lets the system choose (see <see cref="LocalEndPoint"/>).</param>
@@ -78,6 +79,27 @@ public sealed class KissTcpServer : IAsyncDisposable
 
     /// <summary>Apps disconnected so far because they fell too far behind.</summary>
     public long ClientsDroppedForOverflow => Interlocked.Read(ref _overflowed);
+
+    /// <summary>Connections closed so far because <c>maxClients</c> apps were already connected.</summary>
+    public long ClientsRefused => Interlocked.Read(ref _refused);
+
+    /// <summary>
+    /// An app connected. Raised on the thread that accepted it, before it is sent any frame. A handler that throws
+    /// doesn't stop the server.
+    /// </summary>
+    public event EventHandler<KissTcpServerClientEventArgs>? ClientConnected;
+
+    /// <summary>
+    /// An app's connection ended: it left, fell too far behind (<see cref="KissTcpServerClientEventArgs.FellBehind"/>),
+    /// or the server is stopping. A handler that throws doesn't stop the server.
+    /// </summary>
+    public event EventHandler<KissTcpServerClientEventArgs>? ClientDisconnected;
+
+    /// <summary>
+    /// A connection was closed at once because <c>maxClients</c> apps were already connected. A handler that throws
+    /// doesn't stop the server.
+    /// </summary>
+    public event EventHandler<KissTcpServerClientEventArgs>? ClientRefused;
 
     /// <summary>Starts listening and accepting apps.</summary>
     /// <exception cref="InvalidOperationException">The server has already been started.</exception>
@@ -175,17 +197,21 @@ public sealed class KissTcpServer : IAsyncDisposable
                 return;
             }
 
+            var remote = RemoteEndPoint(tcp);
             if (_clients.Count >= _maxClients)
             {
                 tcp.Dispose();
+                Interlocked.Increment(ref _refused);
+                Raise(ClientRefused, new KissTcpServerClientEventArgs(remote, fellBehind: false));
                 continue;
             }
 
             tcp.NoDelay = true;
-            var client = new Client(tcp, _clientQueueLength);
+            var client = new Client(tcp, _clientQueueLength, remote);
             // Registered before it starts, so a client that ends at once still finds itself to remove.
             var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _clients[client] = done.Task;
+            Raise(ClientConnected, new KissTcpServerClientEventArgs(remote, fellBehind: false));
             _ = RunAsync(client, done, stopping);
         }
     }
@@ -200,7 +226,34 @@ public sealed class KissTcpServer : IAsyncDisposable
         {
             _clients.TryRemove(client, out _);
             client.Dispose();
+            Raise(ClientDisconnected, new KissTcpServerClientEventArgs(client.RemoteEndPoint, client.FellBehind));
             done.TrySetResult();
+        }
+    }
+
+    private static IPEndPoint RemoteEndPoint(TcpClient tcp)
+    {
+        try
+        {
+            return tcp.Client.RemoteEndPoint as IPEndPoint ?? new IPEndPoint(IPAddress.None, 0);
+        }
+        catch (Exception e) when (e is SocketException or ObjectDisposedException)
+        {
+            return new IPEndPoint(IPAddress.None, 0); // already gone
+        }
+    }
+
+    private void Raise(EventHandler<KissTcpServerClientEventArgs>? handler, KissTcpServerClientEventArgs args)
+    {
+        try
+        {
+            handler?.Invoke(this, args);
+        }
+#pragma warning disable CA1031 // An app's handler must not stop the server.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            // Ignored, as documented on the events.
         }
     }
 
@@ -223,13 +276,19 @@ public sealed class KissTcpServer : IAsyncDisposable
     }
 
     /// <summary>One connected app: a queue of frames to write, and a reader for the frames it sends.</summary>
-    private sealed class Client(TcpClient tcp, int queueLength) : IDisposable
+    private sealed class Client(TcpClient tcp, int queueLength, IPEndPoint remoteEndPoint) : IDisposable
     {
         private readonly Channel<byte[]> _outgoing = Channel.CreateBounded<byte[]>(
             new BoundedChannelOptions(queueLength) { SingleReader = true, FullMode = BoundedChannelFullMode.DropWrite }
         );
         private readonly CancellationTokenSource _ended = new();
         private int _queued;
+        private int _fellBehind;
+
+        public IPEndPoint RemoteEndPoint => remoteEndPoint;
+
+        /// <summary>Whether the client was ended because its queue filled.</summary>
+        public bool FellBehind => Volatile.Read(ref _fellBehind) == 1;
 
         /// <summary>Queues a frame; on a full queue, ends the client and returns <see langword="false"/>.</summary>
         public bool Offer(byte[] bytes)
@@ -241,6 +300,7 @@ public sealed class KissTcpServer : IAsyncDisposable
 
             if (Interlocked.Increment(ref _queued) > queueLength)
             {
+                Volatile.Write(ref _fellBehind, 1);
                 End();
                 return false;
             }
@@ -339,4 +399,23 @@ public sealed class KissTcpServer : IAsyncDisposable
             }
         }
     }
+}
+
+/// <summary>An app connecting to a <see cref="KissTcpServer"/>, leaving it, or being turned away.</summary>
+public sealed class KissTcpServerClientEventArgs : EventArgs
+{
+    internal KissTcpServerClientEventArgs(IPEndPoint remoteEndPoint, bool fellBehind)
+    {
+        RemoteEndPoint = remoteEndPoint;
+        FellBehind = fellBehind;
+    }
+
+    /// <summary>The app's address and port.</summary>
+    public IPEndPoint RemoteEndPoint { get; }
+
+    /// <summary>
+    /// For <see cref="KissTcpServer.ClientDisconnected"/>: whether the server ended the connection because the app fell
+    /// too far behind reading frames.
+    /// </summary>
+    public bool FellBehind { get; }
 }

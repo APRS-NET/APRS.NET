@@ -27,7 +27,17 @@ public class KissStreamClientTests
         // One byte at a time, as a slow serial line delivers it.
         public override int Read(byte[] buffer, int offset, int count) => _in.Read(buffer, offset, Math.Min(count, 1));
 
-        public override void Write(byte[] buffer, int offset, int count) => Written.Write(buffer, offset, count);
+        /// <summary>Each write as it came, to tell whether a frame went to the port whole.</summary>
+        public List<byte[]> Writes { get; } = [];
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            lock (Writes)
+            {
+                Writes.Add(buffer.AsSpan(offset, count).ToArray());
+                Written.Write(buffer, offset, count);
+            }
+        }
 
         public override void Flush() { }
 
@@ -94,5 +104,33 @@ public class KissStreamClientTests
         using var readOnly = new MemoryStream([], writable: false);
 
         Assert.Throws<ArgumentException>(() => new KissStreamClient(readOnly));
+    }
+
+    [Fact]
+    public async Task EachFrameGoesToThePortInOneWriteEvenWhenSentTogether()
+    {
+        // A TNC with little buffering, such as the TNC-X, needs a frame whole rather than in pieces or interleaved.
+        var port = new FakeSerialPort([]);
+        await using var client = new KissStreamClient(port, transmitLimit: KissTransmitLimit.Off);
+        var frames = Enumerable
+            .Range(0, 20)
+            .Select(i =>
+                Ax25Frame.FromAprsPacket(AprsPacket.Parse($"N0CALL-{i % 16}>APZNET:>frame {i} " + new string('x', 100)))
+            )
+            .ToList();
+
+        await Task.WhenAll(
+            frames.Select(f => client.SendFrameAsync(f, TestContext.Current.CancellationToken).AsTask())
+        );
+
+        Assert.Equal(frames.Count, port.Writes.Count);
+        Assert.All(
+            port.Writes,
+            write =>
+            {
+                var decoded = Assert.Single(new KissDecoder().Decode(write));
+                Assert.True(decoded.TryGetAx25(out _));
+            }
+        );
     }
 }
