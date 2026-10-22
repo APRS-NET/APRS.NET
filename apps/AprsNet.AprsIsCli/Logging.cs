@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using OpenTelemetry;
@@ -17,6 +18,18 @@ internal static class Logging
 
     /// <summary>Logger category for received packets. Exported to OpenTelemetry only, never written to the console.</summary>
     public const string PacketCategory = "aprscli.packets";
+
+    /// <summary>
+    /// Logger category for what <c>serve</c> and <c>tnc share</c> report on stderr, such as an app connecting or the
+    /// TNC lost, as structured logs. Exported to OpenTelemetry only, since the same lines are already on stderr.
+    /// </summary>
+    public const string EventCategory = "aprscli.events";
+
+    /// <summary>
+    /// The <c>service.instance.id</c> to report when <c>OTEL_RESOURCE_ATTRIBUTES</c> doesn't give one, such as the
+    /// instance of a systemd template service. Without either, each run gets a new one.
+    /// </summary>
+    public const string InstanceVariable = "APRSNET_INSTANCE";
 
     public static bool IsOtlpConfigured(Func<string, string?> getEnvironmentVariable) =>
         !string.IsNullOrWhiteSpace(getEnvironmentVariable(OtlpEndpointVariable));
@@ -40,6 +53,7 @@ internal static class Logging
 
             // Per-packet logs would drown the terminal; they go to OpenTelemetry only.
             builder.AddFilter<ConsoleLoggerProvider>(PacketCategory, LogLevel.None);
+            builder.AddFilter<ConsoleLoggerProvider>(EventCategory, LogLevel.None);
 
             if (otlpEnabled)
             {
@@ -72,8 +86,31 @@ internal static class Logging
             .Build();
     }
 
-    private static ResourceBuilder Resource() =>
-        ResourceBuilder
-            .CreateDefault()
-            .AddService("aprscli", serviceVersion: typeof(Logging).Assembly.GetName().Version?.ToString());
+    /// <summary>
+    /// The resource every log and metric carries: <c>service.name</c> <c>aprscli</c>, its version and an instance ID
+    /// (from <c>APRSNET_INSTANCE</c>, or new for each run). The standard <c>OTEL_SERVICE_NAME</c> and
+    /// <c>OTEL_RESOURCE_ATTRIBUTES</c> are read last, so they win.
+    /// </summary>
+    internal static ResourceBuilder Resource(Func<string, string?> getEnvironmentVariable)
+    {
+        var instance = getEnvironmentVariable(InstanceVariable) is { Length: > 0 } given ? given : null;
+        return ResourceBuilder
+            .CreateEmpty()
+            .AddService(
+                "aprscli",
+                serviceVersion: Version,
+                autoGenerateServiceInstanceId: instance is null,
+                serviceInstanceId: instance
+            )
+            .AddTelemetrySdk()
+            .AddEnvironmentVariableDetector();
+    }
+
+    private static ResourceBuilder Resource() => Resource(Environment.GetEnvironmentVariable);
+
+    /// <summary>The release, such as <c>0.6.0-alpha.2</c>: the informational version without its commit.</summary>
+    private static string? Version =>
+        typeof(Logging)
+            .Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion.Split('+')[0];
 }

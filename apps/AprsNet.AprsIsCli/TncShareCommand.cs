@@ -84,6 +84,13 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             + "port that stays open. Default: off.",
     };
 
+    private readonly Option<bool> _logPackets = new("--log-packets")
+    {
+        Description =
+            $"Also log each frame heard and sent to OpenTelemetry (needs {Logging.OtlpEndpointVariable}); never "
+            + "printed by this.",
+    };
+
     private readonly Option<string?> _config = ConfigFile.CreateOption();
 
     private readonly Option<bool> _check = ConfigFile.CreateCheckOption();
@@ -106,6 +113,7 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             _quiet,
             _duration,
             _quietWarning,
+            _logPackets,
             _config,
             _check,
         };
@@ -185,6 +193,14 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             quietWarning = quiet;
         }
 
+        var logPackets = parseResult.GetValue(_logPackets);
+        if (logPackets && !Logging.IsOtlpConfigured(environment.GetEnvironmentVariable))
+        {
+            return await UsageAsync(
+                $"--log-packets needs {Logging.OtlpEndpointVariable} to be set; frames are only logged to OpenTelemetry."
+            );
+        }
+
         if (parseResult.GetValue(_check))
         {
             var baud = address.IsSerial ? $" at {address.BaudRate.ToString(CultureInfo.InvariantCulture)} baud" : "";
@@ -204,6 +220,8 @@ internal sealed class TncShareCommand(CliEnvironment environment)
         }
 
         var error = environment.Error;
+        var events = environment.LoggerFactory.CreateLogger(Logging.EventCategory);
+        var packetLog = logPackets ? environment.LoggerFactory.CreateLogger(Logging.PacketCategory) : null;
         var quietOutput = parseResult.GetValue(_quiet);
         var name = address.ToString();
         await using var tnc = environment.CreateTncConnection(
@@ -214,9 +232,15 @@ internal sealed class TncShareCommand(CliEnvironment environment)
                 ? new KissTransmitLimit(timeProvider: environment.TimeProvider)
                 : KissTransmitLimit.Off
         );
-        TncCommand.ReportConnection(tnc, name, error);
+        TncCommand.ReportConnection(tnc, name, error, events);
 
-        var pacer = new FramePacer(environment.TimeProvider, airRate, address.IsSerial ? address.BaudRate : null, gap);
+        var pacer = new FramePacer(
+            environment.TimeProvider,
+            airRate,
+            address.IsSerial ? address.BaudRate : null,
+            gap,
+            name
+        );
         long sent = 0;
         long dropped = 0;
         await using var server = new KissTcpServer(listen, maxClients)
@@ -235,6 +259,8 @@ internal sealed class TncShareCommand(CliEnvironment environment)
                         error.WriteLine($"aprscli: dropped a frame from an app: {ex.Message}");
                     }
 
+                    events.FrameDropped(ex.Message);
+
                     throw;
                 }
 
@@ -242,15 +268,29 @@ internal sealed class TncShareCommand(CliEnvironment environment)
                 Print("sent", frame);
             },
         };
-        server.ClientConnected += (_, e) => Report($"aprscli: an app connected from {e.RemoteEndPoint}.");
+        server.ClientConnected += (_, e) =>
+        {
+            Report($"aprscli: an app connected from {e.RemoteEndPoint}.");
+            events.AppConnected(e.RemoteEndPoint);
+        };
         server.ClientDisconnected += (_, e) =>
-            Report(
-                e.FellBehind
-                    ? $"aprscli: disconnected the app at {e.RemoteEndPoint}: it fell too far behind."
-                    : $"aprscli: the app at {e.RemoteEndPoint} disconnected."
-            );
+        {
+            if (e.FellBehind)
+            {
+                Report($"aprscli: disconnected the app at {e.RemoteEndPoint}: it fell too far behind.");
+                events.AppFellBehind(e.RemoteEndPoint);
+            }
+            else
+            {
+                Report($"aprscli: the app at {e.RemoteEndPoint} disconnected.");
+                events.AppDisconnected(e.RemoteEndPoint);
+            }
+        };
         server.ClientRefused += (_, e) =>
+        {
             Report($"aprscli: turned away {e.RemoteEndPoint}: {maxClients} apps are already connected.");
+            events.AppTurnedAway(e.RemoteEndPoint, maxClients);
+        };
 
         try
         {
@@ -266,6 +306,7 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             $"aprscli: sharing the TNC at {name} on {server.LocalEndPoint} (KISS over TCP), pacing frames for "
                 + $"{airRate.ToString(CultureInfo.InvariantCulture)} bit/s on the air"
         );
+        events.ShareStarted(name, server.LocalEndPoint!, airRate);
 
         long heard = 0;
         try
@@ -284,15 +325,36 @@ internal sealed class TncShareCommand(CliEnvironment environment)
         }
 
         await server.DisposeAsync();
+        var (sentTotal, droppedTotal) = (Interlocked.Read(ref sent), Interlocked.Read(ref dropped));
+        var (fellBehind, turnedAway) = (server.ClientsDroppedForOverflow, server.ClientsRefused);
         await error.WriteLineAsync(
-            $"aprscli: heard {heard} frames and sent {Interlocked.Read(ref sent)} from apps "
-                + $"({Interlocked.Read(ref dropped)} dropped); {server.ClientsDroppedForOverflow} apps dropped for "
-                + $"falling behind, {server.ClientsRefused} turned away"
+            $"aprscli: heard {heard} frames and sent {sentTotal} from apps ({droppedTotal} dropped); {fellBehind} "
+                + $"apps dropped for falling behind, {turnedAway} turned away"
         );
+        events.ShareStopped(heard, sentTotal, droppedTotal, fellBehind, turnedAway);
         return ExitCodes.Success;
 
         void Print(string what, Ax25Frame frame)
         {
+            if (quietOutput && packetLog is null)
+            {
+                return;
+            }
+
+            var line = LineFormatter.EscapeForConsole(frame.ToTnc2());
+            if (packetLog is not null)
+            {
+                var source = line[..Math.Max(0, line.IndexOf('>', StringComparison.Ordinal))];
+                if (what == "heard")
+                {
+                    packetLog.FrameHeard(source, line);
+                }
+                else
+                {
+                    packetLog.FrameSent(source, line);
+                }
+            }
+
             if (quietOutput)
             {
                 return;
@@ -302,8 +364,7 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             lock (environment.Out)
             {
                 environment.Out.WriteLine(
-                    $"{at.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture)} {what} "
-                        + LineFormatter.EscapeForConsole(frame.ToTnc2())
+                    $"{at.ToString("yyyy-MM-dd HH:mm:ss'Z'", CultureInfo.InvariantCulture)} {what} {line}"
                 );
             }
         }
@@ -359,7 +420,7 @@ internal sealed class TncShareCommand(CliEnvironment environment)
 /// </summary>
 // The semaphore never creates a wait handle (only WaitAsync is used), so it holds nothing to dispose.
 #pragma warning disable CA1001
-internal sealed class FramePacer(TimeProvider timeProvider, int airRate, int? serialBaud, TimeSpan gap)
+internal sealed class FramePacer(TimeProvider timeProvider, int airRate, int? serialBaud, TimeSpan gap, string tnc = "")
 #pragma warning restore CA1001
 {
     private readonly SemaphoreSlim _turn = new(1, 1);
@@ -384,6 +445,7 @@ internal sealed class FramePacer(TimeProvider timeProvider, int airRate, int? se
         CancellationToken cancellationToken
     )
     {
+        var arrived = timeProvider.GetTimestamp();
         await _turn.WaitAsync(cancellationToken);
         try
         {
@@ -392,6 +454,8 @@ internal sealed class FramePacer(TimeProvider timeProvider, int airRate, int? se
             {
                 await Task.Delay(wait, timeProvider, cancellationToken);
             }
+
+            ShareMetrics.Waited(timeProvider.GetElapsedTime(arrived), tnc);
 
             // Busy from when the write starts: the frame starts crossing the serial port then.
             var start = timeProvider.GetUtcNow();

@@ -21,6 +21,7 @@ public class ServeTests
     [InlineData(new[] { "serve", "-f", "p/N0", "--history", "soon" }, "--history 'soon' is not valid.")]
     [InlineData(new[] { "serve", "-f", "p/N0", "--duration", "x" }, "--duration 'x' is not valid.")]
     [InlineData(new[] { "serve", "-f", "p/N0", "--server", "a:b:c" }, "--server 'a:b:c' is not valid.")]
+    [InlineData(new[] { "serve", "-f", "p/N0", "--log-packets" }, "--log-packets needs OTEL_EXPORTER_OTLP_ENDPOINT")]
     public async Task BadOptionsAreUsageErrors(string[] args, string message)
     {
         var result = await new CliHarness().RunAsync(args, TestContext.Current.CancellationToken);
@@ -124,6 +125,66 @@ public class ServeTests
         );
         Assert.Contains("served 1 packets (0 duplicates dropped)", result.Error, StringComparison.Ordinal);
         Assert.DoesNotContain("by source", result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task EventsAndPacketsAreLoggedForOpenTelemetry()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var tnc = new TcpListener(IPAddress.Loopback, 0);
+        tnc.Start();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var port = FreePort();
+        var tncName = $"127.0.0.1:{((IPEndPoint)tnc.LocalEndpoint).Port}";
+        var harness = new CliHarness();
+        harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://127.0.0.1:4317";
+        var run = harness.RunAsync(
+            ["serve", "--tnc", tncName, "--listen", $"127.0.0.1:{port}", "--log-packets"],
+            stop.Token
+        );
+
+        using (var radio = await tnc.AcceptTcpClientAsync(token))
+        {
+            await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>heard on RF"), token);
+            await WaitUntilAsync(() => harness.Logs.Entries.Any(e => e.Category == "aprscli.packets"), token);
+        }
+
+        // The TNC closing its end is a lost TNC.
+        await WaitUntilAsync(
+            () => harness.Logs.Entries.Any(e => e.Message.StartsWith("Lost the TNC", StringComparison.Ordinal)),
+            token
+        );
+        await stop.CancelAsync();
+        await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+
+        var events = harness.Logs.Entries.Where(e => e.Category == "aprscli.events").Select(e => e.Message).ToList();
+        Assert.Contains($"Serving the TNC at {tncName} on 127.0.0.1:{port} as APRSNET", events);
+        Assert.Contains(
+            events,
+            e =>
+                e.StartsWith(
+                    $"Lost the TNC at {tncName}: the TNC closed the connection; reconnecting in ",
+                    StringComparison.Ordinal
+                )
+        );
+        Assert.Contains(
+            "Stopped serving: served 1 packets (0 duplicates dropped); 0 clients dropped for falling behind",
+            events
+        );
+        Assert.Equal(
+            [$"Packet via {tncName} from N1ABC: N1ABC>APRS,WIDE1-1:>heard on RF"],
+            harness.Logs.Entries.Where(e => e.Category == "aprscli.packets").Select(e => e.Message)
+        );
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition, CancellationToken token)
+    {
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        while (!condition())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "Timed out waiting.");
+            await Task.Delay(10, token);
+        }
     }
 
     [Fact]

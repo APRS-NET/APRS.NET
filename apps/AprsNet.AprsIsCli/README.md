@@ -67,7 +67,10 @@ Packets go to stdout and logs and errors to stderr, so output pipes cleanly. Con
 Set `OTEL_EXPORTER_OTLP_ENDPOINT` (plus the usual `OTEL_EXPORTER_OTLP_*` variables, such as the protocol and headers) to export over OTLP, with service name `aprscli`:
 
 - **Logs:** connection, login and filter events. Add `--log-packets` to log every received packet as `Packet from {Source}: {Packet}` (control characters escaped). Packet logs go to OpenTelemetry only, so they never appear on the terminal.
-- **Metrics:** the client's `AprsNet.*` meters (lines received, connection attempts, login results, drops), flushed when the command exits.
+- **Metrics:** the `AprsNet.*` meters (lines received, connection attempts, login results, drops; TNC frames; the gateway's clients and packets; the IGate's), and `tnc share`'s pacer, flushed when the command exits. [docs/metrics.md](../../docs/metrics.md) lists them.
+- **Events:** `serve` and `tnc share` also log what they report on stderr, such as an app connecting, the TNC lost and back, and the summary, as structured logs with fields (`Tnc`, `Remote`, `Endpoint` and so on), to OpenTelemetry only. `--log-packets` on them logs each packet too: from each source for `serve`, and each frame heard and sent for `tnc share`.
+
+The service name is `aprscli` unless `OTEL_SERVICE_NAME` says otherwise, and `OTEL_RESOURCE_ATTRIBUTES` adds attributes. `service.instance.id` is `APRSNET_INSTANCE` when set, as the [services](../services/README.md) set it, or else new for each run.
 
 ## parse
 
@@ -236,6 +239,7 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `--comment` | With `--igate`: text after `RX-only IGate` in the beacon's comment. |
 | `--beacon-interval` | With `--igate`: how often to beacon, at least `1m`. Default: `30m`. |
 | `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up. |
+| `--log-packets` | Also log each packet from each source, duplicates included, to OpenTelemetry. Needs `OTEL_EXPORTER_OTLP_ENDPOINT`; see [OpenTelemetry](#opentelemetry). |
 | `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
 | `--check` | Check the options and any `--config` file, say what would be served, and exit without connecting. |
 
@@ -407,6 +411,7 @@ leaving, the TNC's state and a summary at the end go to stderr.
 | `-q`, `--quiet` | Don't print each frame. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
 | `--quiet-warning` | Warn when the TNC sends nothing for this long, as for `tnc listen`. |
+| `--log-packets` | Also log each frame heard and sent to OpenTelemetry, even with `-q`. Needs `OTEL_EXPORTER_OTLP_ENDPOINT`; see [OpenTelemetry](#opentelemetry). |
 | `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
 | `--check` | Check the options and any `--config` file, say what would be shared, and exit without connecting. |
 

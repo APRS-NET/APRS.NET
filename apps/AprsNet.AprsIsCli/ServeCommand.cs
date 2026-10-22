@@ -134,6 +134,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
             + "port that stays open. Pick longer than the channel is ever quiet. /health shows it as quiet. Default: off.",
     };
 
+    private readonly Option<bool> _logPackets = new("--log-packets")
+    {
+        Description =
+            $"Also log each packet from each source to OpenTelemetry (needs {Logging.OtlpEndpointVariable}), "
+            + "duplicates included; never printed.",
+    };
+
     private readonly Option<string?> _config = ConfigFile.CreateOption();
 
     private readonly Option<bool> _check = ConfigFile.CreateCheckOption();
@@ -165,6 +172,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 _symbol,
                 _comment,
                 _beaconInterval,
+                _logPackets,
                 _config,
                 _check,
             }
@@ -226,7 +234,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
         IPEndPoint? Http,
         TimeSpan? Duration,
         TimeSpan? QuietWarning,
-        IGateOptions? IGate
+        IGateOptions? IGate,
+        bool LogPackets
     );
 
     /// <summary>What <c>--igate</c> gates as and beacons.</summary>
@@ -420,7 +429,15 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, tncs, local, http, duration, quietWarning, igateOptions);
+        var logPackets = parseResult.GetValue(_logPackets);
+        if (logPackets && !Logging.IsOtlpConfigured(environment.GetEnvironmentVariable))
+        {
+            error =
+                $"--log-packets needs {Logging.OtlpEndpointVariable} to be set; packets are only logged to OpenTelemetry.";
+            return false;
+        }
+
+        options = new ServeOptions(upstream, tncs, local, http, duration, quietWarning, igateOptions, logPackets);
         error = "";
         return true;
     }
@@ -542,6 +559,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
         }
 
         var logger = environment.LoggerFactory.CreateLogger("aprscli");
+        var events = environment.LoggerFactory.CreateLogger(Logging.EventCategory);
+        var packetLog = options.LogPackets ? environment.LoggerFactory.CreateLogger(Logging.PacketCategory) : null;
         await using var connection = options.Upstream is null
             ? null
             : environment.CreateConnection(options.Upstream, logger);
@@ -592,7 +611,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
         if (connection is not null)
         {
             // Without a filter (an IGate that only uploads) the server sends little, but its lines must still be read.
-            sources.Add(feed.AddSource(AprsIsSource, PacketsAsync(connection.ReadLinesAsync(run.Token))));
+            sources.Add(
+                feed.AddSource(
+                    AprsIsSource,
+                    LogPacketsAsync(PacketsAsync(connection.ReadLinesAsync(run.Token)), AprsIsSource, packetLog)
+                )
+            );
             health.AddSource(AprsIsSource, () => connection.State == AprsIsConnectionState.Connected);
             if (options.Upstream!.Filter is { } upstreamFilter)
             {
@@ -624,8 +648,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 var tnc = environment.CreateTncConnection(address, quietWarning: options.QuietWarning);
                 tncs.Add(tnc);
                 var name = address.ToString();
-                TncCommand.ReportConnection(tnc, name, environment.Error);
-                var heard = tnc.ReadPacketsAsync(run.Token);
+                TncCommand.ReportConnection(tnc, name, environment.Error, events);
+                var heard = LogPacketsAsync(tnc.ReadPacketsAsync(run.Token), name, packetLog);
                 sources.Add(feed.AddSource(name, uplink is null ? heard : uplink.TapAsync(heard)));
                 health.AddSource(name, () => tnc.IsConnected, () => tnc.IsQuiet, () => tnc.IsSendingText);
                 described.Add($"the TNC at {name}");
@@ -640,12 +664,17 @@ internal sealed class ServeCommand(CliEnvironment environment)
                             : $", and on http://{web.LocalEndPoint} (WebSocket clients at /aprs, health at /health)"
                     )
             );
+            var sourceList = string.Join(" and ", described);
+            events.ServeStarted(sourceList, server.LocalEndPoint!, options.Local.ServerName);
             if (options.IGate is { } igate)
             {
+                var every = DurationParser.Format(igate.BeaconInterval);
                 await environment.Error.WriteLineAsync(
                     $"aprscli: gating what the TNCs hear to {options.Upstream!.Endpoint} as {igate.Callsign} "
-                        + $"(receive-only, qAO), beaconing every {DurationParser.Format(igate.BeaconInterval)}"
+                        + $"(receive-only, qAO), beaconing every {every}"
                 );
+                var callsign = igate.Callsign.ToString();
+                events.IGateStarted(callsign, every);
             }
 
             try
@@ -669,11 +698,13 @@ internal sealed class ServeCommand(CliEnvironment environment)
             }
         }
 
+        var (published, duplicates) = (feed.Published, feed.Duplicates);
+        var fellBehind = server.ClientsDroppedForOverflow + (hub?.ClientsDroppedForOverflow ?? 0);
         await environment.Error.WriteLineAsync(
-            $"aprscli: served {feed.Published} packets ({feed.Duplicates} duplicates dropped); "
-                + $"{server.ClientsDroppedForOverflow + (hub?.ClientsDroppedForOverflow ?? 0)} clients dropped for "
+            $"aprscli: served {published} packets ({duplicates} duplicates dropped); {fellBehind} clients dropped for "
                 + "falling behind"
         );
+        events.ServeStopped(published, duplicates, fellBehind);
         var counts = feed.GetSourceCounts();
         if (counts.Count > 1)
         {
@@ -707,6 +738,25 @@ internal sealed class ServeCommand(CliEnvironment environment)
     }
 
     private const string AprsIsSource = "aprs-is";
+
+    /// <summary>Passes the packets on, logging each to <paramref name="packetLog"/> when there is one.</summary>
+    private static async IAsyncEnumerable<AprsPacket> LogPacketsAsync(
+        IAsyncEnumerable<AprsPacket> packets,
+        string via,
+        ILogger? packetLog
+    )
+    {
+        await foreach (var packet in packets)
+        {
+            if (packetLog is not null && packetLog.IsEnabled(LogLevel.Information))
+            {
+                var line = LineFormatter.EscapeForConsole(packet.ToString());
+                packetLog.PacketServed(via, packet.Source?.Value ?? "", line);
+            }
+
+            yield return packet;
+        }
+    }
 
     /// <summary>The packets among APRS-IS lines; server comments such as keepalives are skipped.</summary>
     private static async IAsyncEnumerable<AprsPacket> PacketsAsync(IAsyncEnumerable<string> lines)
