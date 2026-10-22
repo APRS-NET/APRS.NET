@@ -134,6 +134,10 @@ internal sealed class ServeCommand(CliEnvironment environment)
             + "port that stays open. Pick longer than the channel is ever quiet. /health shows it as quiet. Default: off.",
     };
 
+    private readonly Option<string?> _config = ConfigFile.CreateOption();
+
+    private readonly Option<bool> _check = ConfigFile.CreateCheckOption();
+
     public Command Build()
     {
         var command = new Command(
@@ -161,6 +165,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 _symbol,
                 _comment,
                 _beaconInterval,
+                _config,
+                _check,
             }
         )
         {
@@ -177,10 +183,40 @@ internal sealed class ServeCommand(CliEnvironment environment)
                     return ExitCodes.Usage;
                 }
 
+                if (parseResult.GetValue(_check))
+                {
+                    await environment.Error.WriteLineAsync($"aprscli: the settings are good. {Describe(options)}");
+                    return ExitCodes.Success;
+                }
+
                 return await RunAsync(options, cancellationToken);
             }
         );
         return command;
+    }
+
+    /// <summary>What <c>--check</c> says would run. Never the passcode.</summary>
+    private static string Describe(ServeOptions options)
+    {
+        var sources = new List<string>();
+        if (options.Upstream is { Filter: { } filter } upstream)
+        {
+            sources.Add($"APRS-IS at {upstream.Endpoint} as {upstream.Callsign} with the filter \"{filter}\"");
+        }
+
+        sources.AddRange(options.Tncs.Select(t => $"the TNC at {t}"));
+        var text = $"Would serve {string.Join(" and ", sources)} on {options.Local.EndPoint}";
+        if (options.Http is { } http)
+        {
+            text += $", with HTTP on {http}";
+        }
+
+        if (options.IGate is { } igate)
+        {
+            text += $", and gate what the TNCs hear to APRS-IS as {igate.Callsign}";
+        }
+
+        return text + ".";
     }
 
     private sealed record ServeOptions(
