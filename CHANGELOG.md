@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.1...v0.6.0-alpha.2) (2026-10-22)
+
+
+### Features
+
+* **cli:** aprscli tnc share serves a TNC to KISS apps over TCP ([f116e67](https://github.com/APRS-NET/APRS.NET/commit/f116e67ec0ada0c3f16a154f756086dbf7629719))
+* **kiss:** KissTcpServer reports apps connecting, leaving and turned away ([9aae663](https://github.com/APRS-NET/APRS.NET/commit/9aae66334c02895a13fb717807b3bf534e2460d8))
+
 ## [0.6.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.5.0-alpha.2...v0.6.0-alpha.1) (2026-10-21)
 
 
