@@ -43,6 +43,10 @@ history = "30m"
 # The server name clients see.
 # name = "APRSNET"
 
+# Also log each packet from each source to OpenTelemetry. Only with a collector in /etc/aprsnet/otel.env: without
+# one, aprscli refuses it and the service won't start.
+# log-packets = true
+
 # [igate]
 # A receive-only IGate: upload what the TNCs hear to APRS-IS. It needs the callsign above, usually with an SSID such
 # as N0CALL-10, its passcode as APRS_PASSCODE in /etc/aprsnet/secrets.env, and its position, which it beacons to
