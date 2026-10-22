@@ -10,12 +10,14 @@ updates:
       actions:
         patterns: ["*"]
 
+  # fix(deps), so release-please opens a release PR: these packages ship inside ours (docs/versioning.md). Actions and
+  # the SDK only change the build, so they stay chore(deps).
   - package-ecosystem: nuget
     directory: /
     schedule:
       interval: weekly
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
     groups:
       microsoft-extensions:
         patterns: ["Microsoft.Extensions.*"]
