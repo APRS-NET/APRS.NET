@@ -40,6 +40,11 @@ Only changes to shipped code count: the libraries in `src/` and the `aprscli` to
 `benchmarks/` or `.github/` (`exclude-paths` in `release-please-config.json`).
 Use `fix:` and `feat:` for the libraries and the CLI (`feat(cli):`); a fix to a tool or test is `test:` or `build:`.
 
+Dependabot's NuGet updates are `fix(deps):`, since the packages and `aprscli` ship with those dependencies, so each
+one merged gives a release PR. That includes test-only packages such as xUnit, which share `Directory.Packages.props`;
+the release PR waits until you merge it, so such a bump only adds a line to the next release. Its GitHub Actions and
+.NET SDK updates are `chore(deps):` and don't release.
+
 ## Notes
 
 - The alpha versioning comes from `release-please-config.json`: `"versioning": "prerelease"`, `"prerelease": true`

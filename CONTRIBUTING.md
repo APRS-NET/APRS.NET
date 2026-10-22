@@ -66,10 +66,12 @@ focused, with its own type. The type decides the release, so pick it by what shi
 | A library in `src/` gets a fix | `fix:` |
 | A breaking library change | `feat!:` or `fix!:` |
 | The `aprscli` tool gains a feature or gets a fix | `feat(cli):` or `fix(cli):` |
+| A NuGet dependency update (Dependabot) | `fix(deps):` |
 | Tests, tools, docs, CI, benchmarks | `chore:`, `test:`, `docs:`, `ci:`, `build:` |
 
-Only `src/` changes produce a release; [docs/versioning.md](docs/versioning.md) has the details. Explain in the body
-why the change is needed and anything a reviewer should check, and keep unrelated changes in separate pull requests.
+Only changes to what ships, the libraries, `aprscli` and their dependencies, produce a release;
+[docs/versioning.md](docs/versioning.md) has the details. Explain in the body why the change is needed and anything a
+reviewer should check, and keep unrelated changes in separate pull requests.
 
 Link the work to its issue. In the pull request description write `Closes #N` for the issue it finishes, or
 `Part of #N` when it is one step of several. The `milestone` workflow then gives the pull request that issue's
