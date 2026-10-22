@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.2...v0.6.0-alpha.3) (2026-10-22)
+
+
+### Features
+
+* **cli:** serve and tnc share log their events for OpenTelemetry ([2499356](https://github.com/APRS-NET/APRS.NET/commit/24993560d89777da22c6ef06c6871c2816411369)), closes [#316](https://github.com/APRS-NET/APRS.NET/issues/316)
+* **cli:** serve and tnc share read their options from a TOML file ([b2ca218](https://github.com/APRS-NET/APRS.NET/commit/b2ca218e628d4a5fa758eac134836bc9b6761f58))
+* **kiss:** KissTcpServer counts its apps and frames ([e5fab65](https://github.com/APRS-NET/APRS.NET/commit/e5fab6520b7253d39cd3bf1bb8df30d7f8ce4c47)), closes [#316](https://github.com/APRS-NET/APRS.NET/issues/316)
+
+
+### Bug Fixes
+
+* **deps:** Bump the opentelemetry group with 2 updates ([17c8d0d](https://github.com/APRS-NET/APRS.NET/commit/17c8d0dc73ae3e69776612ee0744b5fe811cfea7))
+
 ## [0.6.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.1...v0.6.0-alpha.2) (2026-10-22)
 
 
