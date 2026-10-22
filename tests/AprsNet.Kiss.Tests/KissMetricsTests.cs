@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Metrics;
+using System.Net;
+using System.Net.Sockets;
 using AprsNet.Ax25;
 using AprsNet.Packets;
 using Microsoft.Extensions.Time.Testing;
@@ -34,7 +36,11 @@ public sealed class KissMetricsTests : IDisposable
                     map[tag.Key] = tag.Value?.ToString();
                 }
 
-                if (map.GetValueOrDefault("tnc")?.StartsWith(_host, StringComparison.Ordinal) == true)
+                // A server's tag is its address, known once it listens; Sum picks out this test's.
+                if (
+                    map.GetValueOrDefault("tnc")?.StartsWith(_host, StringComparison.Ordinal) == true
+                    || map.ContainsKey("server")
+                )
                 {
                     _seen.Enqueue((instrument.Name, value, map));
                 }
@@ -109,6 +115,46 @@ public sealed class KissMetricsTests : IDisposable
         Assert.Equal(1, Sum("aprsnet.kiss.connection.reconnects", "cause", "connect_failed"));
         await AdvanceUntilDone(next);
         Assert.True(await next);
+    }
+
+    [Fact]
+    public async Task AServerCountsAppsAndFrames()
+    {
+        await using var server = new KissTcpServer(new IPEndPoint(IPAddress.Loopback, 0), maxClients: 1)
+        {
+            Transmit = (_, _) => throw new InvalidOperationException("The TNC is not connected."),
+        };
+        server.Start();
+        var name = server.LocalEndPoint!.ToString();
+        long Server(string instrument, string? tag = null, string? value = null) =>
+            _seen
+                .Where(m =>
+                    m.Instrument == instrument
+                    && m.Tags.GetValueOrDefault("server") == name
+                    && (tag is null || m.Tags.GetValueOrDefault(tag) == value)
+                )
+                .Sum(m => m.Value);
+
+        using var app = new TcpClient();
+        await app.ConnectAsync(server.LocalEndPoint, Token);
+        await WaitUntil(() => Server("aprsnet.kiss.server.clients.connected") == 1);
+
+        // The second app finds the server full.
+        using (var turnedAway = new TcpClient())
+        {
+            await turnedAway.ConnectAsync(server.LocalEndPoint, Token);
+            await WaitUntil(() => Server("aprsnet.kiss.server.clients.disconnected", "reason", "server_full") == 1);
+        }
+
+        server.Publish(Ax25Frame.FromAprsPacket(AprsPacket.Parse("N1ABC>APRS:>heard")));
+        await app.GetStream().WriteAsync(Kiss("N0CALL>APRS:>from an app"), Token);
+        await WaitUntil(() => Server("aprsnet.kiss.server.frames.transmit_failures") == 1);
+
+        app.Close();
+        await WaitUntil(() => Server("aprsnet.kiss.server.clients.disconnected", "reason", "closed") == 1);
+        Assert.Equal(0, Server("aprsnet.kiss.server.clients.connected"));
+        Assert.Equal(1, Server("aprsnet.kiss.server.frames.published"));
+        Assert.Equal(1, Server("aprsnet.kiss.server.frames.received"));
     }
 
     /// <summary>The reconnect wait starts just after the state changes, so keep advancing until it has ended.</summary>

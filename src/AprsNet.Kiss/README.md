@@ -104,8 +104,10 @@ bytes forming a data frame go on the air, and at a TNC's command line some comma
 `K` on TNC-2-style TNCs.
 
 The `AprsNet.Kiss` meter counts frames received, sent and dropped, bytes discarded outside frames, open connections and
-reconnects by cause, each tagged with the TNC (`host:port`, or the serial port's name); add it to OpenTelemetry with
-`AddMeter("AprsNet.Kiss")`.
+reconnects by cause, each tagged with the TNC (`host:port`, or the serial port's name). It also counts a
+`KissTcpServer`'s apps connected, leaving and turned away and the frames it passes each way, tagged with the address it
+listens on. Add it to OpenTelemetry with `AddMeter("AprsNet.Kiss")`; [docs/metrics.md](../../docs/metrics.md#kiss) lists
+the instruments.
 
 ### Transmit limit
 
