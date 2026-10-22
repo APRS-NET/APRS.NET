@@ -132,6 +132,11 @@ public sealed class TncShareTests : IDisposable
         await using var second = await App.ConnectAsync(port);
         var tnc = new App(radio);
 
+        // A frame the TNC hears reaching an app shows the share is connected to the TNC, so it sends what apps do.
+        await Task.Delay(200, Token); // both apps registered with the server
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS:>heard on RF"), Token);
+        Assert.Equal("N1ABC>APRS:>heard on RF", await first.ReadAsync());
+
         await first.SendAsync(Kiss("N0CALL>APZNET:>one"));
         Assert.Equal("N0CALL>APZNET:>one", await tnc.ReadAsync());
         await second.SendAsync(Kiss("N0CALL-1>APZNET:>two"));

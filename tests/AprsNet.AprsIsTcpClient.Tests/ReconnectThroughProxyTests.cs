@@ -331,9 +331,19 @@ public sealed class ReconnectThroughProxyTests : IAsyncLifetime
                     return;
                 }
 
-                await stream.WriteAsync("# logresp N0CALL unverified, server T2CHAOS\r\n"u8.ToArray());
-                Interlocked.Increment(ref _logins);
-                _sessions[tcp] = new SemaphoreSlim(1, 1);
+                // In the broadcast before the client hears it is logged in, so nothing sent after that is missed;
+                // holding its gate keeps what is broadcast behind the logresp.
+                var gate = new SemaphoreSlim(0, 1);
+                _sessions[tcp] = gate;
+                try
+                {
+                    await stream.WriteAsync("# logresp N0CALL unverified, server T2CHAOS\r\n"u8.ToArray());
+                    Interlocked.Increment(ref _logins);
+                }
+                finally
+                {
+                    gate.Release();
+                }
             }
             catch (Exception e) when (e is IOException or SocketException or ObjectDisposedException)
             {
