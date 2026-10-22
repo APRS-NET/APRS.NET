@@ -214,6 +214,58 @@ await foreach (var frame in tnc.ReadFramesAsync(cancellationToken))
 }
 ```
 
+### Share a hardware TNC over the network
+
+`aprscli tnc share` does the same from the command line, for a TNC on a serial port, so apps on other computers can use
+it as they would Dire Wolf. It sends each app's frames to the TNC whole and one at a time, paced to the air rate. A TNC
+with little buffering, such as the TNC-X, does better with that than with a byte-for-byte bridge like ser2net. See the
+[CLI README](../../apps/AprsNet.AprsIsCli/README.md#tnc-share) for the options.
+
+On a Raspberry Pi or a small Linux PC with the TNC plugged in, install .NET 10 and the tool, then check it by hand:
+
+```sh
+dotnet tool install --global AprsNet.AprsIsCli --prerelease
+ls /dev/serial/by-id/                         # the TNC's stable name
+aprscli tnc share --tnc serial:/dev/serial/by-id/usb-FTDI_TNC-X-if00-port0@1200 --listen 0.0.0.0:8001
+```
+
+From another computer, `aprscli tnc listen --tnc pi.local:8001` should print what the TNC hears.
+
+To keep it running, add a systemd service. Use your own user, the TNC's path and its baud rate; the user needs to be in
+the `dialout` group to open the port.
+
+`/etc/systemd/system/aprscli-tnc-share.service`:
+
+```ini
+[Unit]
+Description=Share the TNC over KISS TCP (aprscli tnc share)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+SupplementaryGroups=dialout
+ExecStart=/home/pi/.dotnet/tools/aprscli tnc share \
+    --tnc serial:/dev/serial/by-id/usb-FTDI_TNC-X-if00-port0@1200 --listen 0.0.0.0:8001
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now aprscli-tnc-share
+journalctl -u aprscli-tnc-share -f            # apps connecting, frames heard and sent
+```
+
+If the service can't find .NET, add `Environment=DOTNET_ROOT=` with the folder .NET is installed in, such as
+`/home/pi/.dotnet`. Add `--quiet` to `ExecStart` to keep each frame out of the journal.
+
+KISS over TCP has no login: anyone who can reach port 8001 can transmit through the TNC. Allow only your own network
+in the firewall, or listen on `127.0.0.1` and reach it through an SSH tunnel.
+
 ## Next
 
 - [Run a gateway](gateway.md) that serves what the TNC hears to APRS-IS clients.

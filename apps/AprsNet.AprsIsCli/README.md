@@ -362,6 +362,54 @@ if an expected answer doesn't come. A script has one step per line:
 
 Lines starting with `#` are comments.
 
+## tnc share
+
+Share one TNC with several KISS apps over TCP, the way Dire Wolf offers its own on port 8001. Run it on the small
+computer the TNC is plugged into, such as a Raspberry Pi, and point Xastir, YAAC, another `aprscli` or anything else
+that speaks KISS over TCP at that computer:
+
+```sh
+aprscli tnc share --tnc serial:/dev/ttyUSB0@1200                       # apps on this computer, port 8001
+aprscli tnc share --tnc serial:/dev/serial/by-id/usb-FTDI_TNC-X-if00-port0@1200 --listen 0.0.0.0:8001
+aprscli tnc listen --tnc pi.local:8001                                 # from another computer
+```
+
+Unlike a byte-for-byte serial bridge such as ser2net, `tnc share` handles whole frames:
+- **Frames in one piece.** Each frame an app sends is read whole before it goes to the TNC, then written to the port
+  in one go.
+- **One frame at a time.** The next frame waits until the TNC has had time to take the last one over the serial port
+  and send it on the air. That time is worked out from the frame's length, the port's baud rate and `--air-rate`,
+  plus `--gap`.
+- **Why it matters:** a TNC with little buffering, such as the TNC-X, never holds more than the frame it is sending,
+  and gets each one complete.
+
+Every frame the TNC hears goes to every app. A frame one app sends isn't echoed to the others. An app that stops
+reading and falls far behind is disconnected so it can't hold up the rest.
+
+If the TNC is unplugged or its TCP connection drops, `tnc share` reconnects, as `tnc listen --reconnect` does. The apps
+stay connected meanwhile, and frames they send while the TNC is away are dropped and reported. KISS commands from apps
+that set TNC parameters, such as TXDELAY, are ignored, so one app can't change the TNC under the others.
+
+Each frame heard and sent is printed with the time (`2026-10-22 12:00:00Z heard N1ABC>APRS…`); apps connecting and
+leaving, the TNC's state and a summary at the end go to stderr.
+
+| Option | Meaning |
+| --- | --- |
+| `-t`, `--tnc` | The TNC: `serial:PORT[@BAUD]` (default 9600 baud), or `host[:port]` for a TNC over TCP that takes one connection. `,setup=th-d72` works as for `tnc listen`; `,text` is refused. Required. |
+| `-l`, `--listen` | Where apps connect. Default `127.0.0.1:8001`, this computer only; `0.0.0.0:8001` for the network. |
+| `--max-clients` | How many apps at once. Default 16; more are turned away. |
+| `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
+| `--air-rate` | The radio's data rate in bit/s, for pacing. Default 1200. |
+| `--gap` | Extra wait after each frame's estimated time on the air, for the TNC's keyup delay and a busy channel: `500ms`, `1s`, or `0`. Default `500ms`. |
+| `--transmit-limit` | Limit all apps together to 3 frames at once, then one each 10 s. Default off, as apps pace themselves. |
+| `-q`, `--quiet` | Don't print each frame. |
+| `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
+| `--quiet-warning` | Warn when the TNC sends nothing for this long, as for `tnc listen`. |
+
+KISS over TCP has no login: anyone who can reach the port can transmit through your TNC. Keep `--listen` on
+`127.0.0.1` or a trusted network, behind a firewall. To run it as a service, see the
+[TNC guide](../../docs/guides/tnc.md#share-a-hardware-tnc-over-the-network).
+
 ## gps
 
 Read a GPS and print a line for each fix: a quick check of a GPS setup. It reads gpsd, or the NMEA sentences a GPS
