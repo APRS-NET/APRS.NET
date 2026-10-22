@@ -44,6 +44,10 @@ max-clients = 16
 # leaving and the TNC's state.
 quiet = false
 
+# Also log each frame heard and sent to OpenTelemetry. Only with a collector in /etc/aprsnet/otel.env: without one,
+# aprscli refuses it and the service won't start.
+# log-packets = true
+
 # Warn when the TNC sends nothing at all for this long: it may be switched off behind a USB port that stays open.
 # Pick longer than the channel is ever quiet.
 quiet-warning = "30m"

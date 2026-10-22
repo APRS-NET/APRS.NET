@@ -55,6 +55,10 @@ as_service() {
     set -a
     # shellcheck source=/dev/null
     source "$etc/environment"
+    if [[ -r $etc/otel.env ]]; then
+      # shellcheck source=/dev/null
+      source "$etc/otel.env"
+    fi
     if [[ $1 == serve && -r $etc/secrets.env ]]; then
       # shellcheck source=/dev/null
       source "$etc/secrets.env"
@@ -151,6 +155,44 @@ check_service() {
   fi
 }
 
+# Whether the OpenTelemetry Collector in otel.env takes connections. Only the TCP port: it doesn't send anything.
+check_otlp() {
+  local endpoint protocol rest host port
+  endpoint=$(sed -nE 's/^[[:space:]]*OTEL_EXPORTER_OTLP_ENDPOINT=["]?([^"]*)["]?[[:space:]]*$/\1/p' "$etc/otel.env" 2>/dev/null | tail -n 1)
+  echo
+  echo "OpenTelemetry ($etc/otel.env)"
+  if [[ -z $endpoint ]]; then
+    pass "not set up: the services log to the journal only"
+    return
+  fi
+
+  protocol=$(sed -nE 's/^[[:space:]]*OTEL_EXPORTER_OTLP_PROTOCOL=["]?([^"]*)["]?[[:space:]]*$/\1/p' "$etc/otel.env" | tail -n 1)
+  rest=${endpoint#*://}
+  rest=${rest%%/*}
+  if [[ $rest == \[*\]* ]]; then
+    host=${rest%%]*}
+    host=${host#[}
+    port=${rest##*]:}
+    [[ $port == "$rest" ]] && port=''
+  else
+    host=${rest%%:*}
+    port=${rest#*:}
+    [[ $port == "$rest" ]] && port=''
+  fi
+
+  if [[ -z $port ]]; then
+    port=4317
+    [[ ${protocol:-grpc} == http/* ]] && port=4318
+  fi
+
+  # shellcheck disable=SC2016 # $1 and $2 are the inner shell's arguments.
+  if timeout 3 bash -c 'exec 3<>"/dev/tcp/$1/$2"' _ "$host" "$port" 2>/dev/null; then
+    pass "the collector at $host:$port takes connections (${protocol:-grpc})"
+  else
+    caution "nothing answers at $host:$port, so the services' logs and metrics aren't reaching the collector"
+  fi
+}
+
 [[ -x $aprscli ]] || { echo "aprsnet-check: $aprscli is missing. Run install.sh." >&2; exit 2; }
 id "$user" &>/dev/null || { echo "aprsnet-check: there is no $user user. Run install.sh." >&2; exit 2; }
 echo "aprscli $(as_service --version)"
@@ -182,6 +224,8 @@ for kind in tnc-share serve; do
     [[ -z $config_only ]] && check_service "$kind" "$file" "$unit"
   done
 done
+
+[[ -z $config_only ]] && check_otlp
 
 if ((!found)); then
   echo "aprsnet-check: no config files to check in $etc/serve or $etc/tnc-share${names[*]:+ named ${names[*]}}." >&2

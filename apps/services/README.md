@@ -10,7 +10,8 @@ radio and APRS-IS are there for every APRS app on your network:
   IGate.
 
 Each service reads its settings from a TOML file in `/etc/aprsnet`. `install.sh` installs everything, `aprsnet-check`
-checks the settings and the running services, and `aprsnet-logs` shows what they logged.
+checks the settings and the running services, and `aprsnet-logs` shows what they logged. With an OpenTelemetry
+Collector, the services also send it their logs and metrics.
 
 > **Alpha**, like the rest of APRS.NET.
 
@@ -57,7 +58,8 @@ It:
 - installs the latest `aprscli`, prereleases included, as a .NET tool in `/opt/aprsnet`;
 - adds an `aprsnet` system user in the `dialout` group;
 - installs the two services in `/etc/systemd/system` and the scripts in `/usr/local/bin`;
-- writes the examples to `/etc/aprsnet/examples`, and `/etc/aprsnet/secrets.env` if there isn't one.
+- writes the examples to `/etc/aprsnet/examples`, and `/etc/aprsnet/secrets.env` and `/etc/aprsnet/otel.env` if
+  they aren't there.
 
 It doesn't start anything.
 
@@ -135,6 +137,7 @@ file can't hold the IGate's passcode: put it in `/etc/aprsnet/secrets.env`, whic
 | `/etc/aprsnet/tnc-share/NAME.toml` | `aprsnet-tnc-share@NAME` |
 | `/etc/aprsnet/serve/NAME.toml` | `aprsnet-serve@NAME` |
 | `/etc/aprsnet/secrets.env` | The passcode, for `serve` with `igate = true`. |
+| `/etc/aprsnet/otel.env` | Where to send logs and metrics: see [OpenTelemetry](#opentelemetry). |
 | `/etc/aprsnet/environment` | Where .NET is, written by `install.sh`. |
 | `/etc/aprsnet/examples/` | The examples, replaced by each install. |
 
@@ -164,6 +167,8 @@ For each config file, `aprsnet-check` checks:
   - that it is running and listening on its port;
   - for a gateway with `http`, that `/health` says a source is connected;
   - for a TNC share, whether it has lost the TNC since it started.
+- **OpenTelemetry:** whether the collector in `otel.env` takes connections. Not reaching it is a warning, since the
+  services run without it.
 
 It exits 1 when anything failed, so it can run from cron or a monitoring system.
 
@@ -192,6 +197,50 @@ aprsnet-logs --since today --packets tncx -- -o cat > heard.txt   # after --: op
 
 Use `sudo`, or add yourself to the `adm` or `systemd-journal` group, to see the services' logs. On a Pi's SD card, cap
 the journal's size with `SystemMaxUse=200M` in `/etc/systemd/journald.conf`.
+
+## OpenTelemetry
+
+To send the services' logs and metrics to an OpenTelemetry Collector, give its OTLP receiver in
+`/etc/aprsnet/otel.env`, then restart them:
+
+```sh
+sudo nano /etc/aprsnet/otel.env        # OTEL_EXPORTER_OTLP_ENDPOINT=http://collector.lan:4317
+sudo systemctl restart 'aprsnet-*@*'
+sudo aprsnet-check                     # says whether the collector takes connections
+```
+
+The file's comments cover OTLP over HTTP, headers with a token, and extra attributes. `install.sh` never changes it,
+and only root can read it.
+
+Each service reports `service.name` `aprsnet-tnc-share` or `aprsnet-serve`, with `service.instance.id` the name of its
+config file, such as `tncx`. They send:
+
+- **Metrics:** every 60 s, by default. [docs/metrics.md](../../docs/metrics.md) lists them.
+  - A TNC share: frames heard and sent, the TNC's connection, apps connected, leaving and turned away, frames from apps
+    that couldn't be sent, and how long frames wait for the TNC.
+  - A gateway: its TNCs and APRS-IS, clients, packets and duplicates by source, and the IGate's gated and refused
+    packets.
+- **Logs:** what they write to the journal, as structured logs with fields such as `Tnc`, `Remote` and `Endpoint`:
+  - apps and clients connecting and leaving;
+  - the TNC and APRS-IS lost and back;
+  - each run's start and summary.
+- **Packets:** with `log-packets = true` in a config file, each packet as a log too: each frame heard and sent for a
+  TNC share, or each packet from each source for a gateway. The packets don't go to the journal.
+
+A collector config that takes OTLP and prints what arrives, to try it:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+exporters:
+  debug: { verbosity: detailed }
+service:
+  pipelines:
+    logs: { receivers: [otlp], exporters: [debug] }
+    metrics: { receivers: [otlp], exporters: [debug] }
+```
 
 ## Security
 

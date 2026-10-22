@@ -139,9 +139,11 @@ install -m 644 "$here"/config/*.toml "$etc/examples/"
 printf '# Written by install.sh: where .NET is, for %s/aprscli.\nDOTNET_ROOT=%s\n' "$tool_path" "$dotnet_root" \
   >"$etc/environment"
 chmod 644 "$etc/environment"
-if [[ ! -e $etc/secrets.env ]]; then
-  install -m 600 -o root -g root "$here/config/secrets.env" "$etc/secrets.env"
-fi
+for file in secrets.env otel.env; do
+  if [[ ! -e $etc/$file ]]; then
+    install -m 600 -o root -g root "$here/config/$file" "$etc/$file"
+  fi
+done
 
 say "Installing the services and the scripts"
 install -m 644 "$here"/systemd/*.service "$units/"
@@ -177,6 +179,6 @@ Nothing runs yet. To share a TNC and serve what it hears:
     sudo aprsnet-check
     aprsnet-logs -f
 
-An IGate's passcode goes in $etc/secrets.env.
+An IGate's passcode goes in $etc/secrets.env, and an OpenTelemetry Collector's address in $etc/otel.env.
 EOF
 fi

@@ -19,6 +19,7 @@ Group=aprsnet
 # For a --tnc on a serial port, which belongs to the dialout group.
 SupplementaryGroups=dialout
 EnvironmentFile=/etc/aprsnet/environment
+EnvironmentFile=-/etc/aprsnet/otel.env
 EnvironmentFile=-/etc/aprsnet/secrets.env
 ExecStart=/opt/aprsnet/aprscli serve --config /etc/aprsnet/serve/%i.toml
 # Lost connections are reconnected inside aprscli; this restarts it when it stops for anything else. Exit code 3 is a
@@ -30,6 +31,8 @@ SyslogIdentifier=aprsnet-serve@%i
 
 StateDirectory=aprsnet
 Environment=HOME=/var/lib/aprsnet DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+# How the service shows in OpenTelemetry: service.name, and service.instance.id from the config file's name.
+Environment=OTEL_SERVICE_NAME=aprsnet-serve APRSNET_INSTANCE=%i
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=read-only
