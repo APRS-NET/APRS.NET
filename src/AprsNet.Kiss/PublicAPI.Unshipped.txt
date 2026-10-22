@@ -253,3 +253,10 @@ AprsNet.Kiss.KissConnection.SendRawAsync(System.ReadOnlyMemory<byte> bytes, Syst
 AprsNet.Kiss.KissTrafficKind.RawSent = 10 -> AprsNet.Kiss.KissTrafficKind
 AprsNet.Kiss.KissDropReason.DamagedLine = 2 -> AprsNet.Kiss.KissDropReason
 AprsNet.Kiss.KissDropReason.NotAx25 = 3 -> AprsNet.Kiss.KissDropReason
+AprsNet.Kiss.KissTcpServer.ClientConnected -> System.EventHandler<AprsNet.Kiss.KissTcpServerClientEventArgs!>?
+AprsNet.Kiss.KissTcpServer.ClientDisconnected -> System.EventHandler<AprsNet.Kiss.KissTcpServerClientEventArgs!>?
+AprsNet.Kiss.KissTcpServer.ClientRefused -> System.EventHandler<AprsNet.Kiss.KissTcpServerClientEventArgs!>?
+AprsNet.Kiss.KissTcpServer.ClientsRefused.get -> long
+AprsNet.Kiss.KissTcpServerClientEventArgs
+AprsNet.Kiss.KissTcpServerClientEventArgs.FellBehind.get -> bool
+AprsNet.Kiss.KissTcpServerClientEventArgs.RemoteEndPoint.get -> System.Net.IPEndPoint!
