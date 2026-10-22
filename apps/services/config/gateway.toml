@@ -1,0 +1,55 @@
+# aprsnet-serve@gateway reads this as /etc/aprsnet/serve/gateway.toml.
+#
+# Serves APRS packets to APRS clients such as AprsMap, YAAC, Xastir or `aprscli listen`, as an APRS-IS server would:
+# what the radio hears through the TNC share, an APRS-IS feed, or both, each packet once. Each client logs in as usual
+# and gets its own filter.
+#
+# Each key is one of `aprscli serve`'s options without the dashes (`aprscli serve --help` lists them). The [tables]
+# only group them for reading. After changing this file:
+#
+#   sudo aprsnet-check gateway
+#   sudo systemctl restart aprsnet-serve@gateway
+
+[aprs-is]
+# Your callsign, for the read-only upstream login and an IGate's login below. Without it, aprscli logs in as a
+# listener such as SWL482913.
+callsign = "N0CALL"
+
+# The upstream filter: everything clients may ask for. Leave it out to serve only the TNCs, with no internet.
+filter = "r/35.0/-97.0/300"
+
+# server = "rotate.aprs2.net:14580"
+
+[sources]
+# KISS TNCs to read, as host:port or serial:PORT@BAUD. localhost:8001 is the TNC share on this machine
+# (aprsnet-tnc-share@tncx). A serial TNC given here directly can't be used by anything else.
+tnc = ["localhost:8001"]
+
+# Warn when a TNC sends nothing at all for this long: it may be switched off behind a port that stays open. Pick
+# longer than the channel is ever quiet.
+quiet-warning = "30m"
+
+[clients]
+# Where APRS clients connect. 0.0.0.0 is every network this machine is on. Clients don't log in with a passcode, so
+# keep this port on your own network.
+listen = "0.0.0.0:14580"
+
+# WebSocket clients, and GET /health for aprsnet-check. Leave it out to turn HTTP off.
+http = "0.0.0.0:14590"
+
+# Send each client what was heard in this long before it connected, so a map fills in at once.
+history = "30m"
+
+# The server name clients see.
+# name = "APRSNET"
+
+# [igate]
+# A receive-only IGate: upload what the TNCs hear to APRS-IS. It needs the callsign above, usually with an SSID such
+# as N0CALL-10, its passcode as APRS_PASSCODE in /etc/aprsnet/secrets.env, and its position, which it beacons to
+# APRS-IS. Read "A receive-only IGate" in the aprscli README first: it breaks messaging for stations nearby where no
+# two-way IGate covers them.
+# igate = true
+# lat = 35.0
+# lon = -97.0
+# comment = "aprscli"
+# beacon-interval = "30m"

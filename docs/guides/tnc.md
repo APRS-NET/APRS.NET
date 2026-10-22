@@ -231,37 +231,17 @@ aprscli tnc share --tnc serial:/dev/serial/by-id/usb-FTDI_TNC-X-if00-port0@1200 
 
 From another computer, `aprscli tnc listen --tnc pi.local:8001` should print what the TNC hears.
 
-To keep it running, add a systemd service. Use your own user, the TNC's path and its baud rate; the user needs to be in
-the `dialout` group to open the port.
-
-`/etc/systemd/system/aprscli-tnc-share.service`:
-
-```ini
-[Unit]
-Description=Share the TNC over KISS TCP (aprscli tnc share)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=pi
-SupplementaryGroups=dialout
-ExecStart=/home/pi/.dotnet/tools/aprscli tnc share \
-    --tnc serial:/dev/serial/by-id/usb-FTDI_TNC-X-if00-port0@1200 --listen 0.0.0.0:8001
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
+To keep it running, install it as a service with [apps/services](../../apps/services/README.md). That installs
+`aprscli` for a service user, the `aprsnet-tnc-share@` service, which reads its settings from a TOML file, and scripts
+to check it and read its logs:
 
 ```sh
-sudo systemctl daemon-reload
-sudo systemctl enable --now aprscli-tnc-share
-journalctl -u aprscli-tnc-share -f            # apps connecting, frames heard and sent
+sudo apps/services/install.sh
+sudo cp /etc/aprsnet/examples/tncx.toml /etc/aprsnet/tnc-share/tncx.toml   # set the TNC's path and baud rate
+sudo aprsnet-check --config-only
+sudo systemctl enable --now aprsnet-tnc-share@tncx
+aprsnet-logs -f tncx                     # apps connecting, frames heard and sent
 ```
-
-If the service can't find .NET, add `Environment=DOTNET_ROOT=` with the folder .NET is installed in, such as
-`/home/pi/.dotnet`. Add `--quiet` to `ExecStart` to keep each frame out of the journal.
 
 KISS over TCP has no login: anyone who can reach port 8001 can transmit through the TNC. Allow only your own network
 in the firewall, or listen on `127.0.0.1` and reach it through an SSH tunnel.
