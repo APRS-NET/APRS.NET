@@ -38,6 +38,7 @@ public sealed class KissTcpServer : IAsyncDisposable
     private readonly ConcurrentDictionary<Client, Task> _clients = new();
     private readonly CancellationTokenSource _stopping = new();
     private TcpListener? _listener;
+    private string _server = "";
     private Task? _accepting;
     private long _fromClients;
     private long _transmitFailures;
@@ -114,6 +115,7 @@ public sealed class KissTcpServer : IAsyncDisposable
 
         _listener = new TcpListener(_endPoint);
         _listener.Start();
+        _server = _listener.LocalEndpoint.ToString()!;
         _accepting = AcceptAsync(_listener, _stopping.Token);
     }
 
@@ -127,6 +129,7 @@ public sealed class KissTcpServer : IAsyncDisposable
         }
 
         var bytes = KissFrame.ForAx25(frame).Encode();
+        KissMetrics.ServerPublished(_server);
         foreach (var client in _clients.Keys)
         {
             if (!client.Offer(bytes))
@@ -202,6 +205,7 @@ public sealed class KissTcpServer : IAsyncDisposable
             {
                 tcp.Dispose();
                 Interlocked.Increment(ref _refused);
+                KissMetrics.ServerDisconnected(_server, "server_full");
                 Raise(ClientRefused, new KissTcpServerClientEventArgs(remote, fellBehind: false));
                 continue;
             }
@@ -211,6 +215,7 @@ public sealed class KissTcpServer : IAsyncDisposable
             // Registered before it starts, so a client that ends at once still finds itself to remove.
             var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             _clients[client] = done.Task;
+            KissMetrics.ServerClients(_server, 1);
             Raise(ClientConnected, new KissTcpServerClientEventArgs(remote, fellBehind: false));
             _ = RunAsync(client, done, stopping);
         }
@@ -226,6 +231,13 @@ public sealed class KissTcpServer : IAsyncDisposable
         {
             _clients.TryRemove(client, out _);
             client.Dispose();
+            KissMetrics.ServerClients(_server, -1);
+            KissMetrics.ServerDisconnected(
+                _server,
+                client.FellBehind ? "overflow"
+                    : stopping.IsCancellationRequested ? "server_stopping"
+                    : "closed"
+            );
             Raise(ClientDisconnected, new KissTcpServerClientEventArgs(client.RemoteEndPoint, client.FellBehind));
             done.TrySetResult();
         }
@@ -260,6 +272,7 @@ public sealed class KissTcpServer : IAsyncDisposable
     private async ValueTask ReceivedAsync(Ax25Frame frame, CancellationToken cancellationToken)
     {
         Interlocked.Increment(ref _fromClients);
+        KissMetrics.ServerFromClients(_server);
         if (Transmit is null)
         {
             return;
@@ -272,6 +285,7 @@ public sealed class KissTcpServer : IAsyncDisposable
         catch (Exception e) when (e is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
             Interlocked.Increment(ref _transmitFailures);
+            KissMetrics.ServerTransmitFailure(_server);
         }
     }
 
