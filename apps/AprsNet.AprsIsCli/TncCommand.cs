@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Globalization;
 using AprsNet.Kiss;
 using AprsNet.Packets;
+using Microsoft.Extensions.Logging;
 
 namespace AprsNet.AprsIsCli;
 
@@ -200,9 +201,31 @@ internal sealed class TncCommand(CliEnvironment environment)
     /// Prints a line when a TNC is lost, with the wait before the next try, and when it is back, and its warnings: for
     /// <c>tnc listen --reconnect</c> and <c>serve</c>.
     /// </summary>
-    internal static void ReportConnection(KissConnection connection, string name, TextWriter error)
+    /// <remarks>With <paramref name="events"/>, each is also logged there, for a service's OpenTelemetry.</remarks>
+    internal static void ReportConnection(
+        KissConnection connection,
+        string name,
+        TextWriter error,
+        ILogger? events = null
+    )
     {
-        connection.Warning += (_, e) => ReportWarning(name, e, error);
+        connection.Warning += (_, e) =>
+        {
+            ReportWarning(name, e, error);
+            if (events is null)
+            {
+                return;
+            }
+
+            if (e.IsActive)
+            {
+                events.TncWarning(name, e.Message);
+            }
+            else
+            {
+                events.TncWarningOver(name, e.Message);
+            }
+        };
         var lost = false;
         connection.StateChanged += (_, e) =>
         {
@@ -210,16 +233,19 @@ internal sealed class TncCommand(CliEnvironment environment)
             {
                 lost = false;
                 error.WriteLine($"aprscli: reconnected to the TNC at {name}.");
+                events?.TncReconnected(name);
             }
             else if (e.State == KissConnectionState.Reconnecting)
             {
                 lost = true;
-                var retry = e.RetryIn!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture);
+                var seconds = e.RetryIn!.Value.TotalSeconds;
+                var retry = seconds.ToString("0.#", CultureInfo.InvariantCulture);
                 error.WriteLine(
                     e.Error is null
                         ? $"aprscli: the TNC at {name} closed the connection; reconnecting in {retry}s."
                         : $"aprscli: lost the TNC at {name}: {e.Error.Message}; reconnecting in {retry}s."
                 );
+                events?.TncLost(name, e.Error?.Message ?? "the TNC closed the connection", seconds);
             }
         };
     }

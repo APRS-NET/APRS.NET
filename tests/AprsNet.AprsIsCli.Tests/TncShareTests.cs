@@ -72,6 +72,52 @@ public sealed class TncShareTests : IDisposable
     }
 
     [Fact]
+    public async Task EventsAndFramesAreLoggedForOpenTelemetry()
+    {
+        var port = FreePort();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var harness = new CliHarness();
+        harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://127.0.0.1:4317";
+        var run = harness.RunAsync(
+            ["tnc", "share", "--tnc", TncAddress, "--listen", $"127.0.0.1:{port}", "--gap", "0", "-q", "--log-packets"],
+            stop.Token
+        );
+        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        string remote;
+        await using (var app = await App.ConnectAsync(port))
+        {
+            remote = app.LocalEndPoint;
+            await Task.Delay(200, Token);
+            await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS:>heard on RF"), Token);
+            Assert.Equal("N1ABC>APRS:>heard on RF", await app.ReadAsync());
+            await app.SendAsync(Kiss("N0CALL>APZNET:>from an app"));
+            Assert.Equal("N0CALL>APZNET:>from an app", await new App(radio).ReadAsync());
+        }
+
+        await Task.Delay(200, Token); // the app's leaving is reported
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(Wait, Token);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("", result.Out); // -q still prints nothing; --log-packets only logs
+        var events = harness.Logs.Entries.Where(e => e.Category == "aprscli.events").Select(e => e.Message).ToList();
+        Assert.Equal(
+            [
+                $"Sharing the TNC at {TncAddress} on 127.0.0.1:{port}, paced for 1200 bit/s",
+                $"An app connected from {remote}",
+                $"The app at {remote} disconnected",
+                "Stopped sharing: heard 1 frames, sent 1 from apps (0 dropped); 0 apps dropped for falling behind, 0 "
+                    + "turned away",
+            ],
+            events
+        );
+        Assert.Equal(
+            ["Heard from N1ABC: N1ABC>APRS:>heard on RF", "Sent for an app from N0CALL: N0CALL>APZNET:>from an app"],
+            harness.Logs.Entries.Where(e => e.Category == "aprscli.packets").Select(e => e.Message)
+        );
+    }
+
+    [Fact]
     public async Task FramesFromAppsArePacedForTheAir()
     {
         var port = FreePort();
@@ -216,6 +262,7 @@ public sealed class TncShareTests : IDisposable
     [InlineData(new[] { "--tnc", "localhost", "--air-rate", "0" }, "--air-rate must be at least 1")]
     [InlineData(new[] { "--tnc", "localhost", "--gap", "soon" }, "--gap 'soon' is not valid")]
     [InlineData(new[] { "--tnc", "localhost", "-d", "forever" }, "--duration 'forever' is not valid")]
+    [InlineData(new[] { "--tnc", "localhost", "--log-packets" }, "--log-packets needs OTEL_EXPORTER_OTLP_ENDPOINT")]
     public async Task BadOptionsAreRefused(string[] options, string message)
     {
         var result = await new CliHarness().RunAsync(["tnc", "share", .. options], Token);
@@ -239,6 +286,15 @@ public sealed class TncShareTests : IDisposable
         private readonly byte[] _buffer = new byte[4096];
 
         public bool HasData => tcp.Available > 0;
+
+        public string LocalEndPoint
+        {
+            get
+            {
+                var local = (IPEndPoint)tcp.Client.LocalEndPoint!;
+                return new IPEndPoint(local.Address.MapToIPv4(), local.Port).ToString();
+            }
+        }
 
         public static async Task<App> ConnectAsync(int port)
         {
