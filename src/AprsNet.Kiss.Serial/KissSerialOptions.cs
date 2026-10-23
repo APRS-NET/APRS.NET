@@ -46,10 +46,17 @@ public sealed class KissSerialOptions
     /// Whether the TNC prints each packet it hears as a TNC-2 text line instead of speaking KISS, as a radio does in its
     /// APRS mode (the Kenwood TH-D72's APRS12): the connection reads those lines as packets. Receive only: sending
     /// throws. The radio keeps working as an APRS station of its own, its display, beacons and message acks included,
-    /// and needs no <see cref="Setup"/>. GPS sentences on the same port are skipped; a packet line damaged where one
-    /// ran into it is dropped and counted in <c>DroppedFrames</c>. Defaults to <see langword="false"/>, for KISS.
+    /// and needs no <see cref="Setup"/>. GPS sentences on the same port, from a radio with GPS PC output on, come
+    /// through <see cref="KissConnection.NmeaSentenceReceived"/>; a packet line damaged where one ran into it is
+    /// dropped and counted in <c>DroppedFrames</c>. Defaults to <see langword="false"/>, for KISS.
     /// </summary>
     public bool TextMode { get; set; }
+
+    /// <summary>
+    /// In <see cref="TextMode"/>, how long without a GPS sentence counts as the GPS gone, for
+    /// <see cref="KissConnection.GpsPresenceChanged"/>. Defaults to 10 seconds; a TH-D72A sends a burst every 2.
+    /// </summary>
+    public TimeSpan GpsTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// The radio port on a multi-port TNC, 0 to 15: frames are sent there, and only frames heard there are read.
@@ -107,6 +114,7 @@ public sealed class KissSerialOptions
         {
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(quiet, TimeSpan.Zero, nameof(QuietWarning));
         }
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(GpsTimeout, TimeSpan.Zero, nameof(GpsTimeout));
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(ReconnectDelay, TimeSpan.Zero, nameof(ReconnectDelay));
         ArgumentOutOfRangeException.ThrowIfLessThan(MaxReconnectDelay, ReconnectDelay, nameof(MaxReconnectDelay));
         ArgumentNullException.ThrowIfNull(TimeProvider, nameof(TimeProvider));

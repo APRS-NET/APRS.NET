@@ -181,4 +181,29 @@ public sealed class KissMetricsTests : IDisposable
             await Task.Delay(10, Token);
         }
     }
+
+    [Fact]
+    public async Task GpsSentencesInTextModeAreCounted()
+    {
+        var tnc = new FakeTnc();
+        await using var connection = new KissSerialConnection(
+            _ => Task.FromResult<Stream>(tnc),
+            new KissSerialOptions
+            {
+                PortName = Tnc,
+                TimeProvider = _time,
+                TextMode = true,
+            }
+        );
+        const string Gga = "$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47";
+        tnc.Send(System.Text.Encoding.Latin1.GetBytes($"{Gga}\r\n{Gga[..^1]}0\r\n{Gga}\r\nW1AW>APRS:>last\r\n"));
+
+        await foreach (var _ in connection.ReadPacketsAsync(Token).WithCancellation(Token))
+        {
+            break;
+        }
+
+        Assert.Equal(2, Sum("aprsnet.kiss.nmea.received", "tnc", Tnc));
+        Assert.Equal(1, Sum("aprsnet.kiss.nmea.damaged", "tnc", Tnc));
+    }
 }

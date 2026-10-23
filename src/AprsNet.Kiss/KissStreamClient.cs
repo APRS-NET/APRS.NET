@@ -99,6 +99,14 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     public event EventHandler<KissWarningEventArgs>? Warning;
 
     /// <summary>
+    /// In text mode, each GPS sentence the TNC prints between its packet lines, as a radio with GPS PC output on does in
+    /// its APRS mode: whole, with a checksum that matches. Raised on the reading thread; an exception thrown by a
+    /// handler is ignored. A line starting with <c>$</c> that is cut off or has a wrong checksum isn't raised; it is
+    /// reported as <see cref="KissTrafficKind.DamagedNmea"/>.
+    /// </summary>
+    internal event EventHandler<NmeaSentenceEventArgs>? NmeaSentenceReceived;
+
+    /// <summary>
     /// Everything that crosses the link, for a troubleshooting console: each frame received (APRS or not, for this
     /// port or another, damaged), bytes outside any frame a line at a time, and each frame sent. Received entries
     /// are raised on the reading thread, sent ones on the sending thread. Nothing extra is done while no one is
@@ -275,8 +283,9 @@ public sealed partial class KissStreamClient : IAsyncDisposable
 
     /// <summary>
     /// Text mode: reads TNC-2 lines and yields each packet as the AX.25 frame it came off the air as. GPS sentences
-    /// (<c>$GP…</c>) and other lines without a <c>SOURCE&gt;DESTINATION:</c> header are skipped; a packet line with a
-    /// sentence run into it, or one AX.25 can't carry, is dropped and counted.
+    /// (<c>$GP…</c>) go to <see cref="NmeaSentenceReceived"/>, and other lines without a
+    /// <c>SOURCE&gt;DESTINATION:</c> header are skipped; a packet line with a sentence run into it, or one AX.25 can't
+    /// carry, is dropped and counted.
     /// </summary>
     private async IAsyncEnumerable<Ax25Frame> ReadTextFramesAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken
@@ -334,13 +343,19 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     private Ax25Frame? TextLine(byte[] bytes, bool overlong)
     {
         var text = System.Text.Encoding.Latin1.GetString(bytes);
+        if (text[0] == '$')
+        {
+            GpsLine(bytes, text); // a sentence, or one damaged where another line ran into it
+            return null;
+        }
+
         if (overlong || TextLineDamage().IsMatch(text))
         {
             return DropLine(bytes, KissDropReason.DamagedLine);
         }
 
         var packet = AprsPacket.Parse(text);
-        if (text[0] == '$' || !packet.HasHeader)
+        if (!packet.HasHeader)
         {
             if (Tracing)
             {
@@ -353,7 +368,7 @@ public sealed partial class KissStreamClient : IAsyncDisposable
                 );
             }
 
-            return null; // a GPS sentence, a prompt, a blank: not a packet
+            return null; // a prompt, a blank: not a packet
         }
 
         Ax25Frame frame;
@@ -378,6 +393,53 @@ public sealed partial class KissStreamClient : IAsyncDisposable
         }
 
         return frame;
+    }
+
+    /// <summary>
+    /// A text line starting with <c>$</c>: a GPS sentence when it is whole and its checksum matches, else damaged, as
+    /// when a packet line or another sentence ran into it.
+    /// </summary>
+    private void GpsLine(byte[] bytes, string text)
+    {
+        var at = TimeProvider.GetUtcNow();
+        if (!NmeaSentence.TryParse(text, out var sentence) || sentence.Checksum is null || !sentence.IsChecksumValid)
+        {
+            KissMetrics.NmeaDamaged(MetricsTnc);
+            if (Tracing)
+            {
+                Raise(
+                    new KissTrafficEventArgs(at, KissTrafficKind.DamagedNmea, bytes)
+                    {
+                        LooksLikeText = true,
+                        EndsLine = true,
+                    }
+                );
+            }
+
+            return;
+        }
+
+        KissMetrics.NmeaReceived(MetricsTnc);
+        if (Tracing)
+        {
+            Raise(
+                new KissTrafficEventArgs(at, KissTrafficKind.Nmea, bytes)
+                {
+                    LooksLikeText = true,
+                    EndsLine = true,
+                    Sentence = sentence,
+                }
+            );
+        }
+
+        try
+        {
+            NmeaSentenceReceived?.Invoke(this, new NmeaSentenceEventArgs(sentence, at));
+        }
+        catch (Exception)
+        {
+            // An app's bug must not stop the packets.
+        }
     }
 
     private Ax25Frame? DropLine(byte[] bytes, KissDropReason reason)

@@ -33,3 +33,5 @@ AprsNet.Kiss.KissSerialOptions.Setup.set -> void
 static AprsNet.Kiss.KissSerialConnection.OpenTerminal(AprsNet.Kiss.KissSerialOptions! options) -> AprsNet.Kiss.TncTerminal!
 AprsNet.Kiss.KissSerialOptions.TextMode.get -> bool
 AprsNet.Kiss.KissSerialOptions.TextMode.set -> void
+AprsNet.Kiss.KissSerialOptions.GpsTimeout.get -> System.TimeSpan
+AprsNet.Kiss.KissSerialOptions.GpsTimeout.set -> void
