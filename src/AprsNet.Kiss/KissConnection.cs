@@ -38,6 +38,13 @@ public abstract class KissConnection : IAsyncDisposable
     private long _lastData;
     private bool _quiet;
     private bool _watchingQuiet;
+    private readonly ITimer _gpsTimer;
+    private readonly Lock _gpsLock = new();
+    private long _lastSentence;
+    private bool _gpsPresent;
+
+    /// <summary>The default <c>GpsTimeout</c>: how long without a GPS sentence counts as the GPS gone.</summary>
+    internal static readonly TimeSpan DefaultGpsTimeout = TimeSpan.FromSeconds(10);
 
     private protected KissConnection(
         Func<CancellationToken, Task<Stream>> connect,
@@ -49,10 +56,13 @@ public abstract class KissConnection : IAsyncDisposable
         KissTransmitLimit transmitLimit,
         TimeSpan? quietWarning,
         bool reopenWhenSendingText = false,
-        bool textMode = false
+        bool textMode = false,
+        TimeSpan? gpsTimeout = null
     )
     {
         _textMode = textMode;
+        GpsTimeout = gpsTimeout ?? DefaultGpsTimeout;
+        _gpsTimer = timeProvider.CreateTimer(_ => CheckGps(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
         _reopenWhenSendingText = reopenWhenSendingText;
         QuietWarning = quietWarning;
         _quietTimer = timeProvider.CreateTimer(
@@ -110,6 +120,44 @@ public abstract class KissConnection : IAsyncDisposable
     /// nothing it sends can be read. It stays on across reconnects until a KISS frame arrives.
     /// </summary>
     public bool IsSendingText => Volatile.Read(ref _textWarning) == 1;
+
+    /// <summary>
+    /// How long without a GPS sentence counts as the GPS gone, for <see cref="GpsPresenceChanged"/>. Ten seconds unless
+    /// the options say otherwise.
+    /// </summary>
+    public TimeSpan GpsTimeout { get; }
+
+    /// <summary>
+    /// Whether the TNC is sending GPS sentences now: one has come within <see cref="GpsTimeout"/>. Only a serial
+    /// connection in text mode reads them; see <see cref="NmeaSentenceReceived"/>.
+    /// </summary>
+    public bool IsGpsPresent
+    {
+        get
+        {
+            lock (_gpsLock)
+            {
+                return _gpsPresent;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Each GPS sentence the TNC prints, across reconnects: a radio in its APRS mode with GPS PC output on, read in text
+    /// mode (<c>KissSerialOptions.TextMode</c>), sends them between its packet lines. Only whole sentences whose
+    /// checksum matches are raised; damaged ones show in <see cref="Traffic"/> as <see cref="KissTrafficKind.DamagedNmea"/>.
+    /// A sentence says a GPS is there, not that it has a fix: a GPS without one still sends sentences, with no position
+    /// or a placeholder one, so feed them to an <c>NmeaFixTracker</c> and use its fix. Raised on the reading thread;
+    /// an exception thrown by a handler is ignored. A TNC in KISS mode sends none: KISS has no room for them.
+    /// </summary>
+    public event EventHandler<NmeaSentenceEventArgs>? NmeaSentenceReceived;
+
+    /// <summary>
+    /// Raised when the TNC starts sending GPS sentences, and again when none has come for <see cref="GpsTimeout"/>, so an
+    /// app can show a GPS while there is one, or warn when one it expects is missing. On the reading thread when the
+    /// first sentence arrives, on a timer thread when they stop.
+    /// </summary>
+    public event EventHandler<GpsPresenceChangedEventArgs>? GpsPresenceChanged;
 
     /// <summary>Connections made after the first: one each time the TNC was lost and reached again.</summary>
     public int Reconnects { get; private set; }
@@ -390,6 +438,7 @@ public abstract class KissConnection : IAsyncDisposable
                         TextMode = _textMode,
                     };
                     client.Traffic += (_, e) => RaiseTraffic(e);
+                    client.NmeaSentenceReceived += (_, e) => SentenceArrived(e);
                     client.Warning += (_, e) =>
                     {
                         SetTextWarning(e.IsActive);
@@ -569,6 +618,7 @@ public abstract class KissConnection : IAsyncDisposable
         await _disposing.CancelAsync().ConfigureAwait(false);
         _disposing.Dispose();
         await _quietTimer.DisposeAsync().ConfigureAwait(false);
+        await _gpsTimer.DisposeAsync().ConfigureAwait(false);
         SetState(KissConnectionState.Closed);
         GC.SuppressFinalize(this);
     }
@@ -646,6 +696,70 @@ public abstract class KissConnection : IAsyncDisposable
         if (warn)
         {
             Warning?.Invoke(this, new KissWarningEventArgs(KissWarning.Quiet, true, quiet));
+        }
+    }
+
+    /// <summary>A GPS sentence: passes it on, and says the GPS is there if it wasn't.</summary>
+    private void SentenceArrived(NmeaSentenceEventArgs sentence)
+    {
+        bool appeared;
+        lock (_gpsLock)
+        {
+            _lastSentence = _timeProvider.GetTimestamp();
+            appeared = !_gpsPresent && !IsDisposed;
+            if (appeared)
+            {
+                _gpsPresent = true;
+                _gpsTimer.Change(GpsTimeout, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        if (appeared)
+        {
+            RaiseIgnoringErrors(GpsPresenceChanged, new GpsPresenceChangedEventArgs(true, GpsTimeout));
+        }
+
+        RaiseIgnoringErrors(NmeaSentenceReceived, sentence);
+    }
+
+    /// <summary>The timer: says the GPS is gone if no sentence came for <see cref="GpsTimeout"/>, or waits out the rest.</summary>
+    private void CheckGps()
+    {
+        bool gone;
+        lock (_gpsLock)
+        {
+            if (!_gpsPresent || IsDisposed)
+            {
+                return;
+            }
+
+            var silent = _timeProvider.GetElapsedTime(_lastSentence);
+            gone = silent >= GpsTimeout;
+            if (gone)
+            {
+                _gpsPresent = false;
+            }
+            else
+            {
+                _gpsTimer.Change(GpsTimeout - silent, Timeout.InfiniteTimeSpan);
+            }
+        }
+
+        if (gone)
+        {
+            RaiseIgnoringErrors(GpsPresenceChanged, new GpsPresenceChangedEventArgs(false, GpsTimeout));
+        }
+    }
+
+    private void RaiseIgnoringErrors<T>(EventHandler<T>? handler, T args)
+    {
+        try
+        {
+            handler?.Invoke(this, args);
+        }
+        catch (Exception)
+        {
+            // An app's bug must not stop the packets.
         }
     }
 

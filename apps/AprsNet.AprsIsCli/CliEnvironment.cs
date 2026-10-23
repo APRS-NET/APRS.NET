@@ -58,11 +58,16 @@ internal sealed class CliEnvironment
         TimeSpan? quietWarning = null,
         KissTransmitLimit? transmitLimit = null
     ) =>
-        address.SerialPort is { } name
+        address.SerialPort is not null
             ? new KissSerialConnection(
+                token =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    return Task.FromResult(OpenTncPort(address));
+                },
                 new KissSerialOptions
                 {
-                    PortName = name,
+                    PortName = address.SerialPort,
                     BaudRate = address.BaudRate,
                     DtrEnable = address.Dtr,
                     RtsEnable = address.Rts,
@@ -86,6 +91,13 @@ internal sealed class CliEnvironment
                     TransmitLimit = transmitLimit,
                 }
             );
+
+    /// <summary>Opens a TNC's serial port with its speed and DTR and RTS settings; tests replace it.</summary>
+    public Func<TncAddress, Stream> OpenTncPort { get; init; } = OpenSerialTnc;
+
+    /// <summary>Opens <paramref name="address"/>'s serial port as <see cref="KissSerialConnection"/> does.</summary>
+    public static Stream OpenSerialTnc(TncAddress address) =>
+        KissSerialConnection.OpenPort(address.SerialPort!, address.BaudRate, address.Dtr, address.Rts);
 
     /// <summary>Opens a GPS's serial port (name, baud rate) for <c>gps --serial</c>; tests replace it.</summary>
     public Func<string, int, Stream> OpenGpsPort { get; init; } =

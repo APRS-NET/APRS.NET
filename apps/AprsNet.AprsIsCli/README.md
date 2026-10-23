@@ -297,7 +297,8 @@ A radio's built-in TNC has to be told to speak KISS. Add `,setup=th-d72` (a Kenw
 TNC command switches it into KISS when it opens the port, does so again when the radio starts sending text after a
 power cut, and switches it back out when it closes. Without a setup, the TNC must already be in KISS mode. Add `,text`
 instead to read a radio in its APRS mode, which prints each packet as a line of text: receive only, with no setup;
-`tnc send` refuses it.
+`tnc send` refuses it. With the radio's GPS output on, its GPS sentences come between the packets; `tnc listen` says
+on stderr when they start, and with `--reconnect` when none has come for 10 s, and doesn't print them.
 
 `--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying

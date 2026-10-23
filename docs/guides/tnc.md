@@ -154,8 +154,39 @@ apart from a stand-alone TNC:
   port, as a terminal program does. A board that resets on those lines, such as an ESP32 TNC, needs them left low:
   set `DtrEnable` and `RtsEnable` to `false`, or end the address in `,dtr=off,rts=off`
   (`serial:/dev/ttyUSB0@115200,dtr=off,rts=off`).
-- **Other output on the same port.** With GPS output switched on, NMEA sentences arrive between the packets, and the
-  radio may cut a line short where the two meet.
+- **Its GPS on the same port, in APRS mode only.** With GPS PC output switched on, NMEA sentences arrive between the
+  packets, and the radio may cut a line short where the two meet. Text mode passes them on (below). In packet mode
+  with KISS on, a TH-D72A sends no GPS at all (firmware up to 1.05), so its GPS can't be read alongside KISS: use
+  another GPS, such as gpsd.
+
+In text mode, each whole GPS sentence whose checksum matches comes through `NmeaSentenceReceived`; one cut short is
+dropped and shows in `Traffic` as `DamagedNmea`. `GpsPresenceChanged` says when sentences start, and when none has come
+for `GpsTimeout` (10 seconds), so an app can show the radio's GPS while there is one. A sentence means a GPS is there,
+not that it has a fix: before it has one, a TH-D72A sends sentences that say so, some with a placeholder position.
+Feed them to an `NmeaFixTracker` and use its fix.
+
+<!-- snippet: tnc-text-gps -->
+```csharp
+// A TH-D72A in APRS mode with GPS PC output on: its packets, and its GPS from the same port.
+await using var radio = new KissSerialConnection(
+    new KissSerialOptions { PortName = "/dev/ttyUSB0", TextMode = true }
+);
+var gps = new NmeaFixTracker();
+radio.GpsPresenceChanged += (_, e) => Console.Error.WriteLine(e.IsPresent ? "GPS found" : "GPS gone");
+radio.NmeaSentenceReceived += (_, e) =>
+{
+    // A GPS without a fix still sends sentences: only the tracker's fix says where the radio is.
+    if (gps.Update(e.Sentence) && gps.Fix.Position is { } position)
+    {
+        Console.WriteLine($"The radio is at {position}");
+    }
+};
+
+await foreach (var packet in radio.ReadPacketsAsync(cancellationToken))
+{
+    Console.WriteLine(packet);
+}
+```
 
 Set `KissSerialOptions.Setup` to the radio's `TncSetup` and the connection switches it into KISS each time it opens the
 port, including after a reconnect; opens the port again when the radio starts sending text, as after a power cut; and

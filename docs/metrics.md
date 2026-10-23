@@ -62,6 +62,8 @@ On the meter `AprsNet.Kiss`. Every client instrument has a `tnc` tag: the TNC's 
 | `aprsnet.kiss.frames.sent` | `{frame}` | `tnc` | Frames sent to the TNC to transmit |
 | `aprsnet.kiss.frames.dropped` | `{frame}` | `tnc` | KISS frames dropped for an invalid escape or for being too long: a noisy link |
 | `aprsnet.kiss.bytes.discarded` | `By` | `tnc` | Bytes from the TNC that were not part of a frame passed on: noise, or text from a TNC not in KISS mode |
+| `aprsnet.kiss.nmea.received` | `{sentence}` | `tnc` | GPS sentences a serial TNC in text mode printed between its packet lines, whole with a checksum that matches |
+| `aprsnet.kiss.nmea.damaged` | `{sentence}` | `tnc` | Lines starting with `$` from a TNC in text mode that weren't whole GPS sentences: cut off, or a wrong checksum |
 | `aprsnet.kiss.connection.active` | `{connection}` | `tnc` | Up-down counter: connections to the TNC open now, over TCP or a serial port |
 | `aprsnet.kiss.connection.reconnects` | `{reconnect}` | `tnc`, `cause`: `tnc_closed`, `socket_error`, `connect_failed` | Waits before a `KissTcpConnection` or `KissSerialConnection` reconnects; `socket_error` is any failure of the link, a serial port's included |
 

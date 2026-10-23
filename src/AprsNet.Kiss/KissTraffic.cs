@@ -61,6 +61,18 @@ public enum KissTrafficKind
     /// at its command line.
     /// </summary>
     RawSent,
+
+    /// <summary>
+    /// In text mode, a GPS sentence the TNC printed between its packet lines, whole with a checksum that matches;
+    /// <see cref="KissTrafficEventArgs.Sentence"/> holds it parsed. See <see cref="KissConnection.NmeaSentenceReceived"/>.
+    /// </summary>
+    Nmea,
+
+    /// <summary>
+    /// In text mode, a line starting with <c>$</c> that isn't a whole GPS sentence: one cut off where a packet line or
+    /// another sentence ran into it, or with a wrong or missing checksum. Dropped.
+    /// </summary>
+    DamagedNmea,
 }
 
 /// <summary>Why a frame was dropped (<see cref="KissTrafficKind.DroppedFrame"/>).</summary>
@@ -99,6 +111,8 @@ public static class KissTrafficKindExtensions
             KissTrafficKind.SetupReceived => "The TNC's answer during its setup.",
             KissTrafficKind.SetupFailed => "The TNC's setup didn't get the answer it expected.",
             KissTrafficKind.RawSent => "Sent to the TNC by hand.",
+            KissTrafficKind.Nmea => "A GPS sentence from the TNC.",
+            KissTrafficKind.DamagedNmea => "A damaged GPS sentence; dropped.",
             _ => kind.ToString(),
         };
 }
@@ -151,6 +165,9 @@ public sealed class KissTrafficEventArgs : EventArgs
     /// <summary>For an APRS frame, the packet parsed from it.</summary>
     public AprsPacket? Packet { get; init; }
 
+    /// <summary>For <see cref="KissTrafficKind.Nmea"/>, the GPS sentence parsed.</summary>
+    public NmeaSentence? Sentence { get; init; }
+
     /// <summary>For <see cref="KissTrafficKind.DroppedFrame"/>, why.</summary>
     public KissDropReason? DropReason { get; init; }
 
@@ -158,7 +175,8 @@ public sealed class KissTrafficEventArgs : EventArgs
     public bool LooksLikeText { get; init; }
 
     /// <summary>
-    /// For <see cref="KissTrafficKind.Unframed"/> and <see cref="KissTrafficKind.SetupReceived"/>, whether the bytes end
+    /// For <see cref="KissTrafficKind.Unframed"/>, <see cref="KissTrafficKind.SetupReceived"/> and the GPS kinds, whether
+    /// the bytes end
     /// with a line break. A prompt such as <c>cmd:</c> doesn't; the next entry carries on the same line.
     /// </summary>
     public bool EndsLine { get; init; }

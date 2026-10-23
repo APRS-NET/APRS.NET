@@ -71,6 +71,20 @@ internal static partial class ServiceLog
     public static partial void TncWarningOver(this ILogger logger, string tnc, string warning);
 
     [LoggerMessage(
+        EventId = 14,
+        Level = LogLevel.Information,
+        Message = "The TNC at {Tnc} is sending GPS sentences (NMEA)"
+    )]
+    public static partial void TncGpsSeen(this ILogger logger, string tnc);
+
+    [LoggerMessage(
+        EventId = 15,
+        Level = LogLevel.Information,
+        Message = "The TNC at {Tnc} has sent no GPS sentences for {TimeoutSeconds}s"
+    )]
+    public static partial void TncGpsGone(this ILogger logger, string tnc, double timeoutSeconds);
+
+    [LoggerMessage(
         EventId = 20,
         Level = LogLevel.Information,
         Message = "Serving {Sources} on {Endpoint} as {ServerName}"
