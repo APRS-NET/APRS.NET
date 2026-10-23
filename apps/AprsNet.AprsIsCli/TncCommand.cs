@@ -161,7 +161,13 @@ internal sealed class TncCommand(CliEnvironment environment)
         TncLink client;
         try
         {
-            client = await TncLink.OpenAsync(address, parseResult.GetValue(_radioPort), null, run.Token);
+            client = await TncLink.OpenAsync(
+                address,
+                parseResult.GetValue(_radioPort),
+                null,
+                environment.OpenTncPort,
+                run.Token
+            );
         }
         catch (OperationCanceledException) when (run.IsCancellationRequested)
         {
@@ -175,6 +181,14 @@ internal sealed class TncCommand(CliEnvironment environment)
 
         await using var _ = client;
         client.Warning += (_, e) => ReportWarning(address.ToString(), e, environment.Error);
+        var gpsSeen = 0;
+        client.NmeaSentenceReceived += (_, _) =>
+        {
+            if (Interlocked.Exchange(ref gpsSeen, 1) == 0)
+            {
+                environment.Error.WriteLine(GpsMessage(address.ToString(), present: true));
+            }
+        };
 
         try
         {
@@ -226,6 +240,18 @@ internal sealed class TncCommand(CliEnvironment environment)
                 events.TncWarningOver(name, e.Message);
             }
         };
+        connection.GpsPresenceChanged += (_, e) =>
+        {
+            error.WriteLine(GpsMessage(name, e.IsPresent, e.Timeout));
+            if (e.IsPresent)
+            {
+                events?.TncGpsSeen(name);
+            }
+            else
+            {
+                events?.TncGpsGone(name, e.Timeout.TotalSeconds);
+            }
+        };
         var lost = false;
         connection.StateChanged += (_, e) =>
         {
@@ -249,6 +275,13 @@ internal sealed class TncCommand(CliEnvironment environment)
             }
         };
     }
+
+    /// <summary>What to print when a TNC in text mode starts sending GPS sentences, or stops.</summary>
+    internal static string GpsMessage(string name, bool present, TimeSpan? timeout = null) =>
+        present
+            ? $"aprscli: the TNC at {name} is sending GPS sentences (NMEA)."
+            : $"aprscli: the TNC at {name} has sent no GPS sentences for "
+                + $"{timeout!.Value.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture)}s.";
 
     /// <summary>Prints a TNC's warning, or that it is over.</summary>
     internal static void ReportWarning(string name, KissWarningEventArgs warning, TextWriter error) =>

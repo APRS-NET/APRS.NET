@@ -49,7 +49,9 @@ internal sealed class CliHarness
     /// <summary>The serial ports <c>tnc ports</c> finds.</summary>
     public IReadOnlyList<string> SerialPorts { get; set; } = [];
 
-    /// <summary>The TNC <c>tnc terminal</c> and <c>tnc kiss</c> talk to; none by default.</summary>
+    /// <summary>
+    /// The serial TNC <c>tnc terminal</c>, <c>tnc kiss</c> and <c>tnc listen</c> talk to; none by default.
+    /// </summary>
     public Stream? TncPort { get; set; }
 
     /// <summary>The address <c>tnc terminal</c> or <c>tnc kiss</c> opened.</summary>
@@ -140,6 +142,8 @@ internal sealed class CliHarness
                 OpenedTnc = address;
                 return new TncTerminal(TncPort ?? throw new IOException($"The serial port {address} is not present."));
             },
+            // Without a fake port, the real one, which on a test machine isn't there.
+            OpenTncPort = TncPort is { } port ? _ => port : CliEnvironment.OpenSerialTnc,
             NewListenerId = () => ListenerId,
             GetEnvironmentVariable = name => Environment.GetValueOrDefault(name),
             CreateConnection = (options, logger) =>

@@ -122,6 +122,37 @@ public sealed class TncSerialTests
         Assert.Contains($"lost the TNC at {Missing}", result.Error, StringComparison.Ordinal);
     }
 
+    // A radio in its APRS mode with GPS PC output on: a GPS sentence, then a packet line. Made up.
+    private static MemoryStream RadioInAprsMode() =>
+        new(
+            System.Text.Encoding.Latin1.GetBytes(
+                "$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47\r\nW1AW>APRS:>heard\r\n"
+            )
+        );
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ListeningInTextModeSaysWhenTheRadioSendsGpsSentences(bool reconnect)
+    {
+        var harness = new CliHarness { TncPort = RadioInAprsMode() };
+        string[] args = ["tnc", "listen", "--tnc", "serial:/dev/ttyUSB0,text", "-n", "1"];
+
+        var result = await harness.RunAsync(
+            reconnect ? [.. args, "--reconnect"] : args,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("W1AW>APRS:>heard", result.Out, StringComparison.Ordinal);
+        Assert.Contains(
+            "aprscli: the TNC at /dev/ttyUSB0 is sending GPS sentences (NMEA).",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain("$GPGGA", result.Out, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task PortsListsTheSerialPorts()
     {
