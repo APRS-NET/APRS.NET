@@ -41,6 +41,18 @@ internal static class KissMetrics
         "Bytes from the TNC that were not part of a frame passed on: noise, or text from a TNC not in KISS mode."
     );
 
+    private static readonly Counter<long> _nmeaReceived = _meter.CreateCounter<long>(
+        "aprsnet.kiss.nmea.received",
+        "{sentence}",
+        "GPS sentences a TNC in text mode printed between its packet lines, whole with a checksum that matches."
+    );
+
+    private static readonly Counter<long> _nmeaDamaged = _meter.CreateCounter<long>(
+        "aprsnet.kiss.nmea.damaged",
+        "{sentence}",
+        "Lines starting with $ from a TNC in text mode that weren't whole GPS sentences: cut off, or a wrong checksum."
+    );
+
     private static readonly UpDownCounter<long> _active = _meter.CreateUpDownCounter<long>(
         "aprsnet.kiss.connection.active",
         "{connection}",
@@ -91,6 +103,10 @@ internal static class KissMetrics
     public static void Dropped(string tnc, long count) => _dropped.Add(count, Tnc(tnc));
 
     public static void Discarded(string tnc, long count) => _discarded.Add(count, Tnc(tnc));
+
+    public static void NmeaReceived(string tnc) => _nmeaReceived.Add(1, Tnc(tnc));
+
+    public static void NmeaDamaged(string tnc) => _nmeaDamaged.Add(1, Tnc(tnc));
 
     public static void Active(string tnc, int change) => _active.Add(change, Tnc(tnc));
 

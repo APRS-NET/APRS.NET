@@ -260,3 +260,17 @@ AprsNet.Kiss.KissTcpServer.ClientsRefused.get -> long
 AprsNet.Kiss.KissTcpServerClientEventArgs
 AprsNet.Kiss.KissTcpServerClientEventArgs.FellBehind.get -> bool
 AprsNet.Kiss.KissTcpServerClientEventArgs.RemoteEndPoint.get -> System.Net.IPEndPoint!
+AprsNet.Kiss.GpsPresenceChangedEventArgs
+AprsNet.Kiss.GpsPresenceChangedEventArgs.IsPresent.get -> bool
+AprsNet.Kiss.GpsPresenceChangedEventArgs.Timeout.get -> System.TimeSpan
+AprsNet.Kiss.KissConnection.GpsPresenceChanged -> System.EventHandler<AprsNet.Kiss.GpsPresenceChangedEventArgs!>?
+AprsNet.Kiss.KissConnection.GpsTimeout.get -> System.TimeSpan
+AprsNet.Kiss.KissConnection.IsGpsPresent.get -> bool
+AprsNet.Kiss.KissConnection.NmeaSentenceReceived -> System.EventHandler<AprsNet.Kiss.NmeaSentenceEventArgs!>?
+AprsNet.Kiss.KissTrafficEventArgs.Sentence.get -> AprsNet.Packets.NmeaSentence?
+AprsNet.Kiss.KissTrafficEventArgs.Sentence.init -> void
+AprsNet.Kiss.KissTrafficKind.DamagedNmea = 12 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.KissTrafficKind.Nmea = 11 -> AprsNet.Kiss.KissTrafficKind
+AprsNet.Kiss.NmeaSentenceEventArgs
+AprsNet.Kiss.NmeaSentenceEventArgs.At.get -> System.DateTimeOffset
+AprsNet.Kiss.NmeaSentenceEventArgs.Sentence.get -> AprsNet.Packets.NmeaSentence!

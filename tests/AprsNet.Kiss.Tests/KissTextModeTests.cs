@@ -17,16 +17,34 @@ public sealed class KissTextModeTests
 
     private static byte[] Text(string text) => Encoding.Latin1.GetBytes(text);
 
-    private static KissSerialConnection Connection(FakeTnc tnc) =>
+    private static KissSerialConnection Connection(FakeTnc tnc, TimeProvider? clock = null) =>
         new(
             _ => Task.FromResult<Stream>(tnc),
             new KissSerialOptions
             {
                 PortName = "/dev/ttyUSB0",
-                TimeProvider = new FakeTimeProvider(),
+                TimeProvider = clock ?? new FakeTimeProvider(),
                 TextMode = true,
             }
         );
+
+    /// <summary>A sentence with its checksum worked out: <c>$</c>, the body, <c>*</c> and two hex digits.</summary>
+    private static string Sentence(string body) => $"${body}*{body.Aggregate(0, (sum, c) => sum ^ c):X2}";
+
+    private static List<T> Record<T>(Action<EventHandler<T>> subscribe)
+    {
+        var list = new List<T>();
+        subscribe(
+            (_, e) =>
+            {
+                lock (list)
+                {
+                    list.Add(e);
+                }
+            }
+        );
+        return list;
+    }
 
     private static async Task<List<AprsPacket>> ReadUntilEnd(KissConnection connection, int count)
     {
@@ -44,10 +62,11 @@ public sealed class KissTextModeTests
     }
 
     [Fact]
-    public async Task PacketLinesAreReadAndGpsSentencesSkipped()
+    public async Task PacketLinesAreReadAndGpsSentencesPassedOn()
     {
         var tnc = new FakeTnc();
         await using var connection = Connection(tnc);
+        var sentences = Record<NmeaSentenceEventArgs>(h => connection.NmeaSentenceReceived += h);
         var traffic = new List<KissTrafficEventArgs>();
         connection.Traffic += (_, e) =>
         {
@@ -78,7 +97,7 @@ public sealed class KissTextModeTests
             Assert.Equal(
                 [
                     KissTrafficKind.Frame,
-                    KissTrafficKind.Unframed,
+                    KissTrafficKind.Nmea,
                     KissTrafficKind.Frame,
                     KissTrafficKind.DroppedFrame,
                     KissTrafficKind.DroppedFrame,
@@ -87,20 +106,159 @@ public sealed class KissTextModeTests
                 traffic.Select(e => e.Kind)
             );
             Assert.Equal(Gga, traffic[1].Text);
+            Assert.Equal("GGA", traffic[1].Sentence!.Type);
             Assert.Equal(
                 [KissDropReason.DamagedLine, KissDropReason.NotAx25],
                 traffic.Where(e => e.DropReason is not null).Select(e => e.DropReason!.Value)
             );
+        }
+
+        lock (sentences)
+        {
+            Assert.Equal([Gga], sentences.Select(e => e.Sentence.Text));
+        }
+    }
+
+    [Fact]
+    public async Task ASentenceThatIsCutOffOrHasAWrongChecksumIsDamagedNotPassedOn()
+    {
+        var tnc = new FakeTnc();
+        await using var connection = Connection(tnc);
+        var sentences = Record<NmeaSentenceEventArgs>(h => connection.NmeaSentenceReceived += h);
+        var traffic = Record<KissTrafficEventArgs>(h => connection.Traffic += h);
+        var waypoint = Sentence("PKWDWPL,232509.65,V,4903.50,N,07201.75,W,,,201026,,N0CALL-9,/>");
+
+        tnc.Send(Text($"$GPVTG,096.61${Gga}\r\n")); // the next sentence ran into it, as a TH-D72A's sometimes do
+        tnc.Send(Text($"{Gga[..^1]}0\r\n")); // a wrong checksum
+        tnc.Send(Text($"{Gga[..^3]}\r\n")); // none at all
+        tnc.Send(Text($"{waypoint}\r\n")); // a Kenwood's own sentence is a sentence too
+        tnc.Send(Text("W1AW>APRS:>last\r\n"));
+        await ReadUntilEnd(connection, 1).WaitAsync(Wait, TestContext.Current.CancellationToken);
+
+        lock (traffic)
+        {
+            Assert.Equal(
+                [
+                    KissTrafficKind.DamagedNmea,
+                    KissTrafficKind.DamagedNmea,
+                    KissTrafficKind.DamagedNmea,
+                    KissTrafficKind.Nmea,
+                    KissTrafficKind.Frame,
+                ],
+                traffic.Select(e => e.Kind)
+            );
+            Assert.All(traffic.Take(4), e => Assert.True(e.EndsLine));
+        }
+
+        lock (sentences)
+        {
+            Assert.Equal([waypoint], sentences.Select(e => e.Sentence.Text));
+        }
+    }
+
+    [Fact]
+    public async Task TheGpsIsThereFromTheFirstSentenceUntilNoneComesForTheTimeout()
+    {
+        var clock = new FakeTimeProvider();
+        var tnc = new FakeTnc();
+        await using var connection = Connection(tnc, clock);
+        var changes = Record<GpsPresenceChangedEventArgs>(h => connection.GpsPresenceChanged += h);
+        var sentences = Record<NmeaSentenceEventArgs>(h => connection.NmeaSentenceReceived += h);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        await using var packets = connection.ReadPacketsAsync(stop.Token).GetAsyncEnumerator(stop.Token);
+        var reading = packets.MoveNextAsync().AsTask();
+
+        async Task SendSentence()
+        {
+            var before = Count(sentences);
+            tnc.Send(Text($"{Gga}\r\n"));
+            await WaitFor(() => Count(sentences) > before);
+        }
+
+        Assert.Equal(TimeSpan.FromSeconds(10), connection.GpsTimeout);
+        Assert.False(connection.IsGpsPresent);
+        await SendSentence();
+        Assert.True(connection.IsGpsPresent);
+        await SendSentence(); // the GPS was there already: no change
+        Assert.Equal([true], Presence());
+
+        clock.Advance(TimeSpan.FromSeconds(9));
+        await SendSentence(); // just in time
+        clock.Advance(TimeSpan.FromSeconds(9));
+        Assert.Equal([true], Presence());
+        Assert.True(connection.IsGpsPresent);
+
+        clock.Advance(TimeSpan.FromSeconds(1)); // ten seconds since the last
+        Assert.Equal([true, false], Presence());
+        Assert.False(connection.IsGpsPresent);
+        Assert.All(changes, e => Assert.Equal(TimeSpan.FromSeconds(10), e.Timeout));
+
+        await SendSentence();
+        Assert.Equal([true, false, true], Presence());
+        Assert.False(reading.IsCompleted); // sentences are not packets
+        await stop.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reading);
+
+        bool[] Presence()
+        {
+            lock (changes)
+            {
+                return [.. changes.Select(e => e.IsPresent)];
+            }
+        }
+    }
+
+    [Fact]
+    public async Task AHandlerThatThrowsDoesNotStopReading()
+    {
+        var tnc = new FakeTnc();
+        await using var connection = Connection(tnc);
+        connection.NmeaSentenceReceived += (_, _) => throw new InvalidOperationException("an app's bug");
+        connection.GpsPresenceChanged += (_, _) => throw new InvalidOperationException("an app's bug");
+        tnc.Send(Text($"{Gga}\r\nW1AW>APRS:>still read\r\n"));
+
+        var packets = await ReadUntilEnd(connection, 1).WaitAsync(Wait, TestContext.Current.CancellationToken);
+
+        Assert.Equal("W1AW>APRS:>still read", packets.Single().ToString());
+    }
+
+    [Fact]
+    public void TheGpsTimeoutMustBePositive() =>
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new KissSerialOptions
+            {
+                PortName = "/dev/ttyUSB0",
+                TextMode = true,
+                GpsTimeout = TimeSpan.Zero,
+            }.Validate()
+        );
+
+    private static int Count<T>(List<T> list)
+    {
+        lock (list)
+        {
+            return list.Count;
+        }
+    }
+
+    private static async Task WaitFor(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow + Wait;
+        while (!condition())
+        {
+            Assert.True(DateTime.UtcNow < deadline, "Timed out waiting.");
+            await Task.Delay(10, TestContext.Current.CancellationToken);
         }
     }
 
     /// <summary>
     /// Five minutes recorded from a TH-D72A in APRS mode with its GPS output on (2026-10-20), each GPS position and
     /// altitude replaced with APRS101's example, fed in as a serial port reads it. One packet ran into the middle of a
-    /// satellite sentence: that line starts as a sentence, so it is skipped with the GPS output and gives no packet.
+    /// satellite sentence: that line starts as a sentence, so it is a damaged sentence and gives no packet. The radio
+    /// had no fix for its first minute and a half, and its placeholder position meanwhile is never read as one.
     /// </summary>
     [Fact]
-    public async Task ARecordingFromATHD72AGivesItsPacketsAndSkipsTheGpsOutput()
+    public async Task ARecordingFromATHD72AGivesItsPacketsAndItsGpsSentences()
     {
         var recording = File.ReadAllBytes(
             Path.Combine(AppContext.BaseDirectory, "Recordings", "th-d72a-aprs-mode.txt")
@@ -113,14 +271,9 @@ public sealed class KissTextModeTests
         ];
         var tnc = new FakeTnc();
         await using var connection = Connection(tnc);
-        var traffic = new List<KissTrafficEventArgs>();
-        connection.Traffic += (_, e) =>
-        {
-            lock (traffic)
-            {
-                traffic.Add(e);
-            }
-        };
+        var traffic = Record<KissTrafficEventArgs>(h => connection.Traffic += h);
+        var sentences = Record<NmeaSentenceEventArgs>(h => connection.NmeaSentenceReceived += h);
+        var presence = Record<GpsPresenceChangedEventArgs>(h => connection.GpsPresenceChanged += h);
         foreach (var chunk in recording.Chunk(64))
         {
             tnc.Send(chunk);
@@ -137,7 +290,36 @@ public sealed class KissTextModeTests
         lock (traffic)
         {
             Assert.DoesNotContain(traffic, e => e.DropReason is not null);
-            Assert.Equal(1359, traffic.Count(e => e.Kind == KissTrafficKind.Unframed && e.Text.StartsWith('$')));
+            Assert.Equal(1358, traffic.Count(e => e.Kind == KissTrafficKind.Nmea));
+            Assert.StartsWith(
+                "$GPGSV,3,2,12,07,33,075,,05,30,266W0MB-9>",
+                traffic.Single(e => e.Kind == KissTrafficKind.DamagedNmea).Text,
+                StringComparison.Ordinal
+            );
+            Assert.DoesNotContain(traffic, e => e.Kind == KissTrafficKind.Unframed);
+        }
+
+        lock (sentences)
+        {
+            Assert.Equal(1358, sentences.Count);
+            var tracker = new NmeaFixTracker();
+            var first = sentences.FindIndex(e => e.Sentence is { Type: "GGA", Fields: [_, _, _, _, _, not "0", ..] });
+            Assert.Equal(377, first); // the damaged line before it is no sentence
+            foreach (var sentence in sentences.Take(first))
+            {
+                // GGA quality 0, RMC and GLL V, GSA mode 1: no fix, and the radio's placeholder position isn't one.
+                tracker.Update(sentence.Sentence);
+                Assert.Null(tracker.Fix.Position);
+            }
+
+            tracker.Update(sentences[first].Sentence);
+            Assert.Equal(GpsFixMode.Fix, tracker.Fix.Mode);
+            Assert.Equal(49.0583, tracker.Fix.Position!.Value.Latitude, 4);
+        }
+
+        lock (presence)
+        {
+            Assert.Equal([true], presence.Select(e => e.IsPresent));
         }
     }
 

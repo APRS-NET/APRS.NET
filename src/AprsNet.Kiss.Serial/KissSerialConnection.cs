@@ -46,7 +46,8 @@ public sealed class KissSerialConnection : KissConnection
             options.CreateTransmitLimit(),
             options.QuietWarning,
             reopenWhenSendingText: options.Setup is not null,
-            textMode: options.TextMode
+            textMode: options.TextMode,
+            gpsTimeout: options.GpsTimeout
         )
     {
         PortName = options.PortName;

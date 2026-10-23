@@ -132,4 +132,33 @@ public class NmeaFixTrackerTests
         gps.Reset();
         Assert.Equal(new GpsFix(), gps.Fix);
     }
+
+    /// <summary>
+    /// A Kenwood TH-D72A's GPS before it has a fix, as it sent them on 2026-10-22 (the GGA and VTG rebuilt from cut-off
+    /// copies): every sentence says there is no fix, and some carry the radio's placeholder position, 36°N 136°E. None
+    /// of them is a position.
+    /// </summary>
+    [Fact]
+    public void AKenwoodWithoutAFixGivesNoPositionFromItsPlaceholder()
+    {
+        string[] noFix =
+        [
+            "$GPGGA,221910.461,3600.0000,N,13600.0000,E,0,00,99.9,0000.0,M,0.0,M,,0000*6F",
+            "$GPGLL,3600.0000,N,13600.0000,E,221910.461,V,N*4A",
+            "$GPGSA,A,1,,,,,,,,,,,,,99.9,99.9,99.9*09",
+            "$GPRMC,221910.461,V,3600.0000,N,13600.0000,E,,,221026,,*1A",
+            "$GPVTG,,T,,M,,N,,K,N*2C",
+        ];
+
+        foreach (var line in noFix)
+        {
+            var alone = Track([line]).Single();
+            Assert.Null(alone.Position);
+            Assert.NotEqual(GpsFixMode.Fix, alone.Mode);
+        }
+
+        var together = Track(noFix).Last();
+        Assert.Null(together.Position);
+        Assert.Equal(GpsFixMode.NoFix, together.Mode);
+    }
 }

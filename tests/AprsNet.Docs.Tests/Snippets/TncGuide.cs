@@ -100,6 +100,31 @@ internal static class TncGuide
         #endregion
     }
 
+    public static async Task TextGpsAsync(CancellationToken cancellationToken)
+    {
+        #region tnc-text-gps
+        // A TH-D72A in APRS mode with GPS PC output on: its packets, and its GPS from the same port.
+        await using var radio = new KissSerialConnection(
+            new KissSerialOptions { PortName = "/dev/ttyUSB0", TextMode = true }
+        );
+        var gps = new NmeaFixTracker();
+        radio.GpsPresenceChanged += (_, e) => Console.Error.WriteLine(e.IsPresent ? "GPS found" : "GPS gone");
+        radio.NmeaSentenceReceived += (_, e) =>
+        {
+            // A GPS without a fix still sends sentences: only the tracker's fix says where the radio is.
+            if (gps.Update(e.Sentence) && gps.Fix.Position is { } position)
+            {
+                Console.WriteLine($"The radio is at {position}");
+            }
+        };
+
+        await foreach (var packet in radio.ReadPacketsAsync(cancellationToken))
+        {
+            Console.WriteLine(packet);
+        }
+        #endregion
+    }
+
     public static async Task ShareAsync(CancellationToken cancellationToken)
     {
         #region tnc-share
