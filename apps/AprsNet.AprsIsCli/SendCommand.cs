@@ -837,7 +837,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         TncLink? client = null;
         try
         {
-            client = await TncLink.OpenAsync(address, radioPort, limit, cancellationToken);
+            client = await TncLink.OpenAsync(address, radioPort, limit, environment.OpenTncPort, cancellationToken);
             if (message is not null)
             {
                 var link = client;

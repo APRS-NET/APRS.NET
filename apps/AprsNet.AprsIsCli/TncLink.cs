@@ -24,10 +24,14 @@ internal sealed class TncLink : IAsyncDisposable
     {
         _serialKiss = serialKiss;
         serialKiss.Warning += (_, e) => Warning?.Invoke(this, e);
+        serialKiss.NmeaSentenceReceived += (_, e) => NmeaSentenceReceived?.Invoke(this, e);
     }
 
     /// <inheritdoc cref="KissStreamClient.Warning"/>
     public event EventHandler<KissWarningEventArgs>? Warning;
+
+    /// <inheritdoc cref="KissStreamClient.NmeaSentenceReceived"/>
+    public event EventHandler<NmeaSentenceEventArgs>? NmeaSentenceReceived;
 
     /// <summary>Whether <paramref name="error"/> is how a TNC that can't be reached or went away fails.</summary>
     public static bool IsLinkFailure(Exception error) =>
@@ -39,13 +43,14 @@ internal sealed class TncLink : IAsyncDisposable
         TncAddress address,
         int radioPort,
         KissTransmitLimit? transmitLimit,
+        Func<TncAddress, Stream> openPort,
         CancellationToken cancellationToken
     )
     {
-        if (address.SerialPort is { } name)
+        if (address.SerialPort is not null)
         {
             // Opened as KissSerialConnection opens a port, so an unplug is a lost link here too.
-            var serial = KissSerialConnection.OpenPort(name, address.BaudRate, address.Dtr, address.Rts);
+            var serial = openPort(address);
             if (address.Setup is { } setup)
             {
                 // Into KISS first, and back out when the port closes, as KissSerialConnection does.
