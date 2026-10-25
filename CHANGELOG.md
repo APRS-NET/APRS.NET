@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.3...v0.6.0-alpha.4) (2026-10-25)
+
+
+### Features
+
+* **cli:** tnc listen and serve say when a radio sends GPS ([a7656b2](https://github.com/APRS-NET/APRS.NET/commit/a7656b2ab78654ce4eeb6710d7d0edf44886a429)), closes [#320](https://github.com/APRS-NET/APRS.NET/issues/320)
+* **kiss:** a radio's GPS sentences in text mode ([ddc3708](https://github.com/APRS-NET/APRS.NET/commit/ddc3708e80b8fa42dfc135601b681e9bbb7c80aa)), closes [#320](https://github.com/APRS-NET/APRS.NET/issues/320)
+
 ## [0.6.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.2...v0.6.0-alpha.3) (2026-10-22)
 
 
