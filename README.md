@@ -68,13 +68,13 @@ SBOM of them, and is marked as a pre-release. See [docs/versioning.md](docs/vers
 | `src/AprsNet.Symbols`         | Symbol meanings and SVG symbol images ([conventional](docs/symbols/conventional.md), [modern](docs/symbols/modern.md)) |
 | `src/AprsNet.Filters`         | APRS-IS filters: build them from typed terms, and evaluate them locally   |
 | `src/AprsNet.DeviceId`        | Device and program identification from the aprs-deviceid list (code MIT, data CC BY-SA 2.0), and fetching a newer list |
-| `src/AprsNet.Ax25`            | AX.25 UI frames: decode and encode what a TNC sends and receives          |
-| `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit and a KISS TCP server |
+| `src/AprsNet.Ax25`            | AX.25 UI frames: decode and encode what a TNC sends and receives, and the digipeater rules |
+| `src/AprsNet.Kiss`            | KISS TNCs over TCP or any stream, with reconnects, a transmit limit, every port of a multi-port TNC, and a KISS TCP server |
 | `src/AprsNet.Kiss.Serial`     | KISS TNCs on a serial port, reopened after an unplug, and the ports present |
 | `src/AprsNet.Messaging`       | Message conversations: IDs, retries until an ack, reply-acks, each message delivered once |
 | `src/AprsNet.Beacons`         | Beacon schedules: when to beacon next and why; SmartBeaconing, dead reckoning |
 | `src/AprsNet.Gps`             | A GPS through gpsd, on this machine or another, with reconnects           |
-| `src/AprsNet.IGate`           | IGate rules: which packets heard on RF go to APRS-IS, and why not         |
+| `src/AprsNet.IGate`           | IGate rules both ways: what goes from RF to APRS-IS, which messages go back to stations heard on RF, and why not |
 | `src/AprsNet.Corpus`          | Packet captures for a test corpus: the line format, and an anonymizer     |
 | `src/AprsNet.Gateway`         | A local APRS-IS server fed by APRS-IS and KISS TNCs                       |
 | `src/AprsNet.Extensions.DependencyInjection` | Register an APRS-IS connection from configuration          |
