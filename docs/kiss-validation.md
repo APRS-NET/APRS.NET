@@ -131,3 +131,7 @@ unplug taken for a crash, and a missing port reported as access denied. The two 
 a powered USB chip and one sending text instead of KISS, now raise warnings (#234, #232), checked on the radio. A
 message conversation through a TNC, with its acknowledgement, works on the air (#235). Switching a radio's TNC back
 into KISS by itself after a power cut is #249.
+
+Since then: #249 switches a radio's TNC back into KISS after a power cut (`,setup=th-d72`); a TNC sending text shows on
+`/health` as `"protocolMismatch": true` and doesn't count as up; the quiet warning says how long the TNC has been quiet;
+and with `quiet-warning` a quiet TNC counts as down, so `/health` answers 503 until it sends again (#322).

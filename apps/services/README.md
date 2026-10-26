@@ -6,8 +6,8 @@ radio and APRS-IS are there for every APRS app on your network:
 - **`aprsnet-tnc-share@`** shares a hardware TNC on a serial port with KISS apps over TCP (`aprscli tnc share`). Every
   app hears what the TNC hears, and each frame an app sends reaches the TNC whole, one at a time.
 - **`aprsnet-serve@`** serves APRS packets to APRS clients as an APRS-IS server (`aprscli serve`): what the TNC hears,
-  an APRS-IS feed, or both, each packet once, and optionally gates what the TNC hears to APRS-IS as a receive-only
-  IGate.
+  an APRS-IS feed, or both, each packet once, and optionally runs an IGate: receive-only, or two-way with messages
+  from APRS-IS sent back on RF.
 
 Each service reads its settings from a TOML file in `/etc/aprsnet`. `install.sh` installs everything, `aprsnet-check`
 checks the settings and the running services, and `aprsnet-logs` shows what they logged. With an OpenTelemetry
@@ -26,7 +26,7 @@ else that needs the radio connects to it on port 8001, the way apps connect to D
                          │      │                                  │   aprscli tnc send
                          │      └─ localhost:8001                  │
  APRS-IS ────────────────┤ aprsnet-serve@gateway  :14580 APRS-IS  ├── AprsMap on a laptop, a desktop and in
-                         │        (optional RX IGate)  :14590 HTTP │   Docker; aprscli listen; YAAC
+                         │        (optional IGate)     :14590 HTTP │   Docker; aprscli listen; YAAC
                          └─────────────────────────────────────────┘
 ```
 
@@ -34,12 +34,13 @@ else that needs the radio connects to it on port 8001, the way apps connect to D
   gets the last 30 minutes of packets when it connects, and doesn't take one of the TNC share's 16 places. In Docker,
   use the Pi's address on your network, not `localhost`.
 - **Apps that transmit** connect to the TNC share on port 8001. Gateway clients are receive-only for now.
-- **A receive-only IGate** is part of the gateway: turn it on in `gateway.toml`.
+- **An IGate** is part of the gateway: turn it on in `gateway.toml`, receive-only (`igate = true`) or two-way
+  (`igate-to-rf = true` as well), which transmits through the TNC share. Read the
+  [gateway guide](../../docs/guides/gateway.md#a-two-way-igate) before turning on the two-way one.
 - **gpsd** isn't part of this. Install it from your distribution; `aprscli gps` reads it.
-- **A digipeater** ([#209](https://github.com/APRS-NET/APRS.NET/issues/209)) and a **two-way IGate**
-  ([#212](https://github.com/APRS-NET/APRS.NET/issues/212)) aren't built yet. When they are, they'll connect to the TNC
-  share like any other app, as their own services. Each can then restart on its own without dropping the others, and
-  the TNC share sends their frames one at a time.
+- **A digipeater** connects to the TNC share like any other app: `aprscli tnc digi --tnc localhost:8001 --call
+  N0CALL-1` (see the [TNC guide](../../docs/guides/tnc.md#digipeat)). There is no service unit for it yet; run it under
+  your own unit, or by hand. The TNC share sends its frames one at a time with everyone else's.
 
 ## Install
 

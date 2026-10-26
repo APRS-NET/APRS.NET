@@ -14,7 +14,7 @@ It is built in layers, each its own pull request:
 | Station store | `StationStore`, `AprsIsServerOptions.Stations` | #72 |
 | Command line | `aprscli serve` | #70 |
 
-Neither project is packable yet.
+Both packages are published, `AprsNet.Filters` and `AprsNet.Gateway`, and `aprscli serve` ships with the tool.
 
 ## Filters
 

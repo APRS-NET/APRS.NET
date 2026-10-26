@@ -1,13 +1,13 @@
 namespace AprsNet.Packets.SpecTests;
 
 /// <summary>
-/// Runs the APRS101 test vectors through <see cref="AprsPacket.Parse(string)"/>. Until the payload decoders exist this
-/// checks the header and, where the data type identifier alone decides it, the packet type.
+/// Runs the APRS101 test vectors through <see cref="AprsPacket.Parse(string)"/>, checking the header and, where the data
+/// type identifier alone decides it, the packet type. The tests per packet type check the decoded fields.
 /// </summary>
 public class VectorParsingTests
 {
     // Vector types that only the data type identifier decides. The others (position, weather, query, NMEA…) can start
-    // with several identifiers or need the payload decoded, so they are checked when their decoders land.
+    // with several identifiers or need the payload decoded, so their own vector tests check them.
     private static readonly Dictionary<string, PacketType> _types = new(StringComparer.Ordinal)
     {
         ["mice"] = PacketType.MicE,
