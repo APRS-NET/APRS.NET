@@ -165,8 +165,9 @@ For each config file, `aprsnet-check` checks:
   it open too.
 - **A running service:**
   - that it is running and listening on its port;
-  - for a gateway with `http`, that `/health` says a source is connected;
-  - for a TNC share, whether it has lost the TNC since it started.
+  - with `http`, what `/health` says: it fails when nothing is up, or when a TNC has sent nothing for its
+    `quiet-warning` and the radio is likely switched off; a gateway with only some sources up is a warning;
+  - for a TNC share without `http`, whether it has lost the TNC since it started.
 - **OpenTelemetry:** whether the collector in `otel.env` takes connections. Not reaching it is a warning, since the
   services run without it.
 

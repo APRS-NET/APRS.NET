@@ -129,19 +129,11 @@ check_service() {
     problem "nothing listens on $listen"
   fi
 
-  if [[ $kind == serve ]]; then
-    http=$(setting "$file" http '')
-    if [[ -n $http ]]; then
-      local report
-      if report=$(as_service health "http://127.0.0.1:${http##*:}/health" 2>&1); then
-        pass "/health on $http says a source is connected"
-      else
-        problem "/health on $http says no source is connected, or didn't answer:"
-        echo "$report" | indent
-      fi
-    fi
-  else
-    # The last word on the TNC since the service started: trouble, or its end.
+  http=$(setting "$file" http '')
+  if [[ -n $http ]]; then
+    check_health "$http"
+  elif [[ $kind == tnc-share ]]; then
+    # No health checks: the last word on the TNC since the service started, trouble or its end.
     local last invocation
     invocation=$(systemctl show -p InvocationID --value "$unit")
     last=$(journalctl "_SYSTEMD_INVOCATION_ID=$invocation" -o cat --no-pager 2>/dev/null |
@@ -152,6 +144,23 @@ check_service() {
       *lost* | *closed* | *warning:*) problem "the TNC: ${last#aprscli: }" ;;
       *) pass "the TNC: ${last#aprscli: }" ;;
     esac
+  fi
+}
+
+# What a service's /health says: a TNC quiet for its quiet-warning, likely switched off, fails the check.
+check_health() {
+  local http=$1 report
+  if ! report=$(as_service health "http://127.0.0.1:${http##*:}/health" 2>&1); then
+    problem "/health on $http says nothing is up, or didn't answer:"
+    echo "$report" | indent
+  elif [[ $report == *'"quiet":true'* ]]; then
+    problem "/health on $http says a TNC has sent nothing for its quiet-warning: is the radio switched on?"
+    echo "$report" | indent
+  elif [[ $report == *'"status":"degraded"'* ]]; then
+    caution "/health on $http says some sources are down:"
+    echo "$report" | indent
+  else
+    pass "/health on $http says every source is up"
   fi
 }
 

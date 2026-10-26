@@ -25,8 +25,8 @@ filter = "r/35.0/-97.0/300"
 # (aprsnet-tnc-share@tncx). A serial TNC given here directly can't be used by anything else.
 tnc = ["localhost:8001"]
 
-# Warn when a TNC sends nothing at all for this long: it may be switched off behind a port that stays open. Pick
-# longer than the channel is ever quiet.
+# Warn when a TNC sends nothing at all for this long: it may be switched off behind a port that stays open. /health
+# then counts it as down until it sends again. Pick longer than the channel is ever quiet.
 quiet-warning = "30m"
 
 [clients]
