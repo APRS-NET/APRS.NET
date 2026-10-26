@@ -180,7 +180,8 @@ public sealed class KissTcpServerTests
         }
 
         await first.DisposeAsync();
-        await WaitUntil(() => server.ClientCount == 0);
+        // The count drops just before the event is raised: wait for the event itself.
+        await WaitUntil(() => events.Count == 3);
         await using var third = await App.ConnectAsync(server);
         await WaitUntil(() => server.ClientCount == 1);
 
