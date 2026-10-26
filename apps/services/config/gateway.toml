@@ -53,6 +53,10 @@ history = "30m"
 # APRS-IS. Read "A receive-only IGate" in the aprscli README first: it breaks messaging for stations nearby where no
 # two-way IGate covers them.
 # igate = true
+# Also gate messages from APRS-IS to stations heard on the TNC: a two-way IGate, which transmits. Read "A two-way
+# IGate" in the gateway guide first. It needs exactly one tnc above, and the IGate's callsign must fit AX.25.
+# igate-to-rf = true
+# rf-path = "WIDE1-1"
 # lat = 35.0
 # lon = -97.0
 # comment = "aprscli"

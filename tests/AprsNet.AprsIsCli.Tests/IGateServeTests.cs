@@ -174,6 +174,219 @@ public class IGateServeTests
         Assert.Null(harness.ClientOptions!.Filter);
     }
 
+    [Fact]
+    public async Task ATwoWayIGateSendsMessagesForLocalStationsOnRf()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var tnc = new TcpListener(IPAddress.Loopback, 0);
+        tnc.Start();
+        var harness = Harness(verified: true);
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var (port, webPort) = (FreePort(), FreePort());
+        var run = harness.RunAsync(
+            [
+                "serve",
+                "--tnc",
+                Address(tnc),
+                "--listen",
+                $"127.0.0.1:{port}",
+                "--http",
+                $"127.0.0.1:{webPort}",
+                "-c",
+                IGate,
+                "--igate",
+                .. _place,
+                "--igate-to-rf",
+            ],
+            stop.Token
+        );
+        using var radio = await tnc.AcceptTcpClientAsync(token);
+        await using var onAir = new KissStreamClient(radio.GetStream(), ownsStream: false);
+        var transmitted = onAir.ReadPacketsAsync(token).GetAsyncEnumerator(token);
+
+        // N1ABC is heard direct, so it is local; gated up with qAR, as a two-way IGate.
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>on RF"), token);
+        await WaitForAsync(() => Written(harness).Contains("N1ABC>APRS,WIDE1-1,qAR,N0CALL-10:>on RF"), token);
+
+        harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST::N9NONE   :Not heard here{01");
+        harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST::N1ABC    :Hello{01");
+        harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing");
+        harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Again");
+        harness.Transport.Server("W2XYZ>APRS,TCPIP*,qAC,T2TEST:>The rest of the feed");
+
+        Assert.True(await transmitted.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
+        Assert.Equal(
+            "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Hello{01",
+            transmitted.Current.ToString()
+        );
+        Assert.True(await transmitted.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
+        Assert.Equal(
+            "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*:!4903.50N/07201.75W-Writing",
+            transmitted.Current.ToString()
+        );
+        var health = "";
+        await WaitForAsync(
+            () =>
+                (health = GetHealthAsync(webPort, token).GetAwaiter().GetResult()).Contains(
+                    "\"igate.rf.refused.not_for_a_station\":2",
+                    StringComparison.Ordinal
+                ),
+            token
+        );
+
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.False(radio.Available > 0, "the second position isn't sent");
+        Assert.Contains("N0CALL-10>APZNET:!4903.50NI07201.75W&", Written(harness), StringComparer.Ordinal); // I& overlay: a two-way IGate, with no RX-only comment
+        Assert.Contains("as N0CALL-10 (two-way, qAR)", result.Error, StringComparison.Ordinal);
+        Assert.Contains(
+            "gating messages from APRS-IS to stations heard on the TNC within 1 hops, sent via WIDE1-1",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "gated 2 messages and positions to RF (2 sent, 0 dropped); refused not_local 1",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.Contains("\"igate.rf.gated\":2", health, StringComparison.Ordinal);
+        Assert.Contains("\"igate.rf.local_stations\":1", health, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Through a real Dire Wolf with no audio: a station's frame goes in from one KISS client, Dire Wolf passes it to the
+    /// IGate (<c>KISSCOPY</c>), and the message the fake APRS-IS server sends for it comes back out to the station's
+    /// client, followed by the sender's position once. Nothing reaches a radio. Opt-in, as the audio tests:
+    /// <c>APRSNET_DIREWOLF_AUDIO=1</c> with <c>direwolf</c> on the PATH, as CI runs it.
+    /// </summary>
+    [Fact]
+    public async Task ATwoWayIGateTransmitsThroughDireWolfWithNoAudio()
+    {
+        Assert.SkipWhen(
+            Environment.GetEnvironmentVariable("APRSNET_DIREWOLF_AUDIO") != "1",
+            "Set APRSNET_DIREWOLF_AUDIO=1 with direwolf on the PATH to gate through Dire Wolf."
+        );
+        var token = TestContext.Current.CancellationToken;
+        var directory = Directory.CreateTempSubdirectory("aprsnet-igate-");
+        var kissPort = FreePort();
+        var config = Path.Combine(directory.FullName, "direwolf.conf");
+        await File.WriteAllLinesAsync(
+            config,
+            ["ADEVICE null null", "CHANNEL 0", "MYCALL N0DW", $"KISSPORT {kissPort}", "AGWPORT 0", "KISSCOPY 1"],
+            token
+        );
+        using var direwolf = System.Diagnostics.Process.Start(
+            new System.Diagnostics.ProcessStartInfo("direwolf", $"-c {config} -t 0 -q hd")
+            {
+                WorkingDirectory = directory.FullName,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            }
+        )!;
+        try
+        {
+            KissTcpClient station;
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            while (true)
+            {
+                station = new KissTcpClient(
+                    new KissTcpOptions
+                    {
+                        Host = "127.0.0.1",
+                        Port = kissPort,
+                        TransmitLimit = KissTransmitLimit.Off,
+                    }
+                );
+                try
+                {
+                    await station.ConnectAsync(token);
+                    break;
+                }
+                catch (SocketException) when (DateTime.UtcNow < deadline)
+                {
+                    await station.DisposeAsync();
+                    await Task.Delay(100, token);
+                }
+            }
+
+            await using var _ = station;
+            var harness = Harness(verified: true);
+            using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+            var run = harness.RunAsync(
+                [
+                    "serve",
+                    "--tnc",
+                    $"127.0.0.1:{kissPort}",
+                    "--listen",
+                    $"127.0.0.1:{FreePort()}",
+                    "-c",
+                    IGate,
+                    "--igate",
+                    .. _place,
+                    "--igate-to-rf",
+                ],
+                stop.Token
+            );
+            var heard = station.ReadPacketsAsync(token).GetAsyncEnumerator(token);
+            await Task.Delay(1000, token); // the IGate connected to Dire Wolf
+
+            await station.SendAsync(AprsPacket.Parse("N1ABC>APRS,WIDE1-1:>on RF"), token);
+            await WaitForAsync(() => Written(harness).Contains("N1ABC>APRS,WIDE1-1,qAR,N0CALL-10:>on RF"), token);
+            harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST::N1ABC    :Through Dire Wolf{01");
+            harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing");
+
+            Assert.True(await heard.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
+            Assert.Equal(
+                "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Through Dire Wolf{01",
+                heard.Current.ToString()
+            );
+            Assert.True(await heard.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
+            Assert.Equal(
+                "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*:!4903.50N/07201.75W-Writing",
+                heard.Current.ToString()
+            );
+
+            await stop.CancelAsync();
+            Assert.Equal(0, (await run.WaitAsync(TimeSpan.FromSeconds(10), token)).ExitCode);
+        }
+        finally
+        {
+            direwolf.Kill();
+            await direwolf.WaitForExitAsync(CancellationToken.None);
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(new[] { "--tnc", "other" }, "--igate-to-rf needs exactly one --tnc")]
+    [InlineData(new[] { "--rf-path", "WIDE1-1,WIDE2-1,WIDE3-3" }, "--rf-path 'WIDE1-1,WIDE2-1,WIDE3-3' is not valid")]
+    public async Task BadTwoWayOptionsAreUsageErrors(string[] extra, string message)
+    {
+        var harness = Harness(verified: true);
+
+        var result = await harness.RunAsync(
+            ["serve", "--tnc", "tnc", "-c", IGate, "--igate", .. _place, "--igate-to-rf", .. extra],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains(message, result.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TwoWayNeedsTheIGate()
+    {
+        var result = await new CliHarness().RunAsync(
+            ["serve", "--tnc", "tnc", "--igate-to-rf"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(3, result.ExitCode);
+        Assert.Contains("--igate-to-rf only applies with --igate.", result.Error, StringComparison.Ordinal);
+    }
+
     private static CliHarness Harness(bool verified)
     {
         var harness = new CliHarness().LoginAccepted(IGate, verified);

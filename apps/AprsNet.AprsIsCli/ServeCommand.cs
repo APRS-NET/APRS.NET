@@ -22,6 +22,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
     private const string _defaultName = "APRSNET";
     private const string _passcodeVariable = "APRS_PASSCODE";
     private const string _defaultIGateSymbol = "R&";
+    private const string _twoWaySymbol = "I&";
+    private const string _defaultRfPath = "WIDE1-1";
     private const string _defaultBeaconInterval = "30m";
     private const string _receiveOnly = "RX-only IGate";
 
@@ -38,6 +40,21 @@ internal sealed class ServeCommand(CliEnvironment environment)
             "Also gate what the --tnc sources hear to APRS-IS as a receive-only IGate, and beacon its position "
             + $"there. Needs --callsign, its passcode in {_passcodeVariable}, --lat and --lon. Receive-only IGates "
             + "break messaging for stations nearby: see the gateway guide.",
+    };
+
+    private readonly Option<bool> _toRf = new("--igate-to-rf")
+    {
+        Description =
+            "Also gate messages from APRS-IS to stations heard on the TNC, with the sender's position once: a two-way "
+            + "IGate, which transmits on its own. Needs --igate and one --tnc. See the gateway guide first.",
+    };
+
+    private readonly Option<string> _rfPath = new("--rf-path")
+    {
+        Description =
+            $"With --igate-to-rf, the path of what the IGate transmits. Stations count as local when heard over at "
+            + $"most its hops. Default: {_defaultRfPath}.",
+        DefaultValueFactory = _ => _defaultRfPath,
     };
 
     private readonly Option<int?> _passcode = new("--passcode")
@@ -59,7 +76,9 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
     private readonly Option<string> _symbol = new("--symbol")
     {
-        Description = $"The IGate's symbol, as table and code. Default: {_defaultIGateSymbol} (receive-only IGate).",
+        Description =
+            $"The IGate's symbol, as table and code. Default: {_defaultIGateSymbol} (receive-only IGate), or "
+            + $"{_twoWaySymbol} with --igate-to-rf.",
         DefaultValueFactory = _ => _defaultIGateSymbol,
     };
 
@@ -166,6 +185,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 _duration,
                 _quietWarning,
                 _igate,
+                _toRf,
+                _rfPath,
                 _passcode,
                 _latitude,
                 _longitude,
@@ -239,7 +260,11 @@ internal sealed class ServeCommand(CliEnvironment environment)
     );
 
     /// <summary>What <c>--igate</c> gates as and beacons.</summary>
-    private sealed record IGateOptions(Callsign Callsign, AprsPacket Beacon, TimeSpan BeaconInterval);
+    private sealed record IGateOptions(Callsign Callsign, AprsPacket Beacon, TimeSpan BeaconInterval)
+    {
+        /// <summary>With <c>--igate-to-rf</c>: what the IGate transmits as on RF.</summary>
+        public PacketAddress? ToRf { get; init; }
+    }
 
     private bool TryBind(ParseResult parseResult, out ServeOptions options, out string error)
     {
@@ -311,9 +336,17 @@ internal sealed class ServeCommand(CliEnvironment environment)
             (position, symbol) = (place.Position, place.Symbol);
         }
         else if (
-            new Option[] { _passcode, _latitude, _longitude, _symbol, _comment, _beaconInterval }.FirstOrDefault(
-                option => parseResult.GetResult(option) is { Implicit: false }
-            ) is
+            new Option[]
+            {
+                _passcode,
+                _latitude,
+                _longitude,
+                _symbol,
+                _comment,
+                _beaconInterval,
+                _toRf,
+                _rfPath,
+            }.FirstOrDefault(option => parseResult.GetResult(option) is { Implicit: false }) is
             { } stray
         )
         {
@@ -406,9 +439,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
             if (igate)
             {
                 var igateCall = Callsign.Parse(callsign);
-                var comment = parseResult.GetValue(_comment) is { Length: > 0 } extra
-                    ? $"{_receiveOnly} {extra}"
-                    : _receiveOnly;
+                var toRf = parseResult.GetValue(_toRf);
+                var extra = parseResult.GetValue(_comment) is { Length: > 0 } text ? text : null;
+                var comment =
+                    toRf ? extra ?? ""
+                    : extra is null ? _receiveOnly
+                    : $"{_receiveOnly} {extra}";
                 var beacon = AprsPacket.Create(
                     igateCall,
                     Callsign.Parse(SendCommand.DefaultTocall),
@@ -420,7 +456,10 @@ internal sealed class ServeCommand(CliEnvironment environment)
                         Comment = comment,
                     }
                 );
-                igateOptions = new IGateOptions(igateCall, beacon, beaconInterval);
+                igateOptions = new IGateOptions(igateCall, beacon, beaconInterval)
+                {
+                    ToRf = toRf ? ToRfAddress(igateCall, parseResult.GetValue(_rfPath)!) : null,
+                };
             }
         }
         catch (ArgumentException ex)
@@ -441,6 +480,40 @@ internal sealed class ServeCommand(CliEnvironment environment)
         error = "";
         return true;
     }
+
+    /// <summary>What a two-way IGate transmits as on RF: its call, the TOCALL and <c>--rf-path</c>.</summary>
+    private static PacketAddress ToRfAddress(Callsign igate, string pathText)
+    {
+        if (!Ax25.Ax25Address.TryParse(igate.Value, out _))
+        {
+            throw new ArgumentException(
+                $"--igate-to-rf needs a callsign AX.25 can carry: '{igate}' is longer than six characters with an SSID "
+                    + "up to 15."
+            );
+        }
+
+        var path = pathText.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (path.Length > 2 || path.Any(entry => !Ax25.Ax25Address.TryParse(entry.ToUpperInvariant(), out _)))
+        {
+            throw new ArgumentException(
+                $"--rf-path '{pathText}' is not valid. Use up to two hops such as WIDE1-1 or WIDE1-1,WIDE2-1."
+            );
+        }
+
+        return PacketAddress.Parse(
+            igate.Value,
+            SendCommand.DefaultTocall,
+            path.Select(entry => entry.ToUpperInvariant())
+        );
+    }
+
+    /// <summary>How many hops a path asks for: <c>N</c> for each <c>WIDEn-N</c>, one for anything else.</summary>
+    internal static int Hops(IEnumerable<PathEntry> path) =>
+        path.Sum(entry =>
+            entry.Station.Value is ['W', 'I', 'D', 'E', >= '1' and <= '7', '-', var n] && n is >= '1' and <= '7'
+                ? n - '0'
+                : 1
+        );
 
     private bool TryBindIGate(
         ParseResult parseResult,
@@ -464,6 +537,12 @@ internal sealed class ServeCommand(CliEnvironment environment)
         if (tncCount == 0)
         {
             error = "--igate needs a --tnc to gate from.";
+            return false;
+        }
+
+        if (parseResult.GetValue(_toRf) && tncCount > 1)
+        {
+            error = "--igate-to-rf needs exactly one --tnc: the one it transmits on.";
             return false;
         }
 
@@ -502,10 +581,11 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        if (
-            parseResult.GetValue(_symbol) is not [var table, var code]
-            || !AprsSymbol.TryCreate(table, code, out var symbol)
-        )
+        var symbolText =
+            parseResult.GetValue(_toRf) && parseResult.GetResult(_symbol) is null or { Implicit: true }
+                ? _twoWaySymbol
+                : parseResult.GetValue(_symbol);
+        if (symbolText is not [var table, var code] || !AprsSymbol.TryCreate(table, code, out var symbol))
         {
             error = $"--symbol must be a table and a code, for example {_defaultIGateSymbol} or I&.";
             return false;
@@ -609,13 +689,23 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
         var sources = new List<Task>();
         var described = new List<string>();
+        var downlink = options.IGate?.ToRf is { } toRf
+            ? new IGateDownlink(toRf, environment.TimeProvider, logger)
+            : null;
+        downlink?.AddTo(health);
         if (connection is not null)
         {
             // Without a filter (an IGate that only uploads) the server sends little, but its lines must still be read.
             sources.Add(
                 feed.AddSource(
                     AprsIsSource,
-                    LogPacketsAsync(PacketsAsync(connection.ReadLinesAsync(run.Token)), AprsIsSource, packetLog)
+                    LogPacketsAsync(
+                        downlink is null
+                            ? PacketsAsync(connection.ReadLinesAsync(run.Token))
+                            : downlink.GateAsync(PacketsAsync(connection.ReadLinesAsync(run.Token))),
+                        AprsIsSource,
+                        packetLog
+                    )
                 )
             );
             health.AddSource(AprsIsSource, () => connection.State == AprsIsConnectionState.Connected);
@@ -631,7 +721,11 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 connection!,
                 new RfToInternetGate(
                     options.IGate.Callsign,
-                    new RfToInternetGateOptions { TimeProvider = environment.TimeProvider }
+                    new RfToInternetGateOptions
+                    {
+                        ReceiveOnly = downlink is null,
+                        TimeProvider = environment.TimeProvider,
+                    }
                 ),
                 options.IGate.Beacon,
                 options.IGate.BeaconInterval,
@@ -651,11 +745,18 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 var name = address.ToString();
                 TncCommand.ReportConnection(tnc, name, environment.Error, events);
                 var heard = LogPacketsAsync(tnc.ReadPacketsAsync(run.Token), name, packetLog);
+                if (downlink is not null)
+                {
+                    downlink.Tnc = tnc;
+                    heard = downlink.HearAsync(heard);
+                }
+
                 sources.Add(feed.AddSource(name, uplink is null ? heard : uplink.TapAsync(heard)));
                 health.AddSource(name, () => tnc.IsConnected, () => tnc.IsQuiet, () => tnc.IsSendingText);
                 described.Add($"the TNC at {name}");
             }
 
+            var downlinking = downlink?.RunAsync(run.Token) ?? Task.CompletedTask;
             await environment.Error.WriteLineAsync(
                 $"aprscli: serving {string.Join(" and ", described)} on {server.LocalEndPoint} as "
                     + $"{options.Local.ServerName}"
@@ -672,8 +773,17 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 var every = DurationParser.Format(igate.BeaconInterval);
                 await environment.Error.WriteLineAsync(
                     $"aprscli: gating what the TNCs hear to {options.Upstream!.Endpoint} as {igate.Callsign} "
-                        + $"(receive-only, qAO), beaconing every {every}"
+                        + (downlink is null ? "(receive-only, qAO)" : "(two-way, qAR)")
+                        + $", beaconing every {every}"
                 );
+                if (downlink is not null)
+                {
+                    await environment.Error.WriteLineAsync(
+                        $"aprscli: gating messages from APRS-IS to stations heard on the TNC within "
+                            + $"{downlink.MaxLocalHops} hops, sent via {string.Join(",", igate.ToRf!.Path)}"
+                    );
+                }
+
                 var callsign = igate.Callsign.ToString();
                 events.IGateStarted(callsign, every);
             }
@@ -690,6 +800,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
 
             await feed.DisposeAsync();
             await uploading;
+            await downlinking;
         }
         finally
         {
@@ -731,6 +842,20 @@ internal sealed class ServeCommand(CliEnvironment environment)
                         refused.Count == 0
                             ? "none"
                             : string.Join(", ", refused.Select(r => $"{IGateUplink.ReasonName(r.Reason)} {r.Count}"))
+                    )
+            );
+        }
+
+        if (downlink is not null)
+        {
+            var refused = downlink.RefusedCounts().ToList();
+            await environment.Error.WriteLineAsync(
+                $"aprscli: gated {downlink.Gated} messages and positions to RF ({downlink.Sent} sent, "
+                    + $"{downlink.Dropped} dropped); refused "
+                    + (
+                        refused.Count == 0
+                            ? "none"
+                            : string.Join(", ", refused.Select(r => $"{IGateDownlink.ReasonName(r.Reason)} {r.Count}"))
                     )
             );
         }

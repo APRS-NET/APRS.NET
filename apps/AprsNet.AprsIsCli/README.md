@@ -235,8 +235,10 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
 | `--igate` | Also gate what the `--tnc` sources hear to APRS-IS as a receive-only IGate (below). Needs `-c`, its passcode in `APRS_PASSCODE` (or `--passcode`), `--lat` and `--lon`. |
 | `--lat`, `--lon` | With `--igate`: the IGate's position, which it beacons to APRS-IS. |
-| `--symbol` | With `--igate`: the beacon's symbol. Default: `R&`, a receive-only IGate. |
-| `--comment` | With `--igate`: text after `RX-only IGate` in the beacon's comment. |
+| `--igate-to-rf` | With `--igate`: also gate messages from APRS-IS to stations heard on the TNC, a two-way IGate (below). It transmits. Needs exactly one `--tnc`. |
+| `--rf-path` | With `--igate-to-rf`: the path of what it transmits, up to two hops. Stations count as local when heard over at most its hops. Default: `WIDE1-1`. |
+| `--symbol` | With `--igate`: the beacon's symbol. Default: `R&`, a receive-only IGate, or `I&` with `--igate-to-rf`. |
+| `--comment` | With `--igate`: the beacon's comment, after `RX-only IGate` for a receive-only one. |
 | `--beacon-interval` | With `--igate`: how often to beacon, at least `1m`. Default: `30m`. |
 | `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `30m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts, and it doesn't count as up, so a gateway whose TNCs are all quiet answers 503; it is up again with its next frame. Pick longer than the channel is ever quiet. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up either. |
 | `--log-packets` | Also log each packet from each source, duplicates included, to OpenTelemetry. Needs `OTEL_EXPORTER_OTLP_ENDPOINT`; see [OpenTelemetry](#opentelemetry). |
@@ -263,6 +265,22 @@ comment. The [gateway guide](../../docs/guides/gateway.md#gate-to-aprs-is) says 
 
 The summary at the end, and `/health` with `--http`, count what was gated, sent, dropped and refused, by reason
 (`"igate.refused.duplicate"` and so on); so do the `AprsNet.IGate` metrics.
+
+### A two-way IGate
+
+With `--igate-to-rf` as well, `serve` also gates messages from APRS-IS to RF: messages, acknowledgements and
+rejections for stations heard on the TNC within 180 minutes over at most the hops of `--rf-path`, and each sender's
+next position once. It gates up with `qAR`, so APRS-IS sends it those messages with no filter, and beacons with `I&`.
+It transmits on its own, at most 6 packets a minute and 10 in five minutes; read
+[A two-way IGate](../../docs/guides/gateway.md#a-two-way-igate) in the gateway guide first.
+
+```sh
+APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --igate-to-rf --lat 49.0583 --lon -72.0292
+```
+
+Each packet sent to RF is logged; the summary and `/health` count them (`igate.rf.gated`, `igate.rf.sent`,
+`igate.rf.dropped`), the local stations (`igate.rf.local_stations`) and the refusals by reason
+(`igate.rf.refused.not_local` and so on).
 
 ## health
 
