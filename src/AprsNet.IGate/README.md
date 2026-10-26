@@ -50,3 +50,30 @@ also gates messages to RF.
 
 Every decision is counted on the `AprsNet.IGate` meter: `aprsnet.igate.packets.gated` and
 `aprsnet.igate.packets.refused` by `reason` (see [docs/metrics.md](../../docs/metrics.md#igate)).
+
+## Stations heard on RF
+
+`HeardStations` keeps the stations a TNC has heard: when each was last heard, over how many digipeater hops and on
+which radio port. An IGate that gates messages to RF uses it to send them only to stations that are local, heard within
+`LocalWindow` (180 minutes) over at most `MaxLocalHops` (2), as Dire Wolf decides. Set `MaxLocalHops` to the hops of
+the path the IGate transmits with.
+
+```csharp
+var heard = new HeardStations();
+
+await foreach (var frame in tnc.ReadFramesAsync(cancellationToken))
+{
+    heard.Record(frame);
+    // ...
+}
+
+if (heard.IsLocal(Callsign.Parse("N0CALL-9")))
+{
+    // heard on RF within 180 minutes, over 2 hops at most
+}
+```
+
+The hops are `PathAnalysis.HopCount`: under the New-N paradigm, `DIGI1,WIDE1*,WIDE2-1` is one hop. A transmission heard
+direct and then through digipeaters within 30 seconds keeps the shorter path. Packets with a q-construct, or `TCPIP` or
+`TCPXX` in the path, came from APRS-IS and are ignored. Third-party traffic records the station that relayed it on RF.
+At most `Capacity` stations (10,000) are kept; when full, the one heard longest ago makes room.
