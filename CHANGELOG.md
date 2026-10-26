@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.6.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.4...v0.6.0-alpha.5) (2026-10-26)
+
+
+### Features
+
+* **ax25:** digipeater path rules ([bad82ae](https://github.com/APRS-NET/APRS.NET/commit/bad82ae27b516d31bd9a8cd7230084da50c4eef7)), closes [#210](https://github.com/APRS-NET/APRS.NET/issues/210)
+* **cli:** /health says when a TNC has gone quiet ([3f17544](https://github.com/APRS-NET/APRS.NET/commit/3f17544b8777f43ca11dc3ad1bb54cdac29b416e)), closes [#322](https://github.com/APRS-NET/APRS.NET/issues/322)
+* **cli:** serve --igate-to-rf runs a two-way IGate ([2ce2a04](https://github.com/APRS-NET/APRS.NET/commit/2ce2a04cf2436305aa956b6eafd3398118308ded)), closes [#215](https://github.com/APRS-NET/APRS.NET/issues/215)
+* **cli:** tnc digi runs a digipeater on a KISS TNC ([4b593af](https://github.com/APRS-NET/APRS.NET/commit/4b593afa24feeca13915ffe7d4afb23efc7a7724)), closes [#211](https://github.com/APRS-NET/APRS.NET/issues/211)
+* **cli:** tnc listen --all-ports reads every port of a TNC ([24b6c05](https://github.com/APRS-NET/APRS.NET/commit/24b6c056bcde35c29287b20e9290e4b97ce86873)), closes [#222](https://github.com/APRS-NET/APRS.NET/issues/222)
+* **gateway:** a quiet source can count as down in health checks ([53c5251](https://github.com/APRS-NET/APRS.NET/commit/53c5251c997e0917607aa5a46126bbe0daad5a13)), closes [#322](https://github.com/APRS-NET/APRS.NET/issues/322)
+* **igate:** a list of stations heard on RF ([7dfdce7](https://github.com/APRS-NET/APRS.NET/commit/7dfdce79623dc3f1f047ec8851276ee0794c0430)), closes [#213](https://github.com/APRS-NET/APRS.NET/issues/213)
+* **igate:** gate messages from APRS-IS to RF ([cd9381c](https://github.com/APRS-NET/APRS.NET/commit/cd9381ceced6899a965df8fbb865525bbcdfaf1c)), closes [#214](https://github.com/APRS-NET/APRS.NET/issues/214)
+* **kiss:** one connection for every port of a multi-port TNC ([753564b](https://github.com/APRS-NET/APRS.NET/commit/753564b847089ac81ccb86cdcdb32e932d2bc718)), closes [#222](https://github.com/APRS-NET/APRS.NET/issues/222)
+* **packets:** count the digipeater hops in a packet's path ([be9b8ff](https://github.com/APRS-NET/APRS.NET/commit/be9b8ffb7cfac1206d0c798a1c4d0f33b09f0427)), closes [#213](https://github.com/APRS-NET/APRS.NET/issues/213)
+
+
+### Bug Fixes
+
+* **cli:** a missing or unplugged serial GPS is called a GPS ([8568abd](https://github.com/APRS-NET/APRS.NET/commit/8568abd225e453949607c6a5a7a3f14b9f290dab)), closes [#308](https://github.com/APRS-NET/APRS.NET/issues/308)
+* **gateway:** a server stopped right after it starts no longer throws ([a639525](https://github.com/APRS-NET/APRS.NET/commit/a6395251624a28acb792cfa040484b9d9100c5ff))
+* **kiss:** KissTcpServer reports a refused app before closing it ([339d7d4](https://github.com/APRS-NET/APRS.NET/commit/339d7d41732d09b5d9b1c4de7f9f793432fb24b4))
+
 ## [0.6.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.3...v0.6.0-alpha.4) (2026-10-25)
 
 
