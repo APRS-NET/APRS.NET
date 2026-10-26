@@ -240,6 +240,33 @@ public sealed class Ax25Frame
                 );
     }
 
+    /// <summary>
+    /// The same UI frame with another digipeater path, as a digipeater sends it on: the destination, source and
+    /// information field are kept, and each address in <paramref name="digipeaters"/> keeps its has-been-repeated flag.
+    /// </summary>
+    /// <exception cref="ArgumentException">More than eight digipeaters, or an address left as <see langword="default"/>.</exception>
+    /// <exception cref="InvalidOperationException">The frame isn't APRS (<see cref="IsAprs"/>).</exception>
+    public Ax25Frame WithDigipeaters(IReadOnlyList<Ax25Address> digipeaters)
+    {
+        ArgumentNullException.ThrowIfNull(digipeaters);
+        if (!IsAprs)
+        {
+            throw new InvalidOperationException("Only an APRS UI frame can be given a new path.");
+        }
+
+        if (digipeaters.Count > MaxDigipeaters)
+        {
+            throw new ArgumentException($"AX.25 carries at most {MaxDigipeaters} digipeaters.", nameof(digipeaters));
+        }
+
+        if (digipeaters.Any(d => d.Callsign.Length == 0))
+        {
+            throw new ArgumentException("A digipeater address is empty.", nameof(digipeaters));
+        }
+
+        return Encode(Destination, Source, [.. digipeaters], Information.Span);
+    }
+
     /// <summary>A new array holding <see cref="Raw"/>.</summary>
     public byte[] GetBytes() => (byte[])_raw.Clone();
 

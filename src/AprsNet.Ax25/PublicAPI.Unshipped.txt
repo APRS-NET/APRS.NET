@@ -34,3 +34,46 @@ static AprsNet.Ax25.Ax25Address.operator ==(AprsNet.Ax25.Ax25Address left, AprsN
 static AprsNet.Ax25.Ax25Address.TryParse(string? text, out AprsNet.Ax25.Ax25Address address) -> bool
 static AprsNet.Ax25.Ax25Frame.FromAprsPacket(AprsNet.Packets.AprsPacket! packet) -> AprsNet.Ax25.Ax25Frame!
 static AprsNet.Ax25.Ax25Frame.TryDecode(System.ReadOnlySpan<byte> frame, out AprsNet.Ax25.Ax25Frame? result, out AprsNet.Ax25.Ax25FrameError error) -> bool
+AprsNet.Ax25.Ax25Frame.WithDigipeaters(System.Collections.Generic.IReadOnlyList<AprsNet.Ax25.Ax25Address>! digipeaters) -> AprsNet.Ax25.Ax25Frame!
+AprsNet.Ax25.Digipeater
+AprsNet.Ax25.Digipeater.Call.get -> AprsNet.Ax25.Ax25Address
+AprsNet.Ax25.Digipeater.Digipeat(AprsNet.Ax25.Ax25Frame! heard) -> AprsNet.Ax25.DigipeatDecision!
+AprsNet.Ax25.Digipeater.Digipeater(AprsNet.Ax25.Ax25Address call, AprsNet.Ax25.DigipeaterOptions? options = null) -> void
+AprsNet.Ax25.DigipeaterOptions
+AprsNet.Ax25.DigipeaterOptions.Aliases.get -> System.Collections.Generic.IReadOnlyList<string!>!
+AprsNet.Ax25.DigipeaterOptions.Aliases.set -> void
+AprsNet.Ax25.DigipeaterOptions.DigipeaterOptions() -> void
+AprsNet.Ax25.DigipeaterOptions.DuplicateWindow.get -> System.TimeSpan
+AprsNet.Ax25.DigipeaterOptions.DuplicateWindow.set -> void
+AprsNet.Ax25.DigipeaterOptions.FillInOnly.get -> bool
+AprsNet.Ax25.DigipeaterOptions.FillInOnly.set -> void
+AprsNet.Ax25.DigipeaterOptions.MaxHops.get -> int
+AprsNet.Ax25.DigipeaterOptions.MaxHops.set -> void
+AprsNet.Ax25.DigipeaterOptions.Preemptive.get -> bool
+AprsNet.Ax25.DigipeaterOptions.Preemptive.set -> void
+AprsNet.Ax25.DigipeaterOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Ax25.DigipeaterOptions.TimeProvider.set -> void
+AprsNet.Ax25.DigipeaterOptions.Validate() -> void
+AprsNet.Ax25.DigipeatDecision
+AprsNet.Ax25.DigipeatDecision.<Clone>$() -> AprsNet.Ax25.DigipeatDecision!
+AprsNet.Ax25.DigipeatDecision.Deconstruct(out AprsNet.Ax25.Ax25Frame! Heard, out AprsNet.Ax25.Ax25Frame? Frame, out AprsNet.Ax25.DigipeatRefusal? Refusal) -> void
+AprsNet.Ax25.DigipeatDecision.DigipeatDecision(AprsNet.Ax25.Ax25Frame! Heard, AprsNet.Ax25.Ax25Frame? Frame, AprsNet.Ax25.DigipeatRefusal? Refusal) -> void
+AprsNet.Ax25.DigipeatDecision.Equals(AprsNet.Ax25.DigipeatDecision? other) -> bool
+AprsNet.Ax25.DigipeatDecision.Frame.get -> AprsNet.Ax25.Ax25Frame?
+AprsNet.Ax25.DigipeatDecision.Frame.init -> void
+AprsNet.Ax25.DigipeatDecision.Heard.get -> AprsNet.Ax25.Ax25Frame!
+AprsNet.Ax25.DigipeatDecision.Heard.init -> void
+AprsNet.Ax25.DigipeatDecision.IsRepeated.get -> bool
+AprsNet.Ax25.DigipeatDecision.Refusal.get -> AprsNet.Ax25.DigipeatRefusal?
+AprsNet.Ax25.DigipeatDecision.Refusal.init -> void
+AprsNet.Ax25.DigipeatRefusal
+AprsNet.Ax25.DigipeatRefusal.Duplicate = 4 -> AprsNet.Ax25.DigipeatRefusal
+AprsNet.Ax25.DigipeatRefusal.NoHopsLeft = 1 -> AprsNet.Ax25.DigipeatRefusal
+AprsNet.Ax25.DigipeatRefusal.NotAprs = 0 -> AprsNet.Ax25.DigipeatRefusal
+AprsNet.Ax25.DigipeatRefusal.NotForUs = 2 -> AprsNet.Ax25.DigipeatRefusal
+AprsNet.Ax25.DigipeatRefusal.OwnFrame = 3 -> AprsNet.Ax25.DigipeatRefusal
+override AprsNet.Ax25.DigipeatDecision.Equals(object? obj) -> bool
+override AprsNet.Ax25.DigipeatDecision.GetHashCode() -> int
+override AprsNet.Ax25.DigipeatDecision.ToString() -> string!
+static AprsNet.Ax25.DigipeatDecision.operator !=(AprsNet.Ax25.DigipeatDecision? left, AprsNet.Ax25.DigipeatDecision? right) -> bool
+static AprsNet.Ax25.DigipeatDecision.operator ==(AprsNet.Ax25.DigipeatDecision? left, AprsNet.Ax25.DigipeatDecision? right) -> bool
