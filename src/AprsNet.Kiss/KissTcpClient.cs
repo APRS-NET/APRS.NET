@@ -17,6 +17,7 @@ public sealed class KissTcpClient : IAsyncDisposable
     private readonly string _host;
     private readonly int _port;
     private readonly int _tncPort;
+    private readonly bool _allPorts;
     private readonly TimeSpan _connectTimeout;
     private readonly TimeSpan _deadLinkTimeout;
     private TcpClient? _client;
@@ -40,6 +41,7 @@ public sealed class KissTcpClient : IAsyncDisposable
         _host = options.Host;
         _port = options.Port;
         _tncPort = options.TncPort;
+        _allPorts = options.AllPorts;
         _connectTimeout = options.ConnectTimeout;
         _deadLinkTimeout = options.DeadLinkTimeout;
         TransmitLimit = options.CreateTransmitLimit();
@@ -88,6 +90,7 @@ public sealed class KissTcpClient : IAsyncDisposable
         _kiss = new KissStreamClient(client.GetStream(), _tncPort, transmitLimit: TransmitLimit)
         {
             MetricsTnc = $"{_host}:{_port}",
+            AllPorts = _allPorts,
         };
         _kiss.Warning += (_, e) => Warning?.Invoke(this, e);
         _kiss.Traffic += (_, e) => Traffic?.Invoke(this, e);
@@ -105,6 +108,10 @@ public sealed class KissTcpClient : IAsyncDisposable
     public IAsyncEnumerable<Ax25Frame> ReadFramesAsync(CancellationToken cancellationToken = default) =>
         Connected.ReadFramesAsync(cancellationToken);
 
+    /// <inheritdoc cref="KissStreamClient.ReadPortFramesAsync"/>
+    public IAsyncEnumerable<KissPortFrame> ReadPortFramesAsync(CancellationToken cancellationToken = default) =>
+        Connected.ReadPortFramesAsync(cancellationToken);
+
     /// <inheritdoc cref="KissStreamClient.ReadPacketsAsync"/>
     public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken = default) =>
         Connected.ReadPacketsAsync(cancellationToken);
@@ -119,6 +126,17 @@ public sealed class KissTcpClient : IAsyncDisposable
     /// <inheritdoc cref="KissStreamClient.SendFrameAsync"/>
     public ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default) =>
         Connected.SendFrameAsync(frame, cancellationToken);
+
+    /// <inheritdoc cref="KissStreamClient.SendToPortAsync"/>
+    public ValueTask SendToPortAsync(int port, AprsPacket packet, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(packet);
+        return Connected.SendToPortAsync(port, packet, cancellationToken);
+    }
+
+    /// <inheritdoc cref="KissStreamClient.SendFrameToPortAsync"/>
+    public ValueTask SendFrameToPortAsync(int port, Ax25Frame frame, CancellationToken cancellationToken = default) =>
+        Connected.SendFrameToPortAsync(port, frame, cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

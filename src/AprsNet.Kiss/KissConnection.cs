@@ -38,6 +38,7 @@ public abstract class KissConnection : IAsyncDisposable
     private long _lastData;
     private bool _quiet;
     private bool _watchingQuiet;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, KissTransmitLimit> _portLimits = new();
     private readonly ITimer _gpsTimer;
     private readonly Lock _gpsLock = new();
     private long _lastSentence;
@@ -57,9 +58,12 @@ public abstract class KissConnection : IAsyncDisposable
         TimeSpan? quietWarning,
         bool reopenWhenSendingText = false,
         bool textMode = false,
-        TimeSpan? gpsTimeout = null
+        TimeSpan? gpsTimeout = null,
+        bool allPorts = false
     )
     {
+        AllPorts = allPorts;
+        TncPort = tncPort;
         _textMode = textMode;
         GpsTimeout = gpsTimeout ?? DefaultGpsTimeout;
         _gpsTimer = timeProvider.CreateTimer(_ => CheckGps(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
@@ -80,8 +84,20 @@ public abstract class KissConnection : IAsyncDisposable
         TransmitLimit = transmitLimit;
     }
 
-    /// <summary>How fast frames may be sent; one limit covers every connection, and a send waits for its turn.</summary>
+    /// <summary>
+    /// How fast frames may be sent to <see cref="TncPort"/>; one limit covers every connection, and a send waits for its
+    /// turn. Each other radio port gets a limit of its own with the same settings.
+    /// </summary>
     public KissTransmitLimit TransmitLimit { get; }
+
+    /// <summary>The radio port, 0 to 15, that <see cref="SendAsync"/> sends on, and the only one read without <see cref="AllPorts"/>.</summary>
+    public int TncPort { get; }
+
+    /// <summary>
+    /// Whether frames heard on every radio port of a multi-port TNC are read: <see cref="ReadPortFramesAsync"/> says which
+    /// port each came from.
+    /// </summary>
+    public bool AllPorts { get; }
 
     private bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
@@ -404,6 +420,21 @@ public abstract class KissConnection : IAsyncDisposable
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
+        await foreach (var heard in ReadPortFramesAsync(cancellationToken).ConfigureAwait(false))
+        {
+            yield return heard.Frame;
+        }
+    }
+
+    /// <summary>
+    /// As <see cref="ReadFramesAsync"/>, with the radio port each frame was heard on: for a multi-port TNC read with
+    /// <see cref="AllPorts"/>. Use one of the read methods at a time.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Another read is already running.</exception>
+    public async IAsyncEnumerable<KissPortFrame> ReadPortFramesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         if (Interlocked.Exchange(ref _reading, 1) != 0)
         {
@@ -431,6 +462,7 @@ public abstract class KissConnection : IAsyncDisposable
                         transmitLimit: KissTransmitLimit.Off
                     )
                     {
+                        AllPorts = AllPorts,
                         MetricsTnc = _tnc,
                         DataRead = DataArrived,
                         TimeProvider = _timeProvider,
@@ -473,7 +505,9 @@ public abstract class KissConnection : IAsyncDisposable
                     WatchQuiet(true);
                     await using (client.ConfigureAwait(false))
                     {
-                        var frames = client.ReadFramesAsync(sendingText.Token).GetAsyncEnumerator(sendingText.Token);
+                        var frames = client
+                            .ReadPortFramesAsync(sendingText.Token)
+                            .GetAsyncEnumerator(sendingText.Token);
                         try
                         {
                             while (true)
@@ -593,14 +627,46 @@ public abstract class KissConnection : IAsyncDisposable
     /// <exception cref="InvalidOperationException">
     /// The TNC is not connected now; nothing was sent. Checked before and after waiting for the limit.
     /// </exception>
-    public async ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default)
+    public ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default) =>
+        SendFrameToPortAsync(TncPort, frame, cancellationToken);
+
+    /// <summary>
+    /// Sends <paramref name="packet"/> for the TNC to transmit on radio port <paramref name="port"/> of a multi-port TNC,
+    /// once that port's transmit limit allows.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="port"/> isn't 0 to 15.</exception>
+    /// <exception cref="InvalidOperationException">The TNC is not connected now; nothing was sent.</exception>
+    /// <exception cref="ArgumentException">The packet cannot be sent as AX.25; see <see cref="Ax25Frame.FromAprsPacket"/>.</exception>
+    public ValueTask SendToPortAsync(int port, AprsPacket packet, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(packet);
+        return SendFrameToPortAsync(port, Ax25Frame.FromAprsPacket(packet), cancellationToken);
+    }
+
+    /// <summary>
+    /// Sends an AX.25 frame for the TNC to transmit on radio port <paramref name="port"/> of a multi-port TNC, once that
+    /// port's transmit limit allows: <see cref="TransmitLimit"/> for <see cref="TncPort"/>, and one with the same
+    /// settings for each other port.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="port"/> isn't 0 to 15.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The TNC is not connected now; nothing was sent. Checked before and after waiting for the limit.
+    /// </exception>
+    public async ValueTask SendFrameToPortAsync(
+        int port,
+        Ax25Frame frame,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(port);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, 15);
         ArgumentNullException.ThrowIfNull(frame);
         ObjectDisposedException.ThrowIf(IsDisposed, this);
         _ = Connected;
-        await TransmitLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var limit = port == TncPort ? TransmitLimit : _portLimits.GetOrAdd(port, _ => TransmitLimit.CreateLike());
+        await limit.WaitAsync(cancellationToken).ConfigureAwait(false);
         ObjectDisposedException.ThrowIf(IsDisposed, this);
-        await Connected.SendFrameAsync(frame, cancellationToken).ConfigureAwait(false);
+        await Connected.SendFrameToPortAsync(port, frame, cancellationToken).ConfigureAwait(false);
     }
 
     private KissStreamClient Connected =>

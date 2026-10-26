@@ -16,6 +16,7 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     private readonly int _tncPort;
     private readonly KissDecoder _decoder = new();
     private readonly SemaphoreSlim _writeLock = new(1, 1);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<int, KissTransmitLimit> _portLimits = new();
     private Tracer? _tracer;
     private int _disposed;
 
@@ -49,8 +50,17 @@ public sealed partial class KissStreamClient : IAsyncDisposable
         TransmitLimit = transmitLimit ?? KissTransmitLimit.Default;
     }
 
-    /// <summary>How fast frames may be sent; a send waits for its turn.</summary>
+    /// <summary>
+    /// How fast frames may be sent to the client's radio port; a send waits for its turn. Each other port gets a limit
+    /// of its own with the same settings.
+    /// </summary>
     public KissTransmitLimit TransmitLimit { get; }
+
+    /// <summary>
+    /// Whether frames heard on every radio port of a multi-port TNC are read, not only the client's own:
+    /// <see cref="ReadPortFramesAsync"/> says which port each came from. <see langword="false"/> by default.
+    /// </summary>
+    public bool AllPorts { get; init; }
 
     /// <summary>Called after each read that brought bytes, before they are decoded.</summary>
     internal Action? DataRead { get; init; }
@@ -115,10 +125,24 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     public event EventHandler<KissTrafficEventArgs>? Traffic;
 
     /// <summary>
-    /// Yields every AX.25 frame the TNC passes on from its radio port, APRS or not, until the stream ends. Frames that
-    /// are not valid AX.25 are skipped. Intended for a single consumer.
+    /// Yields every AX.25 frame the TNC passes on from its radio port (every port, with <see cref="AllPorts"/>), APRS or
+    /// not, until the stream ends. Frames that are not valid AX.25 are skipped. Intended for a single consumer.
     /// </summary>
     public async IAsyncEnumerable<Ax25Frame> ReadFramesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        await foreach (var heard in ReadPortFramesAsync(cancellationToken).ConfigureAwait(false))
+        {
+            yield return heard.Frame;
+        }
+    }
+
+    /// <summary>
+    /// As <see cref="ReadFramesAsync"/>, with the radio port each frame was heard on: for a multi-port TNC read with
+    /// <see cref="AllPorts"/>. Use one of the read methods, not several.
+    /// </summary>
+    public async IAsyncEnumerable<KissPortFrame> ReadPortFramesAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
@@ -127,7 +151,7 @@ public sealed partial class KissStreamClient : IAsyncDisposable
         {
             await foreach (var line in ReadTextFramesAsync(cancellationToken).ConfigureAwait(false))
             {
-                yield return line;
+                yield return new KissPortFrame(_tncPort, line);
             }
 
             yield break;
@@ -177,10 +201,10 @@ public sealed partial class KissStreamClient : IAsyncDisposable
 
             foreach (var kiss in decoded)
             {
-                if (kiss.Port == _tncPort && kiss.TryGetAx25(out var frame))
+                if ((AllPorts || kiss.Port == _tncPort) && kiss.TryGetAx25(out var frame))
                 {
-                    KissMetrics.Received(MetricsTnc);
-                    yield return frame!;
+                    KissMetrics.Received(MetricsTnc, kiss.Port);
+                    yield return new KissPortFrame(kiss.Port, frame!);
                 }
             }
         }
@@ -214,8 +238,32 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     /// <summary>
     /// Sends an AX.25 frame for the TNC to transmit on its radio port, once <see cref="TransmitLimit"/> allows.
     /// </summary>
-    public async ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default)
+    public ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken = default) =>
+        SendFrameToPortAsync(_tncPort, frame, cancellationToken);
+
+    /// <summary>
+    /// Sends <paramref name="packet"/> for the TNC to transmit on radio port <paramref name="port"/> of a multi-port TNC,
+    /// once that port's transmit limit allows.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="port"/> isn't 0 to 15.</exception>
+    /// <exception cref="ArgumentException">The packet cannot be sent as AX.25; see <see cref="Ax25Frame.FromAprsPacket"/>.</exception>
+    public ValueTask SendToPortAsync(int port, AprsPacket packet, CancellationToken cancellationToken = default) =>
+        SendFrameToPortAsync(port, Ax25Frame.FromAprsPacket(packet), cancellationToken);
+
+    /// <summary>
+    /// Sends an AX.25 frame for the TNC to transmit on radio port <paramref name="port"/> of a multi-port TNC, once that
+    /// port's transmit limit allows: <see cref="TransmitLimit"/> for the client's own port, and one with the same
+    /// settings for each other port.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="port"/> isn't 0 to 15.</exception>
+    public async ValueTask SendFrameToPortAsync(
+        int port,
+        Ax25Frame frame,
+        CancellationToken cancellationToken = default
+    )
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(port);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(port, 15);
         ArgumentNullException.ThrowIfNull(frame);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         if (TextMode)
@@ -226,20 +274,20 @@ public sealed partial class KissStreamClient : IAsyncDisposable
             );
         }
 
-        var bytes = KissFrame.ForAx25(frame, _tncPort).Encode();
-        await TransmitLimit.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var bytes = KissFrame.ForAx25(frame, port).Encode();
+        await LimitFor(port).WaitAsync(cancellationToken).ConfigureAwait(false);
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             await _stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
             await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
-            KissMetrics.Sent(MetricsTnc);
+            KissMetrics.Sent(MetricsTnc, port);
             if (Tracing)
             {
                 Raise(
                     new KissTrafficEventArgs(TimeProvider.GetUtcNow(), KissTrafficKind.Sent, bytes)
                     {
-                        Port = _tncPort,
+                        Port = port,
                         Command = KissCommand.Data,
                         Frame = frame,
                         Packet = frame.IsAprs ? frame.ToAprsPacket() : null,
@@ -252,6 +300,10 @@ public sealed partial class KissStreamClient : IAsyncDisposable
             _writeLock.Release();
         }
     }
+
+    /// <summary>The transmit limit for <paramref name="port"/>: one per port, each like <see cref="TransmitLimit"/>.</summary>
+    internal KissTransmitLimit LimitFor(int port) =>
+        port == _tncPort ? TransmitLimit : _portLimits.GetOrAdd(port, _ => TransmitLimit.CreateLike());
 
     /// <summary>
     /// Writes <paramref name="bytes"/> as they are, outside any frame, under the same lock as frames so they never
@@ -332,7 +384,7 @@ public sealed partial class KissStreamClient : IAsyncDisposable
                 overlong = false;
                 if (frame is not null)
                 {
-                    KissMetrics.Received(MetricsTnc);
+                    KissMetrics.Received(MetricsTnc, _tncPort);
                     yield return frame;
                 }
             }
@@ -502,7 +554,7 @@ public sealed partial class KissStreamClient : IAsyncDisposable
         public void Frame(byte[] raw, KissFrame frame)
         {
             var at = client.TimeProvider.GetUtcNow();
-            if (frame.Port != client._tncPort)
+            if (frame.Port != client._tncPort && !client.AllPorts)
             {
                 client.Raise(Entry(at, KissTrafficKind.OtherPort, raw, frame));
                 return;

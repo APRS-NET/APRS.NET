@@ -124,10 +124,30 @@ await using var tnc = new KissTcpConnection(new KissTcpOptions
 });
 ```
 
-`KissTcpOptions` holds every setting for `KissTcpClient` and `KissTcpConnection`: host, port, radio port, timeouts,
+`KissTcpOptions` holds every setting for `KissTcpClient` and `KissTcpConnection`: host, port, radio ports, timeouts,
 reconnect waits, clock and transmit limit. `new KissTcpConnection("localhost")` uses the defaults.
 
 `KissTransmitLimit.Off` removes the limit, for a channel the app has to itself or a test.
+
+### A multi-port TNC
+
+A connection reads one radio port, `TncPort` (0 by default). For a two-port serial TNC, or Dire Wolf with two channels
+behind one KISS port, set `AllPorts` to read them all on one connection: `ReadPortFramesAsync` says which port each
+frame was heard on, and `SendToPortAsync` sends on any port. `SendAsync` still sends on `TncPort`.
+
+```csharp
+await using var tnc = new KissTcpConnection(new KissTcpOptions { Host = "localhost", AllPorts = true });
+
+await foreach (var (port, frame) in tnc.ReadPortFramesAsync(cancellationToken))
+{
+    Console.WriteLine($"port {port}: {frame}");           // port 1: N0CALL-9>APRS,WIDE1-1:...
+}
+
+await tnc.SendToPortAsync(1, packet, cancellationToken); // on the second channel
+```
+
+Each port has a transmit limit of its own with the same settings, so a busy port doesn't hold up the other. The frame
+counts carry a `port` tag.
 
 ### Sharing a TNC: KissTcpServer
 

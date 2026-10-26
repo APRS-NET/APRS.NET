@@ -58,8 +58,8 @@ On the meter `AprsNet.Kiss`. Every client instrument has a `tnc` tag: the TNC's 
 
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |
-| `aprsnet.kiss.frames.received` | `{frame}` | `tnc` | AX.25 frames read from the TNC on the client's radio port |
-| `aprsnet.kiss.frames.sent` | `{frame}` | `tnc` | Frames sent to the TNC to transmit |
+| `aprsnet.kiss.frames.received` | `{frame}` | `tnc`, `port` | AX.25 frames read from the TNC on the client's radio port, or each port with `AllPorts`; `port` is the radio port, `0` to `15` |
+| `aprsnet.kiss.frames.sent` | `{frame}` | `tnc`, `port` | Frames sent to the TNC to transmit, by radio port |
 | `aprsnet.kiss.frames.dropped` | `{frame}` | `tnc` | KISS frames dropped for an invalid escape or for being too long: a noisy link |
 | `aprsnet.kiss.bytes.discarded` | `By` | `tnc` | Bytes from the TNC that were not part of a frame passed on: noise, or text from a TNC not in KISS mode |
 | `aprsnet.kiss.nmea.received` | `{sentence}` | `tnc` | GPS sentences a serial TNC in text mode printed between its packet lines, whole with a checksum that matches |
