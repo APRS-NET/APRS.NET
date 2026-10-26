@@ -1,9 +1,9 @@
 # APRS101 test vectors
 
 Language-neutral test cases for the `AprsNet.Packets` decoder, taken from the APRS Protocol Reference 1.0.1
-(`docs/spec/APRS101.PDF`). There is no parser yet, so for now `VectorFileTests` only checks that these files are
-well-formed. When the parser exists, a theory test should load every vector, decode `packet` and compare the result
-with `expect`.
+(`docs/spec/APRS101.PDF`). `VectorFileTests` checks that these files are well-formed, `VectorParsingTests` parses every
+vector's header and type, and a test per packet type (`PositionVectorTests`, `MicEVectorTests` and the rest) decodes
+`packet` and compares each field with `expect`.
 
 `docs/spec/coverage/` records which vectors have also been seen in real traffic (`tests/corpus`). Regenerate it with
 `dotnet run tools/corpus/Coverage.cs` after changing vectors, features or the corpus. "Seen" means one real packet

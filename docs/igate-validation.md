@@ -64,7 +64,8 @@ APRS-IS client), so this is the network's duplicate check, not a loss.
 
 - With no filter, the IGate's APRS-IS connection still received 99 packets in run 1 and 3 in run 2. What they were
   wasn't recorded; servers are known to send an IGate traffic for stations it has gated, for a two-way IGate to pass
-  to RF (#212). The receive-only IGate only passes them to local clients.
+  to RF (#212). The receive-only IGate only passes them to local clients. `serve --igate-to-rf`, added since, is the
+  two-way one.
 - The local feed dropped 23 of the radio's packets as duplicates in run 1, while the gate refused none. The feed
   checks both sources together and counts a duplicate against the copy that came second; since the gate, checking
   the radio's packets alone over the same 30 seconds, found no duplicates, these were packets APRS-IS had already

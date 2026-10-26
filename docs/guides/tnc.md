@@ -319,5 +319,7 @@ A digipeater transmits on its own, so:
 
 ## Next
 
-- [Run a gateway](gateway.md) that serves what the TNC hears to APRS-IS clients.
+- [Run a gateway](gateway.md) that serves what the TNC hears to APRS-IS clients, and gates it to APRS-IS as an IGate.
+- For a two-port TNC, or Dire Wolf with two channels, set `AllPorts` to read and send on every port on one connection;
+  see "A multi-port TNC" in the [AprsNet.Kiss README](../../src/AprsNet.Kiss/README.md#a-multi-port-tnc).
 - The [AprsNet.Kiss README](../../src/AprsNet.Kiss/README.md) covers the metrics and the KISS framing types.

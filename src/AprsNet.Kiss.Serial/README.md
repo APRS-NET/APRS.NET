@@ -24,8 +24,12 @@ await foreach (var packet in tnc.ReadPacketsAsync(cancellationToken))
 
 `KissSerialConnection` is a `KissConnection`, like `KissTcpConnection`: the same `State`, `StateChanged`, reconnects,
 transmit limit, metrics (tagged with the port name) and `SendAsync`. `KissSerialOptions` holds its settings: port, baud
-rate, radio port, reconnect waits (2 seconds, doubling to 30), clock and transmit limit. The port is opened at 8 data
-bits, no parity, one stop bit and no handshaking.
+rate, radio port (or `AllPorts` for every port of a two-port TNC), reconnect waits (2 seconds, doubling to 30), clock
+and transmit limit. The port is opened at 8 data bits, no parity, one stop bit and no handshaking.
+
+A radio's built-in TNC that has its own command line, such as a Kenwood TH-D72A, needs switching into KISS mode: set
+`Setup = TncSetup.KenwoodThD72`, and the connection does so each time it opens the port, opens it again when the radio
+comes back from a power cut sending text, and switches it back out when it closes.
 
 DTR and RTS are raised while the port is open, as a terminal program leaves them; some radios' built-in TNCs, such as
 the Kenwood TH-D72A, send nothing while RTS is low. A board that uses those lines to reset, such as an ESP32 TNC, needs

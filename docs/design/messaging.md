@@ -129,7 +129,8 @@ no acks, repeated on a `BulletinSchedule` (#272): doubling waits from 1 minute t
   message forms are `AnsrvrCommand` (#272). An
   auto-reply has no message ID and no retries, which `Send` allows with `RetryProfile.None` and `withId: false`.
 - ITEM-in-MSG and the 1.2 message servers (A12-MSG-01, 02).
-- Gating messages between APRS-IS and RF: the two-way IGate (0.7.0, #214).
+- Gating messages between APRS-IS and RF: that is the two-way IGate's job, `InternetToRfGate` in `AprsNet.IGate`
+  (#214), run by `aprscli serve --igate-to-rf` (#215).
 
 ## Order
 
