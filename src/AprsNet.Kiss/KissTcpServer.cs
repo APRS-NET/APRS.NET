@@ -203,10 +203,11 @@ public sealed class KissTcpServer : IAsyncDisposable
             var remote = RemoteEndPoint(tcp);
             if (_clients.Count >= _maxClients)
             {
-                tcp.Dispose();
+                // Reported before the app sees its connection close, so the count and event are never behind it.
                 Interlocked.Increment(ref _refused);
                 KissMetrics.ServerDisconnected(_server, "server_full");
                 Raise(ClientRefused, new KissTcpServerClientEventArgs(remote, fellBehind: false));
+                tcp.Dispose();
                 continue;
             }
 
