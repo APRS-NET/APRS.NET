@@ -29,6 +29,13 @@ internal sealed class TncCommand(CliEnvironment environment)
         DefaultValueFactory = _ => 0,
     };
 
+    private readonly Option<bool> _allPorts = new("--all-ports")
+    {
+        Description =
+            "Read every radio port of a multi-port TNC, such as Dire Wolf with two channels. Once more than one port is "
+            + "heard, each packet shows its port.",
+    };
+
     private readonly Option<string> _format = new("--format")
     {
         Description = "Output: raw (the TNC2 line), decoded, json or pretty, as for listen.",
@@ -64,6 +71,7 @@ internal sealed class TncCommand(CliEnvironment environment)
         {
             _tnc,
             _radioPort,
+            _allPorts,
             _format,
             _count,
             _duration,
@@ -132,6 +140,7 @@ internal sealed class TncCommand(CliEnvironment environment)
         }
 
         var format = Enum.Parse<OutputFormat>(parseResult.GetValue(_format)!, ignoreCase: true);
+        var allPorts = parseResult.GetValue(_allPorts);
         var count = parseResult.GetValue(_count);
         using var run = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         if (duration is { } limit)
@@ -144,12 +153,13 @@ internal sealed class TncCommand(CliEnvironment environment)
             await using var connection = environment.CreateTncConnection(
                 address,
                 parseResult.GetValue(_radioPort),
-                quietWarning
+                quietWarning,
+                allPorts: allPorts
             );
             ReportConnection(connection, address.ToString(), environment.Error);
             try
             {
-                await PrintAsync(connection.ReadPacketsAsync(run.Token), format, count);
+                await PrintAsync(Packets(connection.ReadPortFramesAsync(run.Token)), format, count);
             }
             catch (OperationCanceledException) when (run.IsCancellationRequested)
             {
@@ -167,7 +177,8 @@ internal sealed class TncCommand(CliEnvironment environment)
                 parseResult.GetValue(_radioPort),
                 null,
                 environment.OpenTncPort,
-                run.Token
+                run.Token,
+                allPorts
             );
         }
         catch (OperationCanceledException) when (run.IsCancellationRequested)
@@ -193,7 +204,7 @@ internal sealed class TncCommand(CliEnvironment environment)
 
         try
         {
-            if (await PrintAsync(client.ReadPacketsAsync(run.Token), format, count))
+            if (await PrintAsync(Packets(client.ReadPortFramesAsync(run.Token)), format, count))
             {
                 return ExitCodes.Success;
             }
@@ -309,20 +320,44 @@ internal sealed class TncCommand(CliEnvironment environment)
     }
 
     /// <summary>Prints packets until the stream ends (false) or <paramref name="count"/> is reached (true).</summary>
-    private async Task<bool> PrintAsync(IAsyncEnumerable<AprsPacket> packets, OutputFormat format, int? count)
+    private static async IAsyncEnumerable<(int Port, AprsPacket Packet)> Packets(IAsyncEnumerable<KissPortFrame> frames)
+    {
+        await foreach (var heard in frames)
+        {
+            if (heard.Frame.IsAprs)
+            {
+                yield return (heard.Port, heard.Frame.ToAprsPacket());
+            }
+        }
+    }
+
+    private async Task<bool> PrintAsync(
+        IAsyncEnumerable<(int Port, AprsPacket Packet)> packets,
+        OutputFormat format,
+        int? count
+    )
     {
         var received = 0;
-        await foreach (var packet in packets)
+        var ports = new HashSet<int>();
+        await foreach (var (port, packet) in packets)
         {
             var receivedAt = environment.TimeProvider.GetUtcNow();
+            // Ports show once more than one is heard, as on a multi-port TNC read with --all-ports.
+            ports.Add(port);
+            var showPort = ports.Count > 1;
+            var prefix = showPort ? $"[port {port.ToString(CultureInfo.InvariantCulture)}] " : "";
+            var json = format == OutputFormat.Json ? PacketFormatter.Json(packet, receivedAt) : null;
             await environment.Out.WriteLineAsync(
                 format switch
                 {
-                    OutputFormat.Decoded => LineFormatter.EscapeForConsole(PacketFormatter.Decoded(packet)),
-                    OutputFormat.Json => PacketFormatter.Json(packet, receivedAt),
-                    OutputFormat.Pretty => PrettyFormatter.Format(packet, receivedAt, color: false)
+                    OutputFormat.Decoded => prefix + LineFormatter.EscapeForConsole(PacketFormatter.Decoded(packet)),
+                    OutputFormat.Json => showPort && json!.StartsWith('{')
+                        ? $"{{\"port\":{port.ToString(CultureInfo.InvariantCulture)},{json[1..]}"
+                        : json,
+                    OutputFormat.Pretty => prefix
+                        + PrettyFormatter.Format(packet, receivedAt, color: false)
                         + Environment.NewLine,
-                    _ => LineFormatter.EscapeForConsole(packet.ToString()),
+                    _ => prefix + LineFormatter.EscapeForConsole(packet.ToString()),
                 }
             );
             if (count is { } limit && ++received >= limit)

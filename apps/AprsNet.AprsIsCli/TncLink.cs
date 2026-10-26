@@ -44,7 +44,8 @@ internal sealed class TncLink : IAsyncDisposable
         int radioPort,
         KissTransmitLimit? transmitLimit,
         Func<TncAddress, Stream> openPort,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        bool allPorts = false
     )
     {
         if (address.SerialPort is not null)
@@ -60,7 +61,11 @@ internal sealed class TncLink : IAsyncDisposable
             }
 
             return new TncLink(
-                new KissStreamClient(serial, radioPort, ownsStream: true, transmitLimit) { TextMode = address.TextMode }
+                new KissStreamClient(serial, radioPort, ownsStream: true, transmitLimit)
+                {
+                    TextMode = address.TextMode,
+                    AllPorts = allPorts,
+                }
             );
         }
 
@@ -70,6 +75,7 @@ internal sealed class TncLink : IAsyncDisposable
                 Host = address.Host,
                 Port = address.Port,
                 TncPort = radioPort,
+                AllPorts = allPorts,
                 TransmitLimit = transmitLimit,
             }
         );
@@ -89,6 +95,10 @@ internal sealed class TncLink : IAsyncDisposable
     /// <inheritdoc cref="KissStreamClient.ReadPacketsAsync"/>
     public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken) =>
         _tcp?.ReadPacketsAsync(cancellationToken) ?? _serialKiss!.ReadPacketsAsync(cancellationToken);
+
+    /// <inheritdoc cref="KissStreamClient.ReadPortFramesAsync"/>
+    public IAsyncEnumerable<KissPortFrame> ReadPortFramesAsync(CancellationToken cancellationToken) =>
+        _tcp?.ReadPortFramesAsync(cancellationToken) ?? _serialKiss!.ReadPortFramesAsync(cancellationToken);
 
     /// <inheritdoc cref="KissStreamClient.SendFrameAsync"/>
     public ValueTask SendFrameAsync(Ax25Frame frame, CancellationToken cancellationToken) =>

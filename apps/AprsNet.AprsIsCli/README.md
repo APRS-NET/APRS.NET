@@ -318,7 +318,9 @@ instead to read a radio in its APRS mode, which prints each packet as a line of 
 `tnc send` refuses it. With the radio's GPS output on, its GPS sentences come between the packets; `tnc listen` says
 on stderr when they start, and with `--reconnect` when none has come for 10 s, and doesn't print them.
 
-`--radio-port` picks the port on a multi-port TNC (default 0); `-n` and `-d` stop after a count or a time. Exit code 2
+`--radio-port` picks the port on a multi-port TNC (default 0), and `--all-ports` reads them all, such as Dire Wolf with
+two channels: once more than one port is heard, each packet starts with its port (`[port 1] N0CALL-9>APRS:…`, or a
+`"port"` field in JSON). `-n` and `-d` stop after a count or a time. Exit code 2
 when the TNC cannot be reached or closes the connection, unless `--reconnect` is given: then the command keeps trying
 (waiting 5 s, doubling to 60 s; 2 s to 30 s for a serial port), says so on stderr, and carries on when the TNC is back.
 `aprscli tnc ports` lists the serial ports present. A TNC sending text instead of KISS frames, because it isn't in KISS

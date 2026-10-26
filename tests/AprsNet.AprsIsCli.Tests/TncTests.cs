@@ -52,6 +52,52 @@ public sealed class TncTests : IDisposable
     }
 
     [Theory]
+    [InlineData(false, "raw")]
+    [InlineData(true, "raw")]
+    [InlineData(false, "json")]
+    public async Task ListenWithAllPortsShowsThePortOnceMoreThanOneIsHeard(bool reconnect, string format)
+    {
+        string[] args = ["tnc", "listen", "--tnc", Address, "--all-ports", "--format", format, "-n", "3"];
+        var run = new CliHarness().RunAsync(
+            reconnect ? [.. args, "--reconnect"] : args,
+            TestContext.Current.CancellationToken
+        );
+        using (var tnc = await _tnc.AcceptTcpClientAsync(TestContext.Current.CancellationToken))
+        {
+            foreach (
+                var (line, port) in new[]
+                {
+                    ("N1ABC>APRS:>VHF", 0),
+                    ("N2ABC>APRS:>HF", 1),
+                    ("N1ABC>APRS:>VHF again", 0),
+                }
+            )
+            {
+                await tnc.GetStream()
+                    .WriteAsync(
+                        KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse(line)), port).Encode(),
+                        TestContext.Current.CancellationToken
+                    );
+            }
+
+            var result = await run.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+            Assert.Equal(0, result.ExitCode);
+            var lines = result.Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+            if (format == "raw")
+            {
+                Assert.Equal(["N1ABC>APRS:>VHF", "[port 1] N2ABC>APRS:>HF", "[port 0] N1ABC>APRS:>VHF again"], lines);
+            }
+            else
+            {
+                Assert.DoesNotContain("\"port\"", lines[0], StringComparison.Ordinal);
+                Assert.StartsWith("{\"port\":1,", lines[1], StringComparison.Ordinal);
+                Assert.StartsWith("{\"port\":0,", lines[2], StringComparison.Ordinal);
+                System.Text.Json.JsonDocument.Parse(lines[1]).Dispose();
+            }
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task ListenWarnsWhenTheTncSendsTextInsteadOfKiss(bool reconnect)
