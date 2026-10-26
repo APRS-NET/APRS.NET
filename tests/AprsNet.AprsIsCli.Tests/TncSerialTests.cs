@@ -83,7 +83,11 @@ public sealed class TncSerialTests
         if (OperatingSystem.IsLinux())
         {
             // .NET says "access denied" for a device that isn't there; the message says what's wrong.
-            Assert.Contains($"{Missing} is not present", result.Error, StringComparison.Ordinal);
+            Assert.Contains(
+                $"{Missing} is not present; is the TNC plugged in?",
+                result.Error,
+                StringComparison.Ordinal
+            );
         }
     }
 

@@ -175,17 +175,24 @@ public sealed class KissSerialConnection : KissConnection
 
     /// <summary>
     /// Opens a serial port at 8N1 with no handshaking, as a stream that reports the device going away as an
-    /// <see cref="IOException"/>. The CLI's one-shot serial link opens ports this way too.
+    /// <see cref="IOException"/>. The CLI's one-shot serial link and its GPS reader open ports this way too; the messages
+    /// name <c>device</c>, what is on the port: <c>TNC</c>, or <c>GPS</c> for a GPS receiver.
     /// </summary>
     /// <exception cref="IOException">The port can't be opened.</exception>
     /// <exception cref="UnauthorizedAccessException">The port is held by another program, or may not be opened.</exception>
-    internal static Stream OpenPort(string portName, int baudRate, bool dtr = true, bool rts = true)
+    internal static Stream OpenPort(
+        string portName,
+        int baudRate,
+        bool dtr = true,
+        bool rts = true,
+        string device = "TNC"
+    )
     {
         var port = CreatePort(portName, baudRate, dtr, rts);
         try
         {
             port.Open();
-            return new SerialPortStream(port.BaseStream, port) { Discard = port.DiscardInBuffer };
+            return new SerialPortStream(port.BaseStream, port, device) { Discard = port.DiscardInBuffer };
         }
         catch (ArgumentException e)
         {
@@ -197,7 +204,7 @@ public sealed class KissSerialConnection : KissConnection
         {
             // .NET on Linux reports a device that isn't there as access denied.
             port.Dispose();
-            throw new IOException($"The serial port {portName} is not present; is the TNC plugged in?", e);
+            throw new IOException($"The serial port {portName} is not present; is the {device} plugged in?", e);
         }
         catch
         {
@@ -225,7 +232,10 @@ public sealed class KissSerialConnection : KissConnection
     /// write throws <see cref="ObjectDisposedException"/> ("The port is closed") or
     /// <see cref="InvalidOperationException"/>; those become an <see cref="IOException"/>, a lost link to reconnect.
     /// </summary>
-    internal sealed class SerialPortStream(Stream stream, IDisposable port) : Stream, ISaysGoodbye, IDiscardsInput
+    internal sealed class SerialPortStream(Stream stream, IDisposable port, string device = "TNC")
+        : Stream,
+            ISaysGoodbye,
+            IDiscardsInput
     {
         /// <summary>Throws away the driver's receive buffer: <c>SerialPort.DiscardInBuffer</c>.</summary>
         public Action? Discard { get; init; }
@@ -362,8 +372,9 @@ public sealed class KissSerialConnection : KissConnection
 
         private static bool IsClosedPort(Exception e) => e is ObjectDisposedException or InvalidOperationException;
 
-        private static IOException Lost(Exception e) =>
-            new($"The serial port closed; the TNC was probably unplugged. ({e.Message})", e);
+        // The cause stays as the inner exception: callers already put this message in brackets.
+        private IOException Lost(Exception e) =>
+            new($"The serial port closed; the {device} was probably unplugged.", e);
     }
 }
 

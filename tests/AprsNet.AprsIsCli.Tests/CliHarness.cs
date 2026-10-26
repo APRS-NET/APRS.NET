@@ -63,6 +63,9 @@ internal sealed class CliHarness
     /// </summary>
     public Queue<object> GpsPorts { get; } = new();
 
+    /// <summary>Opens a GPS's serial port instead of <see cref="GpsPorts"/>, such as the real one.</summary>
+    public Func<string, int, Stream>? OpenGpsPort { get; init; }
+
     /// <summary>The GPS ports opened, as (name, baud rate).</summary>
     public List<(string Name, int BaudRate)> OpenedGpsPorts { get; } = [];
 
@@ -127,16 +130,20 @@ internal sealed class CliHarness
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
             GetSerialPortNames = () => SerialPorts,
-            OpenGpsPort = (name, baudRate) =>
-            {
-                lock (OpenedGpsPorts)
-                {
-                    OpenedGpsPorts.Add((name, baudRate));
-                    return GpsPorts.TryDequeue(out var next)
-                        ? next as Stream ?? throw (Exception)next
-                        : throw new IOException($"The serial port {name} is not present.");
-                }
-            },
+            OpenGpsPort =
+                OpenGpsPort
+                ?? (
+                    (name, baudRate) =>
+                    {
+                        lock (OpenedGpsPorts)
+                        {
+                            OpenedGpsPorts.Add((name, baudRate));
+                            return GpsPorts.TryDequeue(out var next)
+                                ? next as Stream ?? throw (Exception)next
+                                : throw new IOException($"The serial port {name} is not present.");
+                        }
+                    }
+                ),
             OpenTncTerminal = address =>
             {
                 OpenedTnc = address;
