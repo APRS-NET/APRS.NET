@@ -76,3 +76,46 @@ override AprsNet.IGate.HeardStation.ToString() -> string!
 static AprsNet.IGate.HeardStation.operator !=(AprsNet.IGate.HeardStation? left, AprsNet.IGate.HeardStation? right) -> bool
 static AprsNet.IGate.HeardStation.operator ==(AprsNet.IGate.HeardStation? left, AprsNet.IGate.HeardStation? right) -> bool
 AprsNet.IGate.HeardStation.<Clone>$() -> AprsNet.IGate.HeardStation!
+AprsNet.IGate.InternetToRfGate
+AprsNet.IGate.InternetToRfGate.Gate(AprsNet.Packets.AprsPacket! fromInternet) -> AprsNet.IGate.RfGateDecision!
+AprsNet.IGate.InternetToRfGate.IGate.get -> AprsNet.Packets.PacketAddress!
+AprsNet.IGate.InternetToRfGate.InternetToRfGate(AprsNet.Packets.PacketAddress! igate, AprsNet.IGate.HeardStations! heard, AprsNet.IGate.InternetToRfGateOptions? options = null) -> void
+AprsNet.IGate.InternetToRfGateOptions
+AprsNet.IGate.InternetToRfGateOptions.DuplicateWindow.get -> System.TimeSpan
+AprsNet.IGate.InternetToRfGateOptions.DuplicateWindow.set -> void
+AprsNet.IGate.InternetToRfGateOptions.InternetToRfGateOptions() -> void
+AprsNet.IGate.InternetToRfGateOptions.MaxPerFiveMinutes.get -> int
+AprsNet.IGate.InternetToRfGateOptions.MaxPerFiveMinutes.set -> void
+AprsNet.IGate.InternetToRfGateOptions.MaxPerMinute.get -> int
+AprsNet.IGate.InternetToRfGateOptions.MaxPerMinute.set -> void
+AprsNet.IGate.InternetToRfGateOptions.SenderPositionWindow.get -> System.TimeSpan
+AprsNet.IGate.InternetToRfGateOptions.SenderPositionWindow.set -> void
+AprsNet.IGate.InternetToRfGateOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.IGate.InternetToRfGateOptions.TimeProvider.set -> void
+AprsNet.IGate.InternetToRfGateOptions.Validate() -> void
+AprsNet.IGate.RfGateDecision
+AprsNet.IGate.RfGateDecision.<Clone>$() -> AprsNet.IGate.RfGateDecision!
+AprsNet.IGate.RfGateDecision.Deconstruct(out AprsNet.Packets.AprsPacket! FromInternet, out AprsNet.Packets.AprsPacket? Packet, out AprsNet.IGate.RfGateRefusal? Refusal) -> void
+AprsNet.IGate.RfGateDecision.Equals(AprsNet.IGate.RfGateDecision? other) -> bool
+AprsNet.IGate.RfGateDecision.FromInternet.get -> AprsNet.Packets.AprsPacket!
+AprsNet.IGate.RfGateDecision.FromInternet.init -> void
+AprsNet.IGate.RfGateDecision.IsGated.get -> bool
+AprsNet.IGate.RfGateDecision.Packet.get -> AprsNet.Packets.AprsPacket?
+AprsNet.IGate.RfGateDecision.Packet.init -> void
+AprsNet.IGate.RfGateDecision.Refusal.get -> AprsNet.IGate.RfGateRefusal?
+AprsNet.IGate.RfGateDecision.Refusal.init -> void
+AprsNet.IGate.RfGateDecision.RfGateDecision(AprsNet.Packets.AprsPacket! FromInternet, AprsNet.Packets.AprsPacket? Packet, AprsNet.IGate.RfGateRefusal? Refusal) -> void
+AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.Duplicate = 6 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.FromRadio = 5 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.NoGate = 4 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.NotForAStation = 1 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.NotLocal = 2 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.RateLimited = 7 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.SenderOnRf = 3 -> AprsNet.IGate.RfGateRefusal
+AprsNet.IGate.RfGateRefusal.Unreadable = 0 -> AprsNet.IGate.RfGateRefusal
+override AprsNet.IGate.RfGateDecision.Equals(object? obj) -> bool
+override AprsNet.IGate.RfGateDecision.GetHashCode() -> int
+override AprsNet.IGate.RfGateDecision.ToString() -> string!
+static AprsNet.IGate.RfGateDecision.operator !=(AprsNet.IGate.RfGateDecision? left, AprsNet.IGate.RfGateDecision? right) -> bool
+static AprsNet.IGate.RfGateDecision.operator ==(AprsNet.IGate.RfGateDecision? left, AprsNet.IGate.RfGateDecision? right) -> bool
