@@ -169,3 +169,6 @@ AprsNet.Gateway.GatewaySourceHealth.IsProtocolMismatch.init -> void
 AprsNet.Gateway.GatewayHealth.AddCounter(string! name, System.Func<long>! read) -> void
 AprsNet.Gateway.GatewayHealthReport.Counters.get -> System.Collections.Generic.IReadOnlyDictionary<string!, long>!
 AprsNet.Gateway.GatewayHealthReport.Counters.init -> void
+AprsNet.Gateway.GatewayHealth.CountQuietAsDown.get -> bool
+AprsNet.Gateway.GatewayHealth.CountQuietAsDown.init -> void
+AprsNet.Gateway.GatewayWebServer.GatewayWebServer(AprsNet.Gateway.GatewayWebServerOptions! options) -> void

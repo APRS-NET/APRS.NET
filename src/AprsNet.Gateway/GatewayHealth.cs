@@ -31,14 +31,23 @@ public sealed class GatewayHealth
         _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
+    /// <summary>
+    /// Whether a quiet source counts as down, so a gateway whose TNCs have all gone quiet reports
+    /// <see cref="GatewayHealthStatus.Unhealthy"/>. <see langword="false"/> by default: a quiet source is reported as
+    /// such but still counts as up, since a quiet channel looks the same as a TNC switched off. Turn it on when the
+    /// quiet period is longer than the channel is ever quiet, such as a TNC's <c>QuietWarning</c> of 30 minutes. A
+    /// source counts as up again as soon as its quiet check says it isn't.
+    /// </summary>
+    public bool CountQuietAsDown { get; init; }
+
     /// <summary>Adds a source, with a check that says whether it is connected now. Keep the check quick.</summary>
     /// <exception cref="ArgumentException">A source with that name is already added, or the name is empty.</exception>
     public void AddSource(string name, Func<bool> isConnected) => AddSource(name, isConnected, null);
 
     /// <summary>
     /// Adds a source, with a check that says whether it is connected now, and one that says whether it has gone quiet,
-    /// such as a TNC's <c>KissWarning.Quiet</c> warning. A quiet source is reported as such but
-    /// still counts as connected, since a quiet channel looks the same. Keep the checks quick.
+    /// such as a TNC's <c>KissWarning.Quiet</c> warning. A quiet source is reported as such, and
+    /// counts as down only with <see cref="CountQuietAsDown"/>. Keep the checks quick.
     /// </summary>
     /// <exception cref="ArgumentException">A source with that name is already added, or the name is empty.</exception>
     public void AddSource(string name, Func<bool> isConnected, Func<bool>? isQuiet) =>
@@ -80,7 +89,8 @@ public sealed class GatewayHealth
 
     /// <summary>
     /// Checks every source now. Healthy when all are up (or there are none), degraded when some are, and unhealthy when
-    /// none are. A source is up when it is connected and not speaking the wrong protocol. A check that throws counts as
+    /// none are. A source is up when it is connected, not speaking the wrong protocol and, with
+    /// <see cref="CountQuietAsDown"/>, not quiet. A check that throws counts as
     /// not connected, not quiet and no mismatch; a counter whose read throws is left out.
     /// </summary>
     public GatewayHealthReport Check()
@@ -95,7 +105,7 @@ public sealed class GatewayHealth
             };
         }
 
-        var up = sources.Values.Count(s => s.IsConnected && !s.IsProtocolMismatch);
+        var up = sources.Values.Count(s => s.IsConnected && !s.IsProtocolMismatch && !(CountQuietAsDown && s.IsQuiet));
         var status =
             up == sources.Count ? GatewayHealthStatus.Healthy
             : up > 0 ? GatewayHealthStatus.Degraded
@@ -133,7 +143,10 @@ public sealed class GatewayHealth
 /// <summary>How a gateway is doing.</summary>
 public enum GatewayHealthStatus
 {
-    /// <summary>Every source is up: connected, and speaking the protocol expected.</summary>
+    /// <summary>
+    /// Every source is up: connected, speaking the protocol expected and, with
+    /// <see cref="GatewayHealth.CountQuietAsDown"/>, not quiet.
+    /// </summary>
     Healthy,
 
     /// <summary>Some sources are up and some aren't: it serves, but not everything.</summary>
