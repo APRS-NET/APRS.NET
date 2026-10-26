@@ -108,7 +108,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
         Description =
             "Also serve HTTP on this address:port, for example 127.0.0.1:14590: WebSocket clients at "
             + "ws://address:port/aprs get JSON packets and set their filter in the URL or a message, and /health "
-            + "says whether each source is connected (503 when none is). Default: off.",
+            + "says whether each source is up (503 when none is; a TNC quiet for --quiet-warning is down). Default: off.",
     };
 
     private readonly Option<string> _name = new("--name")
@@ -543,7 +543,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
         }
 
         await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
-        var health = new GatewayHealth(feed, environment.TimeProvider);
+        // A TNC quiet for --quiet-warning is down: likely switched off behind a port that stays open.
+        var health = new GatewayHealth(feed, environment.TimeProvider) { CountQuietAsDown = true };
         await using var hub = options.Http is null ? null : new AprsWebSocketHub(server);
         await using var web = hub is null
             ? null

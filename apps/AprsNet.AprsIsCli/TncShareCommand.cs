@@ -2,6 +2,7 @@ using System.CommandLine;
 using System.Globalization;
 using System.Net;
 using AprsNet.Ax25;
+using AprsNet.Gateway;
 using AprsNet.Kiss;
 
 namespace AprsNet.AprsIsCli;
@@ -84,6 +85,14 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             + "port that stays open. Default: off.",
     };
 
+    private readonly Option<string?> _http = new("--http")
+    {
+        Description =
+            "Also answer health checks at http://address:port/health, for example 127.0.0.1:8002: whether the TNC is "
+            + "connected, quiet or not in KISS mode, as JSON, with 503 when it isn't up. A TNC quiet for "
+            + "--quiet-warning is down. Default: off.",
+    };
+
     private readonly Option<bool> _logPackets = new("--log-packets")
     {
         Description =
@@ -113,6 +122,7 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             _quiet,
             _duration,
             _quietWarning,
+            _http,
             _logPackets,
             _config,
             _check,
@@ -193,6 +203,12 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             quietWarning = quiet;
         }
 
+        IPEndPoint? http = null;
+        if (parseResult.GetValue(_http) is { } httpText && !IPEndPoint.TryParse(httpText, out http))
+        {
+            return await UsageAsync($"--http '{httpText}' is not valid. Use address:port, for example 127.0.0.1:8002.");
+        }
+
         var logPackets = parseResult.GetValue(_logPackets);
         if (logPackets && !Logging.IsOtlpConfigured(environment.GetEnvironmentVariable))
         {
@@ -208,7 +224,8 @@ internal sealed class TncShareCommand(CliEnvironment environment)
                 $"aprscli: the settings are good. Would share the TNC at {address}{baud} on {listen} with up to "
                     + $"{maxClients.ToString(CultureInfo.InvariantCulture)} apps, pacing frames for "
                     + $"{airRate.ToString(CultureInfo.InvariantCulture)} bit/s on the air with a "
-                    + $"{gap.TotalMilliseconds.ToString(CultureInfo.InvariantCulture)} ms gap."
+                    + $"{gap.TotalMilliseconds.ToString(CultureInfo.InvariantCulture)} ms gap"
+                    + (http is null ? "." : $", with health checks at http://{http}/health.")
             );
             return ExitCodes.Success;
         }
@@ -243,6 +260,7 @@ internal sealed class TncShareCommand(CliEnvironment environment)
         );
         long sent = 0;
         long dropped = 0;
+        long heard = 0;
         await using var server = new KissTcpServer(listen, maxClients)
         {
             Transmit = async (frame, token) =>
@@ -292,6 +310,16 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             events.AppTurnedAway(e.RemoteEndPoint, maxClients);
         };
 
+        // Quiet for --quiet-warning counts as down: likely switched off behind a port that stays open.
+        var health = new GatewayHealth(timeProvider: environment.TimeProvider) { CountQuietAsDown = true };
+        health.AddSource(name, () => tnc.IsConnected, () => tnc.IsQuiet, () => tnc.IsSendingText);
+        health.AddCounter("apps", () => server.ClientCount);
+        health.AddCounter("frames.heard", () => Interlocked.Read(ref heard));
+        health.AddCounter("frames.sent", () => Interlocked.Read(ref sent));
+        health.AddCounter("frames.dropped", () => Interlocked.Read(ref dropped));
+        await using var web = http is null
+            ? null
+            : new GatewayWebServer(new GatewayWebServerOptions { EndPoint = http, Health = health });
         try
         {
             server.Start();
@@ -302,19 +330,29 @@ internal sealed class TncShareCommand(CliEnvironment environment)
             return ExitCodes.ConnectionFailed;
         }
 
+        try
+        {
+            web?.Start();
+        }
+        catch (System.Net.Sockets.SocketException ex)
+        {
+            await error.WriteLineAsync($"aprscli: could not listen on {http}: {ex.Message}");
+            return ExitCodes.ConnectionFailed;
+        }
+
         await error.WriteLineAsync(
             $"aprscli: sharing the TNC at {name} on {server.LocalEndPoint} (KISS over TCP), pacing frames for "
                 + $"{airRate.ToString(CultureInfo.InvariantCulture)} bit/s on the air"
+                + (web is null ? "" : $", with health checks at http://{web.LocalEndPoint}/health")
         );
         events.ShareStarted(name, server.LocalEndPoint!, airRate);
 
-        long heard = 0;
         try
         {
             // The connection reconnects on its own, so this ends only with the run.
             await foreach (var frame in tnc.ReadFramesAsync(run.Token))
             {
-                heard++;
+                Interlocked.Increment(ref heard);
                 server.Publish(frame);
                 Print("heard", frame);
             }

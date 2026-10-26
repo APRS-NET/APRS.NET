@@ -16,8 +16,9 @@ docker run -d --name gateway -p 14580:14580 -p 14590:14590 aprscli \
 - **Listen on `0.0.0.0` inside the container.** The defaults, 127.0.0.1, can't be reached through a published port.
   Publish the ports to `127.0.0.1` on the host (`-p 127.0.0.1:14580:14580`) to keep the gateway to your computer.
 - **Health:** the image's `HEALTHCHECK` runs `aprscli health` against `http://127.0.0.1:14590/health`, so give
-  `--http` on port 14590. `docker ps` then shows the gateway as healthy while any source is connected, and unhealthy
-  when none is. Podman keeps the check only for images built with `--format docker`.
+  `--http` on port 14590. `docker ps` then shows the gateway as healthy while any source is up, and unhealthy
+  when none is. With `--quiet-warning`, a TNC that has sent nothing for that long counts as down: restarting the
+  container won't help, since the radio is likely switched off. Podman keeps the check only for images built with `--format docker`.
 - **TLS:** the WebSocket endpoint has none. Put a reverse proxy in front of it for `wss://`.
 - **User:** the image runs as a non-root user.
 
