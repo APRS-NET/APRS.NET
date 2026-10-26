@@ -29,3 +29,50 @@ AprsNet.IGate.RfToInternetGateOptions.TimeProvider.set -> void
 AprsNet.IGate.RfToInternetGateOptions.Validate() -> void
 AprsNet.IGate.RfToInternetGate.ReceiveOnly.get -> bool
 AprsNet.IGate.RfToInternetGate.RfToInternetGate(AprsNet.Packets.Callsign! igate, AprsNet.IGate.RfToInternetGateOptions? options = null) -> void
+AprsNet.IGate.HeardStation
+AprsNet.IGate.HeardStation.FirstHeard.get -> System.DateTimeOffset
+AprsNet.IGate.HeardStation.FirstHeard.init -> void
+AprsNet.IGate.HeardStation.HeardStation(AprsNet.Packets.Callsign! Station, System.DateTimeOffset LastHeard, int Hops, int Port) -> void
+AprsNet.IGate.HeardStation.Hops.get -> int
+AprsNet.IGate.HeardStation.Hops.init -> void
+AprsNet.IGate.HeardStation.LastHeard.get -> System.DateTimeOffset
+AprsNet.IGate.HeardStation.LastHeard.init -> void
+AprsNet.IGate.HeardStation.Packets.get -> long
+AprsNet.IGate.HeardStation.Packets.init -> void
+AprsNet.IGate.HeardStation.Port.get -> int
+AprsNet.IGate.HeardStation.Port.init -> void
+AprsNet.IGate.HeardStation.Station.get -> AprsNet.Packets.Callsign!
+AprsNet.IGate.HeardStation.Station.init -> void
+AprsNet.IGate.HeardStations
+AprsNet.IGate.HeardStations.Capacity.get -> int
+AprsNet.IGate.HeardStations.Count.get -> int
+AprsNet.IGate.HeardStations.Find(AprsNet.Packets.Callsign! station) -> AprsNet.IGate.HeardStation?
+AprsNet.IGate.HeardStations.HeardStations(AprsNet.IGate.HeardStationsOptions? options = null) -> void
+AprsNet.IGate.HeardStations.IsLocal(AprsNet.Packets.Callsign! station) -> bool
+AprsNet.IGate.HeardStations.LocalWindow.get -> System.TimeSpan
+AprsNet.IGate.HeardStations.MaxLocalHops.get -> int
+AprsNet.IGate.HeardStations.Record(AprsNet.Ax25.Ax25Frame! frame) -> AprsNet.IGate.HeardStation?
+AprsNet.IGate.HeardStations.Record(AprsNet.Ax25.Ax25Frame! frame, int port) -> AprsNet.IGate.HeardStation?
+AprsNet.IGate.HeardStations.Record(AprsNet.Packets.AprsPacket! heard) -> AprsNet.IGate.HeardStation?
+AprsNet.IGate.HeardStations.Record(AprsNet.Packets.AprsPacket! heard, int port) -> AprsNet.IGate.HeardStation?
+AprsNet.IGate.HeardStations.Stations.get -> System.Collections.Generic.IReadOnlyList<AprsNet.IGate.HeardStation!>!
+AprsNet.IGate.HeardStationsOptions
+AprsNet.IGate.HeardStationsOptions.Capacity.get -> int
+AprsNet.IGate.HeardStationsOptions.Capacity.set -> void
+AprsNet.IGate.HeardStationsOptions.HeardStationsOptions() -> void
+AprsNet.IGate.HeardStationsOptions.LocalWindow.get -> System.TimeSpan
+AprsNet.IGate.HeardStationsOptions.LocalWindow.set -> void
+AprsNet.IGate.HeardStationsOptions.MaxLocalHops.get -> int
+AprsNet.IGate.HeardStationsOptions.MaxLocalHops.set -> void
+AprsNet.IGate.HeardStationsOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.IGate.HeardStationsOptions.TimeProvider.set -> void
+AprsNet.IGate.HeardStationsOptions.Validate() -> void
+static readonly AprsNet.IGate.HeardStationsOptions.DefaultLocalWindow -> System.TimeSpan
+AprsNet.IGate.HeardStation.Deconstruct(out AprsNet.Packets.Callsign! Station, out System.DateTimeOffset LastHeard, out int Hops, out int Port) -> void
+AprsNet.IGate.HeardStation.Equals(AprsNet.IGate.HeardStation? other) -> bool
+override AprsNet.IGate.HeardStation.Equals(object? obj) -> bool
+override AprsNet.IGate.HeardStation.GetHashCode() -> int
+override AprsNet.IGate.HeardStation.ToString() -> string!
+static AprsNet.IGate.HeardStation.operator !=(AprsNet.IGate.HeardStation? left, AprsNet.IGate.HeardStation? right) -> bool
+static AprsNet.IGate.HeardStation.operator ==(AprsNet.IGate.HeardStation? left, AprsNet.IGate.HeardStation? right) -> bool
+AprsNet.IGate.HeardStation.<Clone>$() -> AprsNet.IGate.HeardStation!
