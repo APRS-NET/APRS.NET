@@ -249,6 +249,25 @@ public sealed class GpsTests : IDisposable
         );
     }
 
+    [Fact]
+    public async Task AMissingSerialGpsIsCalledAGps()
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), ".NET on Linux reports a missing device as access denied.");
+        var harness = new CliHarness { OpenGpsPort = CliEnvironment.OpenSerialGps };
+
+        var result = await harness.RunAsync(
+            ["gps", "--serial", "/dev/aprsnet-missing", "-d", "1s"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Contains(
+            "lost /dev/aprsnet-missing (The serial port /dev/aprsnet-missing is not present; is the GPS plugged in?)",
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain("TNC", result.Error, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(new[] { "gps", "--serial", "/dev/ttyACM0@fast" }, "--serial '/dev/ttyACM0@fast' is not valid")]
     [InlineData(new[] { "gps", "--serial", "COM4", "--gpsd" }, "Give one GPS source")]

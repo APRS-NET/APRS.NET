@@ -104,6 +104,40 @@ public sealed class KissSerialConnectionTests
         Assert.Equal("N0CALL>APRS:>after", await next);
         var lost = Assert.IsType<IOException>(Reconnecting(states)[0].Error);
         Assert.IsType<ObjectDisposedException>(lost.InnerException);
+        Assert.Equal("The serial port closed; the TNC was probably unplugged.", lost.Message);
+    }
+
+    [Theory]
+    [InlineData("TNC")]
+    [InlineData("GPS")]
+    public async Task AClosedPortSaysWhichDeviceWasProbablyUnplugged(string device)
+    {
+        var port = new FakeTnc();
+        await using var stream = new KissSerialConnection.SerialPortStream(port, port, device);
+        port.Fail(new ObjectDisposedException(null, "The port is closed."));
+
+        var lost = await Assert.ThrowsAsync<IOException>(async () =>
+            await stream.ReadExactlyAsync(new byte[1], TestContext.Current.CancellationToken)
+        );
+
+        Assert.Equal($"The serial port closed; the {device} was probably unplugged.", lost.Message);
+    }
+
+    [Theory]
+    [InlineData("TNC")]
+    [InlineData("GPS")]
+    public void AMissingPortSaysWhichDeviceToPlugIn(string device)
+    {
+        Assert.SkipUnless(OperatingSystem.IsLinux(), ".NET on Linux reports a missing device as access denied.");
+
+        var missing = Assert.Throws<IOException>(() =>
+            KissSerialConnection.OpenPort("/dev/aprsnet-missing", 9600, device: device)
+        );
+
+        Assert.Equal(
+            $"The serial port /dev/aprsnet-missing is not present; is the {device} plugged in?",
+            missing.Message
+        );
     }
 
     [Fact]
