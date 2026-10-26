@@ -195,7 +195,14 @@ public sealed class KissTcpServer : IAsyncDisposable
             {
                 tcp = await listener.AcceptTcpClientAsync(stopping).ConfigureAwait(false);
             }
-            catch (Exception e) when (e is OperationCanceledException or SocketException or ObjectDisposedException)
+            // Stopped before the loop got here: a listener that is no longer listening throws InvalidOperationException.
+            catch (Exception e)
+                when (e
+                        is OperationCanceledException
+                            or SocketException
+                            or ObjectDisposedException
+                            or InvalidOperationException
+                )
             {
                 return;
             }
