@@ -188,6 +188,79 @@ public class ServeTests
     }
 
     [Fact]
+    public async Task ATncQuietForTheQuietWarningIsDownInHealthChecks()
+    {
+        var token = TestContext.Current.CancellationToken;
+        using var tnc = new TcpListener(IPAddress.Loopback, 0);
+        tnc.Start();
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var (port, webPort) = (FreePort(), FreePort());
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(
+            new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero)
+        );
+        var run = new CliHarness { Clock = clock }.RunAsync(
+            [
+                "serve",
+                "--tnc",
+                $"127.0.0.1:{((IPEndPoint)tnc.LocalEndpoint).Port}",
+                "--listen",
+                $"127.0.0.1:{port}",
+                "--http",
+                $"127.0.0.1:{webPort}",
+                "--quiet-warning",
+                "30m",
+            ],
+            stop.Token
+        );
+        using var radio = await tnc.AcceptTcpClientAsync(token);
+        await WaitForHealthAsync(webPort, "200", "\"connected\":true,\"quiet\":false");
+
+        clock.Advance(TimeSpan.FromMinutes(30));
+        var body = await WaitForHealthAsync(webPort, "503", "\"connected\":true,\"quiet\":true");
+        Assert.Contains("\"status\":\"unhealthy\"", body, StringComparison.Ordinal);
+
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS:>on"), token);
+        await WaitForHealthAsync(webPort, "200", "\"status\":\"healthy\"");
+
+        await stop.CancelAsync();
+        Assert.Equal(0, (await run.WaitAsync(TimeSpan.FromSeconds(10), token)).ExitCode);
+    }
+
+    /// <summary>Asks for /health until the answer has <paramref name="status"/> and holds <paramref name="text"/>.</summary>
+    private static async Task<string> WaitForHealthAsync(int port, string status, string text)
+    {
+        var token = TestContext.Current.CancellationToken;
+        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+        var response = "";
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                using var http = new TcpClient();
+                await http.ConnectAsync(IPAddress.Loopback, port, token);
+                await http.GetStream().WriteAsync("GET /health HTTP/1.1\r\nHost: x\r\n\r\n"u8.ToArray(), token);
+                response = await new StreamReader(http.GetStream()).ReadToEndAsync(token);
+                if (
+                    response.StartsWith($"HTTP/1.1 {status} ", StringComparison.Ordinal)
+                    && response.Contains(text, StringComparison.Ordinal)
+                )
+                {
+                    return response;
+                }
+            }
+            catch (SocketException)
+            {
+                // Not listening yet.
+            }
+
+            await Task.Delay(20, token);
+        }
+
+        Assert.Fail($"/health never answered {status} with {text}; last answer:\n{response}");
+        return response;
+    }
+
+    [Fact]
     public async Task ServesWebSocketClientsJson()
     {
         var token = TestContext.Current.CancellationToken;

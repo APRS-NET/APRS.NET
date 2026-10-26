@@ -229,7 +229,7 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `-f`, `--filter` | Upstream filter: everything clients can ask for. Without it, APRS-IS is not used and only `--tnc` sources are served. |
 | `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's) or `serial:PORT[@BAUD][,dtr=off][,rts=off]` (default 9600 baud). Repeat for several. A lost or unplugged TNC is reconnected. |
 | `-l`, `--listen` | Address and port to serve on. Default: `127.0.0.1:14580`. |
-| `--http` | Also serve HTTP on this `address:port`. WebSocket clients connect to `ws://address:port/aprs?filter=…`, get packets as [JSON](../../docs/json.md) and can change their filter by sending `{"filter":"…"}`. `GET /health` answers 200 with each source's state, or 503 when no source is connected. Default: off. |
+| `--http` | Also serve HTTP on this `address:port`. WebSocket clients connect to `ws://address:port/aprs?filter=…`, get packets as [JSON](../../docs/json.md) and can change their filter by sending `{"filter":"…"}`. `GET /health` answers 200 with each source's state, or 503 when no source is up. Default: off. |
 | `--name` | Server name clients see. Default: `APRSNET`. |
 | `--history` | Send each client the packets from this long before it connected. Default: off. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
@@ -238,7 +238,7 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `--symbol` | With `--igate`: the beacon's symbol. Default: `R&`, a receive-only IGate. |
 | `--comment` | With `--igate`: text after `RX-only IGate` in the beacon's comment. |
 | `--beacon-interval` | With `--igate`: how often to beacon, at least `1m`. Default: `30m`. |
-| `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `10m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up. |
+| `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `30m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts, and it doesn't count as up, so a gateway whose TNCs are all quiet answers 503; it is up again with its next frame. Pick longer than the channel is ever quiet. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up either. |
 | `--log-packets` | Also log each packet from each source, duplicates included, to OpenTelemetry. Needs `OTEL_EXPORTER_OTLP_ENDPOINT`; see [OpenTelemetry](#opentelemetry). |
 | `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
 | `--check` | Check the options and any `--config` file, say what would be served, and exit without connecting. |
@@ -411,7 +411,8 @@ leaving, the TNC's state and a summary at the end go to stderr.
 | `--transmit-limit` | Limit all apps together to 3 frames at once, then one each 10 s. Default off, as apps pace themselves. |
 | `-q`, `--quiet` | Don't print each frame. |
 | `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
-| `--quiet-warning` | Warn when the TNC sends nothing for this long, as for `tnc listen`. |
+| `--quiet-warning` | Warn when the TNC sends nothing for this long, as for `tnc listen`. With `--http`, `/health` then answers 503 until the TNC sends again. |
+| `--http` | Also answer health checks at `http://address:port/health`, such as `127.0.0.1:8002`: the TNC's state as JSON (`connected`, `quiet`, `protocolMismatch`) and counts of apps and frames, with 200 while the TNC is up and 503 when it isn't: lost, not in KISS mode, or quiet for `--quiet-warning`. Default: off. |
 | `--log-packets` | Also log each frame heard and sent to OpenTelemetry, even with `-q`. Needs `OTEL_EXPORTER_OTLP_ENDPOINT`; see [OpenTelemetry](#opentelemetry). |
 | `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
 | `--check` | Check the options and any `--config` file, say what would be shared, and exit without connecting. |

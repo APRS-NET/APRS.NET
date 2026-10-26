@@ -247,6 +247,86 @@ public sealed class TncShareTests : IDisposable
         Assert.Equal(clock.GetUtcNow(), sent[1].Item2);
     }
 
+    [Fact]
+    public async Task HealthChecksSayWhenTheTncGoesQuietAndComesBack()
+    {
+        var port = FreePort();
+        var web = FreePort();
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 25, 12, 0, 0, TimeSpan.Zero));
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var run = new CliHarness { Clock = clock }.RunAsync(
+            [
+                "tnc",
+                "share",
+                "--tnc",
+                TncAddress,
+                "--listen",
+                $"127.0.0.1:{port}",
+                "--http",
+                $"127.0.0.1:{web}",
+                "--quiet-warning",
+                "30m",
+                "-q",
+            ],
+            stop.Token
+        );
+        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        var source = $"\"{TncAddress}\":{{\"connected\":true,\"quiet\":";
+        await WaitForHealthAsync(web, "200", source + "false");
+        await using var app = await App.ConnectAsync(port);
+        var body = await WaitForHealthAsync(web, "200", "\"apps\":1");
+        Assert.Contains("\"status\":\"healthy\"", body, StringComparison.Ordinal);
+
+        // Nothing from the TNC for 30 minutes: switched off behind a port that stays open.
+        clock.Advance(TimeSpan.FromMinutes(30));
+        body = await WaitForHealthAsync(web, "503", source + "true");
+        Assert.Contains("\"status\":\"unhealthy\"", body, StringComparison.Ordinal);
+
+        // The first frame brings it back.
+        await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS:>back on"), Token);
+        Assert.Equal("N1ABC>APRS:>back on", await app.ReadAsync());
+        body = await WaitForHealthAsync(web, "200", source + "false");
+        Assert.Contains("\"frames.heard\":1", body, StringComparison.Ordinal);
+
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(Wait, Token);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains($"with health checks at http://127.0.0.1:{web}/health", result.Error, StringComparison.Ordinal);
+    }
+
+    /// <summary>Asks for /health until the answer has <paramref name="status"/> and holds <paramref name="text"/>.</summary>
+    private static async Task<string> WaitForHealthAsync(int port, string status, string text)
+    {
+        var deadline = DateTime.UtcNow + Wait;
+        var response = "";
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                using var http = new TcpClient();
+                await http.ConnectAsync(IPAddress.Loopback, port, Token);
+                await http.GetStream().WriteAsync("GET /health HTTP/1.1\r\nHost: x\r\n\r\n"u8.ToArray(), Token);
+                response = await new StreamReader(http.GetStream()).ReadToEndAsync(Token);
+                if (
+                    response.StartsWith($"HTTP/1.1 {status} ", StringComparison.Ordinal)
+                    && response.Contains(text, StringComparison.Ordinal)
+                )
+                {
+                    return response;
+                }
+            }
+            catch (SocketException)
+            {
+                // Not listening yet.
+            }
+
+            await Task.Delay(20, Token);
+        }
+
+        Assert.Fail($"/health never answered {status} with {text}; last answer:\n{response}");
+        return response;
+    }
+
     [Theory]
     [InlineData("0", 0)]
     [InlineData("500ms", 500)]
@@ -267,6 +347,7 @@ public sealed class TncShareTests : IDisposable
     [InlineData(new[] { "--tnc", "localhost", "--air-rate", "0" }, "--air-rate must be at least 1")]
     [InlineData(new[] { "--tnc", "localhost", "--gap", "soon" }, "--gap 'soon' is not valid")]
     [InlineData(new[] { "--tnc", "localhost", "-d", "forever" }, "--duration 'forever' is not valid")]
+    [InlineData(new[] { "--tnc", "localhost", "--http", "localhost" }, "--http 'localhost' is not valid")]
     [InlineData(new[] { "--tnc", "localhost", "--log-packets" }, "--log-packets needs OTEL_EXPORTER_OTLP_ENDPOINT")]
     public async Task BadOptionsAreRefused(string[] options, string message)
     {
