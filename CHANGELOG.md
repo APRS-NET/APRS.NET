@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.5...v0.7.0-alpha.1) (2026-10-26)
+
+
+### Miscellaneous Chores
+
+* the README and package descriptions cover the 0.7.0 work ([c1af5b6](https://github.com/APRS-NET/APRS.NET/commit/c1af5b6a332ed30f2efd38bfaaeca9c67655f291))
+
 ## [0.6.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.4...v0.6.0-alpha.5) (2026-10-26)
 
 
