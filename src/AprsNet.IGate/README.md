@@ -51,6 +51,45 @@ also gates messages to RF.
 Every decision is counted on the `AprsNet.IGate` meter: `aprsnet.igate.packets.gated` and
 `aprsnet.igate.packets.refused` by `reason` (see [docs/metrics.md](../../docs/metrics.md#igate)).
 
+## From APRS-IS to RF
+
+A two-way IGate also carries messages from APRS-IS to stations heard on RF, so it doesn't break messaging the way a
+receive-only one does. `InternetToRfGate` decides which, using the `HeardStations` below, and builds the third-party
+packet to transmit:
+
+```csharp
+var heard = new HeardStations();                       // record every frame the TNC hears in it
+var igate = PacketAddress.Parse("N0CALL-10", "APZNET", ["WIDE1-1", "WIDE2-1"]);
+var toRf = new InternetToRfGate(igate, heard);
+
+await foreach (var packet in aprsIs.ReadPacketsAsync(cancellationToken))
+{
+    var decision = toRf.Gate(packet);
+    if (decision.IsGated)
+    {
+        await tnc.SendAsync(decision.Packet, cancellationToken); // N0CALL-10>APZNET,WIDE1-1,WIDE2-1:}W1AW>APRS,TCPIP,N0CALL-10*::N0CALL-9 :Hi
+    }
+}
+```
+
+Only messages, acknowledgements and rejections go out, and only when the addressee is local (heard on RF within 180
+minutes over at most 2 hops) and the sender isn't. After a message, the sender's next position on APRS-IS within 30
+minutes goes out once, so the addressee can see who is writing. Everything else is refused with an `RfGateRefusal`:
+
+| `RfGateRefusal` | What |
+| --- | --- |
+| `NotForAStation` | Not a message for a station (bulletins, announcements, queries, positions and the rest of the feed) |
+| `NotLocal` | The addressee hasn't been heard on RF recently over few enough hops |
+| `SenderOnRf` | The sender is local on RF itself, so the addressee hears it directly |
+| `NoGate` | `TCPXX`, `NOGATE` or `RFONLY` in the path |
+| `FromRadio` | Gated from RF to APRS-IS (`qAR`, `qAO`): it is on RF already |
+| `Duplicate` | A copy of one gated within 30 seconds, such as from a second APRS-IS server |
+| `RateLimited` | Over 6 packets a minute or 10 in five minutes (`MaxPerMinute`, `MaxPerFiveMinutes`), as Dire Wolf's `IGTXLIMIT` |
+| `Unreadable` | A header that can't be read |
+
+The IGate transmits on its own: run one only with a licence, and match `HeardStationsOptions.MaxLocalHops` to the hops
+of its path.
+
 ## Stations heard on RF
 
 `HeardStations` keeps the stations a TNC has heard: when each was last heard, over how many digipeater hops and on
