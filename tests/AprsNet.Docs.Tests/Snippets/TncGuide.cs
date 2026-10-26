@@ -1,4 +1,5 @@
 using System.Net;
+using AprsNet.Ax25;
 using AprsNet.Kiss;
 using AprsNet.Packets;
 
@@ -138,6 +139,22 @@ internal static class TncGuide
         await foreach (var frame in tnc.ReadFramesAsync(cancellationToken))
         {
             server.Publish(frame);
+        }
+        #endregion
+    }
+
+    public static async Task DigipeatAsync(CancellationToken cancellationToken)
+    {
+        #region tnc-digi
+        await using var tnc = new KissTcpConnection("localhost");
+        var digi = new Digipeater(new Ax25Address("N0CALL", 1, flag: false)); // fill-in: WIDE1-1 only
+
+        await foreach (var frame in tnc.ReadFramesAsync(cancellationToken))
+        {
+            if (digi.Digipeat(frame).Frame is { } repeat)
+            {
+                await tnc.SendFrameAsync(repeat, cancellationToken); // N0CALL-9>APRS,N0CALL-1*,WIDE2-1:...
+            }
         }
         #endregion
     }

@@ -78,6 +78,7 @@ internal sealed class TncCommand(CliEnvironment environment)
             listen,
             new SendCommand(environment, toTnc: true).Build(),
             new TncShareCommand(environment).Build(),
+            new TncDigiCommand(environment).Build(),
             ports,
         };
         foreach (var command in new TncConsoleCommand(environment).Build())
