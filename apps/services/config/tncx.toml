@@ -39,6 +39,10 @@ listen = "0.0.0.0:8001"
 # How many apps may be connected at once.
 max-clients = 16
 
+# Health checks at http://127.0.0.1:8002/health, for aprsnet-check or a monitor: 503 when the TNC is lost, not in
+# KISS mode, or quiet for quiet-warning below. Leave it out to turn HTTP off.
+http = "127.0.0.1:8002"
+
 [logging]
 # Each frame heard and sent goes to the journal (aprsnet-logs --packets tncx). true logs only apps connecting and
 # leaving and the TNC's state.
@@ -49,5 +53,5 @@ quiet = false
 # log-packets = true
 
 # Warn when the TNC sends nothing at all for this long: it may be switched off behind a USB port that stays open.
-# Pick longer than the channel is ever quiet.
+# /health then answers 503 until the TNC sends again. Pick longer than the channel is ever quiet.
 quiet-warning = "30m"
