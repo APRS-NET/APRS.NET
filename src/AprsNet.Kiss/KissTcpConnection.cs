@@ -31,7 +31,8 @@ public sealed class KissTcpConnection : KissConnection
             options.MaxReconnectDelay,
             options.TimeProvider,
             options.CreateTransmitLimit(),
-            options.QuietWarning
+            options.QuietWarning,
+            allPorts: options.AllPorts
         ) { }
 
     private static KissTcpOptions Validated(KissTcpOptions options)

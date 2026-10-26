@@ -56,6 +56,9 @@ public sealed class KissTransmitLimit
     /// <summary>Whether frames are limited at all.</summary>
     public bool IsOn => Interval > TimeSpan.Zero;
 
+    /// <summary>A new limit with the same settings and clock, with nothing sent yet; <see cref="Off"/> stays off.</summary>
+    internal KissTransmitLimit CreateLike() => IsOn ? new(Burst, Interval, _timeProvider) : this;
+
     /// <summary>Waits until a frame may be sent, then counts it. Waiters go in the order they arrived.</summary>
     internal async ValueTask WaitAsync(CancellationToken cancellationToken)
     {

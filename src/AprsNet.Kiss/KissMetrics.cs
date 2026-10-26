@@ -96,9 +96,9 @@ internal static class KissMetrics
         "Frames from apps that a KISS TCP server could not pass on, such as while the TNC was not connected."
     );
 
-    public static void Received(string tnc) => _received.Add(1, Tnc(tnc));
+    public static void Received(string tnc, int port) => _received.Add(1, Tnc(tnc), Port(port));
 
-    public static void Sent(string tnc) => _sent.Add(1, Tnc(tnc));
+    public static void Sent(string tnc, int port) => _sent.Add(1, Tnc(tnc), Port(port));
 
     public static void Dropped(string tnc, long count) => _dropped.Add(count, Tnc(tnc));
 
@@ -125,6 +125,10 @@ internal static class KissMetrics
     public static void ServerTransmitFailure(string server) => _serverTransmitFailures.Add(1, Server(server));
 
     private static KeyValuePair<string, object?> Tnc(string tnc) => new("tnc", tnc);
+
+    // The radio port as text, so a backend groups it as a label: "0" to "15".
+    private static KeyValuePair<string, object?> Port(int port) =>
+        new("port", port.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     private static KeyValuePair<string, object?> Server(string server) => new("server", server);
 }

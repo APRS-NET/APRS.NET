@@ -274,3 +274,32 @@ AprsNet.Kiss.KissTrafficKind.Nmea = 11 -> AprsNet.Kiss.KissTrafficKind
 AprsNet.Kiss.NmeaSentenceEventArgs
 AprsNet.Kiss.NmeaSentenceEventArgs.At.get -> System.DateTimeOffset
 AprsNet.Kiss.NmeaSentenceEventArgs.Sentence.get -> AprsNet.Packets.NmeaSentence!
+AprsNet.Kiss.KissConnection.AllPorts.get -> bool
+AprsNet.Kiss.KissConnection.ReadPortFramesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Kiss.KissPortFrame>!
+AprsNet.Kiss.KissConnection.SendFrameToPortAsync(int port, AprsNet.Ax25.Ax25Frame! frame, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissConnection.SendToPortAsync(int port, AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissConnection.TncPort.get -> int
+AprsNet.Kiss.KissPortFrame
+AprsNet.Kiss.KissPortFrame.Deconstruct(out int Port, out AprsNet.Ax25.Ax25Frame! Frame) -> void
+AprsNet.Kiss.KissPortFrame.Equals(AprsNet.Kiss.KissPortFrame other) -> bool
+AprsNet.Kiss.KissPortFrame.Frame.get -> AprsNet.Ax25.Ax25Frame!
+AprsNet.Kiss.KissPortFrame.Frame.init -> void
+AprsNet.Kiss.KissPortFrame.KissPortFrame(int Port, AprsNet.Ax25.Ax25Frame! Frame) -> void
+AprsNet.Kiss.KissPortFrame.KissPortFrame() -> void
+AprsNet.Kiss.KissPortFrame.Port.get -> int
+AprsNet.Kiss.KissPortFrame.Port.init -> void
+AprsNet.Kiss.KissStreamClient.AllPorts.get -> bool
+AprsNet.Kiss.KissStreamClient.AllPorts.init -> void
+AprsNet.Kiss.KissStreamClient.ReadPortFramesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Kiss.KissPortFrame>!
+AprsNet.Kiss.KissStreamClient.SendFrameToPortAsync(int port, AprsNet.Ax25.Ax25Frame! frame, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissStreamClient.SendToPortAsync(int port, AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissTcpClient.ReadPortFramesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<AprsNet.Kiss.KissPortFrame>!
+AprsNet.Kiss.KissTcpClient.SendFrameToPortAsync(int port, AprsNet.Ax25.Ax25Frame! frame, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissTcpClient.SendToPortAsync(int port, AprsNet.Packets.AprsPacket! packet, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+AprsNet.Kiss.KissTcpOptions.AllPorts.get -> bool
+AprsNet.Kiss.KissTcpOptions.AllPorts.set -> void
+~override AprsNet.Kiss.KissPortFrame.Equals(object obj) -> bool
+override AprsNet.Kiss.KissPortFrame.GetHashCode() -> int
+~override AprsNet.Kiss.KissPortFrame.ToString() -> string
+static AprsNet.Kiss.KissPortFrame.operator !=(AprsNet.Kiss.KissPortFrame left, AprsNet.Kiss.KissPortFrame right) -> bool
+static AprsNet.Kiss.KissPortFrame.operator ==(AprsNet.Kiss.KissPortFrame left, AprsNet.Kiss.KissPortFrame right) -> bool

@@ -35,3 +35,5 @@ AprsNet.Kiss.KissSerialOptions.TextMode.get -> bool
 AprsNet.Kiss.KissSerialOptions.TextMode.set -> void
 AprsNet.Kiss.KissSerialOptions.GpsTimeout.get -> System.TimeSpan
 AprsNet.Kiss.KissSerialOptions.GpsTimeout.set -> void
+AprsNet.Kiss.KissSerialOptions.AllPorts.get -> bool
+AprsNet.Kiss.KissSerialOptions.AllPorts.set -> void

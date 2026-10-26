@@ -65,6 +65,14 @@ public sealed class KissSerialOptions
     public int TncPort { get; set; }
 
     /// <summary>
+    /// Whether to read frames heard on every radio port of a multi-port TNC, such as a two-port serial TNC or Dire Wolf
+    /// with two channels, not only <see cref="TncPort"/>: <c>ReadPortFramesAsync</c> says which port each came from,
+    /// and <c>SendToPortAsync</c> sends on any. <see cref="TncPort"/> is still where <c>SendAsync</c> sends. Defaults to
+    /// <see langword="false"/>.
+    /// </summary>
+    public bool AllPorts { get; set; }
+
+    /// <summary>
     /// How long to wait before the first attempt to open the port again after it failed or went away; each failed
     /// attempt doubles it, up to <see cref="MaxReconnectDelay"/>. Defaults to 2 seconds, so a TNC unplugged and plugged
     /// back in is found again quickly.

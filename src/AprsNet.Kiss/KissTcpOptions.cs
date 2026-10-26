@@ -21,6 +21,14 @@ public sealed class KissTcpOptions
     /// </summary>
     public int TncPort { get; set; }
 
+    /// <summary>
+    /// Whether to read frames heard on every radio port of a multi-port TNC, such as a two-port serial TNC or Dire Wolf
+    /// with two channels, not only <see cref="TncPort"/>: <c>ReadPortFramesAsync</c> says which port each came from,
+    /// and <c>SendToPortAsync</c> sends on any. <see cref="TncPort"/> is still where <c>SendAsync</c> sends. Defaults to
+    /// <see langword="false"/>.
+    /// </summary>
+    public bool AllPorts { get; set; }
+
     /// <summary>How long to wait for the TCP connection. Defaults to 10 seconds.</summary>
     public TimeSpan ConnectTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
