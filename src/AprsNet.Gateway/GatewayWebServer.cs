@@ -26,7 +26,7 @@ public sealed class GatewayWebServer : IAsyncDisposable
     private const string WebSocketGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     private const int MaxRequestBytes = 8192;
 
-    private readonly AprsWebSocketHub _hub;
+    private readonly AprsWebSocketHub? _hub;
     private readonly GatewayWebServerOptions _options;
     private readonly ConcurrentDictionary<Task, byte> _connections = new();
     private readonly CancellationTokenSource _stopping = new();
@@ -41,6 +41,25 @@ public sealed class GatewayWebServer : IAsyncDisposable
         options ??= new GatewayWebServerOptions();
         options.Validate();
         _hub = hub;
+        _options = options;
+    }
+
+    /// <summary>
+    /// Creates a server that only answers health checks, for a service with no packets to stream, such as one sharing a
+    /// TNC; <see cref="Start"/> begins listening. The WebSocket path answers 404.
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// <see cref="GatewayWebServerOptions.Health"/> isn't set, or a setting in <paramref name="options"/> is unusable.
+    /// </exception>
+    public GatewayWebServer(GatewayWebServerOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        options.Validate();
+        if (options.Health is null)
+        {
+            throw new ArgumentException("A server without a hub needs a health check to answer.", nameof(options));
+        }
+
         _options = options;
     }
 
@@ -146,7 +165,7 @@ public sealed class GatewayWebServer : IAsyncDisposable
             return;
         }
 
-        if (request.Path != _options.WebSocketPath)
+        if (_hub is null || request.Path != _options.WebSocketPath)
         {
             await RespondAsync(stream, 404, "Not Found", stopping).ConfigureAwait(false);
             return;
@@ -222,10 +241,14 @@ public sealed class GatewayWebServer : IAsyncDisposable
             json.WriteStartObject();
             json.WriteString("status", report.Status.ToString().ToLowerInvariant());
             json.WriteString("checkedAt", Utc(report.CheckedAt));
-            json.WriteStartObject("clients");
-            json.WriteNumber("aprsIs", _hub.Server.ClientCount);
-            json.WriteNumber("webSocket", _hub.ClientCount);
-            json.WriteEndObject();
+            if (_hub is not null)
+            {
+                json.WriteStartObject("clients");
+                json.WriteNumber("aprsIs", _hub.Server.ClientCount);
+                json.WriteNumber("webSocket", _hub.ClientCount);
+                json.WriteEndObject();
+            }
+
             json.WriteStartObject("sources");
             foreach (var (name, source) in report.Sources)
             {

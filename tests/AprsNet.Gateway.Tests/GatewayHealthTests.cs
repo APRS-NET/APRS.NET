@@ -60,6 +60,25 @@ public sealed class GatewayHealthTests
     }
 
     [Fact]
+    public void AQuietSourceCountsAsDownWhenAskedAndUpAgainWhenItSends()
+    {
+        var quiet = true;
+        var health = new GatewayHealth { CountQuietAsDown = true };
+        health.AddSource("tnc", () => true, () => quiet);
+
+        var report = health.Check();
+        Assert.Equal(GatewayHealthStatus.Unhealthy, report.Status);
+        Assert.True(report.Sources["tnc"].IsConnected);
+        Assert.True(report.Sources["tnc"].IsQuiet);
+
+        health.AddSource("aprs-is", () => true);
+        Assert.Equal(GatewayHealthStatus.Degraded, health.Check().Status);
+
+        quiet = false;
+        Assert.Equal(GatewayHealthStatus.Healthy, health.Check().Status);
+    }
+
+    [Fact]
     public void ASourceSpeakingTheWrongProtocolIsReportedAndIsNotUp()
     {
         var mismatch = true;
@@ -182,6 +201,35 @@ public sealed class GatewayHealthTests
         web.Start();
         Assert.StartsWith("HTTP/1.1 404 ", await GetAsync(web, "/health"), StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData(false, "200", "healthy")]
+    [InlineData(true, "503", "unhealthy")]
+    public async Task AServerWithoutAHubAnswersHealthChecksOnly(bool quiet, string status, string word)
+    {
+        var health = new GatewayHealth(timeProvider: _time) { CountQuietAsDown = true };
+        health.AddSource("tnc", () => true, () => quiet);
+        health.AddCounter("apps", () => 2);
+        await using var web = new GatewayWebServer(
+            new GatewayWebServerOptions { EndPoint = new(IPAddress.Loopback, 0), Health = health }
+        );
+        web.Start();
+
+        var response = await GetAsync(web, "/health");
+        Assert.StartsWith($"HTTP/1.1 {status} ", response, StringComparison.Ordinal);
+        var body = JsonDocument
+            .Parse(response[(response.IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4)..])
+            .RootElement;
+        Assert.Equal(word, body.GetProperty("status").GetString());
+        Assert.False(body.TryGetProperty("clients", out _));
+        Assert.Equal(quiet, body.GetProperty("sources").GetProperty("tnc").GetProperty("quiet").GetBoolean());
+        Assert.Equal(2, body.GetProperty("counters").GetProperty("apps").GetInt64());
+        Assert.StartsWith("HTTP/1.1 404 ", await GetAsync(web, "/aprs"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AServerWithoutAHubNeedsAHealthCheck() =>
+        Assert.Throws<ArgumentException>(() => new GatewayWebServer(new GatewayWebServerOptions()));
 
     [Fact]
     public void TheHealthPathMustDifferFromTheWebSocketPath() =>
