@@ -44,7 +44,11 @@ public sealed class GpsTests : IDisposable
 
     private static string Sentence(string body) => $"${body}*{body.Aggregate(0, (sum, c) => sum ^ c):X2}";
 
-    /// <summary>Accepts a connection and sends <paramref name="lines"/>, then closes it.</summary>
+    /// <summary>
+    /// Accepts a connection, sends <paramref name="lines"/> and closes its side, then reads what the client sent (gpsd's
+    /// <c>?WATCH</c>) until the client closes too. Closing with unread data sends a reset, which on Windows can throw
+    /// away lines the client hasn't read yet.
+    /// </summary>
     private async Task Serve(string[] lines)
     {
         using var client = await _source.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
@@ -54,6 +58,14 @@ public sealed class GpsTests : IDisposable
             TestContext.Current.CancellationToken
         );
         client.Client.Shutdown(SocketShutdown.Send);
+        using var drained = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        drained.CancelAfter(TimeSpan.FromSeconds(10));
+        var buffer = new byte[1024];
+        try
+        {
+            while (await stream.ReadAsync(buffer, drained.Token) > 0) { }
+        }
+        catch (Exception e) when (e is IOException or OperationCanceledException) { }
     }
 
     [Fact]
