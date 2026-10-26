@@ -56,7 +56,8 @@ internal sealed class CliEnvironment
         TncAddress address,
         int radioPort = 0,
         TimeSpan? quietWarning = null,
-        KissTransmitLimit? transmitLimit = null
+        KissTransmitLimit? transmitLimit = null,
+        bool allPorts = false
     ) =>
         address.SerialPort is not null
             ? new KissSerialConnection(
@@ -74,6 +75,7 @@ internal sealed class CliEnvironment
                     Setup = address.Setup,
                     TextMode = address.TextMode,
                     TncPort = radioPort,
+                    AllPorts = allPorts,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,
                     TransmitLimit = transmitLimit,
@@ -85,6 +87,7 @@ internal sealed class CliEnvironment
                     Host = address.Host,
                     Port = address.Port,
                     TncPort = radioPort,
+                    AllPorts = allPorts,
                     ReconnectDelay = ReconnectDelay,
                     TimeProvider = TimeProvider,
                     QuietWarning = quietWarning,
