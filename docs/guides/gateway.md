@@ -113,8 +113,37 @@ to. Each refusal has a reason (`decision.Refusal`), counted on the `AprsNet.IGat
 
 This is a receive-only IGate, and receive-only IGates break messaging. A station nearby sends a message, sees it reach
 APRS-IS and expects the reply on RF, but nothing brings the reply back. Run one only where no two-way IGate covers the
-area, or for a short while, and say so in the beacon comment (`aprscli` does). A two-way IGate, which gates messages
-back to RF, comes in a later release.
+area, or for a short while, and say so in the beacon comment (`aprscli` does).
+
+### A two-way IGate
+
+A two-way IGate also carries messages from APRS-IS back to RF, so stations nearby can message anyone. It sends very
+little: only messages, acknowledgements and rejections for stations it has heard on RF recently over few hops, and the
+sender's next position once, so the station can see who is writing. `InternetToRfGate` decides, from a
+`HeardStations` that records everything the TNC hears; see [AprsNet.IGate](../../src/AprsNet.IGate/README.md#from-aprs-is-to-rf).
+
+```sh
+APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --igate-to-rf --lat 49.0583 --lon -72.0292
+```
+
+With `--igate-to-rf`, `serve` gates up with `qAR` instead of `qAO`, so APRS-IS knows it can reach stations it heard.
+The server then sends it the messages for those stations, and their senders' positions, with no filter needed. It
+beacons with the `I&` symbol.
+
+- **Licence:** it transmits on its own, through the TNC, as the IGate's callsign: you need a licence, and the call must
+  be yours.
+- **Local stations:** a station counts as local when heard on RF within 180 minutes over at most the hops of
+  `--rf-path` (default `WIDE1-1`, one hop): what it sends must reach the station. Use `WIDE1-1,WIDE2-1` only where one
+  hop doesn't cover the stations the IGate hears.
+- **Rate limits:** at most 6 packets a minute and 10 in five minutes go to RF, as Dire Wolf's `IGTXLIMIT`; more are
+  refused, and the TNC's own transmit limit applies too. Copies of a message from two APRS-IS servers go out once.
+- **Never:** bulletins, the rest of the feed, anything with `TCPXX`, `NOGATE` or `RFONLY`, anything gated from RF, or
+  a message whose sender is local too.
+- **One TNC:** `--igate-to-rf` takes exactly one `--tnc`, the one it transmits on.
+- **Testing:** test against a Dire Wolf with `ADEVICE null null` before putting it on the air.
+
+The summary at the end and `/health` count what went to RF (`igate.rf.gated`, `igate.rf.sent`), the local stations
+(`igate.rf.local_stations`) and what was refused, by reason (`igate.rf.refused.not_local` and so on).
 
 ## Watch it
 
@@ -126,5 +155,4 @@ the TNCs. [docs/metrics.md](../metrics.md) lists the instruments.
 
 - To run the gateway as a service on Linux, see [apps/services](../../apps/services/README.md).
 - Clients are read-only for now: what they send is ignored.
-- The IGate is receive-only for now.
 - The [gateway design notes](../design/gateway.md) explain how filters, history and slow clients are handled.
