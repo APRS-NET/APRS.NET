@@ -39,14 +39,35 @@ public class PathAnalysisTests
     [Fact]
     public void ListsTheDigipeatersThatRepeatedThePacket()
     {
-        // From the corpus: a digipeater that inserted its callsign, then a WIDE1-1 used up by one that did not.
+        // From the corpus: a digipeater that used up WIDE1-1 and inserted its callsign before it.
         var path = Analyse("0Q2AAH-9>P2TVU9,0Q4AAH-3*,WIDE1*,WIDE2-1,qAR,0Q2AAI-1");
 
         Assert.Equal(["0Q4AAH-3*", "WIDE1*"], Names(path.UsedHops));
         Assert.Equal(["0Q4AAH-3"], path.Digipeaters.Select(c => c.Value));
+        Assert.Equal(1, path.HopCount);
         Assert.Equal(1, path.RemainingHopCount);
         Assert.False(path.IsHeardDirectly);
         Assert.True(path.IsGatedFromRadio);
+    }
+
+    [Theory]
+    [InlineData("N0CALL>APRS", 0)]
+    [InlineData("N0CALL>APRS,WIDE1-1,WIDE2-1", 0)]
+    [InlineData("N0CALL>APRS,WIDE1-1,WIDE2-1,qAR,N3ABC", 0)]
+    // New-N: each digipeater inserts its callsign before the alias it used up.
+    [InlineData("N0CALL>APRS,DIGI1*,WIDE2-1", 1)]
+    [InlineData("N0CALL>APRS,DIGI1,WIDE1*,WIDE2-1", 1)]
+    [InlineData("N0CALL>APRS,DIGI1,WIDE1,DIGI2*,WIDE2-1", 2)]
+    [InlineData("N0CALL>APRS,DIGI1,DIGI2,WIDE2*", 2)]
+    // Dire Wolf's example of a path that counting used entries makes four hops.
+    [InlineData("AA1PR-9>APY300,K1EQX-7,WIDE1,N3LLO-3,WIDE2*,ARISS", 2)]
+    // Digipeaters that don't name themselves, and ones named in the path by the sender.
+    [InlineData("N0CALL>APRS,WIDE1*,WIDE2-1", 1)]
+    [InlineData("N0CALL>APRS,WIDE1,WIDE2*", 2)]
+    [InlineData("N0CALL>APRS,N1ABC-1,N2ABC-2*", 2)]
+    public void CountsTheDigipeatersThatRepeatedIt(string header, int hops)
+    {
+        Assert.Equal(hops, Analyse(header).HopCount);
     }
 
     [Fact]

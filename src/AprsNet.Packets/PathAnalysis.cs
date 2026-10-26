@@ -53,6 +53,7 @@ public sealed class PathAnalysis
 
         UsedHops = radioPath.Take(used).ToArray();
         Digipeaters = UsedHops.Where(e => e.Kind == PathEntryKind.Station).Select(e => e.Station).ToArray();
+        HopCount = CountHops(UsedHops);
         RemainingHopCount = remaining;
         IsFromInternet = internet || qConstruct is "qAC" or "qAX" or "qAU";
         IsGatedFromRadio = !internet && qConstruct is "qAR" or "qAr" or "qAO" or "qAo";
@@ -84,6 +85,16 @@ public sealed class PathAnalysis
 
     /// <summary>The stations among <see cref="UsedHops"/>: the digipeaters that named themselves, in order.</summary>
     public IReadOnlyList<Callsign> Digipeaters { get; }
+
+    /// <summary>
+    /// How many digipeaters repeated the packet before it was heard: each station in <see cref="UsedHops"/>, and each
+    /// used alias that doesn't follow one. Under the New-N paradigm a digipeater inserts its callsign before the alias
+    /// it used up, so <c>DIGI1,WIDE1*</c> is one hop, and <c>K1EQX-7,WIDE1,N3LLO-3,WIDE2*</c> two. An alias with no
+    /// callsign before it is a digipeater that didn't name itself, as in <c>WIDE1*,WIDE2-1</c>: one hop. 0 when the
+    /// packet was heard straight from the sender. A digipeater that neither named itself nor inserted its callsign
+    /// after one that did isn't seen, so this can be one short for paths mixing the two.
+    /// </summary>
+    public int HopCount { get; }
 
     /// <summary>
     /// How many more hops the packet asks for: the sum of <c>N</c> over the unused <c>WIDEn-N</c>, <c>TRACEn-N</c> and
@@ -151,6 +162,21 @@ public sealed class PathAnalysis
         }
 
         return new PathAnalysis(path.ToArray(), null, null, []);
+    }
+
+    // A used alias right after a station is the hop that station made, its callsign inserted before it.
+    private static int CountHops(IReadOnlyList<PathEntry> used)
+    {
+        var hops = 0;
+        for (var i = 0; i < used.Count; i++)
+        {
+            if (used[i].Kind == PathEntryKind.Station || i == 0 || used[i - 1].Kind != PathEntryKind.Station)
+            {
+                hops++;
+            }
+        }
+
+        return hops;
     }
 
     private static bool IsMarker(string name, string marker) => name.Equals(marker, StringComparison.OrdinalIgnoreCase);

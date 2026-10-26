@@ -657,6 +657,7 @@ static AprsNet.Packets.Geodesy.RadioHorizonMiles(double heightFeet) -> double
 AprsNet.Packets.PathAnalysis
 AprsNet.Packets.PathAnalysis.AprsIsPath.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.PathEntry>!
 AprsNet.Packets.PathAnalysis.Digipeaters.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.Callsign!>!
+AprsNet.Packets.PathAnalysis.HopCount.get -> int
 AprsNet.Packets.PathAnalysis.EntryStation.get -> AprsNet.Packets.Callsign?
 AprsNet.Packets.PathAnalysis.IsFromInternet.get -> bool
 AprsNet.Packets.PathAnalysis.IsGatedFromRadio.get -> bool
