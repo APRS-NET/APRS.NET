@@ -277,6 +277,46 @@ aprsnet-logs -f tncx                     # apps connecting, frames heard and sen
 KISS over TCP has no login: anyone who can reach port 8001 can transmit through the TNC. Allow only your own network
 in the firewall, or listen on `127.0.0.1` and reach it through an SSH tunnel.
 
+## Digipeat
+
+A `Digipeater` decides which frames to repeat and rewrites their path under the New-N paradigm, as Dire Wolf does. By
+default it is a fill-in digipeater: it repeats `WIDE1-1`, its own call and its aliases, and leaves `WIDEn-N` to the
+wide-area digipeaters. Each frame it doesn't repeat has a reason (`DigipeatRefusal`), and a copy of a frame it repeated
+in the last 30 seconds isn't repeated again:
+
+<!-- snippet: tnc-digi -->
+```csharp
+await using var tnc = new KissTcpConnection("localhost");
+var digi = new Digipeater(new Ax25Address("N0CALL", 1, flag: false)); // fill-in: WIDE1-1 only
+
+await foreach (var frame in tnc.ReadFramesAsync(cancellationToken))
+{
+    if (digi.Digipeat(frame).Frame is { } repeat)
+    {
+        await tnc.SendFrameAsync(repeat, cancellationToken); // N0CALL-9>APRS,N0CALL-1*,WIDE2-1:...
+    }
+}
+```
+
+`aprscli tnc digi` runs one from the command line, printing each frame repeated or refused and why:
+
+```sh
+aprscli tnc digi --tnc localhost --call N0CALL-1
+```
+
+A digipeater transmits on its own, so:
+
+- **Licence:** you need one, and the digipeater's call must be yours.
+- **Fill-in first:** run a fill-in digipeater where your area's wide-area digipeaters don't reach, such as a valley or a
+  home station at the edge of coverage. Use `--wide` (`FillInOnly = false`) only by agreement with the people who run
+  the local APRS network: a wide-area digipeater in the wrong place doubles traffic on a shared channel.
+- **Hops:** a wide-area digipeater traps paths asking for more than 2 hops (`--max-hops`, `MaxHops`), as APRS 1.1
+  recommends for most areas; more hops multiply every packet across the network.
+- **Transmit limit:** `aprscli tnc digi` sends at most 3 repeats at once, then one each 10 seconds, and drops repeats
+  that would wait longer: a repeat sent late only adds to a busy channel.
+- **Testing:** test against a Dire Wolf with `ADEVICE null null`, which reaches no radio, before putting a digipeater on
+  the air.
+
 ## Next
 
 - [Run a gateway](gateway.md) that serves what the TNC hears to APRS-IS clients.

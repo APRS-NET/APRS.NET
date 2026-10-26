@@ -448,6 +448,34 @@ aprscli serve --config gateway.toml -l 127.0.0.1:14581
 A key that isn't one of the command's options, a key set twice, or a value that isn't a string, a number, `true` or
 `false`, or a list of them, is refused with its line number. A file can't hold `passcode`: set `APRS_PASSCODE` instead.
 
+## tnc digi
+
+Runs an APRS digipeater on a KISS TNC: each frame heard goes through the `Digipeater` rules from AprsNet.Ax25, and each
+repeat goes back to the TNC. A fill-in digipeater by default: it repeats `WIDE1-1`, its call and its aliases. It
+transmits on its own, so you need a licence; read [Digipeat](../../docs/guides/tnc.md#digipeat) in the TNC guide first.
+
+```sh
+aprscli tnc digi --tnc localhost --call N0CALL-1                  # fill-in, through Dire Wolf
+aprscli tnc digi --tnc serial:/dev/ttyUSB0@9600 -c N0CALL-1 --wide  # wide-area, by agreement with the local network
+```
+
+Each frame is printed with the time and what was done: `repeated N0CALL-9>APRS,N0CALL-1*,WIDE2-1:…`, or
+`not repeated (not for this digipeater): …` with the reason: not APRS, no hops left, not for this digipeater, its own
+frame, repeated already (within 30 seconds), or the transmit limit. A summary goes to stderr at the end.
+
+| Option | Meaning |
+| --- | --- |
+| `-t`, `--tnc` | The TNC: `host[:port]` or `serial:PORT[@BAUD]`, with `,setup=th-d72` as for `tnc listen`; `,text` is refused. Required. |
+| `-c`, `--call` | The digipeater's call with its SSID, such as `N0CALL-1`, inserted in each path it repeats. Required. |
+| `--wide` | Also repeat `WIDEn-N` as a wide-area digipeater, counting N down. Only by agreement with the local APRS network. |
+| `--alias` | Another name it answers to, such as a location. Repeat for several. |
+| `--max-hops` | With `--wide`, the most hops a `WIDEn-N` may ask for, 1 to 7; wider ones are trapped (repeated once, no further). Default 2. |
+| `--preemptive` | Also take its call or an alias later in the path, dropping unused entries before it. Never for `WIDEn-N`. |
+| `--transmit-limit` | `on` (default): at most 3 repeats at once, then one each 10 s; repeats that would wait behind 3 others are dropped. `off`: none, for a test TNC. |
+| `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
+| `-q`, `--quiet` | Print only the frames repeated. |
+| `-d`, `--duration` | Stop after this long. Default: until Ctrl+C. |
+
 ## gps
 
 Read a GPS and print a line for each fix: a quick check of a GPS setup. It reads gpsd, or the NMEA sentences a GPS
