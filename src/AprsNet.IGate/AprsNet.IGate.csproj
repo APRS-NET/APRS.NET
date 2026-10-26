@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>The rules of an APRS IGate: which packets heard on RF go to APRS-IS, tagged with the IGate's q-construct, once each, and why the rest don't. No I/O; pass it what a TNC hears.</Description>
+    <Description>The rules of an APRS IGate: which packets heard on RF go to APRS-IS, tagged with the IGate's q-construct, once each; which messages from APRS-IS go to stations heard on RF; and why the rest don't. No I/O.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
