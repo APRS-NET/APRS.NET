@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.1...v0.7.0-alpha.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** Bump System.CommandLine from 2.0.13 to 2.0.14 ([9d4ba14](https://github.com/APRS-NET/APRS.NET/commit/9d4ba14672c8c331f48a0e13be314cdefd348c64))
+* **deps:** Bump System.IO.Ports from 10.0.13 to 10.0.14 ([4c72344](https://github.com/APRS-NET/APRS.NET/commit/4c723441a8f431c98955d72e5921881737bd362a))
+* **deps:** Bump the microsoft-extensions group with 7 updates ([f65085d](https://github.com/APRS-NET/APRS.NET/commit/f65085da17788b0c1fba46ffcb4a83bd46cfa25f))
+
 ## [0.7.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.6.0-alpha.5...v0.7.0-alpha.1) (2026-10-26)
 
 
