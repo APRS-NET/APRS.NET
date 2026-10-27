@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.2...v0.7.0-alpha.3) (2026-10-27)
+
+
+### Features
+
+* **messaging:** recognise ANSRVR's relayed group messages and notices ([1e7830e](https://github.com/APRS-NET/APRS.NET/commit/1e7830eaca4f448a17e97941927d93257bb0220b)), closes [#281](https://github.com/APRS-NET/APRS.NET/issues/281)
+
 ## [0.7.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.1...v0.7.0-alpha.2) (2026-10-27)
 
 
