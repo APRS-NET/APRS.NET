@@ -59,6 +59,20 @@ drops a member after 12 hours without one.
 station.Send(AnsrvrCommand.Ansrvr, AnsrvrCommand.Join("NZEVENT").Text);
 ```
 
+`AnsrvrMessage` recognises what comes back from a group. Both forms read `N:GROUP text`:
+- **A relay** is another member's post. It arrives from that member, not from ANSRVR, and has no message ID.
+- **A notice** is ANSRVR's own reply, such as `N:NZEVENT 2 Messages Sent`.
+
+```csharp
+station.MessageReceived += (_, e) =>
+{
+    if (AnsrvrMessage.TryParse(e.Message, out var group) && group.Kind == AnsrvrMessageKind.Relay)
+    {
+        ShowInGroup(group.Group, group.From, group.Text);
+    }
+};
+```
+
 `QueryResponder` answers the queries of APRS101 ch. 15 from what the app gives it in a `QueryState`: its position and
 status, weather, IGate capabilities, objects, the stations it has heard and the messages waiting. It does no I/O; it
 returns the payloads to send and how long to wait first. Directed queries (`?APRSP`, `?APRSD`, `?PING?` …) are answered
