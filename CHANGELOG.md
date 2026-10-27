@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.3...v0.7.0-alpha.4) (2026-10-27)
+
+
+### Features
+
+* **gps:** GPS quality metrics for each GPS connection ([c416ed3](https://github.com/APRS-NET/APRS.NET/commit/c416ed3318f9cc0123c141187bd9d171fed16888)), closes [#328](https://github.com/APRS-NET/APRS.NET/issues/328)
+
 ## [0.7.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.2...v0.7.0-alpha.3) (2026-10-27)
 
 
