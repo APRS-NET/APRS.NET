@@ -245,3 +245,14 @@ AprsNet.Messaging.QueryState.Status.get -> AprsNet.Packets.StatusReport?
 AprsNet.Messaging.QueryState.Status.init -> void
 AprsNet.Messaging.QueryState.Weather.get -> AprsNet.Packets.AprsPayload?
 AprsNet.Messaging.QueryState.Weather.init -> void
+AprsNet.Messaging.AnsrvrMessage
+AprsNet.Messaging.AnsrvrMessage.From.get -> AprsNet.Packets.Callsign!
+AprsNet.Messaging.AnsrvrMessage.Group.get -> string!
+AprsNet.Messaging.AnsrvrMessage.Kind.get -> AprsNet.Messaging.AnsrvrMessageKind
+AprsNet.Messaging.AnsrvrMessage.Text.get -> string!
+AprsNet.Messaging.AnsrvrMessageKind
+AprsNet.Messaging.AnsrvrMessageKind.Notice = 1 -> AprsNet.Messaging.AnsrvrMessageKind
+AprsNet.Messaging.AnsrvrMessageKind.Relay = 0 -> AprsNet.Messaging.AnsrvrMessageKind
+override AprsNet.Messaging.AnsrvrMessage.ToString() -> string!
+static AprsNet.Messaging.AnsrvrMessage.TryParse(AprsNet.Messaging.IncomingMessage! message, out AprsNet.Messaging.AnsrvrMessage? ansrvr) -> bool
+static AprsNet.Messaging.AnsrvrMessage.TryParse(AprsNet.Packets.Callsign! from, string? text, string? messageId, out AprsNet.Messaging.AnsrvrMessage? ansrvr) -> bool

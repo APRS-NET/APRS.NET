@@ -126,7 +126,7 @@ no acks, repeated on a `BulletinSchedule` (#272): doubling waits from 1 minute t
 ## Out of scope
 
 - The email gateway and auto-reply rules (A11-AA): AprsMap builds them on `Send` and `MessageReceived`. ANSRVR's
-  message forms are `AnsrvrCommand` (#272). An
+  message forms are `AnsrvrCommand` (#272), and its relays and notices are `AnsrvrMessage` (#281). An
   auto-reply has no message ID and no retries, which `Send` allows with `RetryProfile.None` and `withId: false`.
 - ITEM-in-MSG and the 1.2 message servers (A12-MSG-01, 02).
 - Gating messages between APRS-IS and RF: that is the two-way IGate's job, `InternetToRfGate` in `AprsNet.IGate`
