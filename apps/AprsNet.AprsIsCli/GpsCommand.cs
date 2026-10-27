@@ -277,6 +277,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
     )
     {
         var gps = new NmeaFixTracker();
+        var metrics = new GpsMetrics(where, GpsErrorConfidence.OneSigma, environment.TimeProvider);
         var delay = environment.ReconnectDelay;
         while (true)
         {
@@ -287,6 +288,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
                 await environment.Error.WriteLineAsync($"aprscli: reading NMEA from {where}");
                 delay = environment.ReconnectDelay;
                 gps.Reset();
+                metrics.Reset();
                 using var reader = new StreamReader(stream, Encoding.Latin1);
                 while (await reader.ReadLineAsync(cancellationToken) is { } line)
                 {
@@ -299,6 +301,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
                     // A sentence from a new second: the one before is complete.
                     var before = gps.Fix;
                     gps.Update(sentence);
+                    metrics.Record(gps);
                     if (before.UtcTime is { } time && gps.Fix.UtcTime != time)
                     {
                         printer.Fix(before, gps.Quality, gps.Satellites);

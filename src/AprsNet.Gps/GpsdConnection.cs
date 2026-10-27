@@ -19,6 +19,10 @@ namespace AprsNet.Gps;
 /// Altitude is given only with a 3D fix.
 /// </para>
 /// <para>gpsd reports times in UTC, so <see cref="GpsFix.Time"/> is always known once the GPS has the time.</para>
+/// <para>
+/// Each fix is recorded on the <c>AprsNet.Gps</c> meter, tagged <c>gps</c> with <see cref="Server"/>: see
+/// <see cref="GpsMetrics"/>.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -36,6 +40,7 @@ public sealed class GpsdConnection : IAsyncDisposable
     private readonly TimeProvider _timeProvider;
     private readonly Lock _stateLock = new();
     private readonly CancellationTokenSource _disposing = new();
+    private readonly GpsMetrics _metrics;
     private int _reading;
     private int _disposed;
     private int _connected;
@@ -60,6 +65,7 @@ public sealed class GpsdConnection : IAsyncDisposable
         _device = options.Device;
         _timeProvider = options.TimeProvider;
         Server = $"{options.Host}:{options.Port}";
+        _metrics = new GpsMetrics(Server, GpsErrorConfidence.Percent95, _timeProvider);
         ReconnectDelay = options.ReconnectDelay;
         MaxReconnectDelay = options.MaxReconnectDelay;
     }
@@ -213,6 +219,7 @@ public sealed class GpsdConnection : IAsyncDisposable
                             LastError = reports.LastError ?? LastError;
                             if (fix is not null)
                             {
+                                _metrics.Record(fix, Quality, Satellites);
                                 yield return fix;
                             }
                         }
@@ -220,6 +227,7 @@ public sealed class GpsdConnection : IAsyncDisposable
                     finally
                     {
                         Volatile.Write(ref _connected, 0);
+                        _metrics.Reset();
                     }
 
                     // A connection that held for a while was not part of a failing streak: start the backoff again.

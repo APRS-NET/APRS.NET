@@ -50,3 +50,23 @@ await foreach (var fix in gps.ReadFixesAsync(cancellationToken))
 
 A GPS on a serial port without gpsd sends NMEA sentences instead: read those with `NmeaSentence` and
 `NmeaFixTracker` in `AprsNet.Packets`, which give the same `GpsFix`, `GpsQuality` and `GpsSatellite`.
+
+## Metrics
+
+`GpsdConnection` records each fix on the `AprsNet.Gps` meter, tagged with its server. The instruments cover:
+- the time in each fix state, and fixes lost;
+- the satellites used and in view, by system;
+- the DOPs and the error estimates;
+- the average signal.
+
+No position is recorded. For a GPS read as NMEA, give each update to a `GpsMetrics` of your own:
+
+```csharp
+var metrics = new GpsMetrics("/dev/ttyACM0", GpsErrorConfidence.OneSigma); // GST gives one standard deviation
+if (NmeaSentence.TryParse(line, out var sentence) && gps.Update(sentence))
+{
+    metrics.Record(gps);
+}
+```
+
+Call `metrics.Reset()` when the GPS is disconnected. [docs/metrics.md](../../docs/metrics.md#gps) lists the instruments.

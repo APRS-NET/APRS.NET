@@ -1,14 +1,14 @@
 # Metrics
 
 The packages publish counters through `System.Diagnostics.Metrics`, each on a meter named after the package:
-**`AprsNet.AprsIsTcpClient`**, **`AprsNet.Kiss`** ([below](#kiss)), **`AprsNet.Gateway`** ([below](#gateway)) and
-**`AprsNet.IGate`** ([below](#igate)).
+**`AprsNet.AprsIsTcpClient`**, **`AprsNet.Kiss`** ([below](#kiss)), **`AprsNet.Gateway`** ([below](#gateway)),
+**`AprsNet.IGate`** ([below](#igate)) and **`AprsNet.Gps`** ([below](#gps)).
 Nothing is recorded unless something listens: add the meters to an OpenTelemetry `MeterProvider`
 (`.AddMeter("AprsNet.AprsIsTcpClient")`), or use a `MeterListener`. `aprscli` exports them over OTLP when
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 
-No series grows with the traffic: tag values come from fixed lists, or name something the app set up (a TNC, a gateway
-server or source), never a callsign or packet text. The APRS-IS client's instruments come first.
+No series grows with the traffic: tag values come from fixed lists, or name something the app set up (a TNC, a GPS, a
+gateway server or source), never a callsign, packet text or position. The APRS-IS client's instruments come first.
 
 ## Receiving
 
@@ -101,6 +101,27 @@ On the meter `AprsNet.IGate`. Every instrument has an `igate` tag, the IGate's c
 | `aprsnet.igate.packets.gated` | `{packet}` | `igate` | Packets heard on RF that `RfToInternetGate` passed to APRS-IS |
 | `aprsnet.igate.packets.refused` | `{packet}` | `igate`, `reason`: `not_aprs`, `unreadable`, `from_internet`, `no_gate`, `already_gated`, `general_query`, `empty`, `too_long`, `duplicate` | Packets heard on RF and not passed on, by the `GateRefusal` |
 
+## GPS
+
+On the meter `AprsNet.Gps`. Every instrument has a `gps` tag:
+- for a `GpsdConnection`, its `Server` (`host:port`), recorded with each fix;
+- for a GPS read as NMEA, the name given to `GpsMetrics`, recorded each time the app hands it the `NmeaFixTracker`.
+
+`aprscli gps` records both kinds. It tags them with the gpsd address, or the serial port or `host:port` the NMEA came from.
+
+| Instrument | Unit | Tags | Counts |
+| --- | --- | --- | --- |
+| `aprsnet.gps.fix.time` | `s` | `gps`, `mode`: `3d`, `2d`, `fix`, `none` | Time spent in each fix state; `fix` is a fix of unknown dimension (NMEA's RMC or GGA without a GSA). The time between two records counts toward the first one's state, up to 10 seconds (`GpsMetrics.MaxInterval`), so a GPS that went quiet, or the time it was disconnected, isn't counted |
+| `aprsnet.gps.fix.losses` | `{loss}` | `gps` | Times the GPS went from a fix to no fix; losing gpsd or the port isn't one |
+| `aprsnet.gps.satellites.used` | `{satellite}` | `gps`, `system` | Gauge: satellites the fix uses. A satellite tracked on several signals counts once |
+| `aprsnet.gps.satellites.in_view` | `{satellite}` | `gps`, `system` | Gauge: satellites the GPS can see, used or not. A system that leaves view goes to 0 |
+| `aprsnet.gps.dop` | `1` | `gps`, `kind`: `pdop`, `hdop`, `vdop`, `tdop`, `gdop` | Gauge: the dilutions of precision; gpsd gives all five, NMEA the first three |
+| `aprsnet.gps.error` | `m` | `gps`, `axis`: `horizontal`, `vertical`, `latitude`, `longitude`; `confidence`: `95_percent`, `one_sigma` | Gauge: the GPS's estimated error. gpsd gives it at 95% confidence, NMEA's GST at one standard deviation (about 68%), so compare only within one `confidence` |
+| `aprsnet.gps.signal` | `dB-Hz` | `gps` | Gauge: the average signal-to-noise ratio of the satellites the fix uses |
+
+`system` is `gps`, `sbas`, `glonass`, `galileo`, `beidou`, `qzss`, `navic` or `unknown`. The gauges record only what the
+source gave, so a GPS without GST has no `error`.
+
 ## aprscli
 
 `aprscli tnc share` adds one instrument of its own, on the meter `AprsNet.Cli`.
@@ -122,6 +143,9 @@ On the meter `AprsNet.IGate`. Every instrument has an `igate` tag, the IGate's c
 - **A shared TNC:** `kiss.server.clients.disconnected{reason="overflow"}` is an app that stopped reading;
   `{reason="server_full"}` is one turned away. A `tnc_share.frame.wait` that keeps growing is apps sending faster than
   the channel carries; `kiss.server.frames.transmit_failures` rising is frames lost while the TNC was away.
+- **A GPS losing its fix:** `rate(gps.fix.losses)` with `gps.fix.time{mode="none"}` against the other modes shows how
+  often and for how long. `gps.satellites.used` dropping while `in_view` holds points at the antenna or the signal
+  (`gps.signal`) rather than the sky.
 - **IGate coverage:** `packets.gated` against `packets.refused{reason="duplicate"}` shows how often digipeaters repeat
   what the IGate hears; a high `from_internet` count is a two-way IGate nearby transmitting APRS-IS traffic.
 
