@@ -46,3 +46,16 @@ AprsNet.Gps.GpsdConnection.Quality.get -> AprsNet.Packets.GpsQuality!
 AprsNet.Gps.GpsdConnection.Satellites.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Packets.GpsSatellite!>!
 AprsNet.Gps.GpsdLineEventArgs
 AprsNet.Gps.GpsdLineEventArgs.Line.get -> string!
+AprsNet.Gps.GpsErrorConfidence
+AprsNet.Gps.GpsErrorConfidence.OneSigma = 1 -> AprsNet.Gps.GpsErrorConfidence
+AprsNet.Gps.GpsErrorConfidence.Percent95 = 0 -> AprsNet.Gps.GpsErrorConfidence
+AprsNet.Gps.GpsMetrics
+AprsNet.Gps.GpsMetrics.ErrorConfidence.get -> AprsNet.Gps.GpsErrorConfidence
+AprsNet.Gps.GpsMetrics.Gps.get -> string!
+AprsNet.Gps.GpsMetrics.GpsMetrics(string! gps, AprsNet.Gps.GpsErrorConfidence errorConfidence) -> void
+AprsNet.Gps.GpsMetrics.GpsMetrics(string! gps, AprsNet.Gps.GpsErrorConfidence errorConfidence, System.TimeProvider! timeProvider) -> void
+AprsNet.Gps.GpsMetrics.Record(AprsNet.Packets.GpsFix! fix, AprsNet.Packets.GpsQuality! quality, System.Collections.Generic.IReadOnlyList<AprsNet.Packets.GpsSatellite!>! satellites) -> void
+AprsNet.Gps.GpsMetrics.Record(AprsNet.Packets.NmeaFixTracker! tracker) -> void
+AprsNet.Gps.GpsMetrics.Reset() -> void
+const AprsNet.Gps.GpsMetrics.MeterName = "AprsNet.Gps" -> string!
+static AprsNet.Gps.GpsMetrics.MaxInterval.get -> System.TimeSpan
