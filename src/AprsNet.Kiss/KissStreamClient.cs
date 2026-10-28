@@ -85,6 +85,18 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     /// </summary>
     internal bool TextMode { get; init; }
 
+    /// <summary>
+    /// Whether the stream speaks AGWPE rather than KISS: frames are read and sent as AGWPE raw frames (<c>K</c>), after
+    /// asking for the version, the radio ports and raw frames. See <see cref="AgwpeConnection"/>.
+    /// </summary>
+    internal bool Agwpe { get; init; }
+
+    /// <summary>The AGWPE server's radio ports, each time it lists them.</summary>
+    internal Action<IReadOnlyList<AgwpePort>>? AgwpePortsRead { get; init; }
+
+    /// <summary>The AGWPE server's version, such as <c>2005.127</c>.</summary>
+    internal Action<string>? AgwpeVersionRead { get; init; }
+
     private long _droppedLines;
 
     /// <summary>The clock for <see cref="KissTrafficEventArgs.At"/>.</summary>
@@ -152,6 +164,16 @@ public sealed partial class KissStreamClient : IAsyncDisposable
             await foreach (var line in ReadTextFramesAsync(cancellationToken).ConfigureAwait(false))
             {
                 yield return new KissPortFrame(_tncPort, line);
+            }
+
+            yield break;
+        }
+
+        if (Agwpe)
+        {
+            await foreach (var heard in ReadAgwpeFramesAsync(cancellationToken).ConfigureAwait(false))
+            {
+                yield return heard;
             }
 
             yield break;
@@ -274,7 +296,7 @@ public sealed partial class KissStreamClient : IAsyncDisposable
             );
         }
 
-        var bytes = KissFrame.ForAx25(frame, port).Encode();
+        var bytes = Agwpe ? AgwpeFrame.ForAx25(port, frame.GetBytes()) : KissFrame.ForAx25(frame, port).Encode();
         await LimitFor(port).WaitAsync(cancellationToken).ConfigureAwait(false);
         await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -339,6 +361,110 @@ public sealed partial class KissStreamClient : IAsyncDisposable
     /// <c>SOURCE&gt;DESTINATION:</c> header are skipped; a packet line with a sentence run into it, or one AX.25 can't
     /// carry, is dropped and counted.
     /// </summary>
+    /// <summary>
+    /// Reads AGWPE frames: asks for the version, the radio ports and raw frames, then yields each raw frame heard on a
+    /// port this client reads. A header whose length can't be right means the server isn't AGWPE.
+    /// </summary>
+    /// <exception cref="IOException">The stream isn't AGWPE.</exception>
+    private async IAsyncEnumerable<KissPortFrame> ReadAgwpeFramesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        foreach (var kind in new[] { AgwpeFrame.Version, AgwpeFrame.PortInformation, AgwpeFrame.RawToggle })
+        {
+            await SendRawAsync(AgwpeFrame.Request(kind), kind: null, cancellationToken).ConfigureAwait(false);
+        }
+
+        var buffer = new byte[4096];
+        var pending = new byte[4096];
+        var count = 0;
+        while (true)
+        {
+            // Wait for a whole frame: its header, then the data the header says follows.
+            int length;
+            while (
+                count < AgwpeFrame.HeaderLength
+                || count < AgwpeFrame.HeaderLength + (length = AgwpeFrame.DataLength(pending))
+                    && length is >= 0 and <= AgwpeFrame.MaxDataLength
+            )
+            {
+                var read = await _stream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                {
+                    yield break;
+                }
+
+                DataRead?.Invoke();
+                if (count + read > pending.Length)
+                {
+                    Array.Resize(ref pending, Math.Max(pending.Length * 2, count + read));
+                }
+
+                buffer.AsSpan(0, read).CopyTo(pending.AsSpan(count));
+                count += read;
+            }
+
+            length = AgwpeFrame.DataLength(pending);
+            if (length is < 0 or > AgwpeFrame.MaxDataLength)
+            {
+                throw new IOException(
+                    $"The server at the other end isn't speaking AGWPE: a frame said it carries {length} bytes."
+                );
+            }
+
+            var size = AgwpeFrame.HeaderLength + length;
+            var header = pending[..AgwpeFrame.HeaderLength];
+            var data = pending[AgwpeFrame.HeaderLength..size];
+            pending.AsSpan(size, count - size).CopyTo(pending);
+            count -= size;
+
+            var agwpe = AgwpeFrame.Decode(header, data);
+            switch (agwpe.Kind)
+            {
+                case AgwpeFrame.PortInformation:
+                    AgwpePortsRead?.Invoke(AgwpeFrame.Ports(data));
+                    break;
+                case AgwpeFrame.Version when AgwpeFrame.VersionOf(data) is { } version:
+                    AgwpeVersionRead?.Invoke(version);
+                    break;
+                case AgwpeFrame.Raw when AllPorts || agwpe.Port == _tncPort:
+                    // The first byte is a KISS-style command byte; the AX.25 frame follows it.
+                    if (data.Length < 2 || !Ax25Frame.TryDecode(data.AsSpan(1), out var frame, out _))
+                    {
+                        KissMetrics.Dropped(MetricsTnc, 1);
+                        if (Tracing)
+                        {
+                            Raise(
+                                new KissTrafficEventArgs(TimeProvider.GetUtcNow(), KissTrafficKind.DroppedFrame, data)
+                                {
+                                    Port = agwpe.Port,
+                                }
+                            );
+                        }
+
+                        break;
+                    }
+
+                    KissMetrics.Received(MetricsTnc, agwpe.Port);
+                    if (Tracing)
+                    {
+                        Raise(
+                            new KissTrafficEventArgs(TimeProvider.GetUtcNow(), KissTrafficKind.Frame, data)
+                            {
+                                Port = agwpe.Port,
+                                Command = KissCommand.Data,
+                                Frame = frame,
+                                Packet = frame!.IsAprs ? frame.ToAprsPacket() : null,
+                            }
+                        );
+                    }
+
+                    yield return new KissPortFrame(agwpe.Port, frame!);
+                    break;
+            }
+        }
+    }
+
     private async IAsyncEnumerable<Ax25Frame> ReadTextFramesAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken
     )

@@ -42,7 +42,7 @@ public sealed class KissTcpConnection : KissConnection
         return options;
     }
 
-    private static Func<CancellationToken, Task<Stream>> ConnectTcp(KissTcpOptions options)
+    internal static Func<CancellationToken, Task<Stream>> ConnectTcp(KissTcpOptions options)
     {
         var (host, port, connectTimeout, deadLinkTimeout) = (
             options.Host,

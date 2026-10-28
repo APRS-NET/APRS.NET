@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Talk to a KISS TNC, such as Dire Wolf: read the APRS packets it hears and send packets for it to transmit, over TCP with reconnects or over any stream (serial, Bluetooth), with a transmit rate limit. Also a KISS TCP server to share one TNC between apps.</Description>
+    <Description>Talk to a KISS TNC, such as Dire Wolf: read the APRS packets it hears and send packets for it to transmit, over TCP with reconnects, through an AGWPE server (Dire Wolf's AGW port, SoundModem), or over any stream (serial, Bluetooth), with a transmit rate limit. Also a KISS TCP server to share one TNC between apps.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 

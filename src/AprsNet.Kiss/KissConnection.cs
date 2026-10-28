@@ -14,8 +14,8 @@ namespace AprsNet.Kiss;
 /// a soundmodem that starts after the app, or a USB TNC unplugged and plugged back in only pauses them.
 /// </summary>
 /// <remarks>
-/// <see cref="KissTcpConnection"/> reaches a TNC over TCP and <c>KissSerialConnection</c> (in <c>AprsNet.Kiss.Serial</c>) on a serial port; an
-/// app that takes either can use this type.
+/// <see cref="KissTcpConnection"/> reaches a TNC over TCP, <c>KissSerialConnection</c> (in <c>AprsNet.Kiss.Serial</c>) on a serial port,
+/// and <see cref="AgwpeConnection"/> through an AGWPE server; an app that takes any of them can use this type.
 /// </remarks>
 public abstract class KissConnection : IAsyncDisposable
 {
@@ -33,6 +33,7 @@ public abstract class KissConnection : IAsyncDisposable
     private int _manual;
     private int _scriptRunning;
     private readonly bool _textMode;
+    private readonly bool _agwpe;
     private readonly ITimer _quietTimer;
     private readonly Lock _quietLock = new();
     private long _lastData;
@@ -59,10 +60,12 @@ public abstract class KissConnection : IAsyncDisposable
         bool reopenWhenSendingText = false,
         bool textMode = false,
         TimeSpan? gpsTimeout = null,
-        bool allPorts = false
+        bool allPorts = false,
+        bool agwpe = false
     )
     {
         AllPorts = allPorts;
+        _agwpe = agwpe;
         TncPort = tncPort;
         _textMode = textMode;
         GpsTimeout = gpsTimeout ?? DefaultGpsTimeout;
@@ -407,6 +410,12 @@ public abstract class KissConnection : IAsyncDisposable
         }
     }
 
+    /// <summary>An AGWPE server listed its radio ports; see <see cref="AgwpeConnection"/>.</summary>
+    private protected virtual void AgwpePortsRead(IReadOnlyList<AgwpePort> ports) { }
+
+    /// <summary>An AGWPE server gave its version; see <see cref="AgwpeConnection"/>.</summary>
+    private protected virtual void AgwpeVersionRead(string version) { }
+
     /// <summary>The clock for traffic entries.</summary>
     private protected TimeProvider Clock => _timeProvider;
 
@@ -468,6 +477,9 @@ public abstract class KissConnection : IAsyncDisposable
                         TimeProvider = _timeProvider,
                         WantsTraffic = () => IsTracing,
                         TextMode = _textMode,
+                        Agwpe = _agwpe,
+                        AgwpePortsRead = AgwpePortsRead,
+                        AgwpeVersionRead = AgwpeVersionRead,
                     };
                     client.Traffic += (_, e) => RaiseTraffic(e);
                     client.NmeaSentenceReceived += (_, e) => SentenceArrived(e);
