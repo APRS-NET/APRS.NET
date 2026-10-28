@@ -225,6 +225,36 @@ From the command line, add the setup to the port, `--tnc serial:/dev/ttyUSB0,set
 `serve` use it. `aprscli tnc kiss on` and `off` switch the radio once, and `aprscli tnc terminal` is a console on its
 command line; see the [CLI README](../../apps/AprsNet.AprsIsCli/README.md#tnc-kiss-and-tnc-terminal).
 
+## A TNC behind AGWPE
+
+Some sound-card modems speak AGWPE rather than KISS. UZ7HO SoundModem and AGWPE itself are common on Windows, and Dire
+Wolf offers AGWPE on port 8000 beside KISS on 8001. Prefer KISS when the program offers it. Choose AGWPE when it's the
+only way in, or when the program lists several radio ports by name and you want to pick one from that list.
+
+`AgwpeConnection` works like `KissTcpConnection`: the same reconnects, states, radio ports and transmit limit. It also
+asks the server which radio ports it has:
+
+<!-- snippet: tnc-agwpe -->
+```csharp
+// SoundModem, or Dire Wolf's AGW port (8000), on this computer.
+await using var tnc = new AgwpeConnection("localhost");
+tnc.PortsReceived += (_, e) =>
+{
+    foreach (var port in e.Ports)
+    {
+        Console.Error.WriteLine($"radio port {port.Number}: {port.Description}");
+    }
+};
+
+await foreach (var packet in tnc.ReadPacketsAsync(cancellationToken))
+{
+    Console.WriteLine(packet);
+}
+```
+
+Ports are numbered from 0, so SoundModem's or Dire Wolf's `Port1` is radio port 0. In `aprscli`, give the TNC as
+`agw:host[:port]`: `aprscli tnc listen --tnc agw:localhost`.
+
 ## Share one TNC between apps
 
 Dire Wolf already lets several apps connect. For a TNC that takes one connection, or to give every app one transmit
@@ -322,4 +352,5 @@ A digipeater transmits on its own, so:
 - [Run a gateway](gateway.md) that serves what the TNC hears to APRS-IS clients, and gates it to APRS-IS as an IGate.
 - For a two-port TNC, or Dire Wolf with two channels, set `AllPorts` to read and send on every port on one connection;
   see "A multi-port TNC" in the [AprsNet.Kiss README](../../src/AprsNet.Kiss/README.md#a-multi-port-tnc).
+- For SoundModem or another AGWPE server, see [A TNC behind AGWPE](#a-tnc-behind-agwpe) above.
 - The [AprsNet.Kiss README](../../src/AprsNet.Kiss/README.md) covers the metrics and the KISS framing types.

@@ -227,7 +227,7 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `-c`, `--callsign` | Callsign for the upstream login. Default: a listener ID such as `SWL482913` (receive only). |
 | `-s`, `--server` | Upstream server as `host[:port]`. Default: `rotate.aprs2.net:14580`. |
 | `-f`, `--filter` | Upstream filter: everything clients can ask for. Without it, APRS-IS is not used and only `--tnc` sources are served. |
-| `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's) or `serial:PORT[@BAUD][,dtr=off][,rts=off]` (default 9600 baud). Repeat for several. A lost or unplugged TNC is reconnected. |
+| `-t`, `--tnc` | A KISS TNC to serve, as `host[:port]` (default port 8001, Dire Wolf's), `agw:host[:port]` for an AGWPE server (default port 8000), or `serial:PORT[@BAUD][,dtr=off][,rts=off]` (default 9600 baud). Repeat for several. A lost or unplugged TNC is reconnected. |
 | `-l`, `--listen` | Address and port to serve on. Default: `127.0.0.1:14580`. |
 | `--http` | Also serve HTTP on this `address:port`. WebSocket clients connect to `ws://address:port/aprs?filter=…`, get packets as [JSON](../../docs/json.md) and can change their filter by sending `{"filter":"…"}`. `GET /health` answers 200 with each source's state, or 503 when no source is up. Default: off. |
 | `--name` | Server name clients see. Default: `APRSNET`. |
@@ -295,12 +295,14 @@ aprscli health http://gateway.lan:14590/health --timeout 10s
 ## tnc listen
 
 Print the APRS packets a KISS TNC hears, in the same formats as `listen`. The TNC can serve KISS over TCP, as Dire
-Wolf does on port 8001, or sit on a serial port, such as a USB TNC, given as `serial:PORT[@BAUD]` (default 9600 baud;
+Wolf does on port 8001, serve AGWPE, as SoundModem and Dire Wolf's AGW port (8000) do, given as `agw:host[:port]`, or
+sit on a serial port, such as a USB TNC, given as `serial:PORT[@BAUD]` (default 9600 baud;
 on Linux, prefer the port's stable name under `/dev/serial/by-id/`). DTR and RTS are raised; add `,dtr=off` or
 `,rts=off` for a board that resets on them, such as an ESP32 TNC:
 
 ```sh
 aprscli tnc listen --tnc localhost:8001 --format decoded
+aprscli tnc listen --tnc agw:localhost                # Dire Wolf's or SoundModem's AGW port, 8000
 aprscli tnc listen --tnc 192.168.1.20 --radio-port 1 -d 1h
 aprscli tnc listen --tnc localhost --reconnect      # survives Dire Wolf restarts
 aprscli tnc listen --tnc serial:/dev/ttyUSB0@115200,dtr=off,rts=off   # an ESP32 TNC
@@ -343,7 +345,7 @@ aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --t
 | Option | Meaning |
 | --- | --- |
 | `-c`, `--callsign` | Your callsign, with optional SSID. It must fit AX.25: up to six letters or digits and an SSID of 0 to 15. Required. |
-| `-t`, `--tnc` | The TNC as `host[:port]` (default port 8001) or `serial:PORT[@BAUD][,dtr=off][,rts=off]` (default 9600 baud). Required unless `--dry-run`. |
+| `-t`, `--tnc` | The TNC as `host[:port]` (default port 8001), `agw:host[:port]` (AGWPE, default port 8000) or `serial:PORT[@BAUD][,dtr=off][,rts=off]` (default 9600 baud). Required unless `--dry-run`. |
 | `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
 | `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
 | `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
@@ -422,7 +424,7 @@ leaving, the TNC's state and a summary at the end go to stderr.
 
 | Option | Meaning |
 | --- | --- |
-| `-t`, `--tnc` | The TNC: `serial:PORT[@BAUD]` (default 9600 baud), or `host[:port]` for a TNC over TCP that takes one connection. `,setup=th-d72` works as for `tnc listen`; `,text` is refused. Required. |
+| `-t`, `--tnc` | The TNC: `serial:PORT[@BAUD]` (default 9600 baud), `host[:port]` for a TNC over TCP that takes one connection, or `agw:host[:port]` for an AGWPE server. `,setup=th-d72` works as for `tnc listen`; `,text` is refused. Required. |
 | `-l`, `--listen` | Where apps connect. Default `127.0.0.1:8001`, this computer only; `0.0.0.0:8001` for the network. |
 | `--max-clients` | How many apps at once. Default 16; more are turned away. |
 | `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
@@ -485,7 +487,7 @@ frame, repeated already (within 30 seconds), or the transmit limit. A summary go
 
 | Option | Meaning |
 | --- | --- |
-| `-t`, `--tnc` | The TNC: `host[:port]` or `serial:PORT[@BAUD]`, with `,setup=th-d72` as for `tnc listen`; `,text` is refused. Required. |
+| `-t`, `--tnc` | The TNC: `host[:port]`, `agw:host[:port]` or `serial:PORT[@BAUD]`, with `,setup=th-d72` as for `tnc listen`; `,text` is refused. Required. |
 | `-c`, `--call` | The digipeater's call with its SSID, such as `N0CALL-1`, inserted in each path it repeats. Required. |
 | `--wide` | Also repeat `WIDEn-N` as a wide-area digipeater, counting N down. Only by agreement with the local APRS network. |
 | `--alias` | Another name it answers to, such as a location. Repeat for several. |

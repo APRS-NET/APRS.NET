@@ -76,7 +76,9 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
     private readonly Option<string?> _tnc = new("--tnc", "-t")
     {
-        Description = $"The TNC as host[:port]. Default port: {KissTcpClient.DefaultPort} (Dire Wolf's KISS port).",
+        Description =
+            $"The TNC as host[:port] (default port {KissTcpClient.DefaultPort}, Dire Wolf's KISS port), or "
+            + "agw:host[:port] for an AGWPE server (default port 8000).",
         Recursive = true,
     };
 

@@ -21,8 +21,9 @@ internal sealed class TncShareCommand(CliEnvironment environment)
     {
         Description =
             $"The TNC to share: serial:PORT[@BAUD], such as serial:/dev/ttyUSB0@1200 (default "
-            + $"{KissSerialOptions.DefaultBaudRate} baud), or host[:port] for a TNC over TCP that takes one "
-            + "connection. Add ,setup=th-d72 to switch a radio's built-in TNC into KISS.",
+            + $"{KissSerialOptions.DefaultBaudRate} baud), host[:port] for a TNC over TCP that takes one "
+            + "connection, or agw:host[:port] for an AGWPE server. Add ,setup=th-d72 to switch a radio's built-in "
+            + "TNC into KISS.",
         Required = true,
     };
 

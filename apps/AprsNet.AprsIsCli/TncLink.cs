@@ -69,6 +69,24 @@ internal sealed class TncLink : IAsyncDisposable
             );
         }
 
+        if (address.Agwpe)
+        {
+            var options = new AgwpeOptions
+            {
+                Host = address.Host,
+                Port = address.Port,
+                TncPort = radioPort,
+            };
+            var stream = await KissTcpConnection.ConnectTcp(options.ToTcp())(cancellationToken).ConfigureAwait(false);
+            return new TncLink(
+                new KissStreamClient(stream, radioPort, ownsStream: true, transmitLimit)
+                {
+                    Agwpe = true,
+                    AllPorts = allPorts,
+                }
+            );
+        }
+
         var tcp = new KissTcpClient(
             new KissTcpOptions
             {
