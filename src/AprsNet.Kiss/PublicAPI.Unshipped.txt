@@ -303,3 +303,51 @@ override AprsNet.Kiss.KissPortFrame.GetHashCode() -> int
 ~override AprsNet.Kiss.KissPortFrame.ToString() -> string
 static AprsNet.Kiss.KissPortFrame.operator !=(AprsNet.Kiss.KissPortFrame left, AprsNet.Kiss.KissPortFrame right) -> bool
 static AprsNet.Kiss.KissPortFrame.operator ==(AprsNet.Kiss.KissPortFrame left, AprsNet.Kiss.KissPortFrame right) -> bool
+AprsNet.Kiss.AgwpeConnection
+AprsNet.Kiss.AgwpeConnection.AgwpeConnection(AprsNet.Kiss.AgwpeOptions! options) -> void
+AprsNet.Kiss.AgwpeConnection.AgwpeConnection(string! host, int port = 8000) -> void
+AprsNet.Kiss.AgwpeConnection.Ports.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Kiss.AgwpePort!>!
+AprsNet.Kiss.AgwpeConnection.PortsReceived -> System.EventHandler<AprsNet.Kiss.AgwpePortsEventArgs!>?
+AprsNet.Kiss.AgwpeConnection.ServerVersion.get -> string?
+AprsNet.Kiss.AgwpeOptions
+AprsNet.Kiss.AgwpeOptions.AgwpeOptions() -> void
+AprsNet.Kiss.AgwpeOptions.AllPorts.get -> bool
+AprsNet.Kiss.AgwpeOptions.AllPorts.set -> void
+AprsNet.Kiss.AgwpeOptions.ConnectTimeout.get -> System.TimeSpan
+AprsNet.Kiss.AgwpeOptions.ConnectTimeout.set -> void
+AprsNet.Kiss.AgwpeOptions.DeadLinkTimeout.get -> System.TimeSpan
+AprsNet.Kiss.AgwpeOptions.DeadLinkTimeout.set -> void
+AprsNet.Kiss.AgwpeOptions.Host.get -> string!
+AprsNet.Kiss.AgwpeOptions.Host.set -> void
+AprsNet.Kiss.AgwpeOptions.MaxReconnectDelay.get -> System.TimeSpan
+AprsNet.Kiss.AgwpeOptions.MaxReconnectDelay.set -> void
+AprsNet.Kiss.AgwpeOptions.Port.get -> int
+AprsNet.Kiss.AgwpeOptions.Port.set -> void
+AprsNet.Kiss.AgwpeOptions.QuietWarning.get -> System.TimeSpan?
+AprsNet.Kiss.AgwpeOptions.QuietWarning.set -> void
+AprsNet.Kiss.AgwpeOptions.ReconnectDelay.get -> System.TimeSpan
+AprsNet.Kiss.AgwpeOptions.ReconnectDelay.set -> void
+AprsNet.Kiss.AgwpeOptions.TimeProvider.get -> System.TimeProvider!
+AprsNet.Kiss.AgwpeOptions.TimeProvider.set -> void
+AprsNet.Kiss.AgwpeOptions.TncPort.get -> int
+AprsNet.Kiss.AgwpeOptions.TncPort.set -> void
+AprsNet.Kiss.AgwpeOptions.TransmitLimit.get -> AprsNet.Kiss.KissTransmitLimit?
+AprsNet.Kiss.AgwpeOptions.TransmitLimit.set -> void
+AprsNet.Kiss.AgwpeOptions.Validate() -> void
+AprsNet.Kiss.AgwpePort
+AprsNet.Kiss.AgwpePort.AgwpePort(int Number, string! Description) -> void
+AprsNet.Kiss.AgwpePort.<Clone>$() -> AprsNet.Kiss.AgwpePort!
+AprsNet.Kiss.AgwpePort.Deconstruct(out int Number, out string! Description) -> void
+AprsNet.Kiss.AgwpePort.Description.get -> string!
+AprsNet.Kiss.AgwpePort.Description.init -> void
+AprsNet.Kiss.AgwpePort.Equals(AprsNet.Kiss.AgwpePort? other) -> bool
+AprsNet.Kiss.AgwpePort.Number.get -> int
+AprsNet.Kiss.AgwpePort.Number.init -> void
+AprsNet.Kiss.AgwpePortsEventArgs
+AprsNet.Kiss.AgwpePortsEventArgs.Ports.get -> System.Collections.Generic.IReadOnlyList<AprsNet.Kiss.AgwpePort!>!
+const AprsNet.Kiss.AgwpeOptions.DefaultPort = 8000 -> int
+override AprsNet.Kiss.AgwpePort.Equals(object? obj) -> bool
+override AprsNet.Kiss.AgwpePort.GetHashCode() -> int
+override AprsNet.Kiss.AgwpePort.ToString() -> string!
+static AprsNet.Kiss.AgwpePort.operator !=(AprsNet.Kiss.AgwpePort? left, AprsNet.Kiss.AgwpePort? right) -> bool
+static AprsNet.Kiss.AgwpePort.operator ==(AprsNet.Kiss.AgwpePort? left, AprsNet.Kiss.AgwpePort? right) -> bool

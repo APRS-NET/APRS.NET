@@ -53,8 +53,9 @@ Only `ReadPacketsAsync` parses, so an app that reads raw lines with `ReadLinesAs
 
 ## KISS
 
-On the meter `AprsNet.Kiss`. Every client instrument has a `tnc` tag: the TNC's `host:port`, the port name for a
-`KissSerialConnection`, or `stream` for a `KissStreamClient` on a stream the app opened.
+On the meter `AprsNet.Kiss`. Every client instrument has a `tnc` tag: the TNC's `host:port` (for an
+`AgwpeConnection` too, the AGWPE server's), the port name for a `KissSerialConnection`, or `stream` for a
+`KissStreamClient` on a stream the app opened.
 
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |

@@ -149,6 +149,25 @@ await tnc.SendToPortAsync(1, packet, cancellationToken); // on the second channe
 Each port has a transmit limit of its own with the same settings, so a busy port doesn't hold up the other. The frame
 counts carry a `port` tag.
 
+### AGWPE: Dire Wolf's AGW port and SoundModem
+
+Some TNC programs offer AGWPE rather than KISS, or alongside it. These include UZ7HO SoundModem, AGWPE itself and Dire
+Wolf's AGW port (8000). `AgwpeConnection` reads and sends raw AX.25 frames through it. It is a `KissConnection` like
+the others, so it has the same reconnects, states, radio ports, transmit limits, quiet warning and metrics:
+
+```csharp
+await using var tnc = new AgwpeConnection("localhost");    // port 8000
+await foreach (var (port, frame) in tnc.ReadPortFramesAsync(cancellationToken))
+{
+    Console.WriteLine($"port {port}: {frame}");
+}
+```
+
+On each connection it asks for the server's radio ports. `Ports` lists them for a settings picker, such as
+`AgwpePort(0, "first soundcard mono")`, and `PortsReceived` says when they arrive. Ports are numbered from 0, as in KISS,
+so the server's `Port1` is port 0. `AgwpeOptions` holds the same settings as `KissTcpOptions`. Connected mode isn't
+supported.
+
 ### Sharing a TNC: KissTcpServer
 
 `KissTcpServer` is a KISS TCP service, like Dire Wolf's port 8001: several KISS apps connect at once and each receives
