@@ -1,8 +1,8 @@
 namespace AprsNet.Packets.SpecTests;
 
 /// <summary>
-/// Checks every decoded field of the APRS101 raw NMEA vectors (p. 34). Vectors about the symbol a tracker sending raw
-/// NMEA takes from its destination or SSID (p. 92) are left out: that symbol isn't decoded yet.
+/// Checks every decoded field of the APRS101 raw NMEA vectors (p. 34), and the symbol a tracker sending raw NMEA takes
+/// from its destination or SSID (pp. 92–93).
 /// </summary>
 public class NmeaVectorTests
 {
@@ -15,7 +15,6 @@ public class NmeaVectorTests
                     VectorFileTests.Vector(id).GetProperty("expect") is var expect
                     && expect.TryGetProperty("type", out var type)
                     && type.GetString() == "nmea"
-                    && !expect.TryGetProperty("symbol", out _)
                 ),
         ];
 
@@ -52,6 +51,18 @@ public class NmeaVectorTests
                     break;
                 case "course":
                     Assert.Equal(field.Value.GetDouble(), report.Fix.Course!.Value, 0.5);
+                    break;
+                case "symbol":
+                    PositionVectorTests.Symbol(field.Value, Assert.NotNull(report.Symbol));
+                    Assert.Equal(
+                        field.Value.GetProperty("source").GetString() switch
+                        {
+                            "destination" => AddressSymbolSource.Destination,
+                            "sourceSsid" => AddressSymbolSource.SourceSsid,
+                            var other => throw new InvalidOperationException($"{id}: unknown symbol source {other}"),
+                        },
+                        report.SymbolSource
+                    );
                     break;
                 case "checksumValid":
                     Assert.Equal(field.Value.GetBoolean(), report.Sentence.IsChecksumValid);

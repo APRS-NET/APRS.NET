@@ -1088,3 +1088,12 @@ static AprsNet.Packets.GpsQuality.operator !=(AprsNet.Packets.GpsQuality? left, 
 static AprsNet.Packets.GpsQuality.operator ==(AprsNet.Packets.GpsQuality? left, AprsNet.Packets.GpsQuality? right) -> bool
 static AprsNet.Packets.GpsSatellite.operator !=(AprsNet.Packets.GpsSatellite? left, AprsNet.Packets.GpsSatellite? right) -> bool
 static AprsNet.Packets.GpsSatellite.operator ==(AprsNet.Packets.GpsSatellite? left, AprsNet.Packets.GpsSatellite? right) -> bool
+AprsNet.Packets.AddressSymbols
+AprsNet.Packets.AddressSymbolSource
+AprsNet.Packets.AddressSymbolSource.Destination = 0 -> AprsNet.Packets.AddressSymbolSource
+AprsNet.Packets.AddressSymbolSource.SourceSsid = 1 -> AprsNet.Packets.AddressSymbolSource
+AprsNet.Packets.NmeaReport.Symbol.get -> AprsNet.Packets.AprsSymbol?
+AprsNet.Packets.NmeaReport.SymbolSource.get -> AprsNet.Packets.AddressSymbolSource?
+static AprsNet.Packets.AddressSymbols.TryFromAddress(AprsNet.Packets.Callsign! source, AprsNet.Packets.Callsign! destination, out AprsNet.Packets.AprsSymbol symbol, out AprsNet.Packets.AddressSymbolSource from) -> bool
+static AprsNet.Packets.AddressSymbols.TryFromDestination(string? destination, out AprsNet.Packets.AprsSymbol symbol) -> bool
+static AprsNet.Packets.AddressSymbols.TryFromSsid(string? ssid, out AprsNet.Packets.AprsSymbol symbol) -> bool
