@@ -18,7 +18,8 @@ internal sealed class TncDigiCommand(CliEnvironment environment)
     private readonly Option<string> _tnc = new("--tnc", "-t")
     {
         Description =
-            "The TNC: host[:port] for a TNC over TCP such as Dire Wolf, or serial:PORT[@BAUD]. Add ,setup=th-d72 to "
+            "The TNC: host[:port] for a TNC over TCP such as Dire Wolf, agw:host[:port] for an AGWPE server, or "
+            + "serial:PORT[@BAUD]. Add ,setup=th-d72 to "
             + "switch a radio's built-in TNC into KISS.",
         Required = true,
     };

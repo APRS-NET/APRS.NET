@@ -109,7 +109,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
     {
         Description =
             $"Also serve what a KISS TNC hears, as host[:port] (default port {KissTcpClient.DefaultPort}, Dire "
-            + "Wolf's) or serial:PORT[@BAUD] for a TNC on a serial port. Repeat for several TNCs. A lost or "
+            + "Wolf's), agw:host[:port] for an AGWPE server (default port 8000), or serial:PORT[@BAUD] for a TNC "
+            + "on a serial port. Repeat for several TNCs. A lost or "
             + "unplugged TNC is reconnected.",
         Arity = ArgumentArity.ZeroOrMore,
     };

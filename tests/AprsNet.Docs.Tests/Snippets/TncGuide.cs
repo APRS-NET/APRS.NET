@@ -158,4 +158,24 @@ internal static class TncGuide
         }
         #endregion
     }
+
+    public static async Task AgwpeAsync(CancellationToken cancellationToken)
+    {
+        #region tnc-agwpe
+        // SoundModem, or Dire Wolf's AGW port (8000), on this computer.
+        await using var tnc = new AgwpeConnection("localhost");
+        tnc.PortsReceived += (_, e) =>
+        {
+            foreach (var port in e.Ports)
+            {
+                Console.Error.WriteLine($"radio port {port.Number}: {port.Description}");
+            }
+        };
+
+        await foreach (var packet in tnc.ReadPacketsAsync(cancellationToken))
+        {
+            Console.WriteLine(packet);
+        }
+        #endregion
+    }
 }

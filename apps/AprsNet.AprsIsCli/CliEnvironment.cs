@@ -49,7 +49,7 @@ internal sealed class CliEnvironment
             );
 
     /// <summary>
-    /// A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP or a serial port, with the
+    /// A reconnecting KISS connection to the TNC at <paramref name="address"/>, over TCP, AGWPE or a serial port, with the
     /// library's default transmit limit unless <paramref name="transmitLimit"/> is given.
     /// </summary>
     public KissConnection CreateTncConnection(
@@ -81,8 +81,9 @@ internal sealed class CliEnvironment
                     TransmitLimit = transmitLimit,
                 }
             )
-            : new KissTcpConnection(
-                new KissTcpOptions
+        : address.Agwpe
+            ? new AgwpeConnection(
+                new AgwpeOptions
                 {
                     Host = address.Host,
                     Port = address.Port,
@@ -93,7 +94,20 @@ internal sealed class CliEnvironment
                     QuietWarning = quietWarning,
                     TransmitLimit = transmitLimit,
                 }
-            );
+            )
+        : new KissTcpConnection(
+            new KissTcpOptions
+            {
+                Host = address.Host,
+                Port = address.Port,
+                TncPort = radioPort,
+                AllPorts = allPorts,
+                ReconnectDelay = ReconnectDelay,
+                TimeProvider = TimeProvider,
+                QuietWarning = quietWarning,
+                TransmitLimit = transmitLimit,
+            }
+        );
 
     /// <summary>Opens a TNC's serial port with its speed and DTR and RTS settings; tests replace it.</summary>
     public Func<TncAddress, Stream> OpenTncPort { get; init; } = OpenSerialTnc;

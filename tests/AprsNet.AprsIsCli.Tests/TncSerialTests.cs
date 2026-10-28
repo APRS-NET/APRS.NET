@@ -68,7 +68,11 @@ public sealed class TncSerialTests
             TestContext.Current.CancellationToken
         );
         Assert.Equal(3, result.ExitCode);
-        Assert.Contains("Use host[:port] or serial:PORT[@BAUD]", result.Error, StringComparison.Ordinal);
+        Assert.Contains(
+            "Use host[:port], agw:host[:port] or serial:PORT[@BAUD]",
+            result.Error,
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]

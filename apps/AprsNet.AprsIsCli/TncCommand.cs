@@ -16,7 +16,8 @@ internal sealed class TncCommand(CliEnvironment environment)
     private readonly Option<string> _tnc = new("--tnc", "-t")
     {
         Description =
-            $"The TNC as host[:port] (default port {KissTcpClient.DefaultPort}, Dire Wolf's KISS port), or a serial "
+            $"The TNC as host[:port] (default port {KissTcpClient.DefaultPort}, Dire Wolf's KISS port), "
+            + "agw:host[:port] for an AGWPE server such as Dire Wolf's AGW port (default 8000), or a serial "
             + $"TNC as serial:PORT[@BAUD], such as serial:/dev/ttyUSB0 or serial:COM3@57600 (default "
             + $"{KissSerialOptions.DefaultBaudRate} baud). Add ,setup=th-d72 to switch a radio's built-in TNC into "
             + "KISS, or ,text to read a radio in its APRS mode (receive only).",
