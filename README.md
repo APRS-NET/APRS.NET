@@ -10,10 +10,10 @@ bridge radios and clients through KISS, APRS-IS and WebSocket services.
 
 Status: alpha. Parsing and building every common APRS packet type, station analysis (telemetry and track anomalies),
 the APRS-IS client with verified sending, messaging, TLS and automatic reconnects, AX.25 and KISS for receiving and
-transmitting through a TNC (over TCP or a serial port, every port of a multi-port TNC, and a radio's APRS text mode),
-GPS through gpsd or NMEA, beacon schedules, a local APRS-IS gateway that serves radio and internet traffic together to
-APRS-IS and WebSocket clients, a receive-only or two-way IGate, a digipeater, and the `aprscli` tool are all
-published.
+transmitting through a TNC (over TCP, a serial port or an AGWPE server, every port of a multi-port TNC, and a radio's
+APRS text mode), GPS through gpsd or NMEA, beacon schedules, a local APRS-IS gateway that serves radio and internet
+traffic together to APRS-IS and WebSocket clients, a receive-only or two-way IGate, a digipeater, and the `aprscli`
+tool are all published.
 
 > [!WARNING]
 > **Alpha software.** Every APRS.NET package is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. APIs,
