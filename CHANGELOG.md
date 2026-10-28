@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.5...v0.8.0-alpha.1) (2026-10-28)
+
+
+### Miscellaneous Chores
+
+* the README's status covers AGWPE TNCs ([e7ad591](https://github.com/APRS-NET/APRS.NET/commit/e7ad5918958d030c83be930d8ad445fec33698ce))
+
 ## [0.7.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.4...v0.7.0-alpha.5) (2026-10-28)
 
 
