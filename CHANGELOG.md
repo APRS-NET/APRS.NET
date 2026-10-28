@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.4...v0.7.0-alpha.5) (2026-10-28)
+
+
+### Features
+
+* **cli:** TNCs through an AGWPE server with --tnc agw:host[:port] ([fd5bf2c](https://github.com/APRS-NET/APRS.NET/commit/fd5bf2c3eabfc42b80f96f7d825b1f6e76e8fe52))
+* **kiss:** TNCs through an AGWPE server ([ec690dd](https://github.com/APRS-NET/APRS.NET/commit/ec690dd93ebeb6e5b258f7de8d78b546497adf00)), closes [#225](https://github.com/APRS-NET/APRS.NET/issues/225)
+* **packets:** the symbol a raw NMEA station gets from its address ([3331c30](https://github.com/APRS-NET/APRS.NET/commit/3331c30e5b84c7749095cc58ca929039a43c997e)), closes [#287](https://github.com/APRS-NET/APRS.NET/issues/287)
+
 ## [0.7.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.3...v0.7.0-alpha.4) (2026-10-27)
 
 
