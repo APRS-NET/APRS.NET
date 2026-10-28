@@ -63,8 +63,6 @@ These make a packet `Malformed`, or leave its type `Unknown`, because there is n
 
 - **Raw weather station data** (`!!` Ultimeter, `$ULTW`, `#`, `*`) is recognised as `RawWeatherReport` but its
   readings are not decoded. APRS 1.1 discourages these formats, and they are rare.
-- **Raw NMEA** sentences (`$GPRMC`, `$GPGGA`) are decoded as `NmeaReport`, but the symbol APRS101 p. 92 gives a
-  tracker that sends them (from a `GPSxyz` or `GPSCnn` destination, or its SSID) is not.
 - **Text is not re-encoded.** Comments keep their bytes; UTF-8 and Shift-JIS text reaches the caller as received.
 
 ## Writing: strict

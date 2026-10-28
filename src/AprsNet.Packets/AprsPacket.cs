@@ -286,7 +286,8 @@ public sealed partial class AprsPacket
                 type,
                 information[..Math.Min(information.Length, MaxInformationLength)],
                 colon + 1,
-                destination.Value,
+                source,
+                destination,
                 gt + 1,
                 issues
             );
@@ -298,14 +299,15 @@ public sealed partial class AprsPacket
         PacketType type,
         ReadOnlyMemory<byte> information,
         int offset,
-        string destination,
+        Callsign source,
+        Callsign destination,
         int destinationOffset,
         List<ParseIssue> issues
     ) =>
         type switch
         {
             PacketType.Position => PositionDecoder.Decode(information, offset, issues),
-            PacketType.MicE => MicEDecoder.Decode(information, destination, offset, destinationOffset, issues),
+            PacketType.MicE => MicEDecoder.Decode(information, destination.Value, offset, destinationOffset, issues),
             PacketType.Status => StatusDecoder.Decode(information, offset, issues),
             PacketType.Message => MessageDecoder.Decode(information, offset, issues),
             PacketType.Object => ObjectDecoder.DecodeObject(information, offset, issues),
@@ -314,7 +316,7 @@ public sealed partial class AprsPacket
             PacketType.Weather => WeatherDecoder.Decode(information, offset, issues),
             PacketType.Capabilities => CapabilitiesDecoder.Decode(information),
             PacketType.UserDefined => UserDefinedDecoder.Decode(information, offset, issues),
-            PacketType.Nmea => Nmea(information, offset, issues),
+            PacketType.Nmea => Nmea(information, offset, source, destination, issues),
             PacketType.Query => QueryKinds.Decode(information, offset, issues),
             _ => null,
         };
@@ -346,7 +348,13 @@ public sealed partial class AprsPacket
     private static ParseIssue Error(ParseIssueCode code, int offset) => new(code, ParseIssueSeverity.Error, offset);
 
     /// <summary>Reads a raw NMEA sentence; its warnings are moved to where the sentence sits in Raw.</summary>
-    private static NmeaReport? Nmea(ReadOnlyMemory<byte> information, int offset, List<ParseIssue> issues)
+    private static NmeaReport? Nmea(
+        ReadOnlyMemory<byte> information,
+        int offset,
+        Callsign source,
+        Callsign destination,
+        List<ParseIssue> issues
+    )
     {
         if (NmeaSentence.Parse(information.Span) is not { } sentence)
         {
@@ -355,7 +363,7 @@ public sealed partial class AprsPacket
         }
 
         issues.AddRange(sentence.Issues.Select(issue => issue with { Offset = offset + issue.Offset }));
-        return new NmeaReport(sentence);
+        return new NmeaReport(sentence, source, destination);
     }
 
     private static Callsign Station(byte[] raw, int start, int end, List<ParseIssue> issues)

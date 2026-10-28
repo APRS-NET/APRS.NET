@@ -125,7 +125,7 @@ public class PositionVectorTests
         return true;
     }
 
-    private static void Symbol(JsonElement e, AprsSymbol symbol)
+    internal static void Symbol(JsonElement e, AprsSymbol symbol)
     {
         Assert.Equal(e.GetProperty("table").GetString()![0], symbol.WithoutOverlay.Table);
         Assert.Equal(e.GetProperty("code").GetString()![0], symbol.Code);

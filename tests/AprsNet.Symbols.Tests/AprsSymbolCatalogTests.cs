@@ -19,6 +19,22 @@ public class AprsSymbolCatalogTests
     }
 
     [Fact]
+    public void EveryDestinationCodeReadsBackAsItsSymbol()
+    {
+        // AddressSymbols in AprsNet.Packets computes the codes; the catalogue lists them. They must agree.
+        foreach (var s in AprsSymbolCatalog.All)
+        {
+            Assert.True(
+                AddressSymbols.TryFromDestination("GPS" + s.DestinationCode, out var symbol),
+                s.DestinationCode
+            );
+            Assert.Equal(s.Symbol, symbol);
+            Assert.True(AddressSymbols.TryFromDestination("SYM" + s.DestinationCode, out symbol));
+            Assert.Equal(s.Symbol, symbol);
+        }
+    }
+
+    [Fact]
     public void EverySymbolHasANameAndADestinationCode()
     {
         foreach (var s in AprsSymbolCatalog.All)
