@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.1...v0.8.0-alpha.2) (2026-11-05)
+
+
+### Bug Fixes
+
+* **deps:** Bump dotnet-reportgenerator-globaltool from 5.5.11 to 5.5.12 ([4082f09](https://github.com/APRS-NET/APRS.NET/commit/4082f09fd84deeacb370269f2ec9e65f39b594f0))
+
 ## [0.8.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.7.0-alpha.5...v0.8.0-alpha.1) (2026-10-28)
 
 
