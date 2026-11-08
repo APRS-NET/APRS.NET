@@ -73,7 +73,7 @@ A `KissTcpServer`'s instruments have a `server` tag instead: the address it list
 | Instrument | Unit | Tags | Counts |
 | --- | --- | --- | --- |
 | `aprsnet.kiss.server.clients.connected` | `{client}` | `server` | Up-down counter: apps connected now |
-| `aprsnet.kiss.server.clients.disconnected` | `{client}` | `server`, `reason`: `closed`, `overflow`, `server_stopping`, `server_full` | Apps that left, were dropped for falling behind (`overflow`), or were turned away because `maxClients` were connected (`server_full`) |
+| `aprsnet.kiss.server.clients.disconnected` | `{client}` | `server`, `reason`: `closed`, `overflow`, `server_stopping`, `server_full`, `error` | Apps that left, were dropped for falling behind (`overflow`), were turned away because `maxClients` were connected (`server_full`), or whose connection failed as it was accepted (`error`) |
 | `aprsnet.kiss.server.frames.published` | `{frame}` | `server` | Frames given to `Publish` while an app was connected; one frame counts once however many apps it went to |
 | `aprsnet.kiss.server.frames.received` | `{frame}` | `server` | AX.25 frames apps sent |
 | `aprsnet.kiss.server.frames.transmit_failures` | `{frame}` | `server` | Frames from apps that `Transmit` failed to send, such as while the TNC was not connected |

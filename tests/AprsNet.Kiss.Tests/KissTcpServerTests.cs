@@ -217,6 +217,90 @@ public sealed class KissTcpServerTests
     }
 
     [Fact]
+    public async Task AConnectionResetWhileAcceptingDoesNotStopLaterAppsConnecting()
+    {
+        var failures = 1;
+        await using var server = new KissTcpServer(AnyPort)
+        {
+            AcceptClient = (listener, stopping) =>
+                Interlocked.Decrement(ref failures) >= 0
+                    ? ValueTask.FromException<TcpClient>(new SocketException((int)SocketError.ConnectionReset))
+                    : listener.AcceptTcpClientAsync(stopping),
+        };
+        server.Start();
+
+        await using var app = await App.ConnectAsync(server);
+
+        await WaitUntil(() => server.ClientCount == 1);
+    }
+
+    [Fact]
+    public async Task RunningOutOfSocketsWhileAcceptingDoesNotStopLaterAppsConnecting()
+    {
+        var failures = 3;
+        await using var server = new KissTcpServer(AnyPort)
+        {
+            AcceptClient = (listener, stopping) =>
+                Interlocked.Decrement(ref failures) >= 0
+                    ? ValueTask.FromException<TcpClient>(new SocketException((int)SocketError.TooManyOpenSockets))
+                    : listener.AcceptTcpClientAsync(stopping),
+        };
+        server.Start();
+
+        await using var app = await App.ConnectAsync(server);
+
+        await WaitUntil(() => server.ClientCount == 1);
+    }
+
+    [Fact]
+    public async Task DisposingStopsAnAcceptLoopThatKeepsFailing()
+    {
+        var attempts = 0;
+        var server = new KissTcpServer(AnyPort)
+        {
+            AcceptClient = (_, _) =>
+            {
+                Interlocked.Increment(ref attempts);
+                return ValueTask.FromException<TcpClient>(new SocketException((int)SocketError.TooManyOpenSockets));
+            },
+        };
+        server.Start();
+        await WaitUntil(() => Volatile.Read(ref attempts) > 1);
+
+        await server.DisposeAsync().AsTask().WaitAsync(Wait, Token);
+
+        Assert.Throws<ObjectDisposedException>(server.Start);
+    }
+
+    [Fact]
+    public async Task ASocketThatFailsToSetUpDropsOnlyThatApp()
+    {
+        var failures = 1;
+        await using var server = new KissTcpServer(AnyPort)
+        {
+            PrepareClient = tcp =>
+            {
+                if (Interlocked.Decrement(ref failures) >= 0)
+                {
+                    throw new SocketException((int)SocketError.ConnectionReset);
+                }
+
+                tcp.NoDelay = true;
+            },
+        };
+        var connected = 0;
+        server.ClientConnected += (_, _) => Interlocked.Increment(ref connected);
+        server.Start();
+
+        await using var first = await App.ConnectAsync(server);
+        Assert.True(await first.ClosedAsync());
+        await using var second = await App.ConnectAsync(server);
+        await WaitUntil(() => server.ClientCount == 1);
+
+        Assert.Equal(1, Volatile.Read(ref connected));
+    }
+
+    [Fact]
     public void RefusesBadSettings()
     {
         Assert.Throws<ArgumentNullException>(() => new KissTcpServer(null!));
