@@ -169,7 +169,7 @@ resending its answer. It exits 0 when the message was acknowledged and 5 when it
 If the connection drops meanwhile, `send` reconnects as `listen --reconnect` does and carries on waiting.
 
 `--show-received` also prints every packet received while the message runs, as `< ` and the packet, so you can see
-what a service answers. Add `--filter` to see more than what is addressed to you: its terms go after `g/<callsign>`.
+what a service answers. Control characters in replies and packets are escaped (`\x1B`). Add `--filter` to see more than what is addressed to you: its terms go after `g/<callsign>`.
 To watch ANSRVR's notices and relays while joining a group:
 
 ```sh

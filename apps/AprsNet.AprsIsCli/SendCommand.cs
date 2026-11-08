@@ -935,7 +935,8 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 TimeProvider = environment.TimeProvider,
             }
         );
-        station.MessageReceived += (_, e) => output.WriteLine($"Reply from {e.Message.From}: {e.Message.Text}");
+        station.MessageReceived += (_, e) =>
+            output.WriteLine($"Reply from {e.Message.From}: {LineFormatter.EscapeForConsole(e.Message.Text)}");
 
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -962,7 +963,7 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
                 {
                     if (showReceived)
                     {
-                        await output.WriteLineAsync("< " + packet);
+                        await output.WriteLineAsync("< " + LineFormatter.EscapeForConsole(packet.ToString()));
                     }
 
                     station.Receive(packet, source);
