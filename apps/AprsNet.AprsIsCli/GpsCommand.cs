@@ -232,7 +232,7 @@ internal sealed class GpsCommand(CliEnvironment environment)
             if (gps.LastError is { } said && said != lastError)
             {
                 lastError = said;
-                await error.WriteLineAsync($"aprscli: gpsd says: {said}");
+                await error.WriteLineAsync($"aprscli: gpsd says: {LineFormatter.EscapeForConsole(said)}");
             }
 
             printer.Fix(fix, gps.Quality, gps.Satellites);
@@ -432,7 +432,7 @@ internal sealed class FixPrinter(TextWriter output, bool satellites, bool raw, i
     {
         if (raw)
         {
-            output.WriteLine(line);
+            output.WriteLine(LineFormatter.EscapeForConsole(line));
         }
     }
 

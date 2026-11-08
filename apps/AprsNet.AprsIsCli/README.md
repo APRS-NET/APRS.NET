@@ -523,7 +523,8 @@ second's fix is printed when the next second starts, once all of its sentences a
 
 - `--satellites` (`-s`) lists the satellites in view after a fix, when they have changed: the system, number, signal,
   elevation, azimuth, signal-to-noise ratio and whether the fix uses it.
-- `--raw` prints the lines as read instead: gpsd's JSON or the NMEA sentences.
+- `--raw` prints the lines as read instead: gpsd's JSON or the NMEA sentences. Control characters in them are
+  escaped (`\x1B`), as is any error gpsd reports.
 - `-n` stops after that many fixes, `-d` after that long.
 
 When the source goes away (gpsd restarts, the bridge drops, the GPS is unplugged) it keeps trying, waiting 5 seconds
