@@ -41,6 +41,28 @@ public sealed class CorpusAnonymizerTests
         Assert.True(result.IsClean);
     }
 
+    [Theory]
+    [InlineData("K1ABC>APRS:)")]
+    [InlineData("K1ABC>APRS:)a")]
+    [InlineData("K1ABC>APRS:)ab")]
+    [InlineData("K1ABC>APRS:)abc")]
+    [InlineData("K1ABC>APRS:)ab!")]
+    public void AnItemTooShortToHaveANameKeepsItsLength(string packet)
+    {
+        var result = new CorpusAnonymizer().Anonymize([Line(packet)]);
+
+        Assert.Equal("Q1AAA>APRS:" + packet[11..], Assert.Single(result.Lines).Packet);
+    }
+
+    [Fact]
+    public void AnItemNameAndItsCommentAreReplacedAndItsPositionIsKept()
+    {
+        var result = new CorpusAnonymizer().Anonymize([Line("K1ABC>APRS:)W2XYZ!4903.50N/07201.75Wr by W2XYZ")]);
+
+        Assert.True(result.IsClean);
+        Assert.Equal("Q1AAA>APRS:)Q2AAA!4903.50N/07201.75Wr by Q2AAA", Assert.Single(result.Lines).Packet);
+    }
+
     [Fact]
     public void TheTocallMicEDestinationAndGenericAliasesAreKept()
     {

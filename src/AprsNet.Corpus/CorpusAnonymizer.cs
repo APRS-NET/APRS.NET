@@ -382,7 +382,13 @@ public sealed partial class CorpusAnonymizer
     /// <summary>Where an item's 3–9 character name ends: the index of its <c>!</c> (live) or <c>_</c> (killed) flag.</summary>
     private static int ItemNameEnd(string body)
     {
-        var flag = body.AsSpan(4, Math.Min(7, Math.Max(0, body.Length - 4))).IndexOfAny('!', '_');
+        // The flag comes at index 4 at the earliest, so a shorter body has no name (and can't be sliced from 4).
+        if (body.Length <= 4)
+        {
+            return 0;
+        }
+
+        var flag = body.AsSpan(4, Math.Min(7, body.Length - 4)).IndexOfAny('!', '_');
         return flag < 0 ? 0 : flag + 4;
     }
 
