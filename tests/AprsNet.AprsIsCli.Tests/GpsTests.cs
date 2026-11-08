@@ -151,6 +151,72 @@ public sealed class GpsTests : IDisposable
     }
 
     [Fact]
+    public async Task RawPrintsControlCharactersInALineEscaped()
+    {
+        var run = new CliHarness().RunAsync(
+            ["gps", "--nmea", Address, "-n", "2", "--raw"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve([Nmea[0], "$GPTXT,\u001b[2J\u001b]0;title\u0007*00", .. Nmea[1..]]);
+        var result = await run;
+
+        Assert.Contains(@"$GPTXT,\x1B[2J\x1B]0;title\x07*00" + NewLine, result.Out, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', result.Out);
+    }
+
+    [Fact]
+    public async Task RawPrintsNmeaLinesAsRead()
+    {
+        var run = new CliHarness().RunAsync(
+            ["gps", "--nmea", Address, "-n", "2", "--raw"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve(Nmea);
+        var result = await run;
+
+        Assert.StartsWith(
+            string.Concat(Nmea[..5].Select(line => line + NewLine)),
+            result.Out,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
+    public async Task AGpsdErrorIsPrintedWithItsControlCharactersEscaped()
+    {
+        var run = new CliHarness().RunAsync(
+            ["gps", "--gpsd", Address, "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve([Gpsd[0], """{"class":"ERROR","message":"\u001b[2Jno device\u009b31m"}""", .. Gpsd[1..]]);
+        var result = await run;
+
+        Assert.Contains(
+            @"aprscli: gpsd says: \x1B[2Jno device\x9B31m" + NewLine,
+            result.Error,
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain('\u001b', result.Error);
+    }
+
+    [Fact]
+    public async Task AGpsdErrorIsPrintedAsItIs()
+    {
+        var run = new CliHarness().RunAsync(
+            ["gps", "--gpsd", Address, "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve([Gpsd[0], """{"class":"ERROR","message":"Can't open /dev/ttyACM0."}""", .. Gpsd[1..]]);
+        var result = await run;
+
+        Assert.Contains(
+            "aprscli: gpsd says: Can't open /dev/ttyACM0." + NewLine,
+            result.Error,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
     public async Task NmeaGivesAFixForEachSecond()
     {
         var run = new CliHarness().RunAsync(
