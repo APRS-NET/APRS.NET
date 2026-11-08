@@ -22,6 +22,7 @@ await foreach (var fix in gps.ReadFixesAsync(cancellationToken))
 the machine it runs on goes away, it reconnects, waiting `ReconnectDelay` (2 seconds) and doubling up to
 `MaxReconnectDelay` (60 seconds), and the read carries on. `State`, `StateChanged` and `Reconnects` say how the
 connection is doing; `Release` is gpsd's version, and `LastError` the last error gpsd reported.
+A line longer than 64 KiB, far more than any report gpsd sends, is dropped and the read carries on with the next.
 
 `GpsdOptions` also sets the `Device` to read when gpsd has several GPSs, the connect timeout and the `TimeProvider`.
 
