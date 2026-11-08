@@ -9,6 +9,11 @@ server.Start();
 server.Publish(packet);
 ```
 
+Every packet is checked against every client's filter, so the server limits how big one may be. A filter may have at
+most 50 terms, 9 `r/` and 9 `f/` terms (as on APRS-IS), and 512 characters of callsign and name patterns (`p/`, `b/`,
+`o/`, `d/`, `e/`, `g/`, `u/`). A bigger filter, at login, with `#filter` or from a WebSocket client, gets an error
+reply and the client keeps the filter it had.
+
 To serve what an APRS-IS connection and local TNCs hear, add each as a source of a `GatewayFeed`. A packet heard on
 several sources within 30 seconds is published once:
 

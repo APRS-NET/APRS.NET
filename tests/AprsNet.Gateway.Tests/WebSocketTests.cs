@@ -251,6 +251,39 @@ public sealed class WebSocketTests : IAsyncLifetime
         Assert.Equal("position", (await ReceiveAsync(socket)).GetProperty("type").GetString());
     }
 
+    [Fact]
+    public async Task AnOversizedFilterIsRefusedAndTheOldOneKept()
+    {
+        using var socket = await ConnectAsync("?filter=t/p");
+        await ReceiveAsync(socket);
+        var text = string.Join(' ', Enumerable.Range(0, 51).Select(i => $"b/N{i}CALL"));
+        await SendAsync(socket, $$"""{"filter":"{{text}}"}""");
+        var reply = await ReceiveAsync(socket);
+        Assert.Equal(text, reply.GetProperty("filter").GetString());
+        Assert.Equal(
+            "This server accepts at most 50 terms in a filter; this filter has 51.",
+            reply.GetProperty("error").GetString()
+        );
+
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>status"));
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:!4903.50N/07201.75W>position"));
+        Assert.Equal("position", (await ReceiveAsync(socket)).GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task AnOversizedStartingFilterIsReported()
+    {
+        var text = string.Join(' ', Enumerable.Range(0, 10).Select(i => $"r/{i}/0/1"));
+        using var socket = await ConnectAsync("?filter=" + Uri.EscapeDataString(text));
+        Assert.Equal(JsonValueKind.Null, (await ReceiveAsync(socket)).GetProperty("filter").ValueKind);
+        var reply = await ReceiveAsync(socket);
+        Assert.Equal(text, reply.GetProperty("filter").GetString());
+        Assert.Equal(
+            "APRS-IS servers accept at most 9 range (r/) terms; this filter has 10.",
+            reply.GetProperty("error").GetString()
+        );
+    }
+
     [Theory]
     [InlineData("""{"filter":"x/nonsense"}""", "filter")]
     [InlineData("not json", "error")]
