@@ -67,6 +67,7 @@ focused, with its own type. The type decides the release, so pick it by what shi
 | A breaking library change | `feat!:` or `fix!:` |
 | The `aprscli` tool gains a feature or gets a fix | `feat(cli):` or `fix(cli):` |
 | A NuGet dependency update (Dependabot) | `fix(deps):` |
+| A container base image update (Dependabot) | `fix(deps):` |
 | Tests, tools, docs, CI, benchmarks | `chore:`, `test:`, `docs:`, `ci:`, `build:` |
 
 Only changes to what ships, the libraries, `aprscli` and their dependencies, produce a release;

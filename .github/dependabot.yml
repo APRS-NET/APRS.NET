@@ -37,3 +37,13 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+
+  # The Dockerfile's base images, pinned by digest. A new digest is usually a security update to the image's OS or
+  # .NET runtime, which ships in the aprscli image, so it is fix(deps) too: each one gives a release PR, and the release
+  # publishes an image on the new base.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "fix(deps)"
