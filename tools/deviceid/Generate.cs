@@ -405,17 +405,47 @@ internal static class Updater
     private static string Name(string section, string key) =>
         section switch
         {
-            "tocalls" => $"TOCALL `{key}`",
-            "mice" => $"Mic-E code `{key}`",
-            "micelegacy" => $"legacy Mic-E code `{key}`",
-            _ => $"class `{key}`",
+            "tocalls" => $"TOCALL {Code(key)}",
+            "mice" => $"Mic-E code {Code(key)}",
+            "micelegacy" => $"legacy Mic-E code {Code(key)}",
+            _ => $"class {Code(key)}",
         };
 
+    /// <summary>
+    /// An entry's description as one code span. The text comes from the upstream list and goes into the pull request
+    /// a maintainer reviews, so none of it may render as Markdown or HTML: no links, images, mentions or comments.
+    /// </summary>
     private static string Describe(JsonNode entry)
     {
         var parts = _described.Select(k => entry[k]?.GetValue<string>()).Where(v => v is not null);
         var features = entry["features"] is JsonArray list ? $" ({string.Join(", ", list)})" : "";
-        return string.Join(", ", parts) + features;
+        return Code(string.Join(", ", parts) + features);
+    }
+
+    /// <summary>
+    /// <paramref name="text"/> as a Markdown code span, which shows it literally. Control characters, which could end
+    /// the line or the list, become spaces, and the fence is one backtick longer than the longest run inside.
+    /// </summary>
+    private static string Code(string text)
+    {
+        if (text.Length == 0)
+        {
+            return "";
+        }
+
+        var plain = new string([.. text.Select(c => char.IsControl(c) || c is '\u2028' or '\u2029' ? ' ' : c)]);
+        var longest = 0;
+        var run = 0;
+        foreach (var c in plain)
+        {
+            run = c == '`' ? run + 1 : 0;
+            longest = Math.Max(longest, run);
+        }
+
+        var fence = new string('`', longest + 1);
+        var pad =
+            plain.StartsWith('`') || plain.EndsWith('`') || plain.StartsWith(' ') && plain.EndsWith(' ') ? " " : "";
+        return $"{fence}{pad}{plain}{pad}{fence}";
     }
 
     private static void Strip(JsonNode? node, string key)
