@@ -218,6 +218,88 @@ public class SendTests
     }
 
     [Fact]
+    public async Task AReplyIsPrintedWithItsControlCharactersEscaped()
+    {
+        var result = await ReplyAsync("\u001b[2J\u001b]0;title\u0007Hi");
+
+        Assert.Contains(@"Reply from WU2Z: \x1B[2J\x1B]0;title\x07Hi", result.Out, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', result.Out);
+    }
+
+    [Fact]
+    public async Task AReplyIsPrintedWithItsC1ControlCharactersEscaped()
+    {
+        // U+009B is CSI on its own, in UTF-8 as C2 9B.
+        var result = await ReplyAsync(Utf8("\u009b2JHi"));
+
+        Assert.Contains(@"Reply from WU2Z: \x9B2JHi", result.Out, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u009b', result.Out);
+    }
+
+    [Fact]
+    public async Task AUtf8ReplyIsPrintedAsItIs()
+    {
+        var result = await ReplyAsync(Utf8("Grüße, 73 ✓"));
+
+        Assert.Contains("Reply from WU2Z: Grüße, 73 ✓", result.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ShowReceivedPrintsPacketsWithTheirControlCharactersEscaped()
+    {
+        var harness = Verified();
+
+        var run = harness.RunAsync(
+            [
+                "send",
+                "message",
+                "WU2Z",
+                "Hello there",
+                "-c",
+                Callsign,
+                "--wait-replies",
+                "0",
+                "--show-received",
+                "--filter",
+                "b/W1AW",
+            ],
+            TestContext.Current.CancellationToken
+        );
+        var written = await WaitForWritten(harness, 2);
+        harness.Transport.Server("W1AW>APRS,TCPIP*,qAC,T2TEST:>\u001b[2J\u009b31mstatus");
+        harness.Transport.Server(
+            $"WU2Z>APRS,TCPIP*,qAC,T2TEST::{Callsign} :ack{written[1][(written[1].LastIndexOf('{') + 1)..]}"
+        );
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(@"< W1AW>APRS,TCPIP*,qAC,T2TEST:>\x1B[2J\x9B31mstatus", result.Out, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', result.Out);
+        Assert.DoesNotContain('\u009b', result.Out);
+    }
+
+    /// <summary>Sends a message, and answers it with a reply-ack carrying <paramref name="text"/> as it reads on the wire.</summary>
+    private static async Task<CliResult> ReplyAsync(string text)
+    {
+        var harness = Verified();
+
+        var run = harness.RunAsync(
+            ["send", "message", "WU2Z", "Hello there", "-c", Callsign, "--wait-replies", "0"],
+            TestContext.Current.CancellationToken
+        );
+        await WaitForWritten(harness, 2);
+        harness.Transport.Server($"WU2Z>APRS,TCPIP*,qAC,T2TEST::{Callsign} :{text}{{7}}01");
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        return result;
+    }
+
+    /// <summary><paramref name="text"/>'s UTF-8 bytes, one character each, as a line read from APRS-IS holds them.</summary>
+    private static string Utf8(string text) =>
+        System.Text.Encoding.Latin1.GetString(System.Text.Encoding.UTF8.GetBytes(text));
+
+    [Fact]
     public async Task AMessageNobodyAnswersFailsWhenItsRetriesRunOut()
     {
         var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(DateTimeOffset.UnixEpoch);
