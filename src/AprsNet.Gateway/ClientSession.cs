@@ -138,13 +138,27 @@ internal sealed class ClientSession : IDisposable
         return _context;
     }
 
-    /// <summary>Marks the client logged in, so <see cref="Offer"/> queues packets for it.</summary>
+    /// <summary>
+    /// Marks the client logged in, so <see cref="Offer(AprsPacket, ReadOnlyMemory{byte})"/> queues packets for it.
+    /// </summary>
     public void Activate(LoginLine login) => _login = login;
 
     /// <summary>Queues the packet if the client's filter passes it, or it is a message to the client.</summary>
     public void Offer(AprsPacket packet, ReadOnlyMemory<byte> line)
     {
-        if (_login is not { } login || _closing.IsCancellationRequested)
+        if (_login is { } login)
+        {
+            Offer(packet, line, login);
+        }
+    }
+
+    /// <summary>
+    /// As <see cref="Offer(AprsPacket, ReadOnlyMemory{byte})"/>, for a client being sent its history before
+    /// <see cref="Activate"/>.
+    /// </summary>
+    public void Offer(AprsPacket packet, ReadOnlyMemory<byte> line, LoginLine login)
+    {
+        if (_closing.IsCancellationRequested)
         {
             return;
         }

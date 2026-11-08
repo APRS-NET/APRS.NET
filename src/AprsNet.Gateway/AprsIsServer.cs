@@ -28,7 +28,10 @@ public sealed class AprsIsServer : IAsyncDisposable
     private readonly ConcurrentDictionary<ClientSession, Task> _sessions = new();
     private readonly CancellationTokenSource _stopping = new();
 
-    // Publishing and a client joining take turns, so a joining client gets each packet once: from the history or live.
+    // Each round of a history replay filters what was published during the one before, so a few are enough.
+    private const int MaxReplayRounds = 4;
+
+    // Publishing and a client going live take turns, so a joining client gets each packet once, from history or live.
     private readonly Lock _publishing = new();
     private readonly Queue<PublishedPacket> _history = new();
     private readonly ConcurrentDictionary<IPacketSubscriber, byte> _subscribers = new();
@@ -126,18 +129,8 @@ public sealed class AprsIsServer : IAsyncDisposable
     /// Starts giving published packets to <paramref name="subscriber"/>, beginning with the history; each packet
     /// reaches it once, from the history or live.
     /// </summary>
-    internal void Subscribe(IPacketSubscriber subscriber)
-    {
-        lock (_publishing)
-        {
-            _subscribers[subscriber] = 0;
-            TrimHistory();
-            foreach (var published in _history)
-            {
-                subscriber.Offer(published);
-            }
-        }
-    }
+    internal void Subscribe(IPacketSubscriber subscriber) =>
+        Replay(subscriber.Offer, () => _subscribers[subscriber] = 0);
 
     /// <summary>Stops giving packets to <paramref name="subscriber"/>.</summary>
     internal void Unsubscribe(IPacketSubscriber subscriber) => _subscribers.TryRemove(subscriber, out _);
@@ -146,16 +139,74 @@ public sealed class AprsIsServer : IAsyncDisposable
     internal StationStore? Stations => _options.Stations;
 
     /// <summary>Starts sending to a client that has logged in, beginning with the history its filter passes.</summary>
-    internal void Join(ClientSession session, LoginLine login)
+    internal void Join(ClientSession session, LoginLine login) =>
+        Replay(published => session.Offer(published.Packet, published.Line, login), () => session.Activate(login));
+
+    // A joining client's history goes through its filter outside the lock, so neither a long history nor a costly
+    // filter holds up publishing. What is published meanwhile waits in a backlog and is filtered the same way. Once
+    // the client has caught up, it goes live under the lock, so it gets each packet once and in order.
+    private void Replay(Action<PublishedPacket> offer, Action goLive)
     {
+        var backlog = new Backlog();
+        List<PublishedPacket> pending;
         lock (_publishing)
         {
-            session.Activate(login);
             TrimHistory();
-            foreach (var published in _history)
+            if (_history.Count == 0)
             {
-                session.Offer(published.Packet, published.Line);
+                goLive();
+                return;
             }
+
+            pending = [.. _history];
+            _subscribers[backlog] = 0;
+        }
+
+        try
+        {
+            for (var round = 1; ; round++)
+            {
+                foreach (var published in pending)
+                {
+                    offer(published);
+                }
+
+                lock (_publishing)
+                {
+                    pending = backlog.Take();
+                    if (pending.Count == 0 || round == MaxReplayRounds)
+                    {
+                        // Only what was published while the last round was filtered, if the feed outran it.
+                        foreach (var published in pending)
+                        {
+                            offer(published);
+                        }
+
+                        _subscribers.TryRemove(backlog, out _);
+                        goLive();
+                        return;
+                    }
+                }
+            }
+        }
+        finally
+        {
+            _subscribers.TryRemove(backlog, out _);
+        }
+    }
+
+    /// <summary>Holds what is published while a joining client's history is being filtered.</summary>
+    private sealed class Backlog : IPacketSubscriber
+    {
+        private List<PublishedPacket> _packets = [];
+
+        public void Offer(PublishedPacket packet) => _packets.Add(packet);
+
+        public List<PublishedPacket> Take()
+        {
+            var taken = _packets;
+            _packets = [];
+            return taken;
         }
     }
 
