@@ -78,7 +78,14 @@ public sealed class InternetToRfGate
     public RfGateDecision Gate(AprsPacket fromInternet)
     {
         ArgumentNullException.ThrowIfNull(fromInternet);
-        if (fromInternet.Source is not { } sender || fromInternet.Destination is null || fromInternet.Path is null)
+        if (
+            fromInternet.Source is not { } sender
+            || fromInternet.Destination is null
+            || fromInternet.Path is null
+            || !Callsign.TryParse(sender.Value, out _)
+            || !Callsign.TryParse(fromInternet.Destination.Value, out _)
+            || fromInternet.Issues.Any(issue => issue.Code is ParseIssueCode.InvalidCallsign)
+        )
         {
             return Refuse(fromInternet, RfGateRefusal.Unreadable);
         }
@@ -132,6 +139,12 @@ public sealed class InternetToRfGate
             return Refuse(fromInternet, RfGateRefusal.Duplicate);
         }
 
+        // Built before a place in the limit is taken, so a packet that can't be carried costs none.
+        if (ThirdParty(fromInternet) is not { } packet)
+        {
+            return Refuse(fromInternet, RfGateRefusal.Unreadable);
+        }
+
         var now = _timeProvider.GetUtcNow();
         lock (_lock)
         {
@@ -156,7 +169,7 @@ public sealed class InternetToRfGate
         }
 
         _gated.Check(fromInternet);
-        return new RfGateDecision(fromInternet, ThirdParty(fromInternet), null);
+        return new RfGateDecision(fromInternet, packet, null);
     }
 
     /// <summary>The senders owed a position now, for tests.</summary>
@@ -220,8 +233,9 @@ public sealed class InternetToRfGate
         }
     }
 
-    // SENDER>DEST,TCPIP,IGATE*:info inside IGATE>TOCALL,PATH:}, as the APRS-IS rules write it.
-    private AprsPacket ThirdParty(AprsPacket fromInternet)
+    // SENDER>DEST,TCPIP,IGATE*:info inside IGATE>TOCALL,PATH:}, as the APRS-IS rules write it. Null when the
+    // encoder won't carry it; Gate checks the header first, so that is a backstop.
+    private AprsPacket? ThirdParty(AprsPacket fromInternet)
     {
         var header = Encoding.ASCII.GetBytes(
             $"{fromInternet.Source!.Value}>{fromInternet.Destination!.Value},TCPIP,{IGate.Source.Value}*:"
@@ -229,7 +243,14 @@ public sealed class InternetToRfGate
         var information = fromInternet.Information.Span;
         var end = information.IndexOfAny("\r\n\0"u8);
         var inner = AprsPacket.Parse([.. header, .. end < 0 ? information : information[..end]]);
-        return IGate.Create(new ThirdPartyPayload(inner));
+        try
+        {
+            return IGate.Create(new ThirdPartyPayload(inner));
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
     }
 
     private static RfGateDecision Refuse(AprsPacket fromInternet, RfGateRefusal refusal) =>

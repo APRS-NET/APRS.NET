@@ -87,7 +87,7 @@ refused with an `RfGateRefusal`:
 | `FromRadio` | Gated from RF to APRS-IS (`qAR`, `qAO`): it is on RF already |
 | `Duplicate` | A copy of one gated within 30 seconds, such as from a second APRS-IS server |
 | `RateLimited` | Over 6 packets a minute or 10 in five minutes (`MaxPerMinute`, `MaxPerFiveMinutes`), as Dire Wolf's `IGTXLIMIT` |
-| `Unreadable` | A header that can't be read |
+| `Unreadable` | A header that can't be read, or a sender, destination or path entry that isn't a callsign |
 
 The IGate transmits on its own: run one only with a licence, and match `HeardStationsOptions.MaxLocalHops` to the hops
 of its path.

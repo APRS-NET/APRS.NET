@@ -218,6 +218,46 @@ public sealed class InternetToRfGateTests
         Assert.True(Message(6).IsGated);
     }
 
+    [Theory]
+    [InlineData("W1\0AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")]
+    [InlineData("W1\rAW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")]
+    [InlineData("W1AW>AP\rRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")]
+    [InlineData("W1AW>AP\0RS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")]
+    [InlineData("W1\u0001AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")]
+    [InlineData("W1 AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")]
+    public void AMessageWhoseSenderOrDestinationIsNotACallsignIsUnreadable(string fromInternet)
+    {
+        var decision = Gate().Gate(AprsPacket.Parse(fromInternet));
+
+        Assert.False(decision.IsGated);
+        Assert.Equal(RfGateRefusal.Unreadable, decision.Refusal);
+    }
+
+    [Fact]
+    public void AnUnreadableMessageUsesNoPlaceInTheRateLimit()
+    {
+        var gate = Gate(maxPerMinute: 1, maxPerFiveMinutes: 1);
+
+        var bad = gate.Gate(AprsPacket.Parse("W1AW>AP\rRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01"));
+        var good = gate.Gate(AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01"));
+
+        Assert.Equal(RfGateRefusal.Unreadable, bad.Refusal);
+        Assert.True(good.IsGated);
+    }
+
+    [Fact]
+    public void AnUnreadableMessageOwesNoPosition()
+    {
+        var gate = Gate();
+        Assert.Equal(
+            RfGateRefusal.Unreadable,
+            gate.Gate(AprsPacket.Parse("W1AW>AP\0RS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).Refusal
+        );
+
+        var position = AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing");
+        Assert.Equal(RfGateRefusal.NotForAStation, gate.Gate(position).Refusal);
+    }
+
     [Fact]
     public void AStationHeardTooLongAgoIsNoLongerLocal()
     {
