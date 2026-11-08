@@ -17,6 +17,9 @@ internal sealed class GpsCommand(CliEnvironment environment)
 
     private static readonly TimeSpan MaxReconnectDelay = TimeSpan.FromMinutes(1);
 
+    // The longest NMEA line read: a sentence is at most 82 characters, so this leaves room for odd GPSs.
+    private const int MaxNmeaLineLength = 256;
+
     private readonly Option<string?> _gpsd = new("--gpsd")
     {
         Description = $"Read gpsd at host[:port] (default localhost:{GpsdOptions.DefaultPort}).",
@@ -289,7 +292,8 @@ internal sealed class GpsCommand(CliEnvironment environment)
                 delay = environment.ReconnectDelay;
                 gps.Reset();
                 metrics.Reset();
-                using var reader = new StreamReader(stream, Encoding.Latin1);
+                // A sentence is at most 82 characters; a longer line is damaged, and is dropped unbuffered.
+                var reader = new BoundedLineReader(stream, MaxNmeaLineLength, Encoding.Latin1);
                 while (await reader.ReadLineAsync(cancellationToken) is { } line)
                 {
                     printer.Line(line);

@@ -519,7 +519,8 @@ aprscli gps --serial COM4@9600
 Each line has the time, the fix (`no fix`, `fix`, `2D` or `3D`), then whatever the GPS gave: the position, the altitude
 above mean sea level, speed and course, the satellites used and in view, HDOP and the estimated horizontal error.
 gpsd's error is at 95% confidence; from NMEA it is GST's one standard deviation, when the GPS sends GST. From NMEA a
-second's fix is printed when the next second starts, once all of its sentences are in.
+second's fix is printed when the next second starts, once all of its sentences are in. An NMEA line longer than 256
+characters (a sentence is at most 82) is damaged and skipped; from gpsd, a line longer than 64 KiB is.
 
 - `--satellites` (`-s`) lists the satellites in view after a fix, when they have changed: the system, number, signal,
   elevation, azimuth, signal-to-noise ratio and whether the fix uses it.

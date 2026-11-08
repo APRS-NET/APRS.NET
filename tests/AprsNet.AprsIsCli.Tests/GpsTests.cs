@@ -191,6 +191,42 @@ public sealed class GpsTests : IDisposable
     }
 
     [Fact]
+    public async Task NmeaLongerThan256BytesIsSkippedAsDamaged()
+    {
+        var overlong = Sentence(Nmea[0][1..^3] + "," + new string('0', 300)); // a good checksum, but far too long
+        var run = new CliHarness().RunAsync(
+            ["gps", "--nmea", Address, "-n", "2", "--raw"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve([overlong, .. Nmea]);
+        var result = await run;
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.DoesNotContain(overlong, result.Out, StringComparison.Ordinal);
+        Assert.StartsWith(Nmea[0] + NewLine, result.Out, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An82CharacterNmeaSentenceStillGivesAFix()
+    {
+        // GGA with its latitude and longitude written to more places: NMEA's longest, 82 characters.
+        var longest = Sentence("GPGGA,140001.00,4903.500000000,N,07201.750000000,W,1,02,0.92,105.3,M,-32.1,M,,");
+        var run = new CliHarness().RunAsync(
+            ["gps", "--nmea", Address, "-n", "2"],
+            TestContext.Current.CancellationToken
+        );
+        await Serve([Nmea[0], longest, .. Nmea[2..]]);
+        var result = await run;
+
+        Assert.Equal(82, longest.Length);
+        Assert.StartsWith(
+            "2026-10-20 14:00:01Z 3D 49.05833 -72.02917 105.3 m 48.6 kn 90° 2/3 sats HDOP 0.92 ±2.0 m" + NewLine,
+            result.Out,
+            StringComparison.Ordinal
+        );
+    }
+
+    [Fact]
     public async Task GpsdIsAskedForTheDeviceGiven()
     {
         var run = new CliHarness().RunAsync(
@@ -259,6 +295,24 @@ public sealed class GpsTests : IDisposable
             result.Error,
             StringComparison.Ordinal
         );
+    }
+
+    [Fact]
+    public async Task ASerialGpsThatNeverEndsALineIsReadAgain()
+    {
+        var harness = new CliHarness();
+        harness.GpsPorts.Enqueue(new MemoryStream(Encoding.ASCII.GetBytes("$GPRMC," + new string('x', 4096))));
+        harness.GpsPorts.Enqueue(Port(Nmea));
+
+        var result = await harness.RunAsync(
+            ["gps", "--serial", "/dev/ttyACM0", "-n", "2", "--raw"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(2, harness.OpenedGpsPorts.Count);
+        Assert.DoesNotContain("xxxx", result.Out, StringComparison.Ordinal);
+        Assert.StartsWith(Nmea[0] + NewLine, result.Out, StringComparison.Ordinal);
     }
 
     [Fact]
