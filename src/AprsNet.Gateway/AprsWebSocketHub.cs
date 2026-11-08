@@ -19,8 +19,8 @@ namespace AprsNet.Gateway;
 /// The protocol: the server first sends <c>{"server":NAME,"software":NAME VERSION,"filter":FILTER}</c>, then packets.
 /// A client changes its filter by sending <c>{"filter":"r/35/-97/200"}</c>, and the server answers
 /// <c>{"filter":…,"active":true}</c> or <c>{"filter":…,"error":…}</c>. Clients are read-only: anything else they send
-/// gets an <c>{"error":…}</c> reply. A client whose queue fills is disconnected at once rather than slowing the
-/// others.
+/// gets an <c>{"error":…}</c> reply. A client whose queue fills, or that stops reading for 30 seconds, is
+/// disconnected at once rather than slowing the others.
 /// </para>
 /// </remarks>
 public sealed class AprsWebSocketHub : IAsyncDisposable
@@ -45,7 +45,7 @@ public sealed class AprsWebSocketHub : IAsyncDisposable
     /// <summary>WebSocket clients connected now.</summary>
     public int ClientCount => _sessions.Count;
 
-    /// <summary>Clients closed so far because they fell too far behind.</summary>
+    /// <summary>Clients closed so far because they fell too far behind or stopped reading.</summary>
     public long ClientsDroppedForOverflow => Interlocked.Read(ref _overflowed);
 
     /// <summary>Whether another client can connect now, under <see cref="AprsWebSocketHubOptions.MaxClients"/>.</summary>
@@ -149,6 +149,10 @@ public sealed class AprsWebSocketHubOptions
 
     /// <summary>The longest message a client may send, in bytes; longer ones close it. Defaults to 4096.</summary>
     public int MaxMessageBytes { get; set; } = 4096;
+
+    // How long one message may take to reach the client's network buffer before the client is dropped as too slow.
+    // Tests shorten it.
+    internal TimeSpan SendTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
     /// <summary>Throws <see cref="ArgumentException"/> if a setting is unusable.</summary>
     public void Validate()

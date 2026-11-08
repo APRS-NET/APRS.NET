@@ -76,10 +76,12 @@ internal sealed class WebSocketSession : IPacketSubscriber
             }
 
             // Cancelling a WebSocket send or receive aborts the socket, so they take no token: the writer stops
-            // between messages, and the reader when the client answers the close.
+            // between messages, and the reader when the client answers the close. The session also wakes when it
+            // is closed, so a client that has stopped reading, with a send stuck behind it, is still cut off.
             var writing = WriteQueuedAsync(closing.Token);
             var reading = ReadMessagesAsync();
-            await Task.WhenAny(writing, reading).ConfigureAwait(false);
+            var closed = Task.Delay(Timeout.InfiniteTimeSpan, TimeProvider.System, closing.Token);
+            await Task.WhenAny(writing, reading, closed).ConfigureAwait(false);
             await closing.CancelAsync().ConfigureAwait(false);
             if (Overflowed)
             {
@@ -100,9 +102,10 @@ internal sealed class WebSocketSession : IPacketSubscriber
                 _socket.Abort();
             }
         }
-        catch (Exception e) when (e is OperationCanceledException or WebSocketException or IOException)
+        catch (Exception e)
+            when (e is OperationCanceledException or WebSocketException or IOException or TimeoutException)
         {
-            // The client left, or the hub is stopping.
+            // The client left, stopped reading, or the hub is stopping.
             _socket.Abort();
         }
         catch (Exception)
@@ -275,8 +278,25 @@ internal sealed class WebSocketSession : IPacketSubscriber
         }
     }
 
-    private Task SendAsync(ReadOnlyMemory<byte> message) =>
-        _socket.SendAsync(message, WebSocketMessageType.Text, endOfMessage: true, CancellationToken.None).AsTask();
+    // A send that the client's TCP window holds up for longer than SendTimeout means it has stopped reading: it is
+    // dropped as too slow, as when its queue fills.
+    private async Task SendAsync(ReadOnlyMemory<byte> message)
+    {
+        try
+        {
+            await _socket
+                .SendAsync(message, WebSocketMessageType.Text, endOfMessage: true, CancellationToken.None)
+                .AsTask()
+                .WaitAsync(_options.SendTimeout, TimeProvider.System)
+                .ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            Overflowed = true;
+            _socket.Abort();
+            throw;
+        }
+    }
 
     private void Enqueue(ReadOnlyMemory<byte> message)
     {

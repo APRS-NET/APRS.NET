@@ -30,6 +30,7 @@ public sealed class GatewayWebServer : IAsyncDisposable
     private readonly GatewayWebServerOptions _options;
     private readonly ConcurrentDictionary<Task, byte> _connections = new();
     private readonly CancellationTokenSource _stopping = new();
+    private int _pending;
     private TcpListener? _listener;
     private Task? _accepting;
 
@@ -68,6 +69,9 @@ public sealed class GatewayWebServer : IAsyncDisposable
     /// <see cref="GatewayWebServerOptions.EndPoint"/>, this gives the port the system chose.
     /// </summary>
     public IPEndPoint? LocalEndPoint => (IPEndPoint?)_listener?.LocalEndpoint;
+
+    // Connections accepted that have not yet sent their request, for tests.
+    internal int PendingConnections => Volatile.Read(ref _pending);
 
     /// <summary>Starts listening.</summary>
     /// <exception cref="InvalidOperationException">The server has already been started.</exception>
@@ -126,7 +130,17 @@ public sealed class GatewayWebServer : IAsyncDisposable
                 return;
             }
 
-            var run = new Task<Task>(() => ServeAsync(tcp, stopping));
+            // Connections still sending their request are limited apart from MaxClients, which counts only
+            // WebSocket clients, so a flood of idle connections cannot pile up sockets and buffers.
+            if (Interlocked.Increment(ref _pending) > _options.MaxPendingConnections)
+            {
+                Interlocked.Decrement(ref _pending);
+                tcp.Dispose();
+                continue;
+            }
+
+            var pending = new PendingConnection(this);
+            var run = new Task<Task>(() => ServeAsync(tcp, pending, stopping));
             var task = run.Unwrap();
             _connections[task] = 0;
             _ = task.ContinueWith(t => _connections.TryRemove(t, out _), TaskScheduler.Default);
@@ -134,9 +148,10 @@ public sealed class GatewayWebServer : IAsyncDisposable
         }
     }
 
-    private async Task ServeAsync(TcpClient tcp, CancellationToken stopping)
+    private async Task ServeAsync(TcpClient tcp, PendingConnection pending, CancellationToken stopping)
     {
         using (tcp)
+        using (pending)
         {
             var stream = tcp.GetStream();
             try
@@ -148,7 +163,7 @@ public sealed class GatewayWebServer : IAsyncDisposable
                     return;
                 }
 
-                await HandleAsync(stream, request, stopping).ConfigureAwait(false);
+                await HandleAsync(stream, request, pending, stopping).ConfigureAwait(false);
             }
             catch (Exception e)
                 when (e is OperationCanceledException or IOException or SocketException or WebSocketException)
@@ -158,7 +173,12 @@ public sealed class GatewayWebServer : IAsyncDisposable
         }
     }
 
-    private async Task HandleAsync(NetworkStream stream, HttpRequest request, CancellationToken stopping)
+    private async Task HandleAsync(
+        NetworkStream stream,
+        HttpRequest request,
+        PendingConnection pending,
+        CancellationToken stopping
+    )
     {
         if (request.Method != "GET")
         {
@@ -234,8 +254,15 @@ public sealed class GatewayWebServer : IAsyncDisposable
             .ConfigureAwait(false);
         using var socket = WebSocket.CreateFromStream(
             stream,
-            new WebSocketCreationOptions { IsServer = true, KeepAliveInterval = _options.KeepAliveInterval }
+            new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = _options.KeepAliveInterval,
+                KeepAliveTimeout =
+                    _options.KeepAliveTimeout == TimeSpan.Zero ? Timeout.InfiniteTimeSpan : _options.KeepAliveTimeout,
+            }
         );
+        pending.Dispose();
         await _hub.HandleAsync(socket, request.Query("filter"), request.Query("call"), stopping).ConfigureAwait(false);
     }
 
@@ -355,6 +382,20 @@ public sealed class GatewayWebServer : IAsyncDisposable
             )
             .AsTask();
 
+    /// <summary>Counts a connection against <see cref="GatewayWebServerOptions.MaxPendingConnections"/> once.</summary>
+    private sealed class PendingConnection(GatewayWebServer server) : IDisposable
+    {
+        private int _released;
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _released, 1) == 0)
+            {
+                Interlocked.Decrement(ref server._pending);
+            }
+        }
+    }
+
     /// <summary>The parts of an HTTP request head this server reads.</summary>
     private sealed class HttpRequest
     {
@@ -450,6 +491,18 @@ public sealed class GatewayWebServerOptions
     /// <summary>How often to ping a WebSocket client to keep the connection open. Defaults to 30 seconds.</summary>
     public TimeSpan KeepAliveInterval { get; set; } = TimeSpan.FromSeconds(30);
 
+    /// <summary>
+    /// How long a WebSocket client has to answer a ping before it is closed, as one that has gone or stopped reading.
+    /// Defaults to 30 seconds; <see cref="TimeSpan.Zero"/> waits for no answer.
+    /// </summary>
+    public TimeSpan KeepAliveTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// The most connections at once that have not yet finished sending their request; more are closed as soon as they
+    /// are accepted. WebSocket clients stop counting once connected. Defaults to 100.
+    /// </summary>
+    public int MaxPendingConnections { get; set; } = 100;
+
     /// <summary>Throws <see cref="ArgumentException"/> if a setting is unusable.</summary>
     public void Validate()
     {
@@ -469,5 +522,7 @@ public sealed class GatewayWebServerOptions
 
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(RequestTimeout, TimeSpan.Zero, nameof(RequestTimeout));
         ArgumentOutOfRangeException.ThrowIfLessThan(KeepAliveInterval, TimeSpan.Zero, nameof(KeepAliveInterval));
+        ArgumentOutOfRangeException.ThrowIfLessThan(KeepAliveTimeout, TimeSpan.Zero, nameof(KeepAliveTimeout));
+        ArgumentOutOfRangeException.ThrowIfLessThan(MaxPendingConnections, 1, nameof(MaxPendingConnections));
     }
 }
