@@ -63,7 +63,9 @@ that can't be read is a warning in `Issues`, never an exception, and the tracker
 For a GPS status view the tracker also gathers:
 
 - `Satellites`: the `GpsSatellite`s in view from GSV, each talker's and (NMEA 4.1) each signal's latest complete group
-  kept apart, with the system (`GnssSystem`), ID, elevation, azimuth and SNR, marked `Used` from GSA.
+  kept apart, with the system (`GnssSystem`), ID, elevation, azimuth and SNR, marked `Used` from GSA. It keeps up to
+  32 talkers and signals, dropping the one heard longest ago, and up to 36 satellites in a group. A GSV group of more
+  than 9 sentences, or with a signal ID of more than one hex digit, is ignored.
 - `Quality` (`GpsQuality`): the satellites used (GGA) and in view, PDOP, HDOP and VDOP (GSA), and the error
   estimates in metres from GST (one standard deviation, where gpsd gives 95%).
 

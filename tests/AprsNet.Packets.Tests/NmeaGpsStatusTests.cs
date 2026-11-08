@@ -212,6 +212,119 @@ public class NmeaGpsStatusTests
         Assert.Empty(gps.Satellites);
     }
 
+    [Fact]
+    public void FourSystemsOnEightSignalsEachKeepTheirSatellites()
+    {
+        var talkers = new[] { "GP", "GL", "GA", "BD" };
+        var lines = talkers.SelectMany(talker =>
+            Enumerable.Range(1, 8).Select(signal => Sentence($"{talker}GSV,1,1,01,{10 + signal},40,083,46,{signal:X}"))
+        );
+
+        var gps = Track(lines);
+
+        Assert.Equal(32, gps.Satellites.Count);
+        Assert.Equal(
+            talkers.SelectMany(_ => Enumerable.Range(1, 8)).Select(signal => (int?)signal),
+            gps.Satellites.Select(s => s.SignalId)
+        );
+        Assert.Equal(GnssSystem.BeiDou, gps.Satellites[^1].System);
+        Assert.Equal(18, gps.Satellites[^1].Id);
+    }
+
+    [Fact]
+    public void ManyTalkersAndSignalsKeepOnlyTheLatestGroups()
+    {
+        var gps = new NmeaFixTracker();
+        for (var i = 0; i < 100_000; i++)
+        {
+            var talker = $"{(char)('A' + (i / 16 % 26))}{(char)('A' + (i / 16 / 26 % 26))}";
+            gps.Update(Parse(Sentence($"{talker}GSV,1,1,01,{(i % 90) + 1},40,083,46,{i % 16:X}")));
+        }
+
+        Assert.Equal(32, gps.Satellites.Count);
+        Assert.Equal(15, gps.Satellites[^1].SignalId); // the latest group is kept
+        Assert.Equal((99_999 % 90) + 1, gps.Satellites[^1].Id);
+    }
+
+    [Fact]
+    public void ManyGroupsLeftOpenStayBounded()
+    {
+        var gps = new NmeaFixTracker();
+        for (var i = 0; i < 10_000; i++)
+        {
+            var talker = $"{(char)('A' + (i / 16 % 26))}{(char)('A' + (i / 16 / 26 % 26))}";
+            gps.Update(Parse(Sentence($"{talker}GSV,2,1,01,05,40,083,46,{i % 16:X}")));
+        }
+
+        gps.Update(Parse(Sentence("GPGSV,1,1,01,05,40,083,46,1")));
+
+        Assert.Single(gps.Satellites); // the open groups never show
+    }
+
+    [Theory]
+    [InlineData("10")]
+    [InlineData("7FFFFFFF")]
+    [InlineData("0A")]
+    [InlineData("G")]
+    public void ASignalIdOfMoreThanOneHexDigitIsIgnored(string signal)
+    {
+        var gps = Track([Sentence($"GPGSV,1,1,01,05,40,083,46,{signal}")]);
+
+        Assert.Empty(gps.Satellites);
+    }
+
+    [Fact]
+    public void AGroupOfAMillionSentencesIsDropped()
+    {
+        var gps = new NmeaFixTracker();
+        for (var number = 1; number <= 1000; number++)
+        {
+            gps.Update(Parse(Sentence($"GPGSV,1000000,{number},01,05,40,083,46,1")));
+        }
+
+        gps.Update(Parse(Sentence("GPGSV,1000000,1000000,01,05,40,083,46,1")));
+
+        Assert.Empty(gps.Satellites);
+    }
+
+    [Fact]
+    public void AGroupOfTenSentencesIsDropped()
+    {
+        var gps = Track(
+            Enumerable.Range(1, 10).Select(number => Sentence($"GPGSV,10,{number},40,{number:D2},40,083,46,1"))
+        );
+
+        Assert.Empty(gps.Satellites);
+    }
+
+    [Fact]
+    public void AGroupOfNineSentencesIsKept()
+    {
+        var gps = Track(
+            Enumerable
+                .Range(1, 9)
+                .Select(number =>
+                    Sentence(
+                        $"GPGSV,9,{number},36,"
+                            + string.Join(",", Enumerable.Range(0, 4).Select(i => $"{(number * 4) + i},40,083,46"))
+                            + ",1"
+                    )
+                )
+        );
+
+        Assert.Equal(36, gps.Satellites.Count);
+    }
+
+    [Fact]
+    public void AGroupHoldsAtMostThirtySixSatellites()
+    {
+        var satellites = string.Join(",", Enumerable.Range(1, 200).Select(id => $"{id},40,083,46"));
+
+        var gps = Track([Sentence($"GPGSV,1,1,200,{satellites},1")]);
+
+        Assert.Equal(36, gps.Satellites.Count);
+    }
+
     private static NmeaSentence Parse(string line)
     {
         Assert.True(NmeaSentence.TryParse(line, out var sentence));
