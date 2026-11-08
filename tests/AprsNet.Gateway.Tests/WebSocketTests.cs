@@ -29,7 +29,12 @@ public sealed class WebSocketTests : IAsyncLifetime
         await _server.DisposeAsync();
     }
 
-    private void Start(AprsWebSocketHubOptions hubOptions, TimeSpan history = default, StationStore? stations = null)
+    private void Start(
+        AprsWebSocketHubOptions hubOptions,
+        TimeSpan history = default,
+        StationStore? stations = null,
+        GatewayWebServerOptions? webOptions = null
+    )
     {
         _server = new AprsIsServer(
             new AprsIsServerOptions
@@ -45,8 +50,81 @@ public sealed class WebSocketTests : IAsyncLifetime
         );
         _server.Start();
         _hub = new AprsWebSocketHub(_server, hubOptions);
-        _web = new GatewayWebServer(_hub, new GatewayWebServerOptions { EndPoint = new(IPAddress.Loopback, 0) });
+        webOptions ??= new GatewayWebServerOptions();
+        webOptions.EndPoint = new(IPAddress.Loopback, 0);
+        _web = new GatewayWebServer(_hub, webOptions);
         _web.Start();
+    }
+
+    // A WebSocket client that completes the handshake and then never reads or sends again, with a small receive
+    // buffer so the server's sends back up soon.
+    private async Task<TcpClient> ConnectWithoutReadingAsync(string query = "?filter=t/s")
+    {
+        var tcp = new TcpClient { ReceiveBufferSize = 4096 };
+        await tcp.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        var stream = tcp.GetStream();
+        await stream.WriteAsync(
+            Encoding.ASCII.GetBytes(
+                $"GET /aprs{query} HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                    + "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n"
+            ),
+            TestContext.Current.CancellationToken
+        );
+        var head = new List<byte>();
+        while (head.Count < 4 || !head[^4..].SequenceEqual("\r\n\r\n"u8.ToArray()))
+        {
+            var one = new byte[1];
+            var read = await stream
+                .ReadAsync(one, TestContext.Current.CancellationToken)
+                .AsTask()
+                .WaitAsync(Wait, TestContext.Current.CancellationToken);
+            Assert.Equal(1, read);
+            head.Add(one[0]);
+        }
+
+        Assert.StartsWith("HTTP/1.1 101 ", Encoding.ASCII.GetString([.. head]), StringComparison.Ordinal);
+        return tcp;
+    }
+
+    // Publishes long packets until the predicate holds, or far more than any network buffer takes.
+    private void PublishUntil(Func<bool> done)
+    {
+        var text = new string('x', 2000);
+        for (var i = 0; i < 20_000 && !done(); i++)
+        {
+            _server.Publish(AprsPacket.Parse($"N0CALL>APRS:>{i} {text}"));
+        }
+    }
+
+    // Whether the server has closed the connection: reading what it sent ends, or the read is reset.
+    private static async Task<bool> ServerClosedAsync(TcpClient tcp)
+    {
+        var buffer = new byte[65536];
+        try
+        {
+            while (
+                await tcp.GetStream()
+                    .ReadAsync(buffer, TestContext.Current.CancellationToken)
+                    .AsTask()
+                    .WaitAsync(Wait, TestContext.Current.CancellationToken) > 0
+            ) { }
+        }
+        catch (IOException)
+        {
+            // Reset.
+        }
+
+        return true;
+    }
+
+    private async Task WaitForPending(int count)
+    {
+        var deadline = DateTime.UtcNow + Wait;
+        while (_web.PendingConnections != count)
+        {
+            Assert.True(DateTime.UtcNow < deadline, $"{_web.PendingConnections} pending, not {count}");
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
     }
 
     private Uri Url(string query = "") => new($"ws://127.0.0.1:{_web.LocalEndPoint!.Port}/aprs{query}");
@@ -298,5 +376,184 @@ public sealed class WebSocketTests : IAsyncLifetime
         await WaitForClients(1);
         await _hub.DisposeAsync();
         Assert.Equal(WebSocketCloseStatus.EndpointUnavailable, await ClosedAsync(socket));
+    }
+
+    [Fact]
+    public async Task AClientThatStopsReadingIsClosedOnceItsQueueFills()
+    {
+        await DisposeAsync();
+        Start(new AprsWebSocketHubOptions { ClientQueueLength = 4 });
+        using var tcp = await ConnectWithoutReadingAsync();
+        await WaitForClients(1);
+
+        // Enough to fill the network buffers, so the server's send is stuck when the queue fills behind it.
+        PublishUntil(() => _hub.ClientsDroppedForOverflow > 0);
+
+        await WaitForClients(0);
+        Assert.Equal(1, _hub.ClientsDroppedForOverflow);
+        Assert.True(await ServerClosedAsync(tcp));
+    }
+
+    [Fact]
+    public async Task AClientWhoseSendIsHeldUpTooLongIsClosed()
+    {
+        // Its queue never fills, but one message waits on it for longer than the send timeout.
+        await DisposeAsync();
+        Start(
+            new AprsWebSocketHubOptions { ClientQueueLength = 1_000_000, SendTimeout = TimeSpan.FromMilliseconds(200) }
+        );
+        using var tcp = await ConnectWithoutReadingAsync();
+        await WaitForClients(1);
+
+        PublishUntil(() => _hub.ClientsDroppedForOverflow > 0);
+
+        await WaitForClients(0);
+        Assert.Equal(1, _hub.ClientsDroppedForOverflow);
+    }
+
+    [Fact]
+    public async Task AClientThatDoesNotAnswerPingsIsClosed()
+    {
+        await DisposeAsync();
+        Start(
+            new AprsWebSocketHubOptions(),
+            webOptions: new GatewayWebServerOptions
+            {
+                KeepAliveInterval = TimeSpan.FromMilliseconds(100),
+                KeepAliveTimeout = TimeSpan.FromMilliseconds(300),
+            }
+        );
+        using var silent = await ConnectWithoutReadingAsync();
+        await WaitForClients(1);
+        await WaitForClients(0);
+        Assert.True(await ServerClosedAsync(silent));
+    }
+
+    [Fact]
+    public async Task AClientThatAnswersPingsStaysConnected()
+    {
+        await DisposeAsync();
+        Start(
+            new AprsWebSocketHubOptions(),
+            webOptions: new GatewayWebServerOptions
+            {
+                KeepAliveInterval = TimeSpan.FromMilliseconds(100),
+                KeepAliveTimeout = TimeSpan.FromMilliseconds(300),
+            }
+        );
+        using var socket = await ConnectAsync("?filter=t/s");
+        await ReceiveAsync(socket);
+        await WaitForClients(1);
+
+        // Reading answers the pings while it waits.
+        var packet = ReceiveAsync(socket);
+        await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>Still here"));
+        Assert.Equal("N0CALL>APRS:>Still here", (await packet).GetProperty("raw").GetString());
+        Assert.Equal(1, _hub.ClientCount);
+    }
+
+    [Fact]
+    public async Task DisposingTheHubFinishesWithAClientThatStopsReading()
+    {
+        await DisposeAsync();
+        Start(new AprsWebSocketHubOptions { ClientQueueLength = 1_000_000 });
+        using var tcp = await ConnectWithoutReadingAsync();
+        await WaitForClients(1);
+        PublishUntil(() => false);
+
+        await _hub.DisposeAsync().AsTask().WaitAsync(Wait, TestContext.Current.CancellationToken);
+        Assert.Equal(0, _hub.ClientCount);
+    }
+
+    [Fact]
+    public async Task DisposingTheWebServerFinishesWithAClientThatStopsReading()
+    {
+        await DisposeAsync();
+        Start(new AprsWebSocketHubOptions { ClientQueueLength = 1_000_000 });
+        using var tcp = await ConnectWithoutReadingAsync();
+        await WaitForClients(1);
+        PublishUntil(() => false);
+
+        await _web.DisposeAsync().AsTask().WaitAsync(Wait, TestContext.Current.CancellationToken);
+        Assert.Equal(0, _hub.ClientCount);
+    }
+
+    [Fact]
+    public async Task ConnectionsBeyondThePendingLimitAreClosedAtOnce()
+    {
+        await DisposeAsync();
+        Start(new AprsWebSocketHubOptions(), webOptions: new GatewayWebServerOptions { MaxPendingConnections = 2 });
+        using var socket = await ConnectAsync("?filter=t/s");
+        await ReceiveAsync(socket);
+        await WaitForClients(1);
+
+        using var idle1 = new TcpClient();
+        using var idle2 = new TcpClient();
+        await idle1.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        await idle2.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        await WaitForPending(2);
+
+        using var extra = new TcpClient();
+        await extra.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        Assert.True(await ServerClosedAsync(extra));
+        Assert.Equal(2, _web.PendingConnections);
+
+        // The WebSocket client, connected already, doesn't count and keeps streaming.
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>Still streaming"));
+        Assert.Equal("N0CALL>APRS:>Still streaming", (await ReceiveAsync(socket)).GetProperty("raw").GetString());
+    }
+
+    [Fact]
+    public async Task HealthStillAnswersAfterIdleConnectionsTimeOut()
+    {
+        await DisposeAsync();
+        Start(
+            new AprsWebSocketHubOptions(),
+            webOptions: new GatewayWebServerOptions
+            {
+                Health = new GatewayHealth(),
+                MaxPendingConnections = 2,
+                RequestTimeout = TimeSpan.FromMilliseconds(200),
+            }
+        );
+        using var idle1 = new TcpClient();
+        using var idle2 = new TcpClient();
+        await idle1.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        await idle2.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        Assert.True(await ServerClosedAsync(idle1));
+        Assert.True(await ServerClosedAsync(idle2));
+        await WaitForPending(0);
+
+        using var tcp = new TcpClient();
+        await tcp.ConnectAsync(_web.LocalEndPoint!, TestContext.Current.CancellationToken);
+        await tcp.GetStream()
+            .WriteAsync("GET /health HTTP/1.1\r\nHost: x\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
+        using var reader = new StreamReader(tcp.GetStream(), Encoding.ASCII);
+        var line = await reader
+            .ReadLineAsync(TestContext.Current.CancellationToken)
+            .AsTask()
+            .WaitAsync(Wait, TestContext.Current.CancellationToken);
+        Assert.Equal("HTTP/1.1 200 OK", line);
+    }
+
+    [Fact]
+    public async Task ClientsThatConnectInTurnStreamAndCloseCleanlyUnderAPendingLimitOfOne()
+    {
+        await DisposeAsync();
+        Start(new AprsWebSocketHubOptions(), webOptions: new GatewayWebServerOptions { MaxPendingConnections = 1 });
+        using var first = await ConnectAsync("?filter=t/s");
+        await ReceiveAsync(first);
+        using var second = await ConnectAsync("?filter=t/s");
+        await ReceiveAsync(second);
+        await WaitForClients(2);
+
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>To both"));
+        Assert.Equal("N0CALL>APRS:>To both", (await ReceiveAsync(first)).GetProperty("raw").GetString());
+        Assert.Equal("N0CALL>APRS:>To both", (await ReceiveAsync(second)).GetProperty("raw").GetString());
+
+        await _hub.DisposeAsync();
+        Assert.Equal(WebSocketCloseStatus.EndpointUnavailable, await ClosedAsync(first));
+        Assert.Equal(WebSocketCloseStatus.EndpointUnavailable, await ClosedAsync(second));
     }
 }

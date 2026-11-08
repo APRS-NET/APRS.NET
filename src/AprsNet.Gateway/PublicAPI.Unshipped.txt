@@ -172,3 +172,7 @@ AprsNet.Gateway.GatewayHealthReport.Counters.init -> void
 AprsNet.Gateway.GatewayHealth.CountQuietAsDown.get -> bool
 AprsNet.Gateway.GatewayHealth.CountQuietAsDown.init -> void
 AprsNet.Gateway.GatewayWebServer.GatewayWebServer(AprsNet.Gateway.GatewayWebServerOptions! options) -> void
+AprsNet.Gateway.GatewayWebServerOptions.KeepAliveTimeout.get -> System.TimeSpan
+AprsNet.Gateway.GatewayWebServerOptions.KeepAliveTimeout.set -> void
+AprsNet.Gateway.GatewayWebServerOptions.MaxPendingConnections.get -> int
+AprsNet.Gateway.GatewayWebServerOptions.MaxPendingConnections.set -> void

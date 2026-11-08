@@ -46,6 +46,13 @@ app.Map("/aprs", async context => await hub.HandleAsync(
     context.RequestAborted));
 ```
 
+A WebSocket client is closed when its queue of 1,000 packets fills, when one message waits more than 30 seconds to
+reach it, or, under `GatewayWebServer`, when it doesn't answer a ping within `KeepAliveTimeout` (30 seconds). So a
+client that stops reading can't hold its place, or hold up disposing the hub or the server. `GatewayWebServer` also
+lets at most `MaxPendingConnections` (100) connections wait to send their request at once, each for up to
+`RequestTimeout` (10 seconds); more are closed as soon as they connect. Connected WebSocket clients don't count
+against it.
+
 Start with the [gateway guide](https://github.com/APRS-NET/APRS.NET/blob/main/docs/guides/gateway.md).
 
 Part of [APRS.NET](https://github.com/APRS-NET/APRS.NET).
