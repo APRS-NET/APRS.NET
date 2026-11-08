@@ -42,8 +42,10 @@ Use `fix:` and `feat:` for the libraries and the CLI (`feat(cli):`); a fix to a 
 
 Dependabot's NuGet updates are `fix(deps):`, since the packages and `aprscli` ship with those dependencies, so each
 one merged gives a release PR. That includes test-only packages such as xUnit, which share `Directory.Packages.props`;
-the release PR waits until you merge it, so such a bump only adds a line to the next release. Its GitHub Actions and
-.NET SDK updates are `chore(deps):` and don't release.
+the release PR waits until you merge it, so such a bump only adds a line to the next release. Its updates to the
+container's base images (the digests in the `Dockerfile`) are `fix(deps):` too, since the `aprscli` image ships on
+them: the release that follows publishes an image on the new base. Its GitHub Actions and .NET SDK updates are
+`chore(deps):` and don't release.
 
 ## Notes
 
