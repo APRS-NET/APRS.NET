@@ -24,7 +24,8 @@ _ = feed.AddSource("tnc", tnc.ReadPacketsAsync());   // a KissTcpConnection from
 ```
 
 `feed.GetSourceCounts()` gives each source's packets and duplicates, and the `aprsnet.gateway.packets.received` and
-`aprsnet.gateway.packets.duplicates` metrics count them with a `source` tag.
+`aprsnet.gateway.packets.duplicates` metrics count them with a `source` tag. A packet that fails to reach one client
+is skipped for that client alone, and `aprsnet.gateway.packets.failed` counts it; later packets still go out.
 
 For web apps, an `AprsWebSocketHub` streams the same packets as JSON (in the `AprsNet.Packets.Json` format), each
 client with its own filter, and `GatewayWebServer` accepts WebSocket connections for it without ASP.NET Core:

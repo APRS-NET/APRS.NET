@@ -92,6 +92,7 @@ from a `GatewayFeed` also have a `source` tag, the name the app gave the source.
 | `aprsnet.gateway.packets.duplicates` | `{packet}` | `server`, `source` | Packets a `GatewayFeed` dropped because a source had already heard them |
 | `aprsnet.gateway.packets.published` | `{packet}` | `server` | Packets given to the server to send |
 | `aprsnet.gateway.packets.queued` | `{packet}` | `server`, `protocol` | Packets queued for a client because its filter passed them; one packet may be queued for many clients |
+| `aprsnet.gateway.packets.failed` | `{packet}` | `server`, `protocol` (absent when publishing failed before any client) | Packets skipped because handing them to a client, or publishing them at all, failed unexpectedly; the packets after them still go out |
 
 ## IGate
 

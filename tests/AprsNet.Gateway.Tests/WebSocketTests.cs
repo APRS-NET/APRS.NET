@@ -224,6 +224,65 @@ public sealed class WebSocketTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ASubscriberThatFailsDoesNotStopPacketsReachingTheOthers()
+    {
+        var failing = new FailingSubscriber();
+        _server.Subscribe(failing);
+        using var socket = await ConnectAsync("?filter=t/s");
+        await ReceiveAsync(socket);
+        await WaitForClients(1);
+
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>First"));
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>Second"));
+
+        Assert.Equal("N0CALL>APRS:>First", (await ReceiveAsync(socket)).GetProperty("raw").GetString());
+        Assert.Equal("N0CALL>APRS:>Second", (await ReceiveAsync(socket)).GetProperty("raw").GetString());
+        Assert.Equal(2, failing.Offers);
+    }
+
+    [Fact]
+    public void ASubscriberThatFailsOnTheHistoryIsStillSubscribed()
+    {
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>Earlier"));
+        var failing = new FailingSubscriber();
+
+        _server.Subscribe(failing);
+        _server.Publish(AprsPacket.Parse("N0CALL>APRS:>Later"));
+
+        Assert.Equal(2, failing.Offers);
+    }
+
+    [Fact]
+    public async Task EquationsWithANonFiniteCoefficientDoNotStopLaterPackets()
+    {
+        using var socket = await ConnectAsync("?filter=t/m");
+        await ReceiveAsync(socket);
+        await WaitForClients(1);
+
+        _server.Publish(AprsPacket.Parse("N0QBF>APRS::N0QBF-11 :EQNS.NaN,1,0"));
+        _server.Publish(AprsPacket.Parse("N0QBF>APRS::N0QBF-11 :EQNS.0,1,0"));
+
+        var refused = (await ReceiveAsync(socket)).GetProperty("telemetryDefinition");
+        Assert.Equal(0, refused.GetProperty("equations").GetArrayLength());
+        var read = (await ReceiveAsync(socket)).GetProperty("telemetryDefinition");
+        Assert.Equal(1, read.GetProperty("equations").GetArrayLength());
+    }
+
+    // Stands in for a subscriber that cannot take a packet, such as one whose JSON cannot be written.
+    private sealed class FailingSubscriber : IPacketSubscriber
+    {
+        private int _offers;
+
+        public int Offers => Volatile.Read(ref _offers);
+
+        public void Offer(PublishedPacket packet)
+        {
+            Interlocked.Increment(ref _offers);
+            throw new InvalidOperationException("This subscriber fails on every packet.");
+        }
+    }
+
+    [Fact]
     public async Task APacketPublishedOnceTheGreetingArrivesIsNotMissed()
     {
         // Without a history to replay, a client that has read the greeting must already be subscribed.

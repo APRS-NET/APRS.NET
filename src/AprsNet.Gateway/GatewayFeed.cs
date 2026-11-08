@@ -124,6 +124,11 @@ public sealed class GatewayFeed : IAsyncDisposable
             {
                 // The server stopped before the feed; packets read since have nowhere to go.
             }
+            catch (Exception)
+            {
+                // One packet that cannot be published must not end the loop, or every later packet stays unpublished.
+                GatewayMetrics.Failed(_server.Name, null);
+            }
         }
     }
 

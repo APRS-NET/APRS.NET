@@ -115,13 +115,35 @@ public sealed class AprsIsServer : IAsyncDisposable
 
             foreach (var session in _sessions.Keys)
             {
-                session.Offer(packet, published.Line);
+                try
+                {
+                    session.Offer(packet, published.Line);
+                }
+                catch (Exception)
+                {
+                    // A fault with one packet for one client skips just that; the rest still get it.
+                    GatewayMetrics.Failed(_options.ServerName, GatewayMetrics.AprsIs);
+                }
             }
 
             foreach (var subscriber in _subscribers.Keys)
             {
-                subscriber.Offer(published);
+                Offer(subscriber, published);
             }
+        }
+    }
+
+    // A packet a subscriber cannot take, such as one whose JSON cannot be written, is skipped for that subscriber
+    // alone: it must not stop the packets after it, or reach the other subscribers or the feed.
+    private void Offer(IPacketSubscriber subscriber, PublishedPacket published)
+    {
+        try
+        {
+            subscriber.Offer(published);
+        }
+        catch (Exception)
+        {
+            GatewayMetrics.Failed(_options.ServerName, GatewayMetrics.WebSocket);
         }
     }
 
@@ -130,7 +152,7 @@ public sealed class AprsIsServer : IAsyncDisposable
     /// reaches it once, from the history or live.
     /// </summary>
     internal void Subscribe(IPacketSubscriber subscriber) =>
-        Replay(subscriber.Offer, () => _subscribers[subscriber] = 0);
+        Replay(published => Offer(subscriber, published), () => _subscribers[subscriber] = 0);
 
     /// <summary>Stops giving packets to <paramref name="subscriber"/>.</summary>
     internal void Unsubscribe(IPacketSubscriber subscriber) => _subscribers.TryRemove(subscriber, out _);
@@ -140,7 +162,20 @@ public sealed class AprsIsServer : IAsyncDisposable
 
     /// <summary>Starts sending to a client that has logged in, beginning with the history its filter passes.</summary>
     internal void Join(ClientSession session, LoginLine login) =>
-        Replay(published => session.Offer(published.Packet, published.Line, login), () => session.Activate(login));
+        Replay(published => Offer(session, published, login), () => session.Activate(login));
+
+    // As for a subscriber: a history packet the client cannot take is skipped for it alone.
+    private void Offer(ClientSession session, PublishedPacket published, LoginLine login)
+    {
+        try
+        {
+            session.Offer(published.Packet, published.Line, login);
+        }
+        catch (Exception)
+        {
+            GatewayMetrics.Failed(_options.ServerName, GatewayMetrics.AprsIs);
+        }
+    }
 
     // A joining client's history goes through its filter outside the lock, so neither a long history nor a costly
     // filter holds up publishing. What is published meanwhile waits in a backlog and is filtered the same way. Once

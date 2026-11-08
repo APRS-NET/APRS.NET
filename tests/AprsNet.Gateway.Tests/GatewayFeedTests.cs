@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -89,6 +90,44 @@ public sealed class GatewayFeedTests : IAsyncLifetime
         await WaitUntil(() => feed.Published == 2);
 
         Assert.Equal(0, feed.Duplicates);
+    }
+
+    [Fact]
+    public async Task APacketThatFailsToReachASubscriberDoesNotStopTheFeed()
+    {
+        await using var feed = new GatewayFeed(_server);
+        var subscriber = new FailsOnFirstPacket();
+        _server.Subscribe(subscriber);
+        using var client = await LoggedInAsync("p/N");
+        var source = Channel.CreateUnbounded<AprsPacket>();
+        _ = feed.AddSource("tnc", source.Reader.ReadAllAsync(Token));
+
+        source.Writer.TryWrite(AprsPacket.Parse("N1ABC>APRS:>first"));
+        source.Writer.TryWrite(AprsPacket.Parse("N1ABC>APRS:>second"));
+        await WaitUntil(() => feed.Published == 2);
+
+        Assert.Equal("N1ABC>APRS:>first", await client.ReadLineAsync(Token).AsTask().WaitAsync(Wait, Token));
+        Assert.Equal("N1ABC>APRS:>second", await client.ReadLineAsync(Token).AsTask().WaitAsync(Wait, Token));
+        await WaitUntil(() => subscriber.Received.Count == 1);
+        Assert.Equal(["N1ABC>APRS:>second"], subscriber.Received);
+    }
+
+    private sealed class FailsOnFirstPacket : IPacketSubscriber
+    {
+        private bool _failed;
+
+        public ConcurrentQueue<string> Received { get; } = new();
+
+        public void Offer(PublishedPacket packet)
+        {
+            if (!_failed)
+            {
+                _failed = true;
+                throw new InvalidOperationException("This subscriber fails on its first packet.");
+            }
+
+            Received.Enqueue(packet.Packet.ToString());
+        }
     }
 
     [Fact]

@@ -61,6 +61,12 @@ internal static class GatewayMetrics
         "Packets a GatewayFeed read, by source, duplicates included."
     );
 
+    private static readonly Counter<long> _failed = _meter.CreateCounter<long>(
+        "aprsnet.gateway.packets.failed",
+        "{packet}",
+        "Packets skipped because handing them to a client, or publishing them at all, failed unexpectedly."
+    );
+
     public static void Connected(string server, string protocol = AprsIs) =>
         _connected.Add(1, Server(server), Protocol(protocol));
 
@@ -86,6 +92,22 @@ internal static class GatewayMetrics
 
     public static void Queued(string server, string protocol = AprsIs) =>
         _queued.Add(1, Server(server), Protocol(protocol));
+
+    /// <summary>
+    /// <paramref name="protocol"/> is that of the client the packet was skipped for, or <see langword="null"/> when
+    /// publishing failed before any client.
+    /// </summary>
+    public static void Failed(string server, string? protocol)
+    {
+        if (protocol is null)
+        {
+            _failed.Add(1, Server(server));
+        }
+        else
+        {
+            _failed.Add(1, Server(server), Protocol(protocol));
+        }
+    }
 
     public static void Duplicate(string server, string source) => _duplicates.Add(1, Server(server), Source(source));
 
