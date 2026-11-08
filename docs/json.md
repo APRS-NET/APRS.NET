@@ -28,7 +28,7 @@ is (`°`, `é`), with only the characters JSON requires escaped.
 Then, for a decoded payload, one of the fields below. A packet with nothing decoded has none of them.
 
 Numbers that may be missing are `null` rather than absent. Measured values are rounded to 2 decimal places, and
-coordinates to 6.
+coordinates to 6. JSON has no NaN or infinity, so a number that is not finite is written as `null`.
 
 ## `position`, `micE`, `object`, `item`
 
@@ -66,7 +66,8 @@ coordinates to 6.
 ## `telemetryDefinition`
 
 A `PARM.`, `UNIT.`, `EQNS.` or `BITS.` message: `addressee`, `kind` (`parameterNames`, `units`, `equations`,
-`bitSense`), `labels`, `equations` (`a`, `b`, `c` each), `bitSense`, `projectName`.
+`bitSense`), `labels`, `equations` (`a`, `b`, `c` each), `bitSense`, `projectName`. An `EQNS.` message with a
+coefficient that isn't a finite number, such as `NaN` or `1e999`, has no equations.
 
 ## `telemetry`
 

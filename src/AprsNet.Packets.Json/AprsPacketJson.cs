@@ -193,9 +193,9 @@ public static class AprsPacketJson
         foreach (var equation in definition.Equations)
         {
             json.WriteStartObject();
-            json.WriteNumber("a", equation.A);
-            json.WriteNumber("b", equation.B);
-            json.WriteNumber("c", equation.C);
+            WriteFinite(json, "a", equation.A);
+            WriteFinite(json, "b", equation.B);
+            WriteFinite(json, "c", equation.C);
             json.WriteEndObject();
         }
 
@@ -221,7 +221,7 @@ public static class AprsPacketJson
         json.WriteStartArray("analog");
         foreach (var value in report.Analog)
         {
-            if (value is { } v)
+            if (value is { } v && double.IsFinite(v))
             {
                 json.WriteNumberValue(v);
             }
@@ -319,8 +319,8 @@ public static class AprsPacketJson
                 break;
         }
 
-        json.WriteNumber("latitude", Math.Round(report.Position.Latitude, 6));
-        json.WriteNumber("longitude", Math.Round(report.Position.Longitude, 6));
+        WriteFinite(json, "latitude", Math.Round(report.Position.Latitude, 6));
+        WriteFinite(json, "longitude", Math.Round(report.Position.Longitude, 6));
         json.WriteNumber("ambiguity", report.Position.Ambiguity);
         json.WriteBoolean("unknown", report.IsPositionUnknown);
         Symbol(json, report.Symbol);
@@ -352,7 +352,7 @@ public static class AprsPacketJson
             json.WriteNumber("heightFeet", phg.HeightFeet);
             json.WriteNumber("gainDbi", phg.GainDbi);
             WriteNumber(json, "directivity", phg.Directivity);
-            json.WriteNumber("rangeMiles", Math.Round(phg.RangeMiles, 1));
+            WriteFinite(json, "rangeMiles", Math.Round(phg.RangeMiles, 1));
             json.WriteEndObject();
         }
 
@@ -393,8 +393,8 @@ public static class AprsPacketJson
             json.WriteNumber("type", area.Type);
             json.WriteBoolean("filled", area.IsFilled);
             json.WriteNumber("color", area.Color);
-            json.WriteNumber("latitudeOffsetDegrees", Math.Round(area.LatitudeOffsetDegrees, 6));
-            json.WriteNumber("longitudeOffsetDegrees", Math.Round(area.LongitudeOffsetDegrees, 6));
+            WriteFinite(json, "latitudeOffsetDegrees", Math.Round(area.LatitudeOffsetDegrees, 6));
+            WriteFinite(json, "longitudeOffsetDegrees", Math.Round(area.LongitudeOffsetDegrees, 6));
             WriteNumber(json, "corridorMiles", area.CorridorMiles);
             json.WriteEndObject();
         }
@@ -450,8 +450,8 @@ public static class AprsPacketJson
         if (query.Footprint is { } footprint)
         {
             json.WriteStartObject("footprint");
-            json.WriteNumber("latitude", Math.Round(footprint.Center.Latitude, 6));
-            json.WriteNumber("longitude", Math.Round(footprint.Center.Longitude, 6));
+            WriteFinite(json, "latitude", Math.Round(footprint.Center.Latitude, 6));
+            WriteFinite(json, "longitude", Math.Round(footprint.Center.Longitude, 6));
             json.WriteNumber("radiusMiles", footprint.RadiusMiles);
             json.WriteEndObject();
         }
@@ -474,8 +474,8 @@ public static class AprsPacketJson
         json.WriteString("mode", Name(fix.Mode));
         if (fix.Position is { } position)
         {
-            json.WriteNumber("latitude", Math.Round(position.Latitude, 6));
-            json.WriteNumber("longitude", Math.Round(position.Longitude, 6));
+            WriteFinite(json, "latitude", Math.Round(position.Latitude, 6));
+            WriteFinite(json, "longitude", Math.Round(position.Longitude, 6));
         }
         else
         {
@@ -497,7 +497,21 @@ public static class AprsPacketJson
     {
         if (value is { } number)
         {
-            json.WriteNumber(name, Math.Round(number, 2));
+            WriteFinite(json, name, Math.Round(number, 2));
+        }
+        else
+        {
+            json.WriteNull(name);
+        }
+    }
+
+    // JSON has no NaN or Infinity and Utf8JsonWriter throws on them, so a value a packet or a caller made non-finite
+    // is written as null rather than ending the whole object.
+    private static void WriteFinite(Utf8JsonWriter json, string name, double value)
+    {
+        if (double.IsFinite(value))
+        {
+            json.WriteNumber(name, value);
         }
         else
         {

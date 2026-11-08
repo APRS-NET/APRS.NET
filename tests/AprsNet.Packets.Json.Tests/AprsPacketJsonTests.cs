@@ -63,6 +63,18 @@ public sealed class AprsPacketJsonTests
         Assert.Contains("\"text\":\"21°C café\"", json, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("N0QBF>APRS::N0QBF-11 :EQNS.NaN,1,0")]
+    [InlineData("N0QBF>APRS::N0QBF-11 :EQNS.0,Infinity,0")]
+    [InlineData("N0QBF>APRS::N0QBF-11 :EQNS.0,1,1e999")]
+    public void EquationsWithANonFiniteCoefficientAreWrittenAsNone(string line)
+    {
+        using var document = JsonDocument.Parse(AprsPacketJson.Serialize(AprsPacket.Parse(line), Received));
+
+        var definition = document.RootElement.GetProperty("telemetryDefinition");
+        Assert.Equal(0, definition.GetProperty("equations").GetArrayLength());
+    }
+
     [Fact]
     public void PacketsCanBeWrittenIntoALargerDocument()
     {
