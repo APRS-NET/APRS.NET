@@ -148,15 +148,54 @@ internal sealed partial class IGateDownlink
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
     }
 
+    // Packets, and the reasons given for them, are logged as text escaped for the console: the log goes to stderr, and
+    // a packet from APRS-IS or RF could otherwise drive the terminal.
+    private static void ToRf(ILogger logger, AprsPacket packet)
+    {
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            var line = Escaped(packet);
+            ToRf(logger, line);
+        }
+    }
+
+    private static void QueueFull(ILogger logger, AprsPacket packet)
+    {
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            var line = Escaped(packet);
+            QueueFull(logger, line);
+        }
+    }
+
+    private static void NotGated(ILogger logger, RfGateRefusal reason, AprsPacket packet)
+    {
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            var line = Escaped(packet);
+            NotGated(logger, reason, line);
+        }
+    }
+
+    private static void SendFailed(ILogger logger, AprsPacket packet, string reason)
+    {
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            SendFailed(logger, Escaped(packet), LineFormatter.EscapeForConsole(reason));
+        }
+    }
+
+    private static string Escaped(AprsPacket packet) => LineFormatter.EscapeForConsole(packet.ToString());
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Gating to RF: {Packet}")]
-    private static partial void ToRf(ILogger logger, AprsPacket packet);
+    private static partial void ToRf(ILogger logger, string packet);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "RF queue full; dropped {Packet}")]
-    private static partial void QueueFull(ILogger logger, AprsPacket packet);
+    private static partial void QueueFull(ILogger logger, string packet);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Not gated to RF ({Reason}): {Packet}")]
-    private static partial void NotGated(ILogger logger, RfGateRefusal reason, AprsPacket packet);
+    private static partial void NotGated(ILogger logger, RfGateRefusal reason, string packet);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The TNC couldn't send {Packet}: {Reason}")]
-    private static partial void SendFailed(ILogger logger, AprsPacket packet, string reason);
+    private static partial void SendFailed(ILogger logger, string packet, string reason);
 }
