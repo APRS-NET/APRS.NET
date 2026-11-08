@@ -63,6 +63,11 @@ internal abstract class FilterTerm
         && centre is { } from
         && Geodesy.DistanceKm(from, positioned.Position) <= km;
 
+    // Only a packet with a position can be in range, so the station is looked up only then: the lookup may take a
+    // store's lock, and runs for every packet the filter sees.
+    private static bool WithinStation(PacketFacts packet, AprsFilterContext? context, string call, double km) =>
+        packet.Positioned is not null && Within(packet, context?.LastPosition?.Invoke(call), km);
+
     /// <summary>Whether any pattern matches <paramref name="value"/>; a loop, as this runs for every packet.</summary>
     private static bool AnyGlob(string[] patterns, string value)
     {
@@ -270,7 +275,7 @@ internal abstract class FilterTerm
             {
                 if (IsType(packet.Packet, letter))
                 {
-                    return call is null || Within(packet, context?.LastPosition?.Invoke(call), km);
+                    return call is null || WithinStation(packet, context, call, km);
                 }
             }
 
@@ -384,6 +389,6 @@ internal abstract class FilterTerm
         }
 
         public override bool Matches(PacketFacts packet, AprsFilterContext? context) =>
-            Within(packet, context?.LastPosition?.Invoke(call), km);
+            WithinStation(packet, context, call, km);
     }
 }
