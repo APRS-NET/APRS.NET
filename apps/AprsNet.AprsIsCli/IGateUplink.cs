@@ -175,12 +175,42 @@ internal sealed partial class IGateUplink
         }
     }
 
+    // Packets, and the reasons given for them, are logged as text escaped for the console: the log goes to stderr, and
+    // a packet heard on RF could otherwise drive the terminal.
+    private static void QueueFull(ILogger logger, AprsPacket packet)
+    {
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            var line = Escaped(packet);
+            QueueFull(logger, line);
+        }
+    }
+
+    private static void NotGated(ILogger logger, GateRefusal reason, AprsPacket packet)
+    {
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            var line = Escaped(packet);
+            NotGated(logger, reason, line);
+        }
+    }
+
+    private static void SendRefused(ILogger logger, AprsPacket packet, string reason)
+    {
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            SendRefused(logger, Escaped(packet), LineFormatter.EscapeForConsole(reason));
+        }
+    }
+
+    private static string Escaped(AprsPacket packet) => LineFormatter.EscapeForConsole(packet.ToString());
+
     [LoggerMessage(Level = LogLevel.Warning, Message = "IGate queue full; dropped {Packet}")]
-    private static partial void QueueFull(ILogger logger, AprsPacket packet);
+    private static partial void QueueFull(ILogger logger, string packet);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Not gated ({Reason}): {Packet}")]
-    private static partial void NotGated(ILogger logger, GateRefusal reason, AprsPacket packet);
+    private static partial void NotGated(ILogger logger, GateRefusal reason, string packet);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "APRS-IS refused {Packet}: {Reason}")]
-    private static partial void SendRefused(ILogger logger, AprsPacket packet, string reason);
+    private static partial void SendRefused(ILogger logger, string packet, string reason);
 }
