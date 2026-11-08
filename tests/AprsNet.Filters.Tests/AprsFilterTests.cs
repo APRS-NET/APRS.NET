@@ -149,6 +149,52 @@ public sealed class AprsFilterTests
         Assert.False(Matches("f/N0CALL-9/20", Near));
     }
 
+    [Fact]
+    public void FriendRangeLooksNothingUpForAPacketWithoutAPosition()
+    {
+        var lookups = 0;
+        var context = new AprsFilterContext
+        {
+            LastPosition = _ =>
+            {
+                lookups++;
+                return new AprsPosition(38.98, -94.67);
+            },
+        };
+        Assert.False(Matches("f/N0CALL-9/20000", "N0ABC>APRS,qAC,T2:>Just a status", context));
+        Assert.False(Matches("f/N0CALL-9/20000", "N0ABC>APRS,qAC,T2:!0000.00N\\00000.00W.Unknown", context));
+        Assert.Equal(0, lookups);
+        Assert.True(Matches("f/N0CALL-9/20", Near, context));
+        Assert.Equal(1, lookups);
+    }
+
+    [Fact]
+    public void TypeRangeLooksNothingUpForAPacketWithoutAPosition()
+    {
+        var lookups = 0;
+        var context = new AprsFilterContext
+        {
+            LastPosition = _ =>
+            {
+                lookups++;
+                return new AprsPosition(38.98, -94.67);
+            },
+        };
+        Assert.False(Matches("t/s/N0CALL-9/20000", "N0ABC>APRS,qAC,T2:>Just a status", context));
+        Assert.Equal(0, lookups);
+    }
+
+    [Fact]
+    public void ARangeAndABuddyListMatchTogether()
+    {
+        var filter = AprsFilter.Parse("r/38.98/-94.67/20 b/VK2ABC/N9*");
+        Assert.True(filter.Matches(P(Near)));
+        Assert.True(filter.Matches(P(Far)));
+        Assert.True(filter.Matches(P("N9XYZ>APRS,qAC,T2:>Just a status")));
+        Assert.False(filter.Matches(P("N8XYZ>APRS,qAC,T2:>Just a status")));
+        Assert.Null(filter.CheckServerLimits());
+    }
+
     [Theory]
     [InlineData("s/>", Home, true)]
     [InlineData("s/-", Home, false)]
