@@ -38,6 +38,11 @@ public sealed class InternetToRfGate
     private readonly Lock _lock = new();
     private readonly Queue<DateTimeOffset> _sent = new();
     private readonly Dictionary<string, DateTimeOffset> _positionsOwed = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Queue<(string Sender, DateTimeOffset Until)> _positionsOwedExpiry = new();
+
+    // The most senders owed a position at once. Far more than the rate limit lets through in a window by default; past
+    // this, the one owed longest is forgotten first.
+    internal const int MaxPositionsOwed = 10_000;
 
     /// <summary>Creates the rules for the IGate that transmits as <paramref name="igate"/>.</summary>
     /// <param name="igate">
@@ -146,7 +151,7 @@ public sealed class InternetToRfGate
             _sent.Enqueue(now);
             if (owesPosition)
             {
-                _positionsOwed[sender.Value] = now + _senderPositionWindow;
+                OwePosition(sender.Value, now + _senderPositionWindow, now);
             }
         }
 
@@ -154,16 +159,64 @@ public sealed class InternetToRfGate
         return new RfGateDecision(fromInternet, ThirdParty(fromInternet), null);
     }
 
+    /// <summary>The senders owed a position now, for tests.</summary>
+    internal int PositionsOwed
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _positionsOwed.Count;
+            }
+        }
+    }
+
     private bool TakePositionOwed(Callsign sender)
     {
         lock (_lock)
         {
+            var now = _timeProvider.GetUtcNow();
+            ForgetPositionsOwed(now);
             if (!_positionsOwed.Remove(sender.Value, out var until))
             {
                 return false;
             }
 
-            return _timeProvider.GetUtcNow() <= until;
+            return now <= until;
+        }
+    }
+
+    // Called under _lock. A sender's later message renews its entry, so the queue may hold stale times for it: those
+    // never remove the renewed entry.
+    private void OwePosition(string sender, DateTimeOffset until, DateTimeOffset now)
+    {
+        ForgetPositionsOwed(now);
+        if (!_positionsOwed.ContainsKey(sender))
+        {
+            while (_positionsOwed.Count >= MaxPositionsOwed && _positionsOwedExpiry.TryDequeue(out var oldest))
+            {
+                RemoveIfCurrent(oldest.Sender, oldest.Until);
+            }
+        }
+
+        _positionsOwed[sender] = until;
+        _positionsOwedExpiry.Enqueue((sender, until));
+    }
+
+    private void ForgetPositionsOwed(DateTimeOffset now)
+    {
+        while (_positionsOwedExpiry.TryPeek(out var oldest) && oldest.Until < now)
+        {
+            _positionsOwedExpiry.Dequeue();
+            RemoveIfCurrent(oldest.Sender, oldest.Until);
+        }
+    }
+
+    private void RemoveIfCurrent(string sender, DateTimeOffset until)
+    {
+        if (_positionsOwed.TryGetValue(sender, out var current) && current == until)
+        {
+            _positionsOwed.Remove(sender);
         }
     }
 
