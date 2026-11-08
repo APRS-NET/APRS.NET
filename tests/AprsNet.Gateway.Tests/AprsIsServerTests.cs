@@ -171,6 +171,22 @@ public sealed class AprsIsServerTests : IAsyncLifetime
         Assert.Equal("N1ABC>APRS,TCPIP*:>still the old filter", await client.ReadAsync());
     }
 
+    [Theory]
+    [InlineData(51, "p/N{0}", "This server accepts at most 50 terms in a filter; this filter has 51.")]
+    [InlineData(10, "f/N{0}CALL/1", "APRS-IS servers accept at most 9 friend (f/) terms; this filter has 10.")]
+    public async Task AnOversizedFilterIsRefusedAndTheOldOneKept(int count, string term, string reason)
+    {
+        await using var client = await LoggedInAsync("filter p/N1");
+        await client.ReadAsync();
+        var text = string.Join(' ', Enumerable.Range(0, count).Select(i => string.Format(null, term, i + 2)));
+        await client.WriteAsync($"#filter {text}");
+        Assert.Equal($"# filter {text} is invalid: {reason}", await client.ReadAsync());
+
+        Publish("N2ABC>APRS,TCPIP*:>not passed by the refused filter");
+        Publish("N1ABC>APRS,TCPIP*:>still the old filter");
+        Assert.Equal("N1ABC>APRS,TCPIP*:>still the old filter", await client.ReadAsync());
+    }
+
     [Fact]
     public async Task PacketsFromClientsAreIgnored()
     {

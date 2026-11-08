@@ -58,7 +58,8 @@ The wire protocol follows what APRS-IS clients expect from aprsc:
    disconnected. A line that is not a login also disconnects.
 3. `# logresp CALL verified|unverified, server NAME`. Verified means the passcode matches the callsign.
 4. A login filter gets `# filter … active`, or `# filter … is invalid: …`, which keeps the previous filter (none at
-   login).
+   login). A filter over the size limits is refused the same way: at most 50 terms, 9 `r/` and 9 `f/` terms, and 512
+   characters of callsign and name patterns, since every packet is checked against every client's filter.
 5. Then the stream: packets that pass the filter, messages addressed to the login callsign whatever the filter, and a
    keepalive comment every `KeepAliveInterval` (20 s). `#filter …` replaces the filter at any time.
 

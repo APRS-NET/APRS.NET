@@ -192,7 +192,7 @@ internal sealed class WebSocketSession : IPacketSubscriber
 
     private ReadOnlyMemory<byte>? ApplyFilter(string text)
     {
-        if (!AprsFilter.TryParse(text, out var filter, out var error))
+        if (!ClientFilter.TryParse(text, out var filter, out var error))
         {
             return Json(w =>
             {
