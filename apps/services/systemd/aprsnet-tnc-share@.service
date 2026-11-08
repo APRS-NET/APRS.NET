@@ -33,8 +33,19 @@ Environment=HOME=/var/lib/aprsnet DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 Environment=OTEL_SERVICE_NAME=aprsnet-tnc-share APRSNET_INSTANCE=%i
 NoNewPrivileges=yes
 ProtectSystem=strict
-ProtectHome=read-only
+# Home folders are hidden. install.sh binds a .NET installed in one back in, read-only (50-dotnet.conf).
+ProtectHome=tmpfs
 PrivateTmp=yes
+# Devices: only serial ports (USB, ACM, on-board UARTs, Bluetooth RFCOMM) and pseudo-terminals such as Dire Wolf's
+# KISS pty, besides /dev/null and the like. The dialout group still decides which serial ports the user may open.
+DevicePolicy=closed
+DeviceAllow=char-ttyUSB rw
+DeviceAllow=char-ttyACM rw
+DeviceAllow=char-ttyS rw
+DeviceAllow=char-ttyAMA rw
+DeviceAllow=char-rfcomm rw
+DeviceAllow=char-pts rw
+ProtectProc=invisible
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectControlGroups=yes

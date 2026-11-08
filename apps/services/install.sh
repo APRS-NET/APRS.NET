@@ -58,6 +58,8 @@ if [[ -n $uninstall ]]; then
 
   say "Removing the services, the scripts and $tool_path"
   rm -f "$units/aprsnet-serve@.service" "$units/aprsnet-tnc-share@.service"
+  rm -f "$units/aprsnet-serve@.service.d/50-dotnet.conf" "$units/aprsnet-tnc-share@.service.d/50-dotnet.conf"
+  rmdir "$units/aprsnet-serve@.service.d" "$units/aprsnet-tnc-share@.service.d" 2>/dev/null || true
   rm -f "$bin/aprsnet-check" "$bin/aprsnet-logs"
   rm -rf "$tool_path"
   systemctl daemon-reload
@@ -147,6 +149,13 @@ done
 
 say "Installing the services and the scripts"
 install -m 644 "$here"/systemd/*.service "$units/"
+# The services hide home folders (ProtectHome=tmpfs), so a .NET installed in one is bound back in, read-only.
+for unit in aprsnet-serve@ aprsnet-tnc-share@; do
+  install -d -m 755 "$units/$unit.service.d"
+  printf '# Written by install.sh: makes .NET in %s readable inside the sandbox.\n[Service]\nBindReadOnlyPaths=%s\n' \
+    "$dotnet_root" "$dotnet_root" >"$units/$unit.service.d/50-dotnet.conf"
+  chmod 644 "$units/$unit.service.d/50-dotnet.conf"
+done
 install -m 755 "$here/scripts/aprsnet-check" "$here/scripts/aprsnet-logs" "$bin/"
 systemctl daemon-reload
 
