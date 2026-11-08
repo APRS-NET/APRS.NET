@@ -30,6 +30,10 @@ Messages to one station go one at a time, retried on a `RetryProfile` (`Default`
 never resends inside APRS-IS's 30-second duplicate window. Save `LastMessageId` and pass it back after a restart so
 IDs don't repeat.
 
+A station is remembered while a message to it is on its way, and for the receive window (an hour by default) after its
+last message, to deliver each message once. At most 10,000 stations are remembered: past that, half of those with no
+message on its way, heard from longest ago, are forgotten. One with a message on its way is never forgotten.
+
 `BulletinBoard` keeps the bulletins, announcements and NWS bulletins heard, from anyone: hand it every packet, and its
 `Changed` event says what was added, replaced (new text from the same sender) or removed (not heard for a day).
 

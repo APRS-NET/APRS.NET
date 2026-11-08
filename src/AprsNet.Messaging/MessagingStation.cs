@@ -28,6 +28,13 @@ public sealed class MessagingStation : IDisposable
     // longest ago is forgotten.
     private const int MaxHeard = 10_000;
 
+    // The stations talked to. Bounded: past this, the half heard from longest ago that have no message on its way to
+    // them is forgotten. One with a message on its way is never forgotten.
+    internal const int MaxCorrespondents = 10_000;
+
+    // How often the stations talked to are swept for ones to forget.
+    private static readonly TimeSpan SweepInterval = TimeSpan.FromMinutes(1);
+
     private readonly MessagingStationOptions _options;
     private readonly TimeProvider _time;
     private readonly ITimer _timer;
@@ -39,6 +46,7 @@ public sealed class MessagingStation : IDisposable
     private readonly Dictionary<string, (string? Source, DateTimeOffset At)> _heard = new(StringComparer.Ordinal);
     private readonly Lock _lock = new();
     private readonly string _key;
+    private DateTimeOffset _nextSweep = DateTimeOffset.MinValue;
     private bool _disposed;
 
     /// <summary>Creates the conversations of the station <paramref name="station"/>.</summary>
@@ -227,6 +235,7 @@ public sealed class MessagingStation : IDisposable
                 correspondent = Track(from);
             }
 
+            correspondent.LastHeard = now;
             if (packet.Payload is MessagePayload message && Key(message.Addressee) == _key)
             {
                 Handle(correspondent, from, packet, message, source, now, events);
@@ -362,7 +371,7 @@ public sealed class MessagingStation : IDisposable
 
     private void Forget(Correspondent correspondent, DateTimeOffset now)
     {
-        foreach (var (id, at) in correspondent.Received.ToList())
+        foreach (var (id, at) in correspondent.Received)
         {
             if (now - at >= _options.ReceiveWindow)
             {
@@ -597,11 +606,61 @@ public sealed class MessagingStation : IDisposable
         var key = Key(callsign.Value);
         if (!_correspondents.TryGetValue(key, out var correspondent))
         {
-            correspondent = new Correspondent();
+            var now = _time.GetUtcNow();
+            if (now >= _nextSweep || _correspondents.Count >= MaxCorrespondents)
+            {
+                ForgetIdle(now);
+            }
+
+            correspondent = new Correspondent { LastHeard = now };
             _correspondents.Add(key, correspondent);
         }
 
         return correspondent;
+    }
+
+    /// <summary>The stations talked to now, for tests.</summary>
+    internal int Correspondents
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _correspondents.Count;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Forgets the stations with nothing on its way to them and no message received within the receive window, and,
+    /// at <see cref="MaxCorrespondents"/>, the half of the idle ones heard from longest ago. Removing while enumerating
+    /// a dictionary is allowed.
+    /// </summary>
+    private void ForgetIdle(DateTimeOffset now)
+    {
+        _nextSweep = now + SweepInterval;
+        foreach (var (key, correspondent) in _correspondents)
+        {
+            if (correspondent.IsIdle)
+            {
+                Forget(correspondent, now);
+                if (correspondent.Received.Count == 0)
+                {
+                    _correspondents.Remove(key);
+                }
+            }
+        }
+
+        if (_correspondents.Count < MaxCorrespondents)
+        {
+            return;
+        }
+
+        var idle = _correspondents.Where(e => e.Value.IsIdle).OrderBy(e => e.Value.LastHeard).ToList();
+        foreach (var (key, _) in idle.Take(Math.Max(1, idle.Count / 2)))
+        {
+            _correspondents.Remove(key);
+        }
     }
 
     /// <summary>A callsign as it is matched: in any case, and with <c>-0</c> the same as no SSID.</summary>
@@ -631,6 +690,12 @@ public sealed class MessagingStation : IDisposable
     private sealed class Correspondent
     {
         public OutgoingMessage? Active { get; set; }
+
+        /// <summary>When it was last heard, or first talked to.</summary>
+        public DateTimeOffset LastHeard { get; set; }
+
+        /// <summary>Nothing on its way to it: no message in flight, waiting, or failed and kept to try again.</summary>
+        public bool IsIdle => Active is null && Waiting.Count == 0 && Failed.Count == 0;
 
         public Queue<OutgoingMessage> Waiting { get; set; } = new();
 

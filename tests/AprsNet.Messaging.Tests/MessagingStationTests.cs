@@ -334,6 +334,75 @@ public sealed class MessagingStationTests : IDisposable
     }
 
     [Fact]
+    public void StationsTalkedToAreCapped()
+    {
+        for (var i = 0; i < MessagingStation.MaxCorrespondents + 50; i++)
+        {
+            Hear($"S{i}>APRS::N0CALL-9 :Hello{{1");
+            Assert.True(_station.Correspondents <= MessagingStation.MaxCorrespondents);
+        }
+
+        Assert.Equal(MessagingStation.MaxCorrespondents + 50, _received.Count);
+    }
+
+    [Fact]
+    public void AStationWithAMessageOnItsWayIsNeverForgotten()
+    {
+        var message = _station.Send(Wu2z, "Hello");
+        Sent();
+        for (var i = 0; i < MessagingStation.MaxCorrespondents + 50; i++)
+        {
+            Hear($"S{i}>APRS::N0CALL-9 :Hello{{1");
+        }
+
+        Hear("WU2Z>APRS::N0CALL-9 :ack01");
+        Assert.Equal(OutgoingMessageState.Delivered, message.State);
+    }
+
+    [Fact]
+    public void AStationWithAFailedMessageIsKeptToTryAgain()
+    {
+        var message = _station.Send(Wu2z, "Hello", RetryProfile.None);
+        Wait(120);
+        Assert.Equal(OutgoingMessageState.Failed, message.State);
+        Sent();
+        for (var i = 0; i < MessagingStation.MaxCorrespondents + 50; i++)
+        {
+            Hear($"S{i}>APRS::N0CALL-9 :Hello{{1");
+        }
+
+        Hear("WU2Z>APRS:>Back on the air");
+        Assert.Equal(OutgoingMessageState.Retrying, message.State);
+    }
+
+    [Fact]
+    public void AQuietStationIsForgottenAfterTheReceiveWindow()
+    {
+        Hear("WU2Z>APRS::N0CALL-9 :Hello{12");
+        Hear("K1ABC>APRS::N0CALL-9 :Hello{12");
+        Assert.Equal(2, _station.Correspondents);
+
+        Wait(3601);
+        Hear("K2XYZ>APRS::N0CALL-9 :Hello{12");
+
+        Assert.Equal(1, _station.Correspondents);
+    }
+
+    [Fact]
+    public void ACopyWithinTheReceiveWindowIsStillDeliveredOnceAsOthersAreForgotten()
+    {
+        Hear("K1ABC>APRS::N0CALL-9 :Hello{12");
+        Wait(1800);
+        Hear("WU2Z>APRS::N0CALL-9 :Hello{12");
+        Wait(1801);
+        Hear("K2XYZ>APRS::N0CALL-9 :Hello{12"); // K1ABC is forgotten, WU2Z isn't
+        Hear("WU2Z>APRS::N0CALL-9 :Hello{12");
+
+        Assert.Equal(["K1ABC", "WU2Z", "K2XYZ"], _received.Select(m => m.From.Value));
+        Assert.Equal(2, _station.Correspondents);
+    }
+
+    [Fact]
     public void AMessageWithoutAnIdIsDeliveredAndNotAcked()
     {
         Hear("WU2Z>APRS::N0CALL-9 :No reply needed");
