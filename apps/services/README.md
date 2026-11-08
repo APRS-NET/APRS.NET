@@ -250,5 +250,7 @@ service:
   through your radio. Keep both ports on your own network: allow only it in the firewall, or listen on `127.0.0.1`
   and use an SSH tunnel.
 - **Sandboxing:** the services run as the `aprsnet` user. systemd sandboxes them: no privileges, a read-only system,
-  and only the network and the serial port.
+  no home folders (a .NET installed in one is bound back in, read-only), and of the devices only serial ports and
+  pseudo-terminals. Which serial ports they may open is up to the `dialout` group, so every serial port in that group
+  is reachable, not just the one in the settings. `systemd-analyze security aprsnet-serve@gateway` shows the rest.
 - **Your licence:** what the radio transmits is on your licence, whichever app sent it.
