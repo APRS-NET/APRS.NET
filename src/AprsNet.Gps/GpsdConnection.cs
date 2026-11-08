@@ -18,6 +18,10 @@ namespace AprsNet.Gps;
 /// and HDOP come from gpsd's latest SKY report, which gpsd sends less often than TPV, so they can be a few seconds old.
 /// Altitude is given only with a 3D fix.
 /// </para>
+/// <para>
+/// A line longer than 64 KiB, far more than any report gpsd sends, is dropped without being buffered, and the read
+/// carries on with the next line.
+/// </para>
 /// <para>gpsd reports times in UTC, so <see cref="GpsFix.Time"/> is always known once the GPS has the time.</para>
 /// <para>
 /// Each fix is recorded on the <c>AprsNet.Gps</c> meter, tagged <c>gps</c> with <see cref="Server"/>: see
@@ -35,6 +39,12 @@ namespace AprsNet.Gps;
 /// </example>
 public sealed class GpsdConnection : IAsyncDisposable
 {
+    /// <summary>
+    /// The longest line read from gpsd, 64 KiB: gpsd's largest reports, sky reports listing every satellite, are a few
+    /// KiB. A longer line is dropped, and the read carries on with the next.
+    /// </summary>
+    internal const int MaxLineLength = 64 * 1024;
+
     private readonly Func<CancellationToken, Task<Stream>> _connect;
     private readonly string? _device;
     private readonly TimeProvider _timeProvider;
@@ -181,7 +191,7 @@ public sealed class GpsdConnection : IAsyncDisposable
                     var reports = new GpsdReports();
                     Volatile.Write(ref _connected, 1);
                     SetState(GpsdConnectionState.Connected);
-                    using var reader = new StreamReader(stream, Encoding.UTF8);
+                    var reader = new BoundedLineReader(stream, MaxLineLength, Encoding.UTF8);
                     try
                     {
                         while (true)

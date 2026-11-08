@@ -10,6 +10,8 @@ public sealed class GpsdConnectionTests
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(10);
 
+    private const int LineLimit = GpsdConnection.MaxLineLength;
+
     // A gpsd 3.25 session in the shape gpsd_json(5) documents, made up for the test at APRS101's example position:
     // the greeting, the GPS starting with no fix, then a 2D fix, then a 3D fix.
     private static readonly string[] Session =
@@ -226,6 +228,60 @@ public sealed class GpsdConnectionTests
         Assert.Equal(1, connection.Reconnects);
         Assert.Equal("127.0.0.1:" + port, connection.Server);
         await gpsd;
+    }
+
+    [Fact]
+    public async Task ALineThatNeverEndsIsDroppedAndTheReadCarriesOn()
+    {
+        var gpsd = new FakeGpsd();
+        var chunk = Encoding.ASCII.GetBytes(new string('x', 4096));
+        for (var sent = 0; sent < 4 * LineLimit; sent += chunk.Length)
+        {
+            gpsd.SendBytes(chunk);
+        }
+
+        gpsd.SendBytes("\r\n"u8.ToArray());
+        gpsd.Send(Session[5]);
+        await using var connection = Connection(_ => Task.FromResult<Stream>(gpsd));
+        var lines = new List<string>();
+        connection.LineRead += (_, e) => lines.Add(e.Line);
+        await using var fixes = connection
+            .ReadFixesAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        Assert.Equal(GpsFixMode.Fix2D, (await NextAsync(fixes)).Mode);
+        Assert.Equal([Session[5]], lines);
+        Assert.Equal(0, connection.Reconnects);
+    }
+
+    [Fact]
+    public async Task AReportLongerThanTheLimitIsDroppedEvenWhenItIsValid()
+    {
+        var gpsd = new FakeGpsd();
+        var padded = Session[7][..^1] + ",\"pad\":\"" + new string('a', LineLimit) + "\"}";
+        gpsd.Send(padded, Session[5]);
+        await using var connection = Connection(_ => Task.FromResult<Stream>(gpsd));
+        await using var fixes = connection
+            .ReadFixesAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        Assert.Equal(GpsFixMode.Fix2D, (await NextAsync(fixes)).Mode); // the 3D report was never read
+    }
+
+    [Fact]
+    public async Task AReportAsLongAsTheLimitIsStillRead()
+    {
+        var gpsd = new FakeGpsd();
+        var head = Session[7][..^1] + ",\"pad\":\"";
+        var report = head + new string('a', LineLimit - head.Length - 2) + "\"}";
+        gpsd.Send(report);
+        await using var connection = Connection(_ => Task.FromResult<Stream>(gpsd));
+        await using var fixes = connection
+            .ReadFixesAsync(TestContext.Current.CancellationToken)
+            .GetAsyncEnumerator(TestContext.Current.CancellationToken);
+
+        Assert.Equal(LineLimit, report.Length);
+        Assert.Equal(GpsFixMode.Fix3D, (await NextAsync(fixes)).Mode);
     }
 
     [Fact]

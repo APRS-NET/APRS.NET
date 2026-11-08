@@ -30,6 +30,9 @@ internal sealed class FakeGpsd : Stream
         }
     }
 
+    /// <summary>Sends <paramref name="bytes"/> as they are, with no line ending added.</summary>
+    public void SendBytes(byte[] bytes) => _incoming.Writer.TryWrite(bytes);
+
     /// <summary>gpsd closes the connection once what was sent has been read.</summary>
     public void End() => _incoming.Writer.TryComplete();
 
