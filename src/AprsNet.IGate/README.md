@@ -74,7 +74,9 @@ await foreach (var packet in aprsIs.ReadPacketsAsync(cancellationToken))
 
 Only messages, acknowledgements and rejections go out, and only when the addressee is local (heard on RF within 180
 minutes over at most 2 hops) and the sender isn't. After a message, the sender's next position on APRS-IS within 30
-minutes goes out once, so the addressee can see who is writing. Everything else is refused with an `RfGateRefusal`:
+minutes goes out once, so the addressee can see who is writing. A sender whose window has passed is forgotten, and
+at most 10,000 senders are owed a position at once: past that, the oldest is forgotten first. Everything else is
+refused with an `RfGateRefusal`:
 
 | `RfGateRefusal` | What |
 | --- | --- |

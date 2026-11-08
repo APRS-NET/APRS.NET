@@ -120,6 +120,73 @@ public sealed class InternetToRfGateTests
     }
 
     [Fact]
+    public void OwedPositionsAreForgottenOnceTheirWindowHasPassed()
+    {
+        var gate = Gate();
+        Assert.True(gate.Gate(AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+        Assert.True(gate.Gate(AprsPacket.Parse("K1ABC>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+        Assert.Equal(2, gate.PositionsOwed);
+
+        _time.Advance(TimeSpan.FromMinutes(31));
+        Assert.True(gate.Gate(AprsPacket.Parse("K2XYZ>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+
+        Assert.Equal(1, gate.PositionsOwed);
+    }
+
+    [Fact]
+    public void AnotherMessageFromTheSenderKeepsItsPositionOwed()
+    {
+        var gate = Gate();
+        Assert.True(gate.Gate(AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+        _time.Advance(TimeSpan.FromMinutes(20));
+        Assert.True(gate.Gate(AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Again{02")).IsGated);
+
+        _time.Advance(TimeSpan.FromMinutes(11)); // the first message's window has passed, the second's hasn't
+        Assert.True(gate.Gate(AprsPacket.Parse("K2XYZ>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+
+        var position = AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing");
+        Assert.True(gate.Gate(position).IsGated);
+        _time.Advance(TimeSpan.FromMinutes(1));
+        Assert.Equal(RfGateRefusal.NotForAStation, gate.Gate(position).Refusal);
+    }
+
+    [Fact]
+    public void AnOwedPositionStillGoesOutOnceWhileOthersAreForgotten()
+    {
+        var gate = Gate();
+        Assert.True(gate.Gate(AprsPacket.Parse("K1ABC>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+        _time.Advance(TimeSpan.FromMinutes(10));
+        Assert.True(gate.Gate(AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{01")).IsGated);
+        _time.Advance(TimeSpan.FromMinutes(25));
+
+        var position = AprsPacket.Parse("W1AW>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing");
+        Assert.True(gate.Gate(position).IsGated);
+        Assert.Equal(0, gate.PositionsOwed);
+        _time.Advance(TimeSpan.FromMinutes(1));
+        Assert.Equal(RfGateRefusal.NotForAStation, gate.Gate(position).Refusal);
+    }
+
+    [Fact]
+    public void OwedPositionsAreCappedWithTheOldestForgottenFirst()
+    {
+        var gate = Gate(maxPerMinute: int.MaxValue, maxPerFiveMinutes: int.MaxValue);
+        for (var i = 0; i < InternetToRfGate.MaxPositionsOwed + 5; i++)
+        {
+            Assert.True(gate.Gate(AprsPacket.Parse($"S{i}>APRS,TCPIP*,qAC,T2TEST::N0CALL-9 :Hello{{01")).IsGated);
+            Assert.True(gate.PositionsOwed <= InternetToRfGate.MaxPositionsOwed);
+        }
+
+        Assert.Equal(InternetToRfGate.MaxPositionsOwed, gate.PositionsOwed);
+        _time.Advance(TimeSpan.FromSeconds(31)); // past the duplicate window
+        var oldest = AprsPacket.Parse("S0>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing");
+        Assert.Equal(RfGateRefusal.NotForAStation, gate.Gate(oldest).Refusal);
+        var newest = AprsPacket.Parse(
+            $"S{InternetToRfGate.MaxPositionsOwed + 4}>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Writing"
+        );
+        Assert.True(gate.Gate(newest).IsGated);
+    }
+
+    [Fact]
     public void ACopyFromAnotherServerIsRefusedWithinTheWindow()
     {
         var gate = Gate();
