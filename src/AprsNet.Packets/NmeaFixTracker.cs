@@ -17,9 +17,10 @@ namespace AprsNet.Packets;
 /// <para>
 /// The satellites come from each talker's latest complete group of GSV sentences (<c>GP</c> for GPS, <c>GL</c> for
 /// GLONASS …), and for NMEA 4.1 each signal's, so systems and signals never overwrite each other. A group that is cut
-/// short is dropped. A satellite is <see cref="GpsSatellite.Used"/> when the latest GSA for its system lists it.
-/// <see cref="Quality"/> keeps each value until a sentence gives it again, since GST and GSV may come less often than
-/// once a second.
+/// short is dropped. It keeps up to 32 talkers and signals, dropping the one heard longest ago, and up to 36 satellites in
+/// a group; a group of more than 9 sentences, or with a signal ID of more than one hex digit, is ignored. A satellite is
+/// <see cref="GpsSatellite.Used"/> when the latest GSA for its system lists it. <see cref="Quality"/> keeps each value
+/// until a sentence gives it again, since GST and GSV may come less often than once a second.
 /// </para>
 /// <para>
 /// A sentence with a wrong checksum is ignored: on a serial line it was damaged. It is not thread-safe; use it from the
@@ -40,9 +41,23 @@ namespace AprsNet.Packets;
 /// </example>
 public sealed class NmeaFixTracker
 {
-    private readonly Dictionary<(string Talker, int? Signal), List<GpsSatellite>> _inView = [];
-    private readonly Dictionary<(string Talker, int? Signal), (int Total, int Next, List<GpsSatellite> List)> _groups =
-    [];
+    /// <summary>The most sentences in a GSV group: its count is one digit.</summary>
+    internal const int MaxGroupSentences = 9;
+
+    /// <summary>The most satellites a GSV group holds: four in each of nine sentences.</summary>
+    internal const int MaxGroupSatellites = MaxGroupSentences * 4;
+
+    /// <summary>The most talkers and signals kept, and the most groups being gathered; the oldest heard goes first.</summary>
+    internal const int MaxGroups = 32;
+
+    // The latest complete group of each talker and signal, and the order they were first heard in.
+    private readonly Dictionary<(string Talker, int? Signal), (long Heard, List<GpsSatellite> List)> _inView = [];
+    private readonly List<(string Talker, int? Signal)> _inViewOrder = [];
+    private readonly Dictionary<
+        (string Talker, int? Signal),
+        (int Total, int Next, long Heard, List<GpsSatellite> List)
+    > _groups = [];
+    private long _heard;
     private readonly Dictionary<GnssSystem, HashSet<int>> _used = [];
     private bool _ggaCountsUsed;
 
@@ -112,7 +127,9 @@ public sealed class NmeaFixTracker
         Quality = new GpsQuality();
         Satellites = [];
         _inView.Clear();
+        _inViewOrder.Clear();
         _groups.Clear();
+        _heard = 0;
         _used.Clear();
         _ggaCountsUsed = false;
     }
@@ -168,15 +185,32 @@ public sealed class NmeaFixTracker
     }
 
     // GSV: sentences in the group, this one's number, satellites in view, then for up to four satellites the ID,
-    // elevation, azimuth and SNR; from NMEA 4.1 a signal ID last.
+    // elevation, azimuth and SNR; from NMEA 4.1 a signal ID last. The count of sentences is one digit and the signal ID
+    // one hex digit, so a sentence with more is not a GSV this tracker reads.
     private void Gsv(string talker, IReadOnlyList<string> f)
     {
-        if (Int(f, 0) is not { } total || Int(f, 1) is not { } number || number < 1 || number > total)
+        if (
+            Int(f, 0) is not { } total
+            || total > MaxGroupSentences
+            || Int(f, 1) is not { } number
+            || number < 1
+            || number > total
+        )
         {
             return;
         }
 
-        var signal = (f.Count - 3) % 4 == 1 ? Hex(f[^1]) : null;
+        int? signal = null;
+        if ((f.Count - 3) % 4 == 1 && f[^1].Length > 0)
+        {
+            if (f[^1].Length > 1 || Hex(f[^1]) is not { } digit)
+            {
+                return;
+            }
+
+            signal = digit;
+        }
+
         var key = (talker, signal);
         List<GpsSatellite> list;
         if (number == 1)
@@ -194,7 +228,7 @@ public sealed class NmeaFixTracker
         }
 
         var system = TalkerSystem(talker);
-        for (var i = 3; i + 3 < f.Count; i += 4)
+        for (var i = 3; i + 3 < f.Count && list.Count < MaxGroupSatellites; i += 4)
         {
             if (Int(f, i) is { } id)
             {
@@ -212,14 +246,32 @@ public sealed class NmeaFixTracker
             }
         }
 
+        var heard = ++_heard;
         if (number < total)
         {
-            _groups[key] = (total, number + 1, list);
+            if (!_groups.ContainsKey(key) && _groups.Count >= MaxGroups)
+            {
+                _groups.Remove(_groups.MinBy(group => group.Value.Heard).Key);
+            }
+
+            _groups[key] = (total, number + 1, heard, list);
             return;
         }
 
         _groups.Remove(key);
-        _inView[key] = list;
+        if (!_inView.ContainsKey(key))
+        {
+            if (_inView.Count >= MaxGroups)
+            {
+                var oldest = _inView.MinBy(group => group.Value.Heard).Key;
+                _inView.Remove(oldest);
+                _inViewOrder.Remove(oldest);
+            }
+
+            _inViewOrder.Add(key);
+        }
+
+        _inView[key] = (heard, list);
         MarkUsed();
     }
 
@@ -243,8 +295,8 @@ public sealed class NmeaFixTracker
     /// <summary>Sets <see cref="Satellites"/> from the groups heard, each marked used or not.</summary>
     private void MarkUsed()
     {
-        var satellites = _inView
-            .Values.SelectMany(group => group)
+        var satellites = _inViewOrder
+            .SelectMany(key => _inView[key].List)
             .Select(s => s with { Used = _used.TryGetValue(s.System, out var ids) && ids.Contains(s.Id) })
             .ToList();
         if (!satellites.SequenceEqual(Satellites))
