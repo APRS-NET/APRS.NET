@@ -279,7 +279,11 @@ internal static class MessageDecoder
                 };
         }
 
+        // NaN, Infinity and values that overflow (1e999) parse, but no equation can use them.
         static double? Number(string field) =>
-            double.TryParse(field, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) ? value : null;
+            double.TryParse(field, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+            && double.IsFinite(value)
+                ? value
+                : null;
     }
 }

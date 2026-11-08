@@ -229,6 +229,32 @@ public class MessagePayloadTests
     }
 
     [Theory]
+    [InlineData(":N0QBF-11 :EQNS.NaN,1,0")]
+    [InlineData(":N0QBF-11 :EQNS.Infinity,1,0")]
+    [InlineData(":N0QBF-11 :EQNS.1e999,1,0")]
+    [InlineData(":N0QBF-11 :EQNS.0,1,0,0,-Infinity,0")]
+    [InlineData(":N0QBF-11 :EQNS.0,1,0,0,1,-1e400")]
+    public void EquationsWithANonFiniteCoefficientAreRefusedWithAWarning(string information)
+    {
+        var definition = Decode<TelemetryDefinition>(information, out var packet);
+
+        Assert.Empty(definition.Equations);
+        Assert.Equal(
+            [new ParseIssue(ParseIssueCode.InvalidTelemetryDefinition, ParseIssueSeverity.Warning, 28)],
+            packet.Issues
+        );
+    }
+
+    [Fact]
+    public void ReadsCoefficientsWrittenWithAnExponent()
+    {
+        var definition = Decode<TelemetryDefinition>(":N0QBF-11 :EQNS.0,1e2,-1.5E-3", out var packet);
+
+        Assert.Equal([new TelemetryEquation(0, 100, -0.0015)], definition.Equations);
+        Assert.Empty(packet.Issues);
+    }
+
+    [Theory]
     [InlineData(":N0QBF-11 :BITS.10110000,N0QBF's Big Balloon", "N0QBF's Big Balloon")]
     [InlineData(":N0QBF-11 :BITS.10110000", null)]
     public void ReadsBitSenseAndProject(string information, string? project)
