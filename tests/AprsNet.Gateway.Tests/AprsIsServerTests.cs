@@ -354,6 +354,62 @@ public sealed class AprsIsServerTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task PublishingGoesOnWhileAJoiningClientsHistoryIsFiltered()
+    {
+        await using var server = Start(history: TimeSpan.FromHours(1));
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:>history 1"));
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:>history 2"));
+        using var subscriber = new BlockingSubscriber();
+
+        var subscribing = Task.Run(() => server.Subscribe(subscriber), TestContext.Current.CancellationToken);
+        try
+        {
+            Assert.True(subscriber.Filtering.Wait(Wait, TestContext.Current.CancellationToken));
+            var publishing = Task.Run(
+                () => server.Publish(AprsPacket.Parse("N1ABC>APRS:>live 1")),
+                TestContext.Current.CancellationToken
+            );
+            var waited = await Task.WhenAny(publishing, Task.Delay(Wait, TestContext.Current.CancellationToken));
+            Assert.True(waited == publishing, "Publishing waited for the replay.");
+        }
+        finally
+        {
+            subscriber.Release.Set();
+        }
+
+        await subscribing.WaitAsync(Wait, TestContext.Current.CancellationToken);
+        server.Publish(AprsPacket.Parse("N1ABC>APRS:>live 2"));
+        Assert.Equal(["history 1", "history 2", "live 1", "live 2"], subscriber.Received);
+    }
+
+    [Fact]
+    public async Task AJoiningClientGetsEveryPacketPublishedDuringItsReplayOnceAndInOrder()
+    {
+        await using var server = Start(history: TimeSpan.FromHours(1));
+        for (var i = 0; i < 1000; i++)
+        {
+            server.Publish(AprsPacket.Parse($"N1ABC>APRS:>{i}"));
+        }
+
+        using var subscriber = new BlockingSubscriber();
+        subscriber.Release.Set();
+        var publishing = Task.Run(
+            () =>
+            {
+                for (var i = 1000; i < 2000; i++)
+                {
+                    server.Publish(AprsPacket.Parse($"N1ABC>APRS:>{i}"));
+                }
+            },
+            TestContext.Current.CancellationToken
+        );
+        server.Subscribe(subscriber);
+        await publishing.WaitAsync(Wait, TestContext.Current.CancellationToken);
+
+        Assert.Equal(Enumerable.Range(0, 2000).Select(i => $"{i}"), subscriber.Received);
+    }
+
+    [Fact]
     public async Task TheHistoryKeepsOnlyTheNewestPackets()
     {
         await using var server = Start(history: TimeSpan.FromHours(1), maxHistory: 2);
@@ -432,6 +488,44 @@ public sealed class AprsIsServerTests : IAsyncLifetime
         {
             Assert.True(DateTime.UtcNow < deadline, "Timed out waiting.");
             await Task.Delay(10);
+        }
+    }
+
+    // Records what it is offered; the first offer waits for Release, so a test can act while the history is filtered.
+    private sealed class BlockingSubscriber : IPacketSubscriber, IDisposable
+    {
+        private readonly Lock _lock = new();
+        private readonly List<string> _received = [];
+
+        public ManualResetEventSlim Filtering { get; } = new();
+
+        public ManualResetEventSlim Release { get; } = new();
+
+        public string[] Received
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return [.. _received];
+                }
+            }
+        }
+
+        public void Offer(PublishedPacket packet)
+        {
+            Filtering.Set();
+            Release.Wait(Wait);
+            lock (_lock)
+            {
+                _received.Add(Encoding.Latin1.GetString(packet.Packet.Raw.Span)["N1ABC>APRS:>".Length..]);
+            }
+        }
+
+        public void Dispose()
+        {
+            Filtering.Dispose();
+            Release.Dispose();
         }
     }
 

@@ -84,8 +84,10 @@ so a beacon every 30 s is never dropped. On a 10-minute full-feed capture, alrea
 2 of 54,468.
 
 `History` (off by default) keeps recent published packets, at most `MaxHistoryPackets`. A client that logs in first
-gets the ones its filter passes, then the live feed. `Publish` and a client joining take turns under one lock, so a
-joining client gets each packet exactly once and in order.
+gets the ones its filter passes, then the live feed. The history is copied under the publishing lock and filtered
+outside it, so a long history or a costly filter does not hold up the feed; what is published meanwhile waits in a
+backlog that is filtered the same way. Once the client has caught up it goes live under the lock, so it gets each
+packet exactly once and in order.
 
 ## Station store
 

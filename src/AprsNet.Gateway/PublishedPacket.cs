@@ -36,6 +36,9 @@ internal sealed class PublishedPacket(AprsPacket packet, DateTimeOffset received
 /// <summary>Something besides an APRS-IS client that receives what an <see cref="AprsIsServer"/> publishes.</summary>
 internal interface IPacketSubscriber
 {
-    /// <summary>Called for each packet, under the server's publishing lock: queue it and return at once.</summary>
+    /// <summary>
+    /// Called for each packet, in order and never two at once: the history outside the server's publishing lock, then
+    /// live packets under it. Queue it and return at once.
+    /// </summary>
     void Offer(PublishedPacket packet);
 }
