@@ -188,6 +188,8 @@ An app that falls 1,000 frames behind is disconnected.
 
 `ClientConnected`, `ClientDisconnected` and `ClientRefused` report apps arriving, leaving (with `FellBehind` when the
 server dropped them) and being turned away over `maxClients`, with their address; `ClientsRefused` counts the last.
+A connection that fails as it is accepted, such as one reset by a port scan, is dropped and the server keeps
+listening; after any other accept error it waits 100 ms before trying again.
 `aprscli tnc share` is built on it.
 
 Start with the [TNC guide](https://github.com/APRS-NET/APRS.NET/blob/main/docs/guides/tnc.md).

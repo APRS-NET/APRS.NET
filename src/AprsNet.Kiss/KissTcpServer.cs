@@ -32,6 +32,9 @@ namespace AprsNet.Kiss;
 /// </remarks>
 public sealed class KissTcpServer : IAsyncDisposable
 {
+    /// <summary>How long to wait after an accept fails for a reason other than one connection resetting.</summary>
+    private static readonly TimeSpan AcceptRetryDelay = TimeSpan.FromMilliseconds(100);
+
     private readonly IPEndPoint _endPoint;
     private readonly int _maxClients;
     private readonly int _clientQueueLength;
@@ -65,6 +68,13 @@ public sealed class KissTcpServer : IAsyncDisposable
     /// dropped. When <see langword="null"/>, frames from apps are counted and dropped.
     /// </summary>
     public Func<Ax25Frame, CancellationToken, ValueTask>? Transmit { get; init; }
+
+    /// <summary>Takes the next connection from the listener; replaced by tests to simulate a failing accept.</summary>
+    internal Func<TcpListener, CancellationToken, ValueTask<TcpClient>> AcceptClient { get; init; } =
+        static (listener, stopping) => listener.AcceptTcpClientAsync(stopping);
+
+    /// <summary>Sets up an accepted socket; replaced by tests to simulate a socket that fails as it is set up.</summary>
+    internal Action<TcpClient> PrepareClient { get; init; } = static tcp => tcp.NoDelay = true;
 
     /// <summary>The address the server is listening on, once started.</summary>
     public IPEndPoint? LocalEndPoint => (IPEndPoint?)_listener?.LocalEndpoint;
@@ -193,18 +203,26 @@ public sealed class KissTcpServer : IAsyncDisposable
             TcpClient tcp;
             try
             {
-                tcp = await listener.AcceptTcpClientAsync(stopping).ConfigureAwait(false);
+                tcp = await AcceptClient(listener, stopping).ConfigureAwait(false);
             }
             // Stopped before the loop got here: a listener that is no longer listening throws InvalidOperationException.
             catch (Exception e)
-                when (e
-                        is OperationCanceledException
-                            or SocketException
-                            or ObjectDisposedException
-                            or InvalidOperationException
+                when (stopping.IsCancellationRequested
+                    || e is OperationCanceledException or ObjectDisposedException or InvalidOperationException
                 )
             {
                 return;
+            }
+            catch (SocketException e)
+            {
+                // One connection failed, such as an app that reset before it was accepted: keep listening.
+                KissMetrics.ServerDisconnected(_server, "error");
+                if (!await AfterAcceptFailedAsync(e.SocketErrorCode, stopping).ConfigureAwait(false))
+                {
+                    return;
+                }
+
+                continue;
             }
 
             var remote = RemoteEndPoint(tcp);
@@ -218,7 +236,18 @@ public sealed class KissTcpServer : IAsyncDisposable
                 continue;
             }
 
-            tcp.NoDelay = true;
+            try
+            {
+                PrepareClient(tcp);
+            }
+            catch (Exception e) when (e is SocketException or ObjectDisposedException)
+            {
+                // The socket is already gone: drop just this connection.
+                KissMetrics.ServerDisconnected(_server, "error");
+                tcp.Dispose();
+                continue;
+            }
+
             var client = new Client(tcp, _clientQueueLength, remote);
             // Registered before it starts, so a client that ends at once still finds itself to remove.
             var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -226,6 +255,28 @@ public sealed class KissTcpServer : IAsyncDisposable
             KissMetrics.ServerClients(_server, 1);
             Raise(ClientConnected, new KissTcpServerClientEventArgs(remote, fellBehind: false));
             _ = RunAsync(client, done, stopping);
+        }
+    }
+
+    /// <summary>
+    /// After a failed accept, waits a moment unless the failure was one connection resetting, so a persistent error
+    /// such as running out of file descriptors doesn't spin. Returns <see langword="false"/> once the server stops.
+    /// </summary>
+    private static async Task<bool> AfterAcceptFailedAsync(SocketError error, CancellationToken stopping)
+    {
+        if (error is SocketError.ConnectionReset or SocketError.ConnectionAborted)
+        {
+            return true;
+        }
+
+        try
+        {
+            await Task.Delay(AcceptRetryDelay, TimeProvider.System, stopping).ConfigureAwait(false);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
     }
 
