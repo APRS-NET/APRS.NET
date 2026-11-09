@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.8.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.2...v0.8.0-alpha.3) (2026-11-09)
+
+
+### Bug Fixes
+
+* **cli:** escape control characters in gps --raw and gpsd errors ([f3d1ee9](https://github.com/APRS-NET/APRS.NET/commit/f3d1ee9f4c9a21b8ffd4f20160e012c2eb750954)), closes [#358](https://github.com/APRS-NET/APRS.NET/issues/358)
+* **cli:** escape control characters in send message replies ([757d027](https://github.com/APRS-NET/APRS.NET/commit/757d027a92d55a7f4848ef8d2bc08595d11816de)), closes [#358](https://github.com/APRS-NET/APRS.NET/issues/358)
+* **cli:** escape control characters in serve's IGate log lines ([8ce7724](https://github.com/APRS-NET/APRS.NET/commit/8ce7724f8f6758cafa57fbde38b677af7ba7db25)), closes [#358](https://github.com/APRS-NET/APRS.NET/issues/358)
+* **cli:** skip nmea lines longer than 256 characters in aprscli gps ([8005adf](https://github.com/APRS-NET/APRS.NET/commit/8005adfafa81c23930bfc444265a20e1da480690)), closes [#359](https://github.com/APRS-NET/APRS.NET/issues/359)
+* **corpus:** an item packet too short for a name no longer throws ([0f4379e](https://github.com/APRS-NET/APRS.NET/commit/0f4379e63327adcca68f5e0e27d193990aacac97)), closes [#365](https://github.com/APRS-NET/APRS.NET/issues/365)
+* **deps:** Bump the test group with 1 update ([55974ee](https://github.com/APRS-NET/APRS.NET/commit/55974eed325e7bd039d7ed5a5e9b457c06f9001a))
+* **deps:** Bump Tomlyn from 2.10.1 to 2.11.1 ([5fd3c18](https://github.com/APRS-NET/APRS.NET/commit/5fd3c184755a8cbacbb37267cc1529f66239e42c))
+* **filters:** look up a station only for packets with a position ([7ab8d73](https://github.com/APRS-NET/APRS.NET/commit/7ab8d7356e622c2d3fdfe1375f7ce8e9e4f4a399)), closes [#363](https://github.com/APRS-NET/APRS.NET/issues/363)
+* **gateway:** drop stalled web clients and cap pending connections ([b6f2864](https://github.com/APRS-NET/APRS.NET/commit/b6f286461b67947377962d720f5cd79c5f01eaf8)), closes [#362](https://github.com/APRS-NET/APRS.NET/issues/362)
+* **gateway:** filter a joining client's history outside the publish lock ([049edc2](https://github.com/APRS-NET/APRS.NET/commit/049edc24d9ec6092573163519c7421acd0826343)), closes [#363](https://github.com/APRS-NET/APRS.NET/issues/363)
+* **gateway:** refuse client filters too big to check on every packet ([19a5927](https://github.com/APRS-NET/APRS.NET/commit/19a59276090c8e8c34f6fe59d3f06cdb70ca5a12)), closes [#363](https://github.com/APRS-NET/APRS.NET/issues/363)
+* **gps:** drop gpsd lines longer than 64 KiB instead of buffering them ([7cbe68c](https://github.com/APRS-NET/APRS.NET/commit/7cbe68c1da42653c61945dd094f959eb4336d9ec)), closes [#359](https://github.com/APRS-NET/APRS.NET/issues/359)
+* **igate:** forget owed sender positions once their window passes ([127c76c](https://github.com/APRS-NET/APRS.NET/commit/127c76c14800718029149042ec3482b5670ede07)), closes [#361](https://github.com/APRS-NET/APRS.NET/issues/361)
+* **kiss:** keep accepting apps after one connection fails ([37d646b](https://github.com/APRS-NET/APRS.NET/commit/37d646b0453a20fef9c4ee0b20ecdbf0e243aa2c)), closes [#364](https://github.com/APRS-NET/APRS.NET/issues/364)
+* **messaging:** forget idle correspondents and cap how many are kept ([5fd7e44](https://github.com/APRS-NET/APRS.NET/commit/5fd7e4444286370e2fdf73a935496ac723398aa7)), closes [#361](https://github.com/APRS-NET/APRS.NET/issues/361)
+* **packets:** keep the gps tracker's satellite state bounded ([0077990](https://github.com/APRS-NET/APRS.NET/commit/00779903284241b98cfb0a15dc9012df2700b001)), closes [#360](https://github.com/APRS-NET/APRS.NET/issues/360)
+
 ## [0.8.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.1...v0.8.0-alpha.2) (2026-11-05)
 
 
