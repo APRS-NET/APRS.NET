@@ -40,7 +40,7 @@ updates:
 
   # The Dockerfile's base images, pinned by digest. A new digest is usually a security update to the image's OS or
   # .NET runtime, which ships in the aprscli image, so it is fix(deps) too: each one gives a release PR, and the release
-  # publishes an image on the new base.
+  # publishes an image on the new base when PUBLISH_CONTAINER is on (docs/guides/container.md).
   - package-ecosystem: docker
     directory: /
     schedule:

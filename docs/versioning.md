@@ -44,8 +44,9 @@ Dependabot's NuGet updates are `fix(deps):`, since the packages and `aprscli` sh
 one merged gives a release PR. That includes test-only packages such as xUnit, which share `Directory.Packages.props`;
 the release PR waits until you merge it, so such a bump only adds a line to the next release. Its updates to the
 container's base images (the digests in the `Dockerfile`) are `fix(deps):` too, since the `aprscli` image ships on
-them: the release that follows publishes an image on the new base. Its GitHub Actions and .NET SDK updates are
-`chore(deps):` and don't release.
+them. The release that follows publishes an image on the new base only when the repository variable
+`PUBLISH_CONTAINER` is `true` ([the container guide](guides/container.md#published-images)); otherwise the release is
+just the packages. Its GitHub Actions and .NET SDK updates are `chore(deps):` and don't release.
 
 ## Notes
 
