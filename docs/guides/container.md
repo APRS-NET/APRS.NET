@@ -22,6 +22,14 @@ docker run -d --name gateway -p 14580:14580 -p 14590:14590 aprscli \
 - **TLS:** the WebSocket endpoint has none. Put a reverse proxy in front of it for `wss://`.
 - **User:** the image runs as a non-root user.
 
+## Published images
+
+The release workflow can push the image for each release to the GitHub Container Registry as
+`ghcr.io/aprs-net/aprscli:<version>`. It is off until the repository variable `PUBLISH_CONTAINER` is `true`; until
+then no image is published, and you build your own as above. The `Dockerfile`'s base images are pinned by digest, and
+Dependabot moves them with a `fix(deps)` update that gives a release, so once publishing is on, a new base reaches a
+published image with that release.
+
 ## With Dire Wolf
 
 `samples/compose` runs Dire Wolf next to the gateway, which reads it as a TNC at `direwolf:8001`:
