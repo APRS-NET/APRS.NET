@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.3...v0.8.0-alpha.4) (2026-11-15)
+
+
+### Bug Fixes
+
+* **gateway:** one packet that fails for a client no longer stops the feed ([00d14cd](https://github.com/APRS-NET/APRS.NET/commit/00d14cd7740fcb81f981a35dd80117773bcc3945))
+* **igate:** refuse internet packets whose header isn't callsigns ([c702de1](https://github.com/APRS-NET/APRS.NET/commit/c702de1d0ce5a6a1edf999ac4d26c3fc6a28076b))
+* **json:** write numbers that are not finite as null ([35b31df](https://github.com/APRS-NET/APRS.NET/commit/35b31dfcb954c34dc85dd436fb6db65711ea5cd2))
+* **packets:** refuse EQNS coefficients that are not finite numbers ([6f2c9d1](https://github.com/APRS-NET/APRS.NET/commit/6f2c9d1b5567db438051589bb0908be194354a68))
+
 ## [0.8.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.2...v0.8.0-alpha.3) (2026-11-09)
 
 
