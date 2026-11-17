@@ -77,10 +77,15 @@ var reading = Task.Run(
 );
 await connected.Task.WaitAsync(cancellationToken);
 
-// Your callsign, APRS.NET's TOCALL and the usual two-hop path.
+// Your callsign, your app's TOCALL (APZxxx, the experimental range, while testing) and the usual two-hop path.
 var me = PacketAddress.Parse("N0CALL-9", "APZNET", ["WIDE1-1", "WIDE2-1"]);
 await tnc.SendAsync(me.Create(new StatusReport { Text = "On the air with APRS.NET" }), cancellationToken);
 ```
+
+The TOCALL names the software that sent the packet, so that whoever sees a misbehaving station knows whom to contact.
+The libraries have none of their own: use an `APZ` TOCALL while testing, and [request one for your
+app](https://github.com/aprsorg/aprs-deviceid) before you release it. `aprscli` sends as `APNETC`, which is registered
+for it.
 
 Sends are rate limited so a bug cannot flood the channel: 3 frames at once, then one every 10 seconds. A send waits for
 its turn. `KissTcpOptions` holds the limit and every other setting:
