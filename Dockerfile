@@ -15,7 +15,7 @@ ARG VERSION=0.0.0-dev
 RUN dotnet publish apps/AprsNet.AprsIsCli -c Release -o /app \
     -p:MinVerSkip=true -p:Version=${VERSION} -p:PackAsTool=false
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:4f1f30cf0bb4ab0c8b2daa84613051683456f8df4a9bf7c812e20d74962992ac
+FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:80a51954ac70925e5783cb1ed35129a4243dcb1cddef20066b67346e17db284d
 WORKDIR /app
 COPY --from=build /app .
 # The image's non-root user.
