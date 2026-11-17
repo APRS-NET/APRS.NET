@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -11,11 +12,24 @@ public class AprsDeviceListTests
         Path.Combine(RepositoryRoot(), "tools", "deviceid", "tocalls.json")
     );
 
+    // When the pinned copy was generated, from tocalls.version ("<commit> <time>"), so the tests follow each update.
+    private static readonly string _pinnedGenerated = File.ReadAllText(
+            Path.Combine(RepositoryRoot(), "tools", "deviceid", "tocalls.version")
+        )
+        .Trim()
+        .Split(' ')[1];
+
+    // A generation time a day after the pinned copy's: a list newer than the built-in one.
+    private static readonly string _later = DateTimeOffset
+        .Parse(_pinnedGenerated, CultureInfo.InvariantCulture)
+        .AddDays(1)
+        .ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+
     // The pinned copy as the APRS Foundation publishes it: with its generation time.
-    private static string Published(string generated = "2026-10-19T17:19:53Z")
+    private static string Published(string? generated = null)
     {
         var list = JsonNode.Parse(_pinned)!.AsObject();
-        list["meta"] = new JsonObject { ["generation_time"] = generated };
+        list["meta"] = new JsonObject { ["generation_time"] = generated ?? _pinnedGenerated };
         return list.ToJsonString();
     }
 
@@ -144,7 +158,7 @@ public class AprsDeviceListTests
         var older = AprsDeviceList.Parse(
             Minimal("""{"APX":{}}""", extra: ""","meta":{"generation_time":"2026-10-01T00:00:00Z"}""")
         );
-        var newer = AprsDeviceList.Parse(Published("2026-11-02T08:00:00Z"));
+        var newer = AprsDeviceList.Parse(Published(_later));
         var undated = AprsDeviceList.Parse(Minimal("""{"APX":{}}"""));
 
         Assert.True(newer.IsNewerThan(AprsDeviceList.BuiltIn));
@@ -173,7 +187,7 @@ public class AprsDeviceListTests
     [Fact]
     public async Task ANewListComesWithItsETagAndTheFileAsPublished()
     {
-        var published = Encoding.UTF8.GetBytes(Published("2026-11-02T08:00:00Z"));
+        var published = Encoding.UTF8.GetBytes(Published(_later));
         var server = new FakeServer(_ =>
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(published) };
