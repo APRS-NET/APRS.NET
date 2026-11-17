@@ -148,8 +148,8 @@ source gave, so a GPS without GST has no `error`.
 - **A GPS losing its fix:** `rate(gps.fix.losses)` with `gps.fix.time{mode="none"}` against the other modes shows how
   often and for how long. `gps.satellites.used` dropping while `in_view` holds points at the antenna or the signal
   (`gps.signal`) rather than the sky.
-- **IGate coverage:** `packets.gated` against `packets.refused{reason="duplicate"}` shows how often digipeaters repeat
-  what the IGate hears; a high `from_internet` count is a two-way IGate nearby transmitting APRS-IS traffic.
+- **IGate coverage:** a high `from_internet` count in `packets.refused` is a two-way IGate nearby transmitting
+  APRS-IS traffic. `duplicate` stays at zero unless the app sets a `DuplicateWindow`: copies go up by default.
 
 ## Not yet
 
