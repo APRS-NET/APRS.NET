@@ -36,7 +36,12 @@ Every packet is gated except:
 | `Unreadable` | A header that can't be read, or a third-party packet whose inner packet can't |
 | `Empty` | No information field, or nothing before its first CR, LF or NUL |
 | `TooLong` | Longer than the 510 bytes of an APRS-IS line once the q-construct is added |
-| `Duplicate` | A copy of a packet gated within the last 30 seconds (`DuplicateWindow`), as when digipeaters repeat it |
+| `Duplicate` | Only with `DuplicateWindow` set: a copy of a packet gated within that window, as when digipeaters repeat it |
+
+Copies are gated by default: a packet heard direct and again through each digipeater goes up each time. The aprsc
+[IGate hints](https://github.com/hessu/aprsc/blob/main/doc/IGATE-HINTS.md) ask for this. APRS-IS servers drop
+duplicates themselves, and use the copies to see which IGates hear which stations. Filtering duplicates belongs to
+digipeaters and to gating to RF. Set `DuplicateWindow` (for example to 30 seconds) only if you must send fewer.
 
 The path is sent as heard, with `,qAO,` and the IGate's callsign after it. Third-party traffic from another RF
 network goes up as the packet it carries, without the RF header. The information field is cut at its first CR, LF or

@@ -14,8 +14,16 @@ public sealed class RfToInternetGateTests
     private static readonly Callsign _igate = Callsign.Parse("N0CALL-10");
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 20, 12, 0, 0, TimeSpan.Zero));
 
-    private RfToInternetGate Gate(bool receiveOnly = true) =>
-        new(_igate, new RfToInternetGateOptions { ReceiveOnly = receiveOnly, TimeProvider = _time });
+    private RfToInternetGate Gate(bool receiveOnly = true, TimeSpan duplicateWindow = default) =>
+        new(
+            _igate,
+            new RfToInternetGateOptions
+            {
+                ReceiveOnly = receiveOnly,
+                DuplicateWindow = duplicateWindow,
+                TimeProvider = _time,
+            }
+        );
 
     [Theory]
     // Heard direct, through digipeaters, and with unused hops: the path is kept as heard.
@@ -109,9 +117,36 @@ public sealed class RfToInternetGateTests
     }
 
     [Fact]
-    public void GatesAPacketHeardThroughSeveralDigipeatersOnce()
+    public void GatesEveryCopyOfAPacketHeardDirectAndThroughDigipeaters()
     {
         var gate = Gate();
+
+        var direct = gate.Gate(AprsPacket.Parse("N0CALL-9>APRS,WIDE1-1,WIDE2-1:>Status"));
+        var first = gate.Gate(AprsPacket.Parse("N0CALL-9>APRS,DIGI1,WIDE1*,WIDE2-1:>Status"));
+        var second = gate.Gate(AprsPacket.Parse("N0CALL-9>APRS,DIGI1,WIDE1,DIGI2,WIDE2*:>Status"));
+
+        Assert.Equal("N0CALL-9>APRS,WIDE1-1,WIDE2-1,qAO,N0CALL-10:>Status", direct.Packet?.ToString());
+        Assert.Equal("N0CALL-9>APRS,DIGI1,WIDE1*,WIDE2-1,qAO,N0CALL-10:>Status", first.Packet?.ToString());
+        Assert.Equal("N0CALL-9>APRS,DIGI1,WIDE1,DIGI2,WIDE2*,qAO,N0CALL-10:>Status", second.Packet?.ToString());
+    }
+
+    [Fact]
+    public void GatesAnIdenticalRepeatByDefault()
+    {
+        var gate = Gate();
+        var packet = AprsPacket.Parse("N0CALL>APRS:>Status");
+
+        var first = gate.Gate(packet);
+        var repeat = gate.Gate(packet);
+
+        Assert.True(first.IsGated);
+        Assert.True(repeat.IsGated);
+    }
+
+    [Fact]
+    public void RefusesCopiesWithinADuplicateWindowWhenOneIsSet()
+    {
+        var gate = Gate(duplicateWindow: TimeSpan.FromSeconds(30));
 
         var direct = gate.Gate(AprsPacket.Parse("N0CALL-9>APRS,WIDE1-1,WIDE2-1:>Status"));
         var first = gate.Gate(AprsPacket.Parse("N0CALL-9>APRS,DIGI1,WIDE1*,WIDE2-1:>Status"));
@@ -125,7 +160,7 @@ public sealed class RfToInternetGateTests
     [Fact]
     public void GatesTheSamePacketAgainAfterTheDuplicateWindow()
     {
-        var gate = Gate();
+        var gate = Gate(duplicateWindow: TimeSpan.FromSeconds(30));
         var packet = AprsPacket.Parse("N0CALL>APRS:>Status");
 
         var first = gate.Gate(packet);
@@ -142,7 +177,7 @@ public sealed class RfToInternetGateTests
     [Fact]
     public void ARefusedPacketDoesNotHoldBackItsCopies()
     {
-        var gate = Gate();
+        var gate = Gate(duplicateWindow: TimeSpan.FromSeconds(30));
 
         var refused = gate.Gate(AprsPacket.Parse("N0CALL>APRS,NOGATE:>Status"));
         var later = gate.Gate(AprsPacket.Parse("N0CALL>APRS:>Status"));
@@ -195,9 +230,29 @@ public sealed class RfToInternetGateTests
         var tooLong = AprsPacket.Parse("N0CALL-123>APRS:>Status").Source!;
 
         Assert.Throws<ArgumentException>(() => new RfToInternetGate(tooLong));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new RfToInternetGate(_igate, new RfToInternetGateOptions { DuplicateWindow = TimeSpan.Zero })
-        );
+    }
+
+    [Fact]
+    public void TheDuplicateWindowIsOffByDefault()
+    {
+        Assert.Equal(TimeSpan.Zero, new RfToInternetGateOptions().DuplicateWindow);
+    }
+
+    [Fact]
+    public void ValidateAcceptsAZeroDuplicateWindow()
+    {
+        var options = new RfToInternetGateOptions { DuplicateWindow = TimeSpan.Zero };
+
+        Assert.Null(Record.Exception(options.Validate));
+    }
+
+    [Fact]
+    public void ValidateRejectsANegativeDuplicateWindow()
+    {
+        var options = new RfToInternetGateOptions { DuplicateWindow = TimeSpan.FromSeconds(-1) };
+
+        Assert.Throws<ArgumentOutOfRangeException>(options.Validate);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RfToInternetGate(_igate, options));
     }
 
     [Fact]
@@ -234,7 +289,10 @@ public sealed class RfToInternetGateTests
             }
         );
         listener.Start();
-        var gate = new RfToInternetGate(igate, new RfToInternetGateOptions { TimeProvider = _time });
+        var gate = new RfToInternetGate(
+            igate,
+            new RfToInternetGateOptions { DuplicateWindow = TimeSpan.FromSeconds(30), TimeProvider = _time }
+        );
 
         gate.Gate(AprsPacket.Parse("N0CALL>APRS:>Status"));
         gate.Gate(AprsPacket.Parse("N0CALL>APRS,WIDE1*:>Status"));
