@@ -264,8 +264,15 @@ Receive-only IGates break messaging for stations nearby: they see their messages
 which never come back on RF. Run one where no two-way IGate covers the area, or only for a while, and say so in the
 comment. The [gateway guide](../../docs/guides/gateway.md#gate-to-aprs-is) says more.
 
+Nothing is saved up while APRS-IS is down. A packet heard while the upstream connection is reconnecting is dropped,
+not sent once it is back: another IGate has probably gated it already, and a late copy makes a moving station jump
+back on the maps. A packet that could not be sent within 10 s is dropped too. Short bursts still wait in a queue of
+500 packets. A warning says when the dropping starts, and a line when APRS-IS is back. A beacon due while APRS-IS is
+down goes out once it is back.
+
 The summary at the end, and `/health` with `--http`, count what was gated, sent, dropped and refused, by reason
-(`"igate.refused.duplicate"` and so on); so do the `AprsNet.IGate` metrics.
+(`"igate.refused.duplicate"` and so on); so do the `AprsNet.IGate` metrics. Dropped counts the packets lost while
+APRS-IS was down or slow, as well as those that didn't fit the queue or that the server refused.
 
 ### A two-way IGate
 
