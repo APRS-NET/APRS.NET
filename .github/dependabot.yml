@@ -25,6 +25,13 @@ updates:
         patterns: ["OpenTelemetry*"]
       test:
         patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "coverlet.*"]
+    ignore:
+      # The libraries target .NET 10 (LTS), and a package's dependency versions are the lowest its users may have.
+      # Microsoft.Extensions majors track the .NET major (11.x is .NET 11), so taking one forces every app using
+      # AprsNet.* onto it, even on .NET 10 (AprsMap's gateway runs on the ASP.NET Core 10 runtime). Take only 10.0.x
+      # patches here; moving to .NET 11 is its own change (global.json, TFMs, images).
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: dotnet-sdk
     directory: /
