@@ -111,6 +111,12 @@ await foreach (var heard in tnc.ReadPacketsAsync(cancellationToken))
 `aprscli serve --igate` does this alongside serving, and beacons the IGate's position to APRS-IS as IGates are expected
 to. Each refusal has a reason (`decision.Refusal`), counted on the `AprsNet.IGate` meter.
 
+`SendAsync` waits while the connection is down, and then sends. An IGate should not wait: drop what it hears until the
+connection is back (`uplink.Login` is `null` while it is down), as aprsc's
+[IGate hints](https://github.com/hessu/aprsc/blob/main/doc/IGATE-HINTS.md) ask. Another IGate has probably gated those
+packets already, and a late copy makes a moving station jump back on the maps. `aprscli serve --igate` drops them, and
+drops any packet it could not send within 10 s.
+
 This is a receive-only IGate, and receive-only IGates break messaging. A station nearby sends a message, sees it reach
 APRS-IS and expects the reply on RF, but nothing brings the reply back. Run one only where no two-way IGate covers the
 area, or for a short while, and say so in the beacon comment (`aprscli` does).

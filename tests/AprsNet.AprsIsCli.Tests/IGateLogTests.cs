@@ -57,52 +57,47 @@ public class IGateLogTests
     [Fact]
     public async Task APacketNotGatedToAprsIsIsLoggedWithItsControlCharactersEscaped()
     {
-        var logs = new CapturingLoggerProvider();
+        await using var rig = await UplinkRig.StartAsync();
 
-        await Drain(Uplink(logs).TapAsync(Packets("N1ABC>APRS,TCPIP*:>\u001b[2J\u009d52;c;x\u0007")));
+        await rig.HearAsync("N1ABC>APRS,TCPIP*:>\u001b[2J\u009d52;c;x\u0007");
 
-        var logged = Assert.Single(logs.Entries, e => e.Message.StartsWith("Not gated", StringComparison.Ordinal));
+        var logged = Assert.Single(rig.Logs.Entries, e => e.Message.StartsWith("Not gated", StringComparison.Ordinal));
         Assert.EndsWith(@":>\x1B[2J\x9D52;c;x\x07", logged.Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task APacketDroppedFromAFullAprsIsQueueIsLoggedWithItsControlCharactersEscaped()
     {
-        var logs = new CapturingLoggerProvider();
+        await using var rig = await UplinkRig.StartAsync();
 
         // Nothing sends the queue, so the 501st gated packet doesn't fit.
         var heard = Enumerable
             .Range(0, 500)
             .Select(i => $"N1ABC>APRS,WIDE1-1:>status {i}")
             .Append("N1ABC>APRS:>\u001b[2J");
-        await Drain(Uplink(logs).TapAsync(Packets([.. heard])));
+        await rig.HearAsync([.. heard]);
 
         var logged = Assert.Single(
-            logs.Entries,
+            rig.Logs.Entries,
             e => e.Message.StartsWith("IGate queue full", StringComparison.Ordinal)
         );
         Assert.Equal(@"IGate queue full; dropped N1ABC>APRS,qAO,N0CALL-10:>\x1B[2J", logged.Message);
     }
 
+    [Fact]
+    public async Task APacketDroppedWhileAprsIsIsDownIsLoggedWithItsControlCharactersEscaped()
+    {
+        await using var rig = await UplinkRig.StartAsync();
+        await rig.DropAsync();
+
+        await rig.HearAsync("N1ABC>APRS:>\u001b[2J");
+
+        var logged = Assert.Single(rig.Logs.Entries, e => e.Message.StartsWith("Dropped", StringComparison.Ordinal));
+        Assert.Equal(@"Dropped (APRS-IS is down): N1ABC>APRS,qAO,N0CALL-10:>\x1B[2J", logged.Message);
+    }
+
     private static IGateDownlink Downlink(CapturingLoggerProvider logs) =>
         new(PacketAddress.Parse(IGate, "APZNET", ["WIDE1-1"]), TimeProvider.System, logs.CreateLogger("aprscli"));
-
-    private static IGateUplink Uplink(CapturingLoggerProvider logs) =>
-        new(
-            new AprsIsConnection(
-                new AprsIsClientOptions
-                {
-                    Callsign = IGate,
-                    SoftwareName = "test",
-                    SoftwareVersion = "1.0",
-                }
-            ),
-            new RfToInternetGate(Callsign.Parse(IGate)),
-            AprsPacket.Parse($"{IGate}>APZNET:!4903.50NI07201.75W&"),
-            TimeSpan.FromMinutes(30),
-            TimeProvider.System,
-            logs.CreateLogger("aprscli")
-        );
 
     private static async IAsyncEnumerable<AprsPacket> Packets(params string[] lines)
     {
