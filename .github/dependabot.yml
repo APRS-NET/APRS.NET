@@ -47,3 +47,8 @@ updates:
       interval: weekly
     commit-message:
       prefix: "fix(deps)"
+    # 10.0 is .NET 10, the version the libraries and aprscli target. A new major (11.0) is a move to another .NET, made
+    # on purpose with global.json and the target frameworks, not a base-image update. New 10.0 digests still come.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
