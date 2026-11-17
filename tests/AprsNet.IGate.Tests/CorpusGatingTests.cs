@@ -41,7 +41,7 @@ public sealed class CorpusGatingTests
                 {
                     gated++;
                     var colon = heard.IndexOf(':', StringComparison.Ordinal);
-                    var end = heard.IndexOfAny(['\r', '\n', '\0'], colon); // a few IGates pass a NUL on
+                    var end = heard.IndexOfAny(['\r', '\n'], colon); // a NUL goes up too, as other IGates sent it
                     var expected = heard[..colon] + ",qAO,N0CALL-10" + heard[colon..(end < 0 ? heard.Length : end)];
                     Assert.Equal(expected, decision.Packet.ToString());
                     continue;

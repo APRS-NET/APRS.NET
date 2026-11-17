@@ -48,7 +48,7 @@ public sealed class RfToInternetGateTests
     // A trailing CR, as many TNCs send, can't go on an APRS-IS line; neither can what follows one.
     [InlineData("N0CALL>APRS:>Status\r", "N0CALL>APRS,qAO,N0CALL-10:>Status")]
     [InlineData("N0CALL>APRS:>Status\rjunk", "N0CALL>APRS,qAO,N0CALL-10:>Status")]
-    [InlineData("N0CALL>APRS:>Status\0junk", "N0CALL>APRS,qAO,N0CALL-10:>Status")]
+    [InlineData("N0CALL>APRS:>Status\njunk", "N0CALL>APRS,qAO,N0CALL-10:>Status")]
     public void GatesPacketsWithTheQConstructAfterTheirPath(string heard, string sent)
     {
         var decision = Gate().Gate(AprsPacket.Parse(heard));
@@ -57,6 +57,32 @@ public sealed class RfToInternetGateTests
         Assert.Null(decision.Refusal);
         Assert.Equal(sent, decision.Packet.ToString());
         Assert.Equal(heard.TrimEnd('\r'), decision.Heard.ToString()); // parsing drops a trailing CR
+    }
+
+    [Theory]
+    // IGATE-HINTS: don't drop bytes such as NUL or 0x1C, or cut at a NUL; send everything up to the first CR or LF.
+    [InlineData("N0CALL>APRS:>Status\0more", "N0CALL>APRS,qAO,N0CALL-10:>Status\0more")]
+    [InlineData("N0CALL>APRS:>Status\0more\rjunk", "N0CALL>APRS,qAO,N0CALL-10:>Status\0more")]
+    public void GatesNulAndOtherControlBytesAsHeardUpToTheFirstLineBreak(string heard, string sent)
+    {
+        var decision = Gate().Gate(AprsPacket.Parse(heard));
+
+        Assert.True(decision.IsGated);
+        Assert.Equal(sent, decision.Packet.ToString());
+    }
+
+    [Fact]
+    public void GatesAMicEPacketWithBinaryBytesAsHeard()
+    {
+        // 0x1C and NUL in the comment, as some Mic-E radios send. Compared as bytes: a failure message holding 0x1C
+        // goes missing from the test report.
+        byte[] information = [.. "`c51!f?>/"u8, 0x1C, 0x00, .. "]\"4X}="u8];
+        var heard = AprsPacket.Parse([.. "N0CALL-9>T2SP0W:"u8, .. information]);
+
+        var decision = Gate().Gate(heard);
+
+        Assert.True(decision.IsGated);
+        Assert.Equal([.. "N0CALL-9>T2SP0W,qAO,N0CALL-10:"u8, .. information], decision.Packet.Raw.ToArray());
     }
 
     [Theory]

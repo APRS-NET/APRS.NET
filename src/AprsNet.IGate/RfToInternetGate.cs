@@ -29,8 +29,9 @@ namespace AprsNet.IGate;
 /// refuse copies anyway.
 /// </para>
 /// <para>
-/// The path is never changed, as the rules require. The information field is cut at its first CR, LF or NUL byte,
-/// which a line on APRS-IS can't hold; many TNCs end a packet with a CR.
+/// The path is never changed, as the rules require. The information field is cut at its first CR or LF, which would
+/// end the line on APRS-IS; many TNCs end a packet with a CR. Every other byte goes up as heard, NUL and 0x1C
+/// included: an IGate that drops or cuts at them sends a copy that differs from other IGates' copies.
 /// </para>
 /// </remarks>
 public sealed class RfToInternetGate
@@ -187,14 +188,14 @@ public sealed class RfToInternetGate
 
     /// <summary>
     /// The line to send: the header as heard, the q-construct and IGate, then the information field up to its first
-    /// CR, LF or NUL. <see langword="null"/> when no information is left.
+    /// CR or LF. <see langword="null"/> when no information is left.
     /// </summary>
     private string? Line(AprsPacket packet)
     {
         var raw = packet.Raw.Span;
         var colon = raw.IndexOf((byte)':');
         var information = raw[(colon + 1)..];
-        var end = information.IndexOfAny("\r\n\0"u8);
+        var end = information.IndexOfAny((byte)'\r', (byte)'\n');
         information = end < 0 ? information : information[..end];
         return information.IsEmpty
             ? null
@@ -267,7 +268,7 @@ public enum GateRefusal
     /// <summary>A general query (<c>?APRS?</c>, data type <c>?</c>), meant for stations in radio range.</summary>
     GeneralQuery,
 
-    /// <summary>No information field, or nothing before its first CR, LF or NUL.</summary>
+    /// <summary>No information field, or nothing before its first CR or LF.</summary>
     Empty,
 
     /// <summary>With the q-construct added, longer than the 510 bytes an APRS-IS line holds.</summary>
