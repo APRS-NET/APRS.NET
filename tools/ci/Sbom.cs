@@ -189,8 +189,7 @@ static List<string> DirectReferences(string project, List<Package> packages, str
         )
         {
             var name = Path.GetFileNameWithoutExtension(path);
-            var package =
-                packages.SingleOrDefault(p => p.Id == name)
+            var package = packages.SingleOrDefault(p => p.Id == name)
                 ?? throw new InvalidOperationException($"{project} references {name}, which wasn't packed.");
             references.Add(Purl(package.Id, version));
         }

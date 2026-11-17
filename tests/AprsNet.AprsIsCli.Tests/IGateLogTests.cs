@@ -32,9 +32,8 @@ public class IGateLogTests
 
         await Drain(downlink.GateAsync(Packets("W1AW>APRS,TCPIP*,qAC,T2TEST::N1ABC    :Hello{01")));
 
-        Assert.Contains(
-            logs.Entries,
-            e => e.Message == "Gating to RF: N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Hello{01"
+        Assert.Contains(logs.Entries, e =>
+            e.Message == "Gating to RF: N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Hello{01"
         );
     }
 
@@ -47,9 +46,8 @@ public class IGateLogTests
             Downlink(logs).GateAsync(Packets("W1AW>APRS,TCPIP*,qAC,T2TEST::N9NONE   :\u001b]0;title\u0007{01"))
         );
 
-        var logged = Assert.Single(
-            logs.Entries,
-            e => e.Message.StartsWith("Not gated to RF", StringComparison.Ordinal)
+        var logged = Assert.Single(logs.Entries, e =>
+            e.Message.StartsWith("Not gated to RF", StringComparison.Ordinal)
         );
         Assert.EndsWith(@":\x1B]0;title\x07{01", logged.Message, StringComparison.Ordinal);
     }
@@ -77,9 +75,8 @@ public class IGateLogTests
             .Append("N1ABC>APRS:>\u001b[2J");
         await rig.HearAsync([.. heard]);
 
-        var logged = Assert.Single(
-            rig.Logs.Entries,
-            e => e.Message.StartsWith("IGate queue full", StringComparison.Ordinal)
+        var logged = Assert.Single(rig.Logs.Entries, e =>
+            e.Message.StartsWith("IGate queue full", StringComparison.Ordinal)
         );
         Assert.Equal(@"IGate queue full; dropped N1ABC>APRS,qAO,N0CALL-10:>\x1B[2J", logged.Message);
     }

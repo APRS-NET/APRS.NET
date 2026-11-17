@@ -83,9 +83,8 @@ public class AprsSymbolImagesTests
     [Fact]
     public void RejectsAnUnknownStyle()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(
-            "style",
-            () => AprsSymbolImages.GetSvg(new AprsSymbol('/', '>'), (AprsSymbolStyle)99)
+        Assert.Throws<ArgumentOutOfRangeException>("style", () =>
+            AprsSymbolImages.GetSvg(new AprsSymbol('/', '>'), (AprsSymbolStyle)99)
         );
     }
 

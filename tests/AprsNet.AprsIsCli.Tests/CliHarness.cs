@@ -130,8 +130,7 @@ internal sealed class CliHarness
             ReconnectDelay = TimeSpan.FromMilliseconds(10),
             CreateTransmitLimit = TransmitLimit,
             GetSerialPortNames = () => SerialPorts,
-            OpenGpsPort =
-                OpenGpsPort
+            OpenGpsPort = OpenGpsPort
                 ?? (
                     (name, baudRate) =>
                     {

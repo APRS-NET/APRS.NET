@@ -379,8 +379,7 @@ internal sealed class ListenCommand
             return false;
         }
 
-        var chosenPort =
-            port
+        var chosenPort = port
             ?? (
                 fullFeed ? AprsIsPorts.FullFeed
                 : tls ? AprsIsPorts.Tls

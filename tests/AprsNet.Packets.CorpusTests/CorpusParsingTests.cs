@@ -26,9 +26,8 @@ public class CorpusParsingTests
             Assert.True(bytes.AsSpan().SequenceEqual(packet.Raw.Span), $"{file}:{lineNumber} changed its bytes");
             Assert.Equal(Encoding.Latin1.GetString(bytes), packet.ToString());
             Assert.True(packet.HasHeader, $"{file}:{lineNumber}: {string.Join(", ", packet.Issues)}");
-            Assert.DoesNotContain(
-                packet.Issues,
-                i => i is { Severity: ParseIssueSeverity.Error, Code: < _firstPayloadIssue }
+            Assert.DoesNotContain(packet.Issues, i =>
+                i is { Severity: ParseIssueSeverity.Error, Code: < _firstPayloadIssue }
             );
         }
     }
@@ -83,16 +82,10 @@ public class CorpusParsingTests
         Assert.Contains(messages, p => p.Payload is MessagePayload { Kind: MessageKind.NwsBulletin });
         // SvxLink sends 8-character addressees and some bulletins pad past 9; both are read, with a warning.
         Assert.Contains(messages, p => p.Issues.Any(i => i.Code == ParseIssueCode.UnpaddedAddressee));
-        Assert.All(
-            messages.Where(p => p.Outcome == ParseOutcome.Parsed),
-            p =>
-                Assert.All(
-                    p.Issues,
-                    i =>
-                        Assert.True(
-                            i.Code is ParseIssueCode.UnpaddedAddressee or ParseIssueCode.InvalidTelemetryDefinition
-                        )
-                )
+        Assert.All(messages.Where(p => p.Outcome == ParseOutcome.Parsed), p =>
+            Assert.All(p.Issues, i =>
+                Assert.True(i.Code is ParseIssueCode.UnpaddedAddressee or ParseIssueCode.InvalidTelemetryDefinition)
+            )
         );
     }
 
@@ -109,19 +102,15 @@ public class CorpusParsingTests
         // characters (F/SISARGAS). Each must be reported as such, and they stay a small share.
         Assert.True(packets.Count > 900, $"only {packets.Count} objects and items in the corpus");
         var broken = packets.Where(p => p.Payload is null).ToList();
-        Assert.All(
-            broken,
-            p =>
-                Assert.Contains(
-                    p.Issues,
-                    i =>
-                        i.Code
-                            is ParseIssueCode.InvalidLatitude
-                                or ParseIssueCode.InvalidLongitude
-                                or ParseIssueCode.InvalidObject
-                                or ParseIssueCode.InvalidItem
-                                or ParseIssueCode.PositionTooShort
-                )
+        Assert.All(broken, p =>
+            Assert.Contains(p.Issues, i =>
+                i.Code
+                    is ParseIssueCode.InvalidLatitude
+                        or ParseIssueCode.InvalidLongitude
+                        or ParseIssueCode.InvalidObject
+                        or ParseIssueCode.InvalidItem
+                        or ParseIssueCode.PositionTooShort
+            )
         );
         Assert.True(broken.Count * 20 < packets.Count, $"{broken.Count} of {packets.Count} objects and items failed");
         Assert.Contains(packets, p => p.Payload is ObjectReport { IsLive: false });
@@ -142,16 +131,12 @@ public class CorpusParsingTests
         // A few radios garble the data instead: in Helsinki one drops a speed byte and another sends '"' as its
         // symbol table. Each failure is reported as an error.
         var broken = reports.Where(p => p.Payload is null).ToList();
-        Assert.All(
-            broken,
-            p =>
-                Assert.Contains(
-                    p.Issues,
-                    i =>
-                        p.Destination!.Value.Split('-')[0].Length == 6
-                            ? i.Severity == ParseIssueSeverity.Error
-                            : i.Code == ParseIssueCode.InvalidMicEDestination
-                )
+        Assert.All(broken, p =>
+            Assert.Contains(p.Issues, i =>
+                p.Destination!.Value.Split('-')[0].Length == 6
+                    ? i.Severity == ParseIssueSeverity.Error
+                    : i.Code == ParseIssueCode.InvalidMicEDestination
+            )
         );
         Assert.True(
             broken.Count(p => p.Destination!.Value.Split('-')[0].Length == 6) <= 5,
@@ -195,15 +180,12 @@ public class CorpusParsingTests
         Assert.Contains(positions, p => p is MicEReport);
         Assert.Contains(positions, p => p.IsCompressed);
         Assert.Contains(positions, p => p.Telemetry!.Digital.Count == 8);
-        Assert.All(
-            positions,
-            p =>
-            {
-                Assert.InRange(p.Telemetry!.Analog.Count, 1, 5);
-                Assert.All(p.Telemetry.Analog, v => Assert.InRange(v!.Value, 0, 8280));
-                Assert.True(p.Comment.Length < p.CommentBytes.Length, "the block stays in the comment");
-            }
-        );
+        Assert.All(positions, p =>
+        {
+            Assert.InRange(p.Telemetry!.Analog.Count, 1, 5);
+            Assert.All(p.Telemetry.Analog, v => Assert.InRange(v!.Value, 0, 8280));
+            Assert.True(p.Comment.Length < p.CommentBytes.Length, "the block stays in the comment");
+        });
     }
 
     [Fact]
@@ -247,19 +229,13 @@ public class CorpusParsingTests
             .Select(p => PathAnalysis.FromPacket(AprsPacket.Parse(p.Bytes)))
             .ToList();
 
-        Assert.All(
-            paths,
-            p =>
-            {
-                Assert.False(p.IsGatedFromRadio && p.IsFromInternet);
-                Assert.False(p.IsHeardDirectly && p.UsedHops.Count > 0);
-                Assert.Equal(
-                    p.Digipeaters,
-                    p.UsedHops.Where(e => e.Kind == PathEntryKind.Station).Select(e => e.Station)
-                );
-                Assert.Equal(p.EntryStation, p.AprsIsPath.Count > 0 ? p.AprsIsPath[0].Station : null);
-            }
-        );
+        Assert.All(paths, p =>
+        {
+            Assert.False(p.IsGatedFromRadio && p.IsFromInternet);
+            Assert.False(p.IsHeardDirectly && p.UsedHops.Count > 0);
+            Assert.Equal(p.Digipeaters, p.UsedHops.Where(e => e.Kind == PathEntryKind.Station).Select(e => e.Station));
+            Assert.Equal(p.EntryStation, p.AprsIsPath.Count > 0 ? p.AprsIsPath[0].Station : null);
+        });
 
         // Everything here came through APRS-IS, so every packet has a q-construct, and the corpus has a broad mix.
         Assert.All(paths, p => Assert.NotNull(p.QConstruct));

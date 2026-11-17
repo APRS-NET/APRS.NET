@@ -38,9 +38,8 @@ public sealed partial class DocsSnippetTests
             Directory.GetFiles(Path.Combine(Root, "docs", "guides"), "*.md").Select(File.ReadAllText)
         );
 
-        Assert.All(
-            Regions().Keys,
-            name => Assert.Contains($"<!-- snippet: {name} -->", guides, StringComparison.Ordinal)
+        Assert.All(Regions().Keys, name =>
+            Assert.Contains($"<!-- snippet: {name} -->", guides, StringComparison.Ordinal)
         );
     }
 

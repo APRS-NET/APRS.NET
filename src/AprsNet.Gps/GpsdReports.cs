@@ -76,8 +76,7 @@ internal sealed class GpsdReports
     private void Sky(JsonElement sky)
     {
         // gpsd 3.20 and later count the satellites used (uSat); older ones list them, each marked used or not.
-        _satellites =
-            Int(sky, "uSat")
+        _satellites = Int(sky, "uSat")
             ?? (
                 sky.TryGetProperty("satellites", out var satellites) && satellites.ValueKind == JsonValueKind.Array
                     ? satellites
@@ -110,8 +109,7 @@ internal sealed class GpsdReports
         Quality = Quality with
         {
             SatellitesUsed = _satellites,
-            SatellitesInView =
-                Int(sky, "nSat")
+            SatellitesInView = Int(sky, "nSat")
                 ?? (
                     sky.TryGetProperty("satellites", out _)
                         ? Satellites.Select(s => (s.System, s.Id)).Distinct().Count()

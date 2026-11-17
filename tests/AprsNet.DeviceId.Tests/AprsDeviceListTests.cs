@@ -87,15 +87,12 @@ public class AprsDeviceListTests
                         }
                     )
             );
-        Assert.All(
-            packets,
-            text =>
-            {
-                var packet = AprsPacket.Parse(text);
-                Assert.NotNull(builtIn.Identify(packet));
-                Assert.Equal(builtIn.Identify(packet), loaded.Identify(packet));
-            }
-        );
+        Assert.All(packets, text =>
+        {
+            var packet = AprsPacket.Parse(text);
+            Assert.NotNull(builtIn.Identify(packet));
+            Assert.Equal(builtIn.Identify(packet), loaded.Identify(packet));
+        });
     }
 
     [Fact]

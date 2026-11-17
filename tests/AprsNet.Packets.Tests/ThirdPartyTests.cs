@@ -61,9 +61,8 @@ public class ThirdPartyTests
         }
 
         Assert.Equal(ParseOutcome.Malformed, ((ThirdPartyPayload)level.Payload!).Packet.Outcome);
-        Assert.Contains(
-            ((ThirdPartyPayload)level.Payload!).Packet.Issues,
-            i => i.Code == ParseIssueCode.ThirdPartyTooDeep
+        Assert.Contains(((ThirdPartyPayload)level.Payload!).Packet.Issues, i =>
+            i.Code == ParseIssueCode.ThirdPartyTooDeep
         );
     }
 

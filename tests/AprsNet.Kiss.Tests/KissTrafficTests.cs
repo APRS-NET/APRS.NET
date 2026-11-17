@@ -289,9 +289,8 @@ public sealed class KissTrafficTests
             "\xC0\xFF\xC0\rKISS ON\rRESTART\r",
             string.Concat(setup.Where(e => e.Kind == KissTrafficKind.SetupSent).Select(e => e.Text))
         );
-        Assert.Contains(
-            setup,
-            e => e is { Kind: KissTrafficKind.SetupReceived, Text: "KISS ON\r\nKISS     was OFF\r\ncmd:" }
+        Assert.Contains(setup, e =>
+            e is { Kind: KissTrafficKind.SetupReceived, Text: "KISS ON\r\nKISS     was OFF\r\ncmd:" }
         );
         Assert.All(setup, e => Assert.NotNull(e.SetupStep));
         Assert.Equal(

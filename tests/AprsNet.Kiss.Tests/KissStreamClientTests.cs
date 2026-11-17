@@ -124,13 +124,10 @@ public class KissStreamClientTests
         );
 
         Assert.Equal(frames.Count, port.Writes.Count);
-        Assert.All(
-            port.Writes,
-            write =>
-            {
-                var decoded = Assert.Single(new KissDecoder().Decode(write));
-                Assert.True(decoded.TryGetAx25(out _));
-            }
-        );
+        Assert.All(port.Writes, write =>
+        {
+            var decoded = Assert.Single(new KissDecoder().Decode(write));
+            Assert.True(decoded.TryGetAx25(out _));
+        });
     }
 }

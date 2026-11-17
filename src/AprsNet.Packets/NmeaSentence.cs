@@ -217,19 +217,15 @@ public sealed class NmeaSentence
         public string Text(int index) => index < fields.Length ? fields[index] : "";
 
         public double? Number(int index) =>
-            Read(
-                index,
-                text =>
-                    double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)
-                    && double.IsFinite(v)
-                        ? v
-                        : (double?)null
+            Read(index, text =>
+                double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v)
+                    ? v
+                    : (double?)null
             );
 
         public int? Int(int index) =>
-            Read(
-                index,
-                text => int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var v) ? v : (int?)null
+            Read(index, text =>
+                int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var v) ? v : (int?)null
             );
 
         public int? Count(int index, int length)
@@ -245,39 +241,35 @@ public sealed class NmeaSentence
 
         /// <summary>hhmmss or hhmmss.sss.</summary>
         public TimeOnly? Time(int index) =>
-            Read(
-                index,
-                text =>
-                    text.Length >= 6
-                    && int.TryParse(text.AsSpan(0, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var h)
-                    && int.TryParse(text.AsSpan(2, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var m)
-                    && double.TryParse(
-                        text.AsSpan(4),
-                        NumberStyles.AllowDecimalPoint,
-                        CultureInfo.InvariantCulture,
-                        out var s
-                    )
-                    && h < 24
-                    && m < 60
-                    && s < 60
-                        ? new TimeOnly(h, m).Add(TimeSpan.FromMilliseconds(Math.Round(s * 1000)))
-                        : (TimeOnly?)null
+            Read(index, text =>
+                text.Length >= 6
+                && int.TryParse(text.AsSpan(0, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var h)
+                && int.TryParse(text.AsSpan(2, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var m)
+                && double.TryParse(
+                    text.AsSpan(4),
+                    NumberStyles.AllowDecimalPoint,
+                    CultureInfo.InvariantCulture,
+                    out var s
+                )
+                && h < 24
+                && m < 60
+                && s < 60
+                    ? new TimeOnly(h, m).Add(TimeSpan.FromMilliseconds(Math.Round(s * 1000)))
+                    : (TimeOnly?)null
             );
 
         /// <summary>ddmmyy, the year taken as 1980–2079 (GPS time starts in 1980).</summary>
         public DateOnly? Date(int index) =>
-            Read(
-                index,
-                text =>
-                    text.Length == 6
-                    && int.TryParse(text.AsSpan(0, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var d)
-                    && int.TryParse(text.AsSpan(2, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var mo)
-                    && int.TryParse(text.AsSpan(4, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var y)
-                    && mo is >= 1 and <= 12
-                    && d >= 1
-                    && d <= DateTime.DaysInMonth(y < 80 ? 2000 + y : 1900 + y, mo)
-                        ? new DateOnly(y < 80 ? 2000 + y : 1900 + y, mo, d)
-                        : (DateOnly?)null
+            Read(index, text =>
+                text.Length == 6
+                && int.TryParse(text.AsSpan(0, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var d)
+                && int.TryParse(text.AsSpan(2, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var mo)
+                && int.TryParse(text.AsSpan(4, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var y)
+                && mo is >= 1 and <= 12
+                && d >= 1
+                && d <= DateTime.DaysInMonth(y < 80 ? 2000 + y : 1900 + y, mo)
+                    ? new DateOnly(y < 80 ? 2000 + y : 1900 + y, mo, d)
+                    : (DateOnly?)null
             );
 
         /// <summary>Latitude (ddmm.mmmm) and N/S at <paramref name="index"/>, longitude (dddmm.mmmm) and E/W after.</summary>
@@ -296,15 +288,13 @@ public sealed class NmeaSentence
             }
 
             var hemisphere = Text(index + 1);
-            var value = Read(
-                index,
-                text =>
-                    double.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var v)
-                    && v % 100 < 60
-                    && Math.Floor(v / 100) + (v % 100 / 60) <= limit
-                    && (hemisphere == positive || hemisphere == negative)
-                        ? Math.Floor(v / 100) + (v % 100 / 60)
-                        : (double?)null
+            var value = Read(index, text =>
+                double.TryParse(text, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var v)
+                && v % 100 < 60
+                && Math.Floor(v / 100) + (v % 100 / 60) <= limit
+                && (hemisphere == positive || hemisphere == negative)
+                    ? Math.Floor(v / 100) + (v % 100 / 60)
+                    : (double?)null
             );
             return hemisphere == negative ? -value : value;
         }

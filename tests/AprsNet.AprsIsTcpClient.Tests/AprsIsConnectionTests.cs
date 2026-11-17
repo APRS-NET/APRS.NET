@@ -49,12 +49,10 @@ public sealed class AprsIsConnectionTests : IAsyncDisposable
             Filter = "r/35/-97/200",
         };
         configure?.Invoke(options);
-        _connection = new AprsIsConnection(
-            options,
-            transportFactory: () =>
-                _transports.TryDequeue(out var next)
-                    ? next
-                    : throw new InvalidOperationException("The test queued no transport.")
+        _connection = new AprsIsConnection(options, transportFactory: () =>
+            _transports.TryDequeue(out var next)
+                ? next
+                : throw new InvalidOperationException("The test queued no transport.")
         );
         _connection.StateChanged += (_, e) => _states.Enqueue(e);
         return _connection;

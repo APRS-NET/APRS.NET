@@ -51,8 +51,8 @@ public sealed class AprsIsClient : IAsyncDisposable
 
         _options = options;
         _ownsSendLimiter = sendLimiter is null;
-        _sendLimiter =
-            sendLimiter ?? new SendRateLimiter(options.SendBurst, options.SendInterval, options.TimeProvider);
+        _sendLimiter = sendLimiter
+            ?? new SendRateLimiter(options.SendBurst, options.SendInterval, options.TimeProvider);
         _logger = logger ?? NullLogger.Instance;
         _transport = transport ?? new TcpAprsTransport(options, _logger);
 
@@ -65,14 +65,11 @@ public sealed class AprsIsClient : IAsyncDisposable
                     ? BoundedChannelFullMode.Wait
                     : BoundedChannelFullMode.DropOldest,
         };
-        _channel = Channel.CreateBounded<string>(
-            channelOptions,
-            _ =>
-            {
-                ClientMetrics.QueueFull();
-                _logger.QueueFull();
-            }
-        );
+        _channel = Channel.CreateBounded<string>(channelOptions, _ =>
+        {
+            ClientMetrics.QueueFull();
+            _logger.QueueFull();
+        });
     }
 
     /// <summary>The server's login response, once <see cref="ConnectAsync"/> has completed.</summary>
@@ -368,8 +365,7 @@ public sealed class AprsIsClient : IAsyncDisposable
         {
             while (true)
             {
-                var line =
-                    await _transport.ReadLineAsync(timeout.Token).ConfigureAwait(false)
+                var line = await _transport.ReadLineAsync(timeout.Token).ConfigureAwait(false)
                     ?? throw new LoginException("The server closed the connection before answering the login.");
 
                 if (LoginRejectedException.IsRejection(line))
