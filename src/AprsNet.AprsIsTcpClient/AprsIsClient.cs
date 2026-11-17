@@ -197,8 +197,9 @@ public sealed class AprsIsClient : IAsyncDisposable
     /// the server drops packets from an unverified login, so they are refused here rather than lost silently.
     /// </exception>
     /// <exception cref="ArgumentException">
-    /// The packet has no header, holds a line break or NUL byte, is longer than an APRS-IS line (510 bytes), or
-    /// already carries a q-construct (it was received from APRS-IS, and sending it again would loop it). The one
+    /// The packet has no header, holds a CR or LF (which would split the line), is longer than an APRS-IS line (510
+    /// bytes), or already carries a q-construct (it was received from APRS-IS, and sending it again would loop it).
+    /// Other bytes, NUL included, are sent as they are. The one
     /// q-construct allowed is an IGate's: a packet heard on RF ending its path with <c>qAR</c> or <c>qAO</c> and the
     /// login callsign, as <c>RfToInternetGate</c> in <c>AprsNet.IGate</c> builds it.
     /// </exception>
@@ -243,9 +244,9 @@ public sealed class AprsIsClient : IAsyncDisposable
         }
 
         var raw = packet.Raw.Span;
-        if (raw.IndexOfAny("\r\n\0"u8) >= 0)
+        if (raw.IndexOfAny((byte)'\r', (byte)'\n') >= 0)
         {
-            throw new ArgumentException("The packet holds a line break or NUL byte.", nameof(packet));
+            throw new ArgumentException("The packet holds a line break, which would split the line.", nameof(packet));
         }
 
         if (raw.Length > MaxLineLength)
