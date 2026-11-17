@@ -449,22 +449,18 @@ public sealed partial class CorpusAnonymizer
         }
 
         text = CallsignInText()
-            .Replace(
-                text,
-                m =>
-                    _pseudonyms.Calls.TryGetValue(m.Value.ToUpperInvariant(), out var mapped)
-                        ? MatchCase(m.Value, mapped)
-                        : m.Value
+            .Replace(text, m =>
+                _pseudonyms.Calls.TryGetValue(m.Value.ToUpperInvariant(), out var mapped)
+                    ? MatchCase(m.Value, mapped)
+                    : m.Value
             );
 
         // A callsign spelled out with spaces ("S P 4 X Y Z") keeps its spacing.
         return SpacedCallsign()
-            .Replace(
-                text,
-                m =>
-                    Unspaced(m.Value) is { } call && _pseudonyms.Calls.TryGetValue(call, out var mapped)
-                        ? string.Join(' ', mapped.ToCharArray())
-                        : m.Value
+            .Replace(text, m =>
+                Unspaced(m.Value) is { } call && _pseudonyms.Calls.TryGetValue(call, out var mapped)
+                    ? string.Join(' ', mapped.ToCharArray())
+                    : m.Value
             );
     }
 
@@ -619,21 +615,16 @@ public sealed partial class CorpusAnonymizer
     }
 
     /// <summary>Same-length mask: letters become x, digits 0; @ and . stay.</summary>
-    private static string Mask(string email) =>
-        string.Create(
-            email.Length,
-            email,
-            (span, source) =>
+    private static string Mask(string email) => string.Create(email.Length, email, (span, source) =>
+        {
+            for (var i = 0; i < source.Length; i++)
             {
-                for (var i = 0; i < source.Length; i++)
-                {
-                    span[i] =
-                        char.IsAsciiLetter(source[i]) ? 'x'
-                        : char.IsAsciiDigit(source[i]) ? '0'
-                        : source[i];
-                }
+                span[i] =
+                    char.IsAsciiLetter(source[i]) ? 'x'
+                    : char.IsAsciiDigit(source[i]) ? '0'
+                    : source[i];
             }
-        );
+        });
 
     // Stricter than Word for the final check: a digit right before the identifier still counts (glued comments).
     private Regex LeakPattern(string text) =>

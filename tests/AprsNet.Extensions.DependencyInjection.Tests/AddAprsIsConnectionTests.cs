@@ -112,9 +112,8 @@ public sealed class AddAprsIsConnectionTests
     public async Task TheContainersClockIsUsed()
     {
         var clock = new FakeTimeProvider();
-        await using var provider = Provider(
-            Section(("Callsign", "N0CALL")),
-            services => services.AddSingleton<TimeProvider>(clock)
+        await using var provider = Provider(Section(("Callsign", "N0CALL")), services =>
+            services.AddSingleton<TimeProvider>(clock)
         );
         Assert.Same(clock, Options(provider).TimeProvider);
     }

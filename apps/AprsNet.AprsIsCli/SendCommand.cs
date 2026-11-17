@@ -295,25 +295,19 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
         }
 
         _retry.AcceptOnlyFromAmong([.. RetryProfiles.Keys]);
-        SetAction(
-            message,
-            parseResult => new MessagePayload
-            {
-                Addressee = parseResult.GetValue(addressee)!,
-                Text = parseResult.GetValue(messageText)!,
-            }
-        );
+        SetAction(message, parseResult => new MessagePayload
+        {
+            Addressee = parseResult.GetValue(addressee)!,
+            Text = parseResult.GetValue(messageText)!,
+        });
 
         var position = new Command("position", "Send a position report.") { _latitude, _longitude, _symbol, _comment };
-        SetAction(
-            position,
-            parseResult => new PositionReport
-            {
-                Position = Position(parseResult),
-                Symbol = Symbol(parseResult),
-                Comment = parseResult.GetValue(_comment) ?? "",
-            }
-        );
+        SetAction(position, parseResult => new PositionReport
+        {
+            Position = Position(parseResult),
+            Symbol = Symbol(parseResult),
+            Comment = parseResult.GetValue(_comment) ?? "",
+        });
 
         if (!toTnc)
         {
@@ -380,18 +374,15 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
             _comment,
             _kill,
         };
-        SetAction(
-            @object,
-            parseResult => new ObjectReport
-            {
-                Name = parseResult.GetValue(objectName)!,
-                IsLive = !parseResult.GetValue(_kill),
-                Timestamp = AprsTimestamp.FromDateTimeOffset(environment.TimeProvider.GetUtcNow()),
-                Position = Position(parseResult),
-                Symbol = Symbol(parseResult),
-                Comment = parseResult.GetValue(_comment) ?? "",
-            }
-        );
+        SetAction(@object, parseResult => new ObjectReport
+        {
+            Name = parseResult.GetValue(objectName)!,
+            IsLive = !parseResult.GetValue(_kill),
+            Timestamp = AprsTimestamp.FromDateTimeOffset(environment.TimeProvider.GetUtcNow()),
+            Position = Position(parseResult),
+            Symbol = Symbol(parseResult),
+            Comment = parseResult.GetValue(_comment) ?? "",
+        });
 
         var weather = new Command(
             "weather",

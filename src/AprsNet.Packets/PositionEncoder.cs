@@ -403,8 +403,7 @@ internal static class PositionEncoder
                 || payload.CompressionType?.NmeaSource != CompressedNmeaSource.Gga;
         }
 
-        var type =
-            payload.CompressionType
+        var type = payload.CompressionType
             ?? new CompressionType(CompressedGpsFix.Current, CompressedNmeaSource.Other, CompressedOrigin.Software);
         switch (carries)
         {

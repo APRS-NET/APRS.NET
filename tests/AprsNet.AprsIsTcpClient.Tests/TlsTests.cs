@@ -191,14 +191,11 @@ public sealed class TlsTests
         {
             using var tcp = await _listener.AcceptTcpClientAsync(_stopping.Token);
             // The station's certificate is self-signed, so only its chain fails; without one, none is offered.
-            await using var ssl = new SslStream(
-                tcp.GetStream(),
-                false,
-                (_, _, _, errors) =>
-                    errors
-                        is SslPolicyErrors.None
-                            or SslPolicyErrors.RemoteCertificateChainErrors
-                            or SslPolicyErrors.RemoteCertificateNotAvailable
+            await using var ssl = new SslStream(tcp.GetStream(), false, (_, _, _, errors) =>
+                errors
+                    is SslPolicyErrors.None
+                        or SslPolicyErrors.RemoteCertificateChainErrors
+                        or SslPolicyErrors.RemoteCertificateNotAvailable
             );
             try
             {

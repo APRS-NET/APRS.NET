@@ -34,8 +34,8 @@ public sealed class CorpusPseudonyms
     public static CorpusPseudonyms FromJson(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        var pseudonyms =
-            JsonSerializer.Deserialize(json, CorpusJsonContext.Default.CorpusPseudonyms) ?? new CorpusPseudonyms();
+        var pseudonyms = JsonSerializer.Deserialize(json, CorpusJsonContext.Default.CorpusPseudonyms)
+            ?? new CorpusPseudonyms();
 
         // JSON gives default comparers; the anonymizer relies on ordinal order.
         pseudonyms.Calls = new SortedDictionary<string, string>(pseudonyms.Calls, StringComparer.Ordinal);

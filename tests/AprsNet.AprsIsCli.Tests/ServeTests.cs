@@ -159,13 +159,11 @@ public class ServeTests
 
         var events = harness.Logs.Entries.Where(e => e.Category == "aprscli.events").Select(e => e.Message).ToList();
         Assert.Contains($"Serving the TNC at {tncName} on 127.0.0.1:{port} as APRSNET", events);
-        Assert.Contains(
-            events,
-            e =>
-                e.StartsWith(
-                    $"Lost the TNC at {tncName}: the TNC closed the connection; reconnecting in ",
-                    StringComparison.Ordinal
-                )
+        Assert.Contains(events, e =>
+            e.StartsWith(
+                $"Lost the TNC at {tncName}: the TNC closed the connection; reconnecting in ",
+                StringComparison.Ordinal
+            )
         );
         Assert.Contains(
             "Stopped serving: served 1 packets (0 duplicates dropped); 0 clients dropped for falling behind",

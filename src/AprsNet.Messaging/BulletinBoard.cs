@@ -183,11 +183,7 @@ public sealed class BulletinBoard : IDisposable
                 if (existing.Text == message.Text)
                 {
                     // A repeat: still current, nothing new to show.
-                    _bulletins[key] = existing with
-                    {
-                        LastHeard = now,
-                        Source = source,
-                    };
+                    _bulletins[key] = existing with { LastHeard = now, Source = source };
                 }
                 else
                 {
