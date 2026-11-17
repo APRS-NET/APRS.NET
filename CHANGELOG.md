@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.8...v0.9.0-alpha.1) (2026-11-17)
+
+
+### Miscellaneous Chores
+
+* start the 0.9.0 alpha line ([36f9581](https://github.com/APRS-NET/APRS.NET/commit/36f9581db65a2f057a10f8c2e34286e1afbff74d))
+
 ## [0.8.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.7...v0.8.0-alpha.8) (2026-11-17)
 
 
