@@ -133,9 +133,12 @@ public class IGateUplinkTests
 
         await rig.HearAsync("N3ABC>APRS:>three");
 
-        await UplinkRig.WaitForAsync(() => rig.Uplink.Sent == 1);
-        Assert.Contains(rig.Logs.Entries, e =>
-            e.Level == LogLevel.Information && e.Message == "APRS-IS is back; gating again (2 dropped meanwhile)"
+        // The uplink counts the packet as sent, then logs that APRS-IS is back: wait for the line, not the count.
+        await UplinkRig.WaitForAsync(() =>
+            rig.Logs.Entries.Any(e =>
+                e.Level == LogLevel.Information && e.Message == "APRS-IS is back; gating again (2 dropped meanwhile)"
+            )
         );
+        Assert.Equal(1, rig.Uplink.Sent);
     }
 }
