@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0-alpha.8](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.7...v0.8.0-alpha.8) (2026-11-17)
+
+
+### Bug Fixes
+
+* **deps:** Bump System.CommandLine from 2.0.14 to 3.0.0 ([40a3d27](https://github.com/APRS-NET/APRS.NET/commit/40a3d2741b00341653fad71db29d6d7fafb1a61c))
+* **deps:** Bump System.IO.Ports from 10.0.14 to 11.0.0 ([0d18baa](https://github.com/APRS-NET/APRS.NET/commit/0d18baaa162ee9d5fa75a7cd467978df3e119177))
+* **deps:** require Microsoft.Extensions 10.0.x, not 11, so .NET 10 apps can use the libraries ([2160390](https://github.com/APRS-NET/APRS.NET/commit/2160390a156074d539568a3d76ceaac9410d0254))
+
 ## [0.8.0-alpha.7](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.6...v0.8.0-alpha.7) (2026-11-17)
 
 
