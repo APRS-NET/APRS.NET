@@ -34,13 +34,19 @@ Every packet is gated except:
 | `GeneralQuery` | `?APRS?`, `?IGATE?`, `?WX?` and other `?` queries, meant for stations in radio range |
 | `AlreadyGated` | A q-construct already in the path |
 | `Unreadable` | A header that can't be read, or a third-party packet whose inner packet can't |
-| `Empty` | No information field, or nothing before its first CR, LF or NUL |
+| `Empty` | No information field, or nothing before its first CR or LF |
 | `TooLong` | Longer than the 510 bytes of an APRS-IS line once the q-construct is added |
-| `Duplicate` | A copy of a packet gated within the last 30 seconds (`DuplicateWindow`), as when digipeaters repeat it |
+| `Duplicate` | Only with `DuplicateWindow` set: a copy of a packet gated within that window, as when digipeaters repeat it |
+
+Copies are gated by default: a packet heard direct and again through each digipeater goes up each time. The aprsc
+[IGate hints](https://github.com/hessu/aprsc/blob/main/doc/IGATE-HINTS.md) ask for this. APRS-IS servers drop
+duplicates themselves, and use the copies to see which IGates hear which stations. Filtering duplicates belongs to
+digipeaters and to gating to RF. Set `DuplicateWindow` (for example to 30 seconds) only if you must send fewer.
 
 The path is sent as heard, with `,qAO,` and the IGate's callsign after it. Third-party traffic from another RF
-network goes up as the packet it carries, without the RF header. The information field is cut at its first CR, LF or
-NUL, which an APRS-IS line can't hold; many TNCs end packets with a CR. A packet whose payload has errors is still
+network goes up as the packet it carries, without the RF header. The information field is cut at its first CR or LF,
+which would end the APRS-IS line; many TNCs end packets with a CR. Other bytes, NUL and 0x1C included, go up as
+heard. A packet whose payload has errors is still
 gated: APRS-IS carries what stations send.
 
 A receive-only IGate adds `qAO`, which tells APRS-IS it can't pass messages back to RF. Receive-only IGates are

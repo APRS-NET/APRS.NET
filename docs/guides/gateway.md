@@ -80,8 +80,8 @@ With a `StationStore`, the server remembers where stations were last heard, so c
 
 An IGate uploads what its TNC hears to APRS-IS. `RfToInternetGate` from `AprsNet.IGate` applies the aprs-is.net
 rules: it refuses packets that came from APRS-IS (`TCPIP`, `TCPXX`), that ask not to be gated (`NOGATE`, `RFONLY`),
-general queries and copies already sent, and adds `qAO` and the IGate's callsign to the rest. Send them over a
-verified login:
+and general queries, and adds `qAO` and the IGate's callsign to the rest. Copies heard through digipeaters go up too:
+APRS-IS drops duplicates itself. Send them over a verified login:
 
 <!-- snippet: gateway-igate -->
 ```csharp

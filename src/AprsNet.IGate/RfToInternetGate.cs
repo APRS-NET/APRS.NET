@@ -6,8 +6,8 @@ namespace AprsNet.IGate;
 
 /// <summary>
 /// Decides which packets heard on RF an IGate passes to APRS-IS, following the aprs-is.net IGate rules, and builds the
-/// line to send: the packet as heard, with <c>,qAO,IGATE</c> (or <c>,qAR,IGATE</c>) after its path. Each packet goes
-/// up once, however many digipeaters repeat it. Safe to use from several threads.
+/// line to send: the packet as heard, with <c>,qAO,IGATE</c> (or <c>,qAR,IGATE</c>) after its path. Every copy heard
+/// goes up, direct and through each digipeater. Safe to use from several threads.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,13 +19,19 @@ namespace AprsNet.IGate;
 /// </para>
 /// <para>
 /// Beyond those rules it also refuses what APRS-IS can't take or would only drop: a header that can't be read, a path
-/// that already holds a q-construct, an empty information field, a line longer than APRS-IS carries, and copies of a
-/// packet already gated within <see cref="RfToInternetGateOptions.DuplicateWindow"/>. Packets whose payload has
-/// errors are gated as heard: APRS-IS carries what stations send, and an IGate doesn't judge it.
+/// that already holds a q-construct, an empty information field, and a line longer than APRS-IS carries. Packets
+/// whose payload has errors are gated as heard: APRS-IS carries what stations send, and an IGate doesn't judge it.
 /// </para>
 /// <para>
-/// The path is never changed, as the rules require. The information field is cut at its first CR, LF or NUL byte,
-/// which a line on APRS-IS can't hold; many TNCs end a packet with a CR.
+/// Copies of a packet are gated too, as aprsc's IGate hints ask: an IGate sends everything it hears, and the APRS-IS
+/// servers drop the duplicates themselves, after using each copy to see which IGates heard which stations. Duplicate
+/// filtering belongs to digipeating and gating to RF. Set <see cref="RfToInternetGateOptions.DuplicateWindow"/> to
+/// refuse copies anyway.
+/// </para>
+/// <para>
+/// The path is never changed, as the rules require. The information field is cut at its first CR or LF, which would
+/// end the line on APRS-IS; many TNCs end a packet with a CR. Every other byte goes up as heard, NUL and 0x1C
+/// included: an IGate that drops or cuts at them sends a copy that differs from other IGates' copies.
 /// </para>
 /// </remarks>
 public sealed class RfToInternetGate
@@ -35,7 +41,7 @@ public sealed class RfToInternetGate
 
     private const int MaxLoginLength = 9;
 
-    private readonly DuplicateFilter _duplicates;
+    private readonly DuplicateFilter? _duplicates;
     private readonly string _suffix;
 
     /// <summary>Creates the rules for the IGate logged in to APRS-IS as <paramref name="igate"/>.</summary>
@@ -56,7 +62,10 @@ public sealed class RfToInternetGate
         options.Validate();
         IGate = igate;
         ReceiveOnly = options.ReceiveOnly;
-        _duplicates = new DuplicateFilter(options.DuplicateWindow, timeProvider: options.TimeProvider);
+        _duplicates =
+            options.DuplicateWindow > TimeSpan.Zero
+                ? new DuplicateFilter(options.DuplicateWindow, timeProvider: options.TimeProvider)
+                : null;
         _suffix = $",{(ReceiveOnly ? "qAO" : "qAR")},{igate.Value}";
     }
 
@@ -81,8 +90,8 @@ public sealed class RfToInternetGate
     }
 
     /// <summary>
-    /// Decides whether a packet heard on RF goes to APRS-IS. A packet that is gated is remembered, so its copies within
-    /// the duplicate window are refused.
+    /// Decides whether a packet heard on RF goes to APRS-IS. With a duplicate window set, a packet that is gated is
+    /// remembered, so its copies within the window are refused.
     /// </summary>
     /// <param name="heard">The packet as the TNC heard it, from a frame that is APRS.</param>
     public GateDecision Gate(AprsPacket heard)
@@ -127,7 +136,7 @@ public sealed class RfToInternetGate
         }
 
         var gated = AprsPacket.Parse(line);
-        if (_duplicates.Check(gated).IsDuplicate)
+        if (_duplicates?.Check(gated).IsDuplicate == true)
         {
             return Refuse(heard, GateRefusal.Duplicate);
         }
@@ -179,14 +188,14 @@ public sealed class RfToInternetGate
 
     /// <summary>
     /// The line to send: the header as heard, the q-construct and IGate, then the information field up to its first
-    /// CR, LF or NUL. <see langword="null"/> when no information is left.
+    /// CR or LF. <see langword="null"/> when no information is left.
     /// </summary>
     private string? Line(AprsPacket packet)
     {
         var raw = packet.Raw.Span;
         var colon = raw.IndexOf((byte)':');
         var information = raw[(colon + 1)..];
-        var end = information.IndexOfAny("\r\n\0"u8);
+        var end = information.IndexOfAny((byte)'\r', (byte)'\n');
         information = end < 0 ? information : information[..end];
         return information.IsEmpty
             ? null
@@ -216,19 +225,21 @@ public sealed class RfToInternetGateOptions
     public bool ReceiveOnly { get; set; } = true;
 
     /// <summary>
-    /// How long a gated packet's copies are refused: 30 seconds by default, APRS-IS's own duplicate window. A packet
-    /// heard direct and again through each digipeater goes up once.
+    /// How long a gated packet's copies are refused: <see cref="TimeSpan.Zero"/> by default, which refuses none. aprsc's
+    /// IGate hints ask an IGate to send every copy it hears: the APRS-IS servers drop duplicates themselves, and use
+    /// each copy to see which IGates heard which stations. Set it (for example to 30 seconds, APRS-IS's own window)
+    /// only to send a packet heard direct and again through each digipeater once.
     /// </summary>
-    public TimeSpan DuplicateWindow { get; set; } = DuplicateFilter.DefaultWindow;
+    public TimeSpan DuplicateWindow { get; set; } = TimeSpan.Zero;
 
-    /// <summary>The clock for the duplicate window. The system clock by default.</summary>
+    /// <summary>The clock for the duplicate window, when one is set. The system clock by default.</summary>
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
     /// <summary>Checks that the settings can be used.</summary>
     /// <exception cref="ArgumentException">A setting is unusable; the message names it.</exception>
     public void Validate()
     {
-        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(DuplicateWindow, TimeSpan.Zero, nameof(DuplicateWindow));
+        ArgumentOutOfRangeException.ThrowIfLessThan(DuplicateWindow, TimeSpan.Zero, nameof(DuplicateWindow));
         ArgumentNullException.ThrowIfNull(TimeProvider, nameof(TimeProvider));
     }
 }
@@ -257,13 +268,16 @@ public enum GateRefusal
     /// <summary>A general query (<c>?APRS?</c>, data type <c>?</c>), meant for stations in radio range.</summary>
     GeneralQuery,
 
-    /// <summary>No information field, or nothing before its first CR, LF or NUL.</summary>
+    /// <summary>No information field, or nothing before its first CR or LF.</summary>
     Empty,
 
     /// <summary>With the q-construct added, longer than the 510 bytes an APRS-IS line holds.</summary>
     TooLong,
 
-    /// <summary>A copy of a packet gated within the duplicate window.</summary>
+    /// <summary>
+    /// A copy of a packet gated within <see cref="RfToInternetGateOptions.DuplicateWindow"/>. Never given by default:
+    /// the window is off, and every copy goes up for the APRS-IS servers to drop.
+    /// </summary>
     Duplicate,
 }
 
