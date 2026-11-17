@@ -17,6 +17,7 @@ public class AprsDevicesTests
     [InlineData("APK004", "TH-D74")]
     [InlineData("APK012", "TH-D7")] // APK0??
     [InlineData("APZNET", "Experimental")] // APZ*
+    [InlineData("APNETC", "APRS.NET APRS-IS CLI")] // aprscli's own
     [InlineData("APRS", "Unknown")]
     public void FindsTheMostSpecificTocall(string destination, string? model)
     {
@@ -24,6 +25,16 @@ public class AprsDevicesTests
 
         Assert.NotNull(device);
         Assert.Equal(model, device.Model);
+    }
+
+    [Fact]
+    public void AprscliIsIdentifiedByTheTocallItSendsAs()
+    {
+        var device = AprsDevices.FromTocall("APNETC");
+
+        Assert.NotNull(device);
+        Assert.Equal("Derek Rowland, NZ0P", device.Vendor);
+        Assert.Equal(AprsDeviceClass.Software, device.Class);
     }
 
     [Theory]
