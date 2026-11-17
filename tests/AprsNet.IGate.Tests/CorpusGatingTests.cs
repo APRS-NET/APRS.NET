@@ -8,7 +8,7 @@ namespace AprsNet.IGate.Tests;
 /// <summary>
 /// Replays what other IGates gated in the corpus as if this IGate had heard it on RF: each line's header up to its
 /// <c>qAR</c> or <c>qAO</c>, then its information field. The IGate should send each one with its own q-construct and
-/// the path unchanged, once per duplicate window.
+/// the path unchanged, every copy included.
 /// </summary>
 public sealed class CorpusGatingTests
 {
@@ -23,7 +23,6 @@ public sealed class CorpusGatingTests
         {
             var time = new FakeTimeProvider();
             var gate = new RfToInternetGate(Callsign.Parse("N0CALL-10"), new() { TimeProvider = time });
-            var lastSent = new Dictionary<PacketIdentity, DateTimeOffset>();
             foreach (var line in File.ReadLines(file, Encoding.Latin1).Where(line => line.Length > 0))
             {
                 var stamp = DateTimeOffset.Parse(line[..24], CultureInfo.InvariantCulture);
@@ -42,26 +41,21 @@ public sealed class CorpusGatingTests
                 {
                     gated++;
                     var colon = heard.IndexOf(':', StringComparison.Ordinal);
-                    var end = heard.IndexOfAny(['\r', '\n', '\0'], colon); // a few IGates pass a NUL on
+                    var end = heard.IndexOfAny(['\r', '\n'], colon); // a NUL goes up too, as other IGates sent it
                     var expected = heard[..colon] + ",qAO,N0CALL-10" + heard[colon..(end < 0 ? heard.Length : end)];
                     Assert.Equal(expected, decision.Packet.ToString());
-                    lastSent[PacketIdentity.Of(decision.Packet)] = time.GetUtcNow();
                     continue;
                 }
 
                 var refusal = decision.Refusal!.Value;
                 refused[refusal] = refused.GetValueOrDefault(refusal) + 1;
-                if (refusal == GateRefusal.Duplicate)
-                {
-                    // A copy is refused only within 30 seconds of the packet the IGate sent.
-                    var sent = lastSent[PacketIdentity.Of(AprsPacket.Parse(heard))];
-                    Assert.True(time.GetUtcNow() - sent < TimeSpan.FromSeconds(30), heard);
-                }
             }
         }
 
-        // Other IGates gate what this one would refuse only rarely, such as LoRa noise that starts with '}'.
-        var others = refused.Where(r => r.Key != GateRefusal.Duplicate).Sum(r => r.Value);
+        // Other IGates gate what this one would refuse only rarely, such as LoRa noise that starts with '}'. Copies of
+        // a packet all go up, for APRS-IS to drop.
+        var others = refused.Sum(r => r.Value);
+        Assert.DoesNotContain(GateRefusal.Duplicate, refused.Keys);
         Assert.True(gated > 10_000, $"only {gated} lines gated");
         Assert.True(others * 100 < gated, string.Join(", ", refused.Select(r => $"{r.Key} {r.Value}")));
     }

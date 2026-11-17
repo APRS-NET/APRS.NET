@@ -149,6 +149,7 @@ public class IGateServeTests
         Assert.Equal(
             [
                 "N0CALL-10>APNETC:!4903.50NR07201.75W&RX-only IGate test", // R& overlay: receive-only IGate
+                "N1ABC>APRS,DIGI1*,WIDE2-1,qAO,N0CALL-10:>heard direct", // copies go up too, for APRS-IS
                 "N1ABC>APRS,WIDE1-1,WIDE2-1,qAO,N0CALL-10:>heard direct",
                 "N6ABC>APRS,qAO,N0CALL-10:>last",
             ],
@@ -161,13 +162,13 @@ public class IGateServeTests
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "gated 2 packets to APRS-IS (2 sent, 0 dropped), 1 beacons; refused from_internet 1, no_gate 1, "
-                + "general_query 1, duplicate 1",
+            "gated 3 packets to APRS-IS (3 sent, 0 dropped), 1 beacons; refused from_internet 1, no_gate 1, "
+                + "general_query 1",
             result.Error,
             StringComparison.Ordinal
         );
-        Assert.Contains("\"igate.gated\":2", health, StringComparison.Ordinal);
-        Assert.Contains("\"igate.refused.duplicate\":1", health, StringComparison.Ordinal);
+        Assert.Contains("\"igate.gated\":3", health, StringComparison.Ordinal);
+        Assert.Contains("\"igate.refused.duplicate\":0", health, StringComparison.Ordinal);
         Assert.Contains("\"aprs-is\"", health, StringComparison.Ordinal);
 
         // Local clients still get everything the TNC heard, and nothing is sent upstream without a filter.

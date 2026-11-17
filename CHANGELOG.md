@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.4...v0.8.0-alpha.5) (2026-11-17)
+
+
+### Features
+
+* **cli:** send as aprscli's registered TOCALL, APNETC ([438c897](https://github.com/APRS-NET/APRS.NET/commit/438c897f4abad7ba715ec66a57b6f3dcc756efaf))
+* **deviceid:** update the device list to aprs-deviceid dd0ff32 ([199e454](https://github.com/APRS-NET/APRS.NET/commit/199e45454e0458ef43ce8b3e600a19b3ed7287fb))
+
+
+### Bug Fixes
+
+* **deps:** Bump dotnet-reportgenerator-globaltool from 5.5.12 to 5.6.0 ([6596459](https://github.com/APRS-NET/APRS.NET/commit/659645973208eb5a73622d84a97090a60873d29f))
+* **deps:** Bump dotnet/runtime from `4f1f30c` to `80a5195` ([c75cdb9](https://github.com/APRS-NET/APRS.NET/commit/c75cdb941532831271415d1c60faccea136fbba5))
+* **deps:** Bump dotnet/sdk from `212fe4c` to `fe0fd4e` ([b840813](https://github.com/APRS-NET/APRS.NET/commit/b840813d6bf3be14f353adc5cbd557aa4ae6f237))
+* **deps:** Bump Microsoft.Extensions.Configuration and 7 others ([06ee45d](https://github.com/APRS-NET/APRS.NET/commit/06ee45d03ec02b751e973d5ca0dac23d67b5ab91))
+* **deps:** Bump OpenTelemetry and OpenTelemetry.Exporter.OpenTelemetryProtocol ([868fbc5](https://github.com/APRS-NET/APRS.NET/commit/868fbc556bd38aff32f496982e0bdbe6e20f2ff8))
+
 ## [0.8.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.3...v0.8.0-alpha.4) (2026-11-15)
 
 

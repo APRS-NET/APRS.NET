@@ -55,6 +55,18 @@ public class SendTests
     }
 
     [Fact]
+    public async Task SendsAPacketHoldingNulAndOtherControlBytesByteForByte()
+    {
+        var (client, transport) = await Connected();
+        await using var _ = client;
+        byte[] raw = [.. "N0CALL-9>APZ123:>a"u8, 0x00, (byte)'b', 0x1C, (byte)'c'];
+
+        await client.SendAsync(AprsPacket.Parse(raw), TestContext.Current.CancellationToken);
+
+        Assert.Equal(raw, System.Text.Encoding.Latin1.GetBytes(transport.Written[^1]));
+    }
+
+    [Fact]
     public async Task RefusesToSendOnAnUnverifiedLogin()
     {
         var (client, transport) = await Connected("unverified");
@@ -110,6 +122,7 @@ public class SendTests
     [InlineData("N0CALL>APRS,qAS,N0CALL-9:>passed on by a server", "q-construct")]
     [InlineData("N0CALL>APRS,qAR,N0CALL-9,T2TEST:>more after the IGate", "q-construct")]
     [InlineData("N0CALL>APRS:>one\nline", "line break")]
+    [InlineData("N0CALL>APRS:>one\rline", "line break")]
     [InlineData("not a packet", "header")]
     public async Task RefusesPacketsThatCannotGoOnTheConnection(string line, string reason)
     {

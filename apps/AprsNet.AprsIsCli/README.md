@@ -253,9 +253,10 @@ that falls 1,000 lines behind is disconnected, as on APRS-IS.
 ### A receive-only IGate
 
 With `--igate`, `serve` also uploads what its TNCs hear to APRS-IS, following the aprs-is.net IGate rules (see
-[AprsNet.IGate](../../src/AprsNet.IGate/README.md)): each packet once, with its path as heard and `qAO` plus your
+[AprsNet.IGate](../../src/AprsNet.IGate/README.md)): each packet with its path as heard and `qAO` plus your
 callsign after it, and none with `TCPIP`, `TCPXX`, `NOGATE` or `RFONLY` in the path, no general queries, nothing
-that came from APRS-IS. It needs a verified login: it stops at once if the server doesn't accept the passcode. It
+that came from APRS-IS. Every copy it hears goes up, direct and through each digipeater: APRS-IS drops duplicates
+itself. It needs a verified login: it stops at once if the server doesn't accept the passcode. It
 beacons its position to APRS-IS when it starts and every `--beacon-interval`, with an `R&` symbol and a comment
 that says it is receive-only. It never transmits; a `-f` filter is optional and only feeds local clients.
 
