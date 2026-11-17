@@ -295,8 +295,10 @@ public sealed class KissTcpServerTests
         await using var first = await App.ConnectAsync(server);
         Assert.True(await first.ClosedAsync());
         await using var second = await App.ConnectAsync(server);
-        await WaitUntil(() => server.ClientCount == 1);
+        // The server counts a client before it raises ClientConnected, so wait for the event, not the count.
+        await WaitUntil(() => Volatile.Read(ref connected) == 1);
 
+        Assert.Equal(1, server.ClientCount);
         Assert.Equal(1, Volatile.Read(ref connected));
     }
 

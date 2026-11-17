@@ -136,7 +136,7 @@ without connecting, so you can check it before it goes out:
 
 ```sh
 export APRS_PASSCODE=$(aprscli passcode KD9XYZ)
-aprscli send status "Testing APRS.NET" -c KD9XYZ-9 --dry-run   # KD9XYZ-9>APZNET:>Testing APRS.NET
+aprscli send status "Testing APRS.NET" -c KD9XYZ-9 --dry-run   # KD9XYZ-9>APNETC:>Testing APRS.NET
 aprscli send status "Testing APRS.NET" -c KD9XYZ-9
 aprscli send position --lat 49.05833 --lon -72.02917 --symbol "/>" --comment "On the road" -c KD9XYZ-9
 aprscli send object LEADER --lat 49.05833 --lon -72.02917 -c KD9XYZ-9          # --kill removes it
@@ -196,7 +196,7 @@ The first beacon goes at once (APRS-IS costs no airtime). `--every` sets the int
 | `--passcode` | Passcode for the callsign; prefer `APRS_PASSCODE`. |
 | `-s`, `--server`, `-r`, `--region` | Server, as for `listen`. Default: `rotate.aprs2.net:14580`. |
 | `--tls` | Connect over TLS, as for `listen`. |
-| `--tocall` | Destination TOCALL. Default: `APZNET` (the experimental `APZ` range). |
+| `--tocall` | Destination TOCALL. Default: `APNETC`, aprscli's registered TOCALL. |
 | `--path` | Digipeater path, comma-separated. Default: none, for APRS-IS only. |
 | `-n`, `--dry-run` | Print the packet without connecting. |
 
@@ -348,7 +348,7 @@ aprscli tnc send position --lat 38.98 --lon -94.67 --symbol "/>" -c KD9XYZ-9 --t
 | `-t`, `--tnc` | The TNC as `host[:port]` (default port 8001), `agw:host[:port]` (AGWPE, default port 8000) or `serial:PORT[@BAUD][,dtr=off][,rts=off]` (default 9600 baud). Required unless `--dry-run`. |
 | `--radio-port` | The radio port on a multi-port TNC, 0 to 15. Default 0. |
 | `--path` | Digipeater path. Default `WIDE1-1,WIDE2-1`; `--path ""` for none. |
-| `--tocall` | Destination TOCALL. Default `APZNET` (experimental). |
+| `--tocall` | Destination TOCALL. Default `APNETC`, aprscli's registered TOCALL. |
 | `-n`, `--dry-run` | Print the packets without connecting. |
 | `--retry` | For a message: `default`, `aprs-is`, `slow-hf` or `none`, as for `send message`. |
 | `--wait-replies` | For a message: how long to keep listening for replies once it is answered. Default `2m`. |
