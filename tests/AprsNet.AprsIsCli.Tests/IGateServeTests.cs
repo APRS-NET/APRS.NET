@@ -148,7 +148,7 @@ public class IGateServeTests
         var sent = Written(harness).Skip(1).ToList(); // after the login line
         Assert.Equal(
             [
-                "N0CALL-10>APZNET:!4903.50NR07201.75W&RX-only IGate test", // R& overlay: receive-only IGate
+                "N0CALL-10>APNETC:!4903.50NR07201.75W&RX-only IGate test", // R& overlay: receive-only IGate
                 "N1ABC>APRS,WIDE1-1,WIDE2-1,qAO,N0CALL-10:>heard direct",
                 "N6ABC>APRS,qAO,N0CALL-10:>last",
             ],
@@ -216,12 +216,12 @@ public class IGateServeTests
 
         Assert.True(await transmitted.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
         Assert.Equal(
-            "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Hello{01",
+            "N0CALL-10>APNETC,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Hello{01",
             transmitted.Current.ToString()
         );
         Assert.True(await transmitted.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
         Assert.Equal(
-            "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*:!4903.50N/07201.75W-Writing",
+            "N0CALL-10>APNETC,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*:!4903.50N/07201.75W-Writing",
             transmitted.Current.ToString()
         );
         var health = "";
@@ -239,7 +239,7 @@ public class IGateServeTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.False(radio.Available > 0, "the second position isn't sent");
-        Assert.Contains("N0CALL-10>APZNET:!4903.50NI07201.75W&", Written(harness), StringComparer.Ordinal); // I& overlay: a two-way IGate, with no RX-only comment
+        Assert.Contains("N0CALL-10>APNETC:!4903.50NI07201.75W&", Written(harness), StringComparer.Ordinal); // I& overlay: a two-way IGate, with no RX-only comment
         Assert.Contains("as N0CALL-10 (two-way, qAR)", result.Error, StringComparison.Ordinal);
         Assert.Contains(
             "gating messages from APRS-IS to stations heard on the TNC within 1 hops, sent via WIDE1-1",
@@ -339,12 +339,12 @@ public class IGateServeTests
 
             Assert.True(await heard.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
             Assert.Equal(
-                "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Through Dire Wolf{01",
+                "N0CALL-10>APNETC,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*::N1ABC    :Through Dire Wolf{01",
                 heard.Current.ToString()
             );
             Assert.True(await heard.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), token));
             Assert.Equal(
-                "N0CALL-10>APZNET,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*:!4903.50N/07201.75W-Writing",
+                "N0CALL-10>APNETC,WIDE1-1:}W1AW>APRS,TCPIP,N0CALL-10*:!4903.50N/07201.75W-Writing",
                 heard.Current.ToString()
             );
 

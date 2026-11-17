@@ -22,8 +22,11 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
     private const string _passcodeVariable = "APRS_PASSCODE";
 
-    /// <summary>The experimental TOCALL range (APZxxx) until APRS.NET has a registered one.</summary>
-    public const string DefaultTocall = "APZNET";
+    /// <summary>
+    /// aprscli's registered TOCALL (aprsorg/aprs-deviceid#380), so its packets name it as the sending software. The
+    /// libraries have none: each app that uses them registers its own.
+    /// </summary>
+    public const string DefaultTocall = "APNETC";
 
     private readonly Option<string?> _callsign = new("--callsign", "-c")
     {
@@ -61,7 +64,8 @@ internal sealed class SendCommand(CliEnvironment environment, bool toTnc = false
 
     private readonly Option<string> _tocall = new("--tocall")
     {
-        Description = $"Destination TOCALL that identifies the software. Default: {DefaultTocall} (experimental).",
+        Description =
+            $"Destination TOCALL that identifies the software. Default: {DefaultTocall}, aprscli's registered TOCALL.",
         DefaultValueFactory = _ => DefaultTocall,
         Recursive = true,
     };
