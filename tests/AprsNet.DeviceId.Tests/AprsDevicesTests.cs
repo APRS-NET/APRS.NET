@@ -78,7 +78,7 @@ public class AprsDevicesTests
     [InlineData("'(_fn\"Oj/'Hello|3", "TinyTrak3")]
     [InlineData("`(_fn\"Oj/>Hello&", "TH-D75")]
     [InlineData("`(_fn\"Oj/>Hello^", "TH-D74")]
-    [InlineData("`(_fn\"Oj/>Hello", "TH-D7A")]
+    [InlineData("`(_fn\"Oj/>Hello", "TH-D7")]
     [InlineData("`(_fn\"Oj/]Hello=", "TM-D710")]
     [InlineData("`(_fn\"Oj/]", "TM-D700")]
     public void IdentifiesMicEDevices(string information, string model) =>
