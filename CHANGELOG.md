@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0-alpha.6](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.5...v0.8.0-alpha.6) (2026-11-17)
+
+
+### Bug Fixes
+
+* **aprs-is:** send packets holding NUL instead of refusing them ([71db7ed](https://github.com/APRS-NET/APRS.NET/commit/71db7ed64fbee2552a130a7382a9856df1e032d1))
+* **cli:** drop igate uplink packets while aprs-is is down ([8ba403c](https://github.com/APRS-NET/APRS.NET/commit/8ba403caddba3f2f81024acc4d1fc95a103bf1b5))
+* **igate:** gate every copy of a packet heard on RF by default ([0bcf528](https://github.com/APRS-NET/APRS.NET/commit/0bcf5280962165381f2772c2e6145b3ffeec0693))
+* **igate:** gate the information field up to CR or LF, keeping NUL ([317b6fe](https://github.com/APRS-NET/APRS.NET/commit/317b6febc9da11c660dadb712161ae6f6764a48c))
+
 ## [0.8.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.4...v0.8.0-alpha.5) (2026-11-17)
 
 
