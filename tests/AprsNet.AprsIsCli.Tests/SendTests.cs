@@ -46,7 +46,7 @@ public class SendTests
         );
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"KD9XYZ-9>APZNET:>Testing{Environment.NewLine}", result.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC:>Testing{Environment.NewLine}", result.Out);
         Assert.Equal(0, harness.ConnectionAttempts);
     }
 
@@ -61,7 +61,7 @@ public class SendTests
         );
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"KD9XYZ-9>APZNET::WU2Z     :Hello there{{01}}{Environment.NewLine}", result.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC::WU2Z     :Hello there{{01}}{Environment.NewLine}", result.Out);
         Assert.Equal(0, harness.ConnectionAttempts);
     }
 
@@ -77,7 +77,7 @@ public class SendTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.StartsWith($"user {Callsign} pass ", harness.Transport.Written[0], StringComparison.Ordinal);
-        Assert.Equal("KD9XYZ-9>APZNET,WIDE1-1:>Testing", harness.Transport.Written[1]);
+        Assert.Equal("KD9XYZ-9>APNETC,WIDE1-1:>Testing", harness.Transport.Written[1]);
         Assert.Null(harness.ClientOptions!.Filter);
     }
 
@@ -131,7 +131,7 @@ public class SendTests
         );
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal("KD9XYZ-9>APZNET:;LEADER   *111200z4903.50N/07201.75W>", harness.Transport.Written[1]);
+        Assert.Equal("KD9XYZ-9>APNETC:;LEADER   *111200z4903.50N/07201.75W>", harness.Transport.Written[1]);
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class SendTests
             TestContext.Current.CancellationToken
         );
         var written = await WaitForWritten(harness, 2);
-        Assert.Equal("KD9XYZ-9>APZNET::WU2Z     :Hello there{01}", written[1]);
+        Assert.Equal("KD9XYZ-9>APNETC::WU2Z     :Hello there{01}", written[1]);
 
         // A reply carrying the ack (APRS 1.1 reply-ack) delivers the message, and is itself acked.
         harness.Transport.Server($"WU2Z>APRS,TCPIP*,qAC,T2TEST::{Callsign} :Got it{{7}}01");
@@ -214,7 +214,7 @@ public class SendTests
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("Reply from WU2Z: Got it", result.Out, StringComparison.Ordinal);
         Assert.Contains("Acknowledged by WU2Z after 1 attempt.", result.Out, StringComparison.Ordinal);
-        Assert.Contains("KD9XYZ-9>APZNET::WU2Z     :ack7}01", harness.Transport.Written); // sent before exiting
+        Assert.Contains("KD9XYZ-9>APNETC::WU2Z     :ack7}01", harness.Transport.Written); // sent before exiting
     }
 
     [Fact]
@@ -379,7 +379,7 @@ public class SendTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Single(result.Out.Split(Environment.NewLine), line => line == "Reply from WU2Z: Received");
-        Assert.Equal(2, harness.Transport.Written.Count(line => line == "KD9XYZ-9>APZNET::WU2Z     :ack7"));
+        Assert.Equal(2, harness.Transport.Written.Count(line => line == "KD9XYZ-9>APNETC::WU2Z     :ack7"));
         Assert.Contains("Waiting 2s for replies", result.Error, StringComparison.Ordinal);
     }
 
@@ -484,7 +484,7 @@ public class SendTests
         );
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal("KD9XYZ-9>APZNET:!4903.50N/07201.75W_220/004g...t077h50b10132", harness.Transport.Written[1]);
+        Assert.Equal("KD9XYZ-9>APNETC:!4903.50N/07201.75W_220/004g...t077h50b10132", harness.Transport.Written[1]);
     }
 
     [Fact]
@@ -498,7 +498,7 @@ public class SendTests
         );
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"KD9XYZ-9>APZNET:_10111200c...s...g...t-07r012wRSW{Environment.NewLine}", result.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC:_10111200c...s...g...t-07r012wRSW{Environment.NewLine}", result.Out);
     }
 
     [Theory]
@@ -548,9 +548,9 @@ public class SendTests
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(
             [
-                "KD9XYZ-9>APZNET::KD9XYZ-9 :PARM.Battery,Temp",
-                "KD9XYZ-9>APZNET::KD9XYZ-9 :EQNS.0,5.2,0,0,0.53,-32",
-                "KD9XYZ-9>APZNET:T#005,199,000,255,073,123,01101001",
+                "KD9XYZ-9>APNETC::KD9XYZ-9 :PARM.Battery,Temp",
+                "KD9XYZ-9>APNETC::KD9XYZ-9 :EQNS.0,5.2,0,0,0.53,-32",
+                "KD9XYZ-9>APNETC:T#005,199,000,255,073,123,01101001",
             ],
             harness.Transport.Written.Skip(1)
         );
@@ -567,7 +567,7 @@ public class SendTests
         );
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal($"KD9XYZ-9>APZNET:T#012,138,042{Environment.NewLine}", result.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC:T#012,138,042{Environment.NewLine}", result.Out);
     }
 
     [Theory]

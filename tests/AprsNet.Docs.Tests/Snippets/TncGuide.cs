@@ -53,7 +53,7 @@ internal static class TncGuide
         );
         await connected.Task.WaitAsync(cancellationToken);
 
-        // Your callsign, APRS.NET's TOCALL and the usual two-hop path.
+        // Your callsign, your app's TOCALL (APZxxx, the experimental range, while testing) and the usual two-hop path.
         var me = PacketAddress.Parse("N0CALL-9", "APZNET", ["WIDE1-1", "WIDE2-1"]);
         await tnc.SendAsync(me.Create(new StatusReport { Text = "On the air with APRS.NET" }), cancellationToken);
         #endregion

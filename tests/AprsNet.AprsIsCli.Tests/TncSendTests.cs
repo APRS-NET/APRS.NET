@@ -54,9 +54,9 @@ public sealed class TncSendTests : IDisposable
             Token
         );
 
-        Assert.Equal($"KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1:>Testing{Environment.NewLine}", usual.Out);
-        Assert.Equal($"KD9XYZ-9>APZNET:>Testing{Environment.NewLine}", direct.Out);
-        Assert.Equal($"KD9XYZ-9>APZNET,WIDE2-2:>Testing{Environment.NewLine}", custom.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC,WIDE1-1,WIDE2-1:>Testing{Environment.NewLine}", usual.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC:>Testing{Environment.NewLine}", direct.Out);
+        Assert.Equal($"KD9XYZ-9>APNETC,WIDE2-2:>Testing{Environment.NewLine}", custom.Out);
     }
 
     [Fact]
@@ -82,11 +82,11 @@ public sealed class TncSendTests : IDisposable
         using var tnc = await _tnc.AcceptTcpClientAsync(Token);
         var heard = new Heard(tnc.GetStream());
 
-        Assert.Equal("KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1::N1ABC-7  :Hello{01}", await heard.NextAsync());
+        Assert.Equal("KD9XYZ-9>APNETC,WIDE1-1,WIDE2-1::N1ABC-7  :Hello{01}", await heard.NextAsync());
 
         // The radio answers with a reply-ack: it delivers the message, and the reply is acked in turn.
         await tnc.GetStream().WriteAsync(Kiss($"N1ABC-7>APRS,WIDE1-1::{Callsign} :Hi back{{AB}}01"), Token);
-        Assert.Equal("KD9XYZ-9>APZNET,WIDE1-1,WIDE2-1::N1ABC-7  :ackAB}01", await heard.NextAsync());
+        Assert.Equal("KD9XYZ-9>APNETC,WIDE1-1,WIDE2-1::N1ABC-7  :ackAB}01", await heard.NextAsync());
         var result = await run;
 
         Assert.Equal(0, result.ExitCode);
