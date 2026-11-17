@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0-alpha.7](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.6...v0.8.0-alpha.7) (2026-11-17)
+
+
+### Bug Fixes
+
+* **deps:** Bump coverlet.collector and Microsoft.NET.Test.Sdk ([ee28f3c](https://github.com/APRS-NET/APRS.NET/commit/ee28f3cf8a85586ad689b2b82295664c329634a6))
+* **deps:** Bump csharpier from 1.3.0 to 1.4.0 ([380f5d6](https://github.com/APRS-NET/APRS.NET/commit/380f5d62d281086cacfa7daf759e85dac32004b1))
+
 ## [0.8.0-alpha.6](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.5...v0.8.0-alpha.6) (2026-11-17)
 
 
