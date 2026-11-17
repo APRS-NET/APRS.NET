@@ -52,7 +52,7 @@ public class BeaconTests
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(["12:00:00", "12:10:00", "12:20:00"], Times(result));
         Assert.EndsWith(
-            "KD9XYZ-9>APZNET:!4903.50N/07201.75W-Test",
+            "KD9XYZ-9>APNETC:!4903.50N/07201.75W-Test",
             result.Out.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)[0],
             StringComparison.Ordinal
         );
@@ -82,7 +82,7 @@ public class BeaconTests
 
         Assert.Equal(["12:00:00", "12:00:00", "12:05:00", "12:05:00"], Times(result));
         Assert.EndsWith(
-            "KD9XYZ-9>APZNET:>On the air",
+            "KD9XYZ-9>APNETC:>On the air",
             result.Out.Split(Environment.NewLine)[1],
             StringComparison.Ordinal
         );
@@ -124,7 +124,7 @@ public class BeaconTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(
-            $"KD9XYZ-9>APZNET:!4903.50N/07201.75W-{Environment.NewLine}KD9XYZ-9>APZNET:>Hi{Environment.NewLine}",
+            $"KD9XYZ-9>APNETC:!4903.50N/07201.75W-{Environment.NewLine}KD9XYZ-9>APNETC:>Hi{Environment.NewLine}",
             result.Out
         );
     }
