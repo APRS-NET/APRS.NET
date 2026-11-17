@@ -13,7 +13,9 @@ the APRS-IS client with verified sending, messaging, TLS and automatic reconnect
 transmitting through a TNC (over TCP, a serial port or an AGWPE server, every port of a multi-port TNC, and a radio's
 APRS text mode), GPS through gpsd or NMEA, beacon schedules, a local APRS-IS gateway that serves radio and internet
 traffic together to APRS-IS and WebSocket clients, a receive-only or two-way IGate, a digipeater, and the `aprscli`
-tool are all published.
+tool are all published. Every input from the air, APRS-IS, gateway clients and GPS is treated as hostile, under the
+scope in [SECURITY.md](SECURITY.md); the IGate follows aprsc's IGate hints; and `aprscli` sends as its registered
+TOCALL, `APNETC`.
 
 > [!WARNING]
 > **Alpha software.** Every APRS.NET package is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. APIs,
