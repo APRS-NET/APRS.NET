@@ -30,6 +30,39 @@ then no image is published, and you build your own as above. The `Dockerfile`'s 
 Dependabot moves them with a `fix(deps)` update that gives a release, so once publishing is on, a new base reaches a
 published image with that release.
 
+Each published image:
+
+- **Platforms:** `linux/amd64` and `linux/arm64` (a Raspberry Pi 4 or 5 with a 64-bit OS), under one tag.
+- **Tags:** the version, such as `0.9.0-alpha.1`, always. A release that isn't a pre-release also moves `X.Y`, `X` and
+  `latest`; a pre-release never does, so `latest` is the newest stable release. A tag can move to a rebuilt image,
+  so to stay on one image, pin its digest: `ghcr.io/aprs-net/aprscli:<version>@sha256:...`. The release notes and
+  the release workflow's summary give the digest.
+- **Labels:** the OCI labels `org.opencontainers.image.source`, `revision` (the release's commit), `version` and
+  `licenses` (MIT).
+- **Signature and provenance:** the image is signed with [cosign](https://docs.sigstore.dev/) without a key: the
+  signature's certificate names the release workflow that built it. It also carries a build provenance attestation and
+  an SBOM.
+
+Check an image before you run it:
+
+```sh
+cosign verify ghcr.io/aprs-net/aprscli:<version> \
+  --certificate-identity-regexp 'https://github.com/APRS-NET/APRS.NET/.*' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+gh attestation verify oci://ghcr.io/aprs-net/aprscli:<version> --repo APRS-NET/APRS.NET
+```
+
+Every pull request that changes the image builds it for both platforms and tests it offline: `--version`, `parse`,
+the non-root user and a size budget (`tests/container/smoke.sh`), a gateway, and `listen` exporting packet logs and
+metrics to an OpenTelemetry Collector (`tests/container/e2e.sh`). It also scans the image with Trivy and fails on a
+HIGH or CRITICAL vulnerability that has a fix. Run the tests on an image you built:
+
+```sh
+docker build --build-arg VERSION=0.0.0-dev -t aprscli .
+tests/container/smoke.sh aprscli 0.0.0-dev
+tests/container/e2e.sh aprscli 0.0.0-dev
+```
+
 ## With Dire Wolf
 
 `samples/compose` runs Dire Wolf next to the gateway, which reads it as a TNC at `direwolf:8001`:
