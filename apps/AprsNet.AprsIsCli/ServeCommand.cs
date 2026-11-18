@@ -154,6 +154,14 @@ internal sealed class ServeCommand(CliEnvironment environment)
             + "port that stays open. Pick longer than the channel is ever quiet. /health shows it as quiet. Default: off.",
     };
 
+    private readonly Option<string?> _healthFile = new("--health-file")
+    {
+        Description =
+            "Keep this file's timestamp current while any source is up (when /health would answer 200), every 10s. "
+            + "'aprscli health --file' checks it, for a container HEALTHCHECK without --http. Default: "
+            + $"${HealthFile.Variable}, if set.",
+    };
+
     private readonly Option<bool> _logPackets = new("--log-packets")
     {
         Description =
@@ -194,6 +202,7 @@ internal sealed class ServeCommand(CliEnvironment environment)
                 _symbol,
                 _comment,
                 _beaconInterval,
+                _healthFile,
                 _logPackets,
                 _config,
                 _check,
@@ -257,7 +266,8 @@ internal sealed class ServeCommand(CliEnvironment environment)
         TimeSpan? Duration,
         TimeSpan? QuietWarning,
         IGateOptions? IGate,
-        bool LogPackets
+        bool LogPackets,
+        string? HealthFile
     );
 
     /// <summary>What <c>--igate</c> gates as and beacons.</summary>
@@ -477,7 +487,17 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return false;
         }
 
-        options = new ServeOptions(upstream, tncs, local, http, duration, quietWarning, igateOptions, logPackets);
+        options = new ServeOptions(
+            upstream,
+            tncs,
+            local,
+            http,
+            duration,
+            quietWarning,
+            igateOptions,
+            logPackets,
+            HealthFile.Resolve(parseResult.GetValue(_healthFile), environment.GetEnvironmentVariable)
+        );
         error = "";
         return true;
     }
@@ -623,6 +643,11 @@ internal sealed class ServeCommand(CliEnvironment environment)
             return ExitCodes.Error;
         }
 
+        var healthFile = options.HealthFile is null
+            ? null
+            : new HealthFile(options.HealthFile, environment.TimeProvider, environment.Error);
+        healthFile?.Remove(); // one left by an earlier run must not vouch for this one
+
         await using var feed = new GatewayFeed(server, timeProvider: environment.TimeProvider);
         // A TNC quiet for --quiet-warning is down: likely switched off behind a port that stays open.
         var health = new GatewayHealth(feed, environment.TimeProvider) { CountQuietAsDown = true };
@@ -758,6 +783,9 @@ internal sealed class ServeCommand(CliEnvironment environment)
             }
 
             var downlinking = downlink?.RunAsync(run.Token) ?? Task.CompletedTask;
+            var refreshing = healthFile is null
+                ? Task.CompletedTask
+                : RefreshHealthFileAsync(health, healthFile, environment.TimeProvider, run.Token);
             await environment.Error.WriteLineAsync(
                 $"aprscli: serving {string.Join(" and ", described)} on {server.LocalEndPoint} as "
                     + $"{options.Local.ServerName}"
@@ -802,9 +830,11 @@ internal sealed class ServeCommand(CliEnvironment environment)
             await feed.DisposeAsync();
             await uploading;
             await downlinking;
+            await refreshing;
         }
         finally
         {
+            healthFile?.Remove();
             foreach (var tnc in tncs)
             {
                 await tnc.DisposeAsync();
@@ -865,6 +895,36 @@ internal sealed class ServeCommand(CliEnvironment environment)
     }
 
     private const string AprsIsSource = "aprs-is";
+
+    /// <summary>
+    /// Refreshes <paramref name="file"/> every <see cref="HealthFile.RefreshInterval"/> while the gateway is healthy or
+    /// degraded, as <c>/health</c> answers 200; while no source is up it goes stale. A gateway is a server whose sources
+    /// reconnect on their own, so its liveness is its sources' state rather than each line received.
+    /// </summary>
+    private static async Task RefreshHealthFileAsync(
+        GatewayHealth health,
+        HealthFile file,
+        TimeProvider time,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            while (true)
+            {
+                if (health.Check().Status != GatewayHealthStatus.Unhealthy)
+                {
+                    file.Touch(force: true);
+                }
+
+                await Task.Delay(HealthFile.RefreshInterval, time, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The run ended; the caller removes the file.
+        }
+    }
 
     /// <summary>Passes the packets on, logging each to <paramref name="packetLog"/> when there is one.</summary>
     private static async IAsyncEnumerable<AprsPacket> LogPacketsAsync(

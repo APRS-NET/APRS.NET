@@ -45,6 +45,7 @@ aprscli listen --filter "r/35/-97/200" --format pretty
 | `-n`, `--count` / `-d`, `--duration` | Stop after N packets / after `90s`, `10m`, `2h`, `1d`. Ctrl+C also stops cleanly. |
 | `--reconnect` | If the connection drops or the server sends nothing for 90 s, reconnect (wait about 5 s, doubling to 60 s, varied by up to 20% so dropped clients do not all return at once) and carry on; `--count` spans connections. Only after the first login succeeds, and never after a rejected login. Use it for long captures. |
 | `--max-silence <duration\|off>` | Treat the connection as failed after this long with **no packets**, even if keepalives continue (the server's own feed can stall while it still answers). Default `10m` with `--reconnect`, otherwise off. Raise it or use `off` for filters over quiet areas. |
+| `--health-file <path>` | Keep this file's timestamp current while connected: written atomically on each login and on each line from the server (keepalives included, at most every 5 s). It isn't touched while disconnected or reconnecting, is removed at start and at exit, and `aprscli health --file` checks it. Default: `$APRSCLI_HEALTH_FILE` if set (the container image sets it). |
 | `--stats <duration>` | Every so often (`1m`, `10m`) and at the end, print a summary to stderr: packets by type, how many were malformed or unsupported, and messages to your callsign. The summaries keep their own time, so they come at whole intervals (`1h`, `2h`, …) even when no packet arrives. Handy during long captures. |
 
 APRS-IS servers send a `#` keepalive about every 20 s, so 90 s of silence means the link is dead even if TCP has not noticed. A server can also keep sending keepalives after its feed has stalled; `--max-silence` catches that, and its message reports how many keepalives arrived in the gap so you can tell the two apart. Without `--reconnect` either one ends the run with exit code 2.
@@ -240,6 +241,7 @@ APRS_PASSCODE=12345 aprscli serve -c KD9XYZ-10 --tnc localhost --igate --lat 49.
 | `--symbol` | With `--igate`: the beacon's symbol. Default: `R&`, a receive-only IGate, or `I&` with `--igate-to-rf`. |
 | `--comment` | With `--igate`: the beacon's comment, after `RX-only IGate` for a receive-only one. |
 | `--beacon-interval` | With `--igate`: how often to beacon, at least `1m`. Default: `30m`. |
+| `--health-file <path>` | Keep this file's timestamp current every 10 s while any source is up, that is while `/health` would answer 200, for `aprscli health --file`; it goes stale when none is. Needs no `--http`. Default: `$APRSCLI_HEALTH_FILE` if set (the container image sets it). |
 | `--quiet-warning` | Warn when a TNC sends nothing at all for this long, such as `30m`: it may be switched off behind a USB port that stays open. `/health` shows it as `"quiet": true` while it lasts, and it doesn't count as up, so a gateway whose TNCs are all quiet answers 503; it is up again with its next frame. Pick longer than the channel is ever quiet. Default: off. A TNC sending text instead of KISS frames shows as `"protocolMismatch": true` and doesn't count as up either. |
 | `--log-packets` | Also log each packet from each source, duplicates included, to OpenTelemetry. Needs `OTEL_EXPORTER_OTLP_ENDPOINT`; see [OpenTelemetry](#opentelemetry). |
 | `--config` | Read options from a TOML file, as the [services](../services/README.md) do. See [Config files](#config-files). |
@@ -292,12 +294,22 @@ Each packet sent to RF is logged; the summary and `/health` count them (`igate.r
 
 ## health
 
-Ask a running `aprscli serve --http` whether it is serving, as the container image's `HEALTHCHECK` does. It prints the
-health report and exits 0 while any source is connected, 1 when none is, and 2 when nothing answers:
+Ask a running `aprscli serve --http` whether it is serving. It prints the health report and exits 0 while any source
+is connected, 1 when none is, and 2 when nothing answers:
 
 ```sh
 aprscli health                                       # http://127.0.0.1:14590/health
 aprscli health http://gateway.lan:14590/health --timeout 10s
+```
+
+With `--file`, check the file a `listen --health-file` or `serve --health-file` keeps current instead, as the
+container image's `HEALTHCHECK` does for both commands. It exits 0 while the time written in the file (or, if it holds
+none, its modification time) is younger than `--max-age` (default `90s`: APRS-IS servers send a keepalive about every
+20 s), and 1 with the reason when it is older or the file is missing. It never exits 2, which Docker reserves.
+
+```sh
+aprscli health --file /tmp/aprscli.health            # healthy: last alive 2026-11-17T12:00:20.000Z (4s ago)
+aprscli health --file /tmp/aprscli.health --max-age 5m
 ```
 
 ## tnc listen
