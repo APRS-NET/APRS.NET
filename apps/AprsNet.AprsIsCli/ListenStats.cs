@@ -6,10 +6,11 @@ namespace AprsNet.AprsIsCli;
 
 /// <summary>
 /// Counts for <c>aprscli listen --stats</c>: packets by type, how many could not be decoded, and messages addressed
-/// to the listening callsign.
+/// to the listening callsign. Counted by the line loop and read by the summary timer, so both go through a lock.
 /// </summary>
 internal sealed class ListenStats(string callsign)
 {
+    private readonly Lock _lock = new();
     private readonly Dictionary<PacketType, int> _byType = [];
 
     public int Packets { get; private set; }
@@ -22,6 +23,14 @@ internal sealed class ListenStats(string callsign)
     public int ToCallsign { get; private set; }
 
     public void Add(AprsPacket packet)
+    {
+        lock (_lock)
+        {
+            AddLocked(packet);
+        }
+    }
+
+    private void AddLocked(AprsPacket packet)
     {
         Packets++;
         _byType[packet.Type] = _byType.GetValueOrDefault(packet.Type) + 1;
@@ -42,6 +51,14 @@ internal sealed class ListenStats(string callsign)
     /// types by count, largest first.
     /// </summary>
     public string Summary(TimeSpan elapsed)
+    {
+        lock (_lock)
+        {
+            return SummaryLocked(elapsed);
+        }
+    }
+
+    private string SummaryLocked(TimeSpan elapsed)
     {
         var line = new StringBuilder();
         line.Append(CultureInfo.InvariantCulture, $"{Elapsed(elapsed)}: {Packets:N0} packets");

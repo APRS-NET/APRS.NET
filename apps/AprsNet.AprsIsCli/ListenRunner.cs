@@ -79,7 +79,13 @@ internal static class ListenRunner
 
             var stats = options.StatsInterval is null ? null : new ListenStats(options.Callsign);
             var started = environment.TimeProvider.GetTimestamp();
+            using var stopSummaries = CancellationTokenSource.CreateLinkedTokenSource(run.Token);
+            var summaries = stats is null
+                ? Task.CompletedTask
+                : SummarizeAsync(stats, options.StatsInterval!.Value, environment, stopSummaries.Token);
             var code = await StreamAsync(connection, options, environment, capture, packetLog, stats, run.Token);
+            await stopSummaries.CancelAsync();
+            await summaries;
             await reporter.Closing;
             if (stats is not null)
             {
@@ -169,25 +175,13 @@ internal static class ListenRunner
     )
     {
         var received = 0;
-        var started = environment.TimeProvider.GetTimestamp();
-        var nextSummary = options.StatsInterval;
         try
         {
             await foreach (var line in connection.ReadLinesAsync(cancellationToken))
             {
                 var receivedAt = environment.TimeProvider.GetUtcNow();
                 var stamp = LineFormatter.Timestamp(receivedAt);
-                if (stats is not null)
-                {
-                    // Checked as packets arrive, so a summary needs no timer of its own; a silent feed prints none.
-                    stats.Add(AprsPacket.Parse(line));
-                    var elapsed = environment.TimeProvider.GetElapsedTime(started);
-                    if (elapsed >= nextSummary)
-                    {
-                        await environment.Error.WriteLineAsync($"aprscli: {stats.Summary(elapsed)}");
-                        nextSummary = elapsed + options.StatsInterval;
-                    }
-                }
+                stats?.Add(AprsPacket.Parse(line));
 
                 if (capture is not null)
                 {
@@ -242,6 +236,32 @@ internal static class ListenRunner
 
         // The line stream only ends when the connection closes, which the reporter does after a failure.
         return ExitCodes.ConnectionFailed;
+    }
+
+    /// <summary>
+    /// Prints a <c>--stats</c> summary every <paramref name="interval"/> until cancelled, on its own timer: packets
+    /// arriving (or not) never move it, so a quiet feed still reports, at whole intervals (1h, 2h, ...).
+    /// </summary>
+    private static async Task SummarizeAsync(
+        ListenStats stats,
+        TimeSpan interval,
+        CliEnvironment environment,
+        CancellationToken cancellationToken
+    )
+    {
+        using var timer = new PeriodicTimer(interval, environment.TimeProvider);
+        var ticks = 0;
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await environment.Error.WriteLineAsync($"aprscli: {stats.Summary(interval * ++ticks)}");
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The run ended; the caller prints the final summary.
+        }
     }
 
     /// <summary>The sending station: everything before the first '&gt;'.</summary>
