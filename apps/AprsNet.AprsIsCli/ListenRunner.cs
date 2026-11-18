@@ -63,6 +63,10 @@ internal static class ListenRunner
         }
 
         var packetLog = options.LogPackets ? environment.LoggerFactory.CreateLogger(Logging.PacketCategory) : null;
+        var health = options.HealthFile is null
+            ? null
+            : new HealthFile(options.HealthFile, environment.TimeProvider, environment.Error);
+        health?.Remove(); // one left by an earlier run must not vouch for this one before it connects
         try
         {
             await using var connection = environment.CreateConnection(clientOptions, logger);
@@ -72,6 +76,10 @@ internal static class ListenRunner
                 options.Endpoint,
                 options.Reconnect
             );
+            if (health is not null)
+            {
+                KeepAlive(connection, health);
+            }
             if (await StartAsync(connection, options, environment, run.Token) is { } failed)
             {
                 return failed;
@@ -97,11 +105,39 @@ internal static class ListenRunner
         }
         finally
         {
+            health?.Remove();
             if (capture is not null)
             {
                 await capture.DisposeAsync();
             }
         }
+    }
+
+    /// <summary>
+    /// Keeps <paramref name="health"/> current: at once on every login, then on each line the server sends while
+    /// connected, its <c>#</c> keepalives included, so a filter that matches nothing for hours still shows the link is
+    /// alive. While disconnected or reconnecting nothing arrives and the file goes stale. A link that dies quietly
+    /// stops the keepalives too, and the client's 90 s idle timeout then reconnects.
+    /// </summary>
+    private static void KeepAlive(AprsIsConnection connection, HealthFile health)
+    {
+        connection.StateChanged += (_, e) =>
+        {
+            if (e.State == AprsIsConnectionState.Connected)
+            {
+                health.Touch(force: true);
+            }
+        };
+
+        // A reconnect attempt's banner arrives before its login is answered, so only lines on a connection that is up
+        // count.
+        connection.Traffic += (_, e) =>
+        {
+            if (e.Direction == AprsIsTrafficDirection.Received && connection.State == AprsIsConnectionState.Connected)
+            {
+                health.Touch();
+            }
+        };
     }
 
     /// <summary>Connects and logs in for the first time. Returns null on success, otherwise the exit code.</summary>

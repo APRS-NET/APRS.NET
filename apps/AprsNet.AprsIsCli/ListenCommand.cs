@@ -119,6 +119,14 @@ internal sealed class ListenCommand
             + "malformed, unsupported and messages to your callsign.",
     };
 
+    private readonly Option<string?> _healthFile = new("--health-file")
+    {
+        Description =
+            "Keep this file's timestamp current while connected: on each login and each line from the server, "
+            + "keepalives included. 'aprscli health --file' checks it, for a container HEALTHCHECK. Default: "
+            + $"${HealthFile.Variable}, if set.",
+    };
+
     private readonly Option<string> _format = new("--format")
     {
         Description =
@@ -167,6 +175,7 @@ internal sealed class ListenCommand
                 _reconnect,
                 _maxSilence,
                 _stats,
+                _healthFile,
                 _format,
                 _color,
             }
@@ -339,6 +348,7 @@ internal sealed class ListenCommand
             Reconnect = reconnect,
             MaxSilence = maxSilence,
             StatsInterval = statsInterval,
+            HealthFile = HealthFile.Resolve(parseResult.GetValue(_healthFile), _environment.GetEnvironmentVariable),
         };
         error = "";
         return true;
