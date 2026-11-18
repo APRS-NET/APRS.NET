@@ -1250,6 +1250,24 @@ public class ListenTests
     }
 
     [Fact]
+    public async Task QuietWithLogPacketsRuns()
+    {
+        // The packets still go somewhere, to OpenTelemetry, as a container that only feeds a collector runs it.
+        var harness = WithPackets(_packets);
+        harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4318";
+        harness.Transport.Close();
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-q", "--log-packets"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(2, result.ExitCode); // the server closed, not a usage error
+        Assert.Equal("", result.Out);
+        Assert.Equal(3, harness.Logs.Entries.Count(e => e.Category == "aprscli.packets"));
+    }
+
+    [Fact]
     public async Task LogPacketsWithoutAnOtlpEndpointIsAUsageError()
     {
         var harness = WithPackets(_packets);
