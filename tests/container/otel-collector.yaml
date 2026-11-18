@@ -1,0 +1,23 @@
+# The collector for the container end-to-end test: takes OTLP from aprscli and writes every log record and metric to
+# one JSON-lines file for the test to read.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  file:
+    path: /out/otel.jsonl
+    flush_interval: 100ms
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [file]
+    metrics:
+      receivers: [otlp]
+      exporters: [file]
