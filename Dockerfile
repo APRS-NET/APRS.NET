@@ -7,13 +7,16 @@
 # See docs/guides/container.md. The release workflow builds it with VERSION set to the release.
 
 # The base images are pinned by digest, so a build gets the same bases until Dependabot's docker update moves them.
-FROM mcr.microsoft.com/dotnet/sdk:10.0@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb AS build
+# The build stage runs on the builder's own platform for every target: aprscli is framework-dependent IL, so the same
+# output runs on amd64 and arm64, and an arm64 image builds without emulating the SDK.
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:fe0fd4e93bd2fbb47c883b7a6369e5c8d3db8bf01cdc5981f6ee35fbdf3ff4fb AS build
 WORKDIR /src
 COPY . .
 ARG VERSION=0.0.0-dev
-# MinVer reads git tags, which the build context leaves out, so the version comes from VERSION instead.
+# MinVer reads git tags, which the build context leaves out, so the version comes from VERSION instead. No apphost:
+# it would be built for the builder's platform, and the image starts aprscli with 'dotnet aprscli.dll' anyway.
 RUN dotnet publish apps/AprsNet.AprsIsCli -c Release -o /app \
-    -p:MinVerSkip=true -p:Version=${VERSION} -p:PackAsTool=false
+    -p:MinVerSkip=true -p:Version=${VERSION} -p:PackAsTool=false -p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:80a51954ac70925e5783cb1ed35129a4243dcb1cddef20066b67346e17db284d
 WORKDIR /app
