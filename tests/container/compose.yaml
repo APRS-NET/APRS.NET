@@ -1,0 +1,45 @@
+# The container end-to-end test (e2e.sh runs it): aprscli listen, as a station monitor runs it, against a fake APRS-IS
+# server, exporting its packet logs and metrics over OTLP to an OpenTelemetry Collector. Nothing reaches the internet.
+# The images are pinned by digest; Dependabot's docker-compose entry moves them.
+name: aprscli-e2e
+
+services:
+  aprs-is:
+    image: python:3.13-alpine@sha256:9ef1a599f863231c3d91e941389bfdc4a2d6070557243d54df1a4e57015b960e
+    command: ["python", "-I", "/test/fake-aprs-is.py"]
+    environment:
+      CAPTURE: /test/capture.log
+      COUNT: ${PACKETS:-20}
+      FILTER: ${FILTER:?}
+      LOGIN_OUT: /out/login.txt
+    volumes:
+      - ./fake-aprs-is.py:/test/fake-aprs-is.py:ro,z
+      - ../corpus/aprs-is/2026-10-12-sf-r30km.log:/test/capture.log:ro,z
+      - ${OUT_DIR:?}:/out:z
+
+  collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0@sha256:e40d61f10c9a617cca1ffd1be4d7e2b3a4b0f0001798ff07e58cabe82e618cea
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro,z
+      - ${OUT_DIR:?}:/out:z
+
+  aprscli:
+    image: ${APRSCLI_IMAGE:?}
+    command:
+      - listen
+      - --server
+      - aprs-is:14580
+      - --filter
+      - ${FILTER:?}
+      - --log-packets
+      - --quiet
+      - --count
+      - ${PACKETS:-20}
+      - --duration
+      - 60s
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4317
+      OTEL_METRIC_EXPORT_INTERVAL: "1000"
+      APRSNET_INSTANCE: e2e
+    depends_on: [aprs-is, collector]

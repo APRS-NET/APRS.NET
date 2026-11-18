@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      container: ${{ steps.filter.outputs.container }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -37,6 +38,7 @@ jobs:
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2> /dev/null; then
             echo "No base to compare with: running everything."
             echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "container=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           changed="$(git diff --name-only "$(git merge-base "$BASE" "$GITHUB_SHA")" "$GITHUB_SHA")"
@@ -48,6 +50,15 @@ jobs:
           else
             echo "Only docs or settings changed: skipping the build, tests and format check."
             echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+          # The image job runs for what goes into the image or tests it: the Dockerfile and its build context (a
+          # library README counts, since the build copies it), the image tests and their capture, and this workflow.
+          image='^(Dockerfile|\.dockerignore|global\.json|nuget\.config|Directory\.[^/]+|apps/.*|src/.*|tests/container/.*|tests/corpus/aprs-is/2026-10-12-sf-r30km\.log|\.github/workflows/ci\.yml)$'
+          if printf '%s\n' "$changed" | grep -q -E "$image"; then
+            echo "container=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing in the image changed: skipping the image job."
+            echo "container=false" >> "$GITHUB_OUTPUT"
           fi
 
   build:
@@ -215,20 +226,47 @@ jobs:
           fi
 
   container:
-    # Builds the aprscli image and checks it serves, offline: a gateway whose only TNC can't be reached still answers
-    # APRS-IS clients with its banner, and /health with 503. See docs/guides/container.md.
+    # Builds the aprscli image as the release does (BuildKit, cached across runs) and tests it offline: the smoke tests
+    # and size budget (tests/container/smoke.sh); a gateway whose only TNC can't be reached still answers APRS-IS
+    # clients with its banner, and /health with 503; and listen as a station monitor exporting its packets and metrics
+    # to an OpenTelemetry Collector (tests/container/e2e.sh). The arm64 image is built and smoke-tested under QEMU too,
+    # and the amd64 image is scanned for vulnerabilities. See docs/guides/container.md.
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.container == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write # only to upload the image scan to code scanning
+    env:
+      IMAGE: aprscli:ci
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - run: docker build -t aprscli:ci .
+      - name: Version
+        # A version no release has, so --version shows the image came from this build.
+        run: echo "VERSION=0.0.0-ci.${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build (amd64)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: VERSION=${{ env.VERSION }}
+          tags: ${{ env.IMAGE }}
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=aprscli-amd64
+          cache-to: type=gha,scope=aprscli-amd64,mode=max
       - name: Smoke test
+        run: tests/container/smoke.sh "$IMAGE" "$VERSION"
+      - name: Gateway test
         run: |
-          docker run -d --name gateway -p 127.0.0.1:14580:14580 -p 127.0.0.1:14590:14590 aprscli:ci \
+          docker run -d --name gateway -p 127.0.0.1:14580:14580 -p 127.0.0.1:14590:14590 "$IMAGE" \
             serve --tnc 127.0.0.1:1 --listen 0.0.0.0:14580 --http 0.0.0.0:14590
           trap 'docker logs gateway; docker rm -f gateway > /dev/null' EXIT
           for _ in $(seq 30); do
@@ -243,6 +281,52 @@ jobs:
           echo "$banner"
           case "$banner" in "# aprscli "*) ;; *) echo "::error::Unexpected banner"; exit 1 ;; esac
           docker exec gateway dotnet /app/aprscli.dll health || [ $? -eq 1 ]
+      - name: End-to-end test (listen to OpenTelemetry)
+        run: tests/container/e2e.sh "$IMAGE" "$VERSION"
+      - name: Build (arm64)
+        # The build stage runs on the runner's platform, so only the arm64 runtime stage is new here.
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/arm64
+          build-args: VERSION=${{ env.VERSION }}
+          tags: ${{ env.IMAGE }}-arm64
+          load: true
+          provenance: false
+          cache-from: type=gha,scope=aprscli-arm64
+          cache-to: type=gha,scope=aprscli-arm64,mode=max
+      - name: Smoke test (arm64, under QEMU)
+        run: tests/container/smoke.sh "$IMAGE-arm64" "$VERSION" linux/arm64
+      - name: Scan the image for code scanning
+        # Every HIGH and CRITICAL finding, fixed upstream or not, goes to the repository's code scanning alerts.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          image-ref: ${{ env.IMAGE }}
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy.sarif
+      - name: Upload the scan to code scanning
+        # Dependabot's and forks' pull requests get a read-only token, which can't upload; their scan still gates below.
+        if: >-
+          github.event_name != 'pull_request'
+          || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: trivy.sarif
+          category: container-image
+      - name: Fail on fixable HIGH or CRITICAL vulnerabilities
+        # A finding with a fix is one a rebuild or an update takes away: a newer base digest (Dependabot's docker
+        # update) or package. Findings without a fix only go to code scanning above.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.76.2
+          skip-setup-trivy: true
+          image-ref: ${{ env.IMAGE }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
 
   ci-ok:
     # The one check to require on main: it passes when every job above passed, or was skipped for a docs-only change.
