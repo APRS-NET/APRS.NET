@@ -67,6 +67,10 @@ internal sealed class HealthFile
                 return;
             }
 
+            // One reading of the clock for both the stamp and the throttle, taken before the file can be seen: a
+            // clock read after the rename could be later than the stamp, and throttle the next line wrongly.
+            var now = _time.GetUtcNow();
+            var timestamp = _time.GetTimestamp();
             var temporary = Path + ".tmp";
             try
             {
@@ -76,11 +80,11 @@ internal sealed class HealthFile
                 }
 
                 // Written beside the file and renamed over it, so a check never reads a half-written line.
-                File.WriteAllText(temporary, LineFormatter.Timestamp(_time.GetUtcNow()) + "\n");
+                File.WriteAllText(temporary, LineFormatter.Timestamp(now) + "\n");
                 // On Windows this fails while a reader holds the file without delete sharing (TryRead shares it). A
                 // failed write leaves _lastWrite as it was, so the next line tries again.
                 File.Move(temporary, Path, overwrite: true);
-                _lastWrite = _time.GetTimestamp();
+                _lastWrite = timestamp;
             }
             catch (Exception ex)
                 when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
