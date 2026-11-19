@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
+using AprsNet.AprsIsTcpClient.Is2;
 using AprsNet.Packets;
+using AprsNet.Packets.Is2;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -200,7 +203,33 @@ public sealed class AprsIsClient : IAsyncDisposable
     /// q-construct allowed is an IGate's: a packet heard on RF ending its path with <c>qAR</c> or <c>qAO</c> and the
     /// login callsign, as <c>RfToInternetGate</c> in <c>AprsNet.IGate</c> builds it.
     /// </exception>
-    public async ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
+    public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default) =>
+        SendCoreAsync(packet, null, cancellationToken);
+
+    /// <summary>
+    /// Sends a packet as <see cref="SendAsync(AprsPacket, CancellationToken)"/> does, with how it was heard on the air
+    /// on an <c>#is2-meta</c> line just before it. IS2 servers (aprsc 3.0, the <c>is2.aprs2.net</c> pool) attach the
+    /// values to the packet; other servers take the line for a comment and ignore it. The packet itself is sent
+    /// unchanged.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The two lines go out together, with nothing sent between them, since the server applies the metadata to the
+    /// next packet on the connection. Values the server would ignore are left out, and with none left, or with
+    /// <paramref name="reception"/> <see langword="null"/>, only the packet is sent.
+    /// </para>
+    /// <para>Experimental: IS2 is still a work in progress upstream, and this method may change or go.</para>
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">As for <see cref="SendAsync(AprsPacket, CancellationToken)"/>.</exception>
+    /// <exception cref="ArgumentException">As for <see cref="SendAsync(AprsPacket, CancellationToken)"/>.</exception>
+    [Experimental(Is2Diagnostics.Id)]
+    public ValueTask SendWithReceptionAsync(
+        AprsPacket packet,
+        ReceptionMetadata? reception,
+        CancellationToken cancellationToken = default
+    ) => SendCoreAsync(packet, Is2MetaLine.Format(reception), cancellationToken);
+
+    private async ValueTask SendCoreAsync(AprsPacket packet, string? metaLine, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(packet);
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
@@ -226,7 +255,15 @@ public sealed class AprsIsClient : IAsyncDisposable
         }
 
         var line = packet.ToString(); // Latin-1, one character per byte: the transport writes the same bytes back
-        await WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
+        if (metaLine is null)
+        {
+            await WriteLineAsync(line, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            await WriteLinesAsync(metaLine, line, cancellationToken).ConfigureAwait(false);
+        }
+
         Trace(AprsIsTrafficKind.PacketSent, line, packet);
         Interlocked.Increment(ref _packetsSent);
         ClientMetrics.PacketSent();
@@ -484,6 +521,25 @@ public sealed class AprsIsClient : IAsyncDisposable
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
         await WriteLineAsync(command, cancellationToken).ConfigureAwait(false);
         Trace(AprsIsTrafficKind.CommandSent, command);
+    }
+
+    // The metadata line and its packet under one hold of the lock, so no other line comes between them. Once the
+    // metadata is written the packet must follow, so its write is not cancelled: a metadata line left waiting would be
+    // applied by the server to whatever packet came next. If the connection fails instead, it is gone, and the metadata
+    // with it.
+    private async ValueTask WriteLinesAsync(string metaLine, string line, CancellationToken cancellationToken)
+    {
+        await _writeLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _transport.WriteLineAsync(metaLine, cancellationToken).ConfigureAwait(false);
+            await _transport.WriteLineAsync(line, CancellationToken.None).ConfigureAwait(false);
+            ClientMetrics.BytesSent(metaLine.Length + 2 + line.Length + 2);
+        }
+        finally
+        {
+            _writeLock.Release();
+        }
     }
 
     private async ValueTask WriteLineAsync(string line, CancellationToken cancellationToken)

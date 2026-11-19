@@ -1097,3 +1097,33 @@ AprsNet.Packets.NmeaReport.SymbolSource.get -> AprsNet.Packets.AddressSymbolSour
 static AprsNet.Packets.AddressSymbols.TryFromAddress(AprsNet.Packets.Callsign! source, AprsNet.Packets.Callsign! destination, out AprsNet.Packets.AprsSymbol symbol, out AprsNet.Packets.AddressSymbolSource from) -> bool
 static AprsNet.Packets.AddressSymbols.TryFromDestination(string? destination, out AprsNet.Packets.AprsSymbol symbol) -> bool
 static AprsNet.Packets.AddressSymbols.TryFromSsid(string? ssid, out AprsNet.Packets.AprsSymbol symbol) -> bool
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.<Clone>$() -> AprsNet.Packets.Is2.ReceptionMetadata!
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.BitRate.get -> int?
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.BitRate.init -> void
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.Equals(AprsNet.Packets.Is2.ReceptionMetadata? other) -> bool
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.FrequencyHz.get -> double?
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.FrequencyHz.init -> void
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.Modem.get -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.Modem.init -> void
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.ReceptionMetadata() -> void
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.RssiDbm.get -> double?
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.RssiDbm.init -> void
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.SnrDb.get -> double?
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionMetadata.SnrDb.init -> void
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.Ax25 = 1 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.C4fm = 6 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.DStar = 4 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.Dmr = 5 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.Flarm = 3 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.LoRaAprs = 2 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.M17 = 9 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.Nxdn = 7 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.P25 = 8 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]AprsNet.Packets.Is2.ReceptionModem.Undefined = 0 -> AprsNet.Packets.Is2.ReceptionModem
+[APRSNET_IS2]override AprsNet.Packets.Is2.ReceptionMetadata.Equals(object? obj) -> bool
+[APRSNET_IS2]override AprsNet.Packets.Is2.ReceptionMetadata.GetHashCode() -> int
+[APRSNET_IS2]override AprsNet.Packets.Is2.ReceptionMetadata.ToString() -> string!
+[APRSNET_IS2]static AprsNet.Packets.Is2.ReceptionMetadata.operator !=(AprsNet.Packets.Is2.ReceptionMetadata? left, AprsNet.Packets.Is2.ReceptionMetadata? right) -> bool
+[APRSNET_IS2]static AprsNet.Packets.Is2.ReceptionMetadata.operator ==(AprsNet.Packets.Is2.ReceptionMetadata? left, AprsNet.Packets.Is2.ReceptionMetadata? right) -> bool
