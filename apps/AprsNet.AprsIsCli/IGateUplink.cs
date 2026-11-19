@@ -4,7 +4,11 @@ using AprsNet.Beacons;
 using AprsNet.Gateway;
 using AprsNet.IGate;
 using AprsNet.Packets;
+using AprsNet.Packets.Is2;
 using Microsoft.Extensions.Logging;
+
+// This file carries IS2 reception metadata to APRS-IS, through the experimental IS2 API (#430).
+#pragma warning disable APRSNET_IS2
 
 namespace AprsNet.AprsIsCli;
 
@@ -109,13 +113,17 @@ internal sealed partial class IGateUplink
 
     /// <summary>
     /// Passes on every packet a TNC hears, unchanged, queueing the ones the gate passes for APRS-IS; while APRS-IS is
-    /// down they are dropped instead.
+    /// down they are dropped instead. With <paramref name="reception"/>, how this TNC hears (its modem, bit rate and
+    /// frequency), each gated packet goes up with an IS2 <c>#is2-meta</c> line; without it, the packet goes alone.
     /// </summary>
-    public async IAsyncEnumerable<AprsPacket> TapAsync(IAsyncEnumerable<AprsPacket> heard)
+    public async IAsyncEnumerable<AprsPacket> TapAsync(
+        IAsyncEnumerable<AprsPacket> heard,
+        ReceptionMetadata? reception = null
+    )
     {
         await foreach (var packet in heard.ConfigureAwait(false))
         {
-            var decision = _gate.Gate(packet);
+            var decision = _gate.Gate(packet, reception);
             if (decision.IsGated)
             {
                 Interlocked.Increment(ref _gated);
@@ -123,7 +131,11 @@ internal sealed partial class IGateUplink
                 {
                     DropWhileDown(decision.Packet);
                 }
-                else if (!_queue.Writer.TryWrite(new Queued(decision.Packet, _timeProvider.GetTimestamp())))
+                else if (
+                    !_queue.Writer.TryWrite(
+                        new Queued(decision.Packet, decision.Reception, _timeProvider.GetTimestamp())
+                    )
+                )
                 {
                     Interlocked.Increment(ref _dropped);
                     QueueFull(_logger, decision.Packet);
@@ -148,7 +160,7 @@ internal sealed partial class IGateUplink
         try
         {
             await foreach (
-                var (packet, queuedAt) in _queue.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)
+                var (packet, reception, queuedAt) in _queue.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false)
             )
             {
                 // Never wait for a reconnect: what can't go out now would only go out late.
@@ -171,7 +183,7 @@ internal sealed partial class IGateUplink
                 bool sent;
                 try
                 {
-                    sent = await TrySendAsync(packet, send.Token).ConfigureAwait(false);
+                    sent = await TrySendAsync(packet, reception, send.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
@@ -202,7 +214,7 @@ internal sealed partial class IGateUplink
             while (true)
             {
                 await Task.Delay(schedule.DueIn, _timeProvider, cancellationToken).ConfigureAwait(false);
-                if (await TrySendAsync(_beacon, cancellationToken).ConfigureAwait(false))
+                if (await TrySendAsync(_beacon, null, cancellationToken).ConfigureAwait(false))
                 {
                     Interlocked.Increment(ref _beacons);
                 }
@@ -251,11 +263,24 @@ internal sealed partial class IGateUplink
         Interlocked.Exchange(ref _late, 0);
     }
 
-    private async Task<bool> TrySendAsync(AprsPacket packet, CancellationToken cancellationToken)
+    private async Task<bool> TrySendAsync(
+        AprsPacket packet,
+        ReceptionMetadata? reception,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
-            await _connection.SendAsync(packet, cancellationToken).ConfigureAwait(false);
+            if (reception is null)
+            {
+                await _connection.SendAsync(packet, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                // The metadata line and the packet go together; a reconnect between them sends both again.
+                await _connection.SendWithReceptionAsync(packet, reception, cancellationToken).ConfigureAwait(false);
+            }
+
             return true;
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
@@ -334,6 +359,8 @@ internal sealed partial class IGateUplink
     [LoggerMessage(Level = LogLevel.Warning, Message = "APRS-IS refused {Packet}: {Reason}")]
     private static partial void SendRefused(ILogger logger, string packet, string reason);
 
-    /// <summary>A gated packet and when it was queued, as a <see cref="TimeProvider"/> timestamp.</summary>
-    private readonly record struct Queued(AprsPacket Packet, long QueuedAt);
+    /// <summary>
+    /// A gated packet, how it was heard (if known), and when it was queued, as a <see cref="TimeProvider"/> timestamp.
+    /// </summary>
+    private readonly record struct Queued(AprsPacket Packet, ReceptionMetadata? Reception, long QueuedAt);
 }

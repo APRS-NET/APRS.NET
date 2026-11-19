@@ -5,6 +5,8 @@
     <IsTestProject>true</IsTestProject>
     <!-- xUnit v3 test projects are executables. xunit.v3.mtp-off keeps the VSTest runner for dotnet test. -->
     <OutputType>Exe</OutputType>
+    <!-- The tests use the experimental IS2 API. -->
+    <NoWarn>$(NoWarn);APRSNET_IS2</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

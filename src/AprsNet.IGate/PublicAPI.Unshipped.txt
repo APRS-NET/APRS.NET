@@ -119,3 +119,5 @@ override AprsNet.IGate.RfGateDecision.GetHashCode() -> int
 override AprsNet.IGate.RfGateDecision.ToString() -> string!
 static AprsNet.IGate.RfGateDecision.operator !=(AprsNet.IGate.RfGateDecision? left, AprsNet.IGate.RfGateDecision? right) -> bool
 static AprsNet.IGate.RfGateDecision.operator ==(AprsNet.IGate.RfGateDecision? left, AprsNet.IGate.RfGateDecision? right) -> bool
+[APRSNET_IS2]AprsNet.IGate.GateDecision.Reception.get -> AprsNet.Packets.Is2.ReceptionMetadata?
+[APRSNET_IS2]AprsNet.IGate.RfToInternetGate.Gate(AprsNet.Packets.AprsPacket! heard, AprsNet.Packets.Is2.ReceptionMetadata? reception) -> AprsNet.IGate.GateDecision!
