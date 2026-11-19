@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.1...v0.9.0-alpha.2) (2026-11-19)
+
+
+### Features
+
+* **cli:** listen --health-file and health --file, one HEALTHCHECK for listen and serve ([2e3464c](https://github.com/APRS-NET/APRS.NET/commit/2e3464cf6fb215ed7f59786ffbf6c18b6da67ffc))
+
+
+### Bug Fixes
+
+* **cli:** let listen --quiet run with --log-packets ([8076e4e](https://github.com/APRS-NET/APRS.NET/commit/8076e4e82cea1c59ab04c793cf0d748b9eda295f))
+* **cli:** print listen --stats summaries on their own timer ([f6b7fcd](https://github.com/APRS-NET/APRS.NET/commit/f6b7fcd82c6300fb2c07495797fdc6d4ea3d6e69))
+* **deps:** Bump dotnet/runtime from `80a5195` to `64a5380` ([a6ad067](https://github.com/APRS-NET/APRS.NET/commit/a6ad067ac7055c7e71ac0eb1881198d0f1e0f252))
+* **deps:** Bump dotnet/sdk from `fe0fd4e` to `bef136a` ([e518617](https://github.com/APRS-NET/APRS.NET/commit/e518617be7907dce3dd844678c17f895df6785ef))
+
 ## [0.9.0-alpha.1](https://github.com/APRS-NET/APRS.NET/compare/v0.8.0-alpha.8...v0.9.0-alpha.1) (2026-11-17)
 
 
