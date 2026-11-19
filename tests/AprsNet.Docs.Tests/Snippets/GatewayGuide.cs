@@ -4,6 +4,7 @@ using AprsNet.Gateway;
 using AprsNet.IGate;
 using AprsNet.Kiss;
 using AprsNet.Packets;
+using AprsNet.Packets.Is2;
 
 namespace AprsNet.Docs.Tests.Snippets;
 
@@ -72,6 +73,34 @@ internal static class GatewayGuide
             }
         }
         #endregion
+    }
+
+    public static async Task GateWithReceptionAsync(
+        KissConnection tnc,
+        RfToInternetGate gate,
+        AprsIsConnection uplink,
+        CancellationToken cancellationToken
+    )
+    {
+#pragma warning disable APRSNET_IS2 // IS2 is still changing upstream, and so may this API
+        #region gateway-igate-is2
+        // How this TNC hears: a 1200 bit/s AX.25 receiver on 144.390 MHz. A KISS TNC reports no RSSI or SNR.
+        var reception = new ReceptionMetadata
+        {
+            Modem = ReceptionModem.Ax25,
+            BitRate = 1200,
+            FrequencyHz = 144_390_000,
+        };
+        await foreach (var heard in tnc.ReadPacketsAsync(cancellationToken))
+        {
+            var decision = gate.Gate(heard, reception);
+            if (decision.IsGated)
+            {
+                await uplink.SendWithReceptionAsync(decision.Packet, decision.Reception, cancellationToken);
+            }
+        }
+        #endregion
+#pragma warning restore APRSNET_IS2
     }
 
     public static AprsIsServerOptions History()

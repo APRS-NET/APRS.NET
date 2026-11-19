@@ -121,6 +121,36 @@ This is a receive-only IGate, and receive-only IGates break messaging. A station
 APRS-IS and expects the reply on RF, but nothing brings the reply back. Run one only where no two-way IGate covers the
 area, or for a short while, and say so in the beacon comment (`aprscli` does).
 
+### Reception metadata for IS2 servers (experimental)
+
+IS2 servers (aprsc 3.0, the `is2.aprs2.net` pool) can carry how each packet was heard: RSSI, SNR, modem, bit rate and
+frequency. Give the gate a `ReceptionMetadata` for the TNC and send the decision's `Reception` with the packet; the
+uplink writes an `#is2-meta` line just before it, as
+[aprsc's IS2PLAIN](https://github.com/hessu/aprsc/blob/main/doc/IS2PLAIN.md) describes. Other servers ignore the line.
+The metadata never changes what the gate decides, and refused packets send nothing:
+
+<!-- snippet: gateway-igate-is2 -->
+```csharp
+// How this TNC hears: a 1200 bit/s AX.25 receiver on 144.390 MHz. A KISS TNC reports no RSSI or SNR.
+var reception = new ReceptionMetadata
+{
+    Modem = ReceptionModem.Ax25,
+    BitRate = 1200,
+    FrequencyHz = 144_390_000,
+};
+await foreach (var heard in tnc.ReadPacketsAsync(cancellationToken))
+{
+    var decision = gate.Gate(heard, reception);
+    if (decision.IsGated)
+    {
+        await uplink.SendWithReceptionAsync(decision.Packet, decision.Reception, cancellationToken);
+    }
+}
+```
+
+The API is marked `[Experimental("APRSNET_IS2")]`, as IS2 is still changing upstream: suppress `APRSNET_IS2` to use
+it. The types are in `AprsNet.Packets.Is2`.
+
 ### A two-way IGate
 
 A two-way IGate also carries messages from APRS-IS back to RF, so stations nearby can message anyone. It sends very

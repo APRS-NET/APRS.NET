@@ -1,6 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using AprsNet.Ax25;
 using AprsNet.Packets;
+using AprsNet.Packets.Is2;
 
 namespace AprsNet.IGate;
 
@@ -94,7 +96,26 @@ public sealed class RfToInternetGate
     /// remembered, so its copies within the window are refused.
     /// </summary>
     /// <param name="heard">The packet as the TNC heard it, from a frame that is APRS.</param>
-    public GateDecision Gate(AprsPacket heard)
+    public GateDecision Gate(AprsPacket heard) => Decide(heard);
+
+    /// <summary>
+    /// Decides as <see cref="Gate(AprsPacket)"/> does, and keeps how the packet was heard on the air in
+    /// <see cref="GateDecision.Reception"/>, for the uplink to send to an IS2 server with the gated packet
+    /// (<c>SendWithReceptionAsync</c> in <c>AprsNet.AprsIsTcpClient</c>). The metadata never decides whether a packet
+    /// is gated.
+    /// </summary>
+    /// <remarks>Experimental: IS2 is still a work in progress upstream, and this method may change or go.</remarks>
+    /// <param name="heard">The packet as the TNC heard it, from a frame that is APRS.</param>
+    /// <param name="reception">How the packet was heard, or <see langword="null"/> when that isn't known.</param>
+    [Experimental(Is2Diagnostics.Id)]
+    public GateDecision Gate(AprsPacket heard, ReceptionMetadata? reception)
+    {
+        var decision = Decide(heard);
+        decision.Reception = reception;
+        return decision;
+    }
+
+    private GateDecision Decide(AprsPacket heard)
     {
         ArgumentNullException.ThrowIfNull(heard);
         var packet = heard;
@@ -305,4 +326,13 @@ public sealed class GateDecision
     /// <summary>Whether the packet goes to APRS-IS.</summary>
     [System.Diagnostics.CodeAnalysis.MemberNotNullWhen(true, nameof(Packet))]
     public bool IsGated => Packet is not null;
+
+    /// <summary>
+    /// How the packet was heard on the air, as given to
+    /// <see cref="RfToInternetGate.Gate(AprsPacket, ReceptionMetadata?)"/>; <see langword="null"/> from
+    /// <see cref="RfToInternetGate.Gate(AprsPacket)"/>. Send it with <see cref="Packet"/> to an IS2 server.
+    /// </summary>
+    /// <remarks>Experimental: IS2 is still a work in progress upstream, and this property may change or go.</remarks>
+    [Experimental(Is2Diagnostics.Id)]
+    public ReceptionMetadata? Reception { get; internal set; }
 }

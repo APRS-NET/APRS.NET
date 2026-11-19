@@ -2,6 +2,7 @@ using AprsNet.AprsIsTcpClient;
 using AprsNet.AprsIsTcpClient.Tests;
 using AprsNet.IGate;
 using AprsNet.Packets;
+using AprsNet.Packets.Is2;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Time.Testing;
 
@@ -91,9 +92,12 @@ internal sealed class UplinkRig : IAsyncDisposable
     }
 
     /// <summary>The TNC hears <paramref name="lines"/>.</summary>
-    public async Task HearAsync(params string[] lines)
+    public Task HearAsync(params string[] lines) => HearAsync(null, lines);
+
+    /// <summary>A TNC set up with <paramref name="reception"/> hears <paramref name="lines"/>.</summary>
+    public async Task HearAsync(ReceptionMetadata? reception, params string[] lines)
     {
-        await foreach (var _ in Uplink.TapAsync(Packets(lines))) { }
+        await foreach (var _ in Uplink.TapAsync(Packets(lines), reception)) { }
     }
 
     /// <summary>What was sent on <paramref name="transport"/> after the login, beacons left out.</summary>
