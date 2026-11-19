@@ -15,12 +15,53 @@ docker run -d --name gateway -p 14580:14580 -p 14590:14590 aprscli \
 
 - **Listen on `0.0.0.0` inside the container.** The defaults, 127.0.0.1, can't be reached through a published port.
   Publish the ports to `127.0.0.1` on the host (`-p 127.0.0.1:14580:14580`) to keep the gateway to your computer.
-- **Health:** the image's `HEALTHCHECK` runs `aprscli health` against `http://127.0.0.1:14590/health`, so give
-  `--http` on port 14590. `docker ps` then shows the gateway as healthy while any source is up, and unhealthy
-  when none is. With `--quiet-warning`, a TNC that has sent nothing for that long counts as down: restarting the
-  container won't help, since the radio is likely switched off. Podman keeps the check only for images built with `--format docker`.
+- **Health:** the image sets `APRSCLI_HEALTH_FILE=/tmp/aprscli.health`, and its `HEALTHCHECK` runs
+  `aprscli health --file /tmp/aprscli.health`. `serve` refreshes that file every 10 s while any source is up (when
+  `/health` would answer 200), so `docker ps` shows the gateway as healthy while any source is up and unhealthy about
+  three minutes after none is; `--http` isn't needed for it. With `--quiet-warning`, a TNC that has sent nothing for
+  that long counts as down: restarting the container won't help, since the radio is likely switched off. Podman keeps
+  the check only for images built with `--format docker`.
 - **TLS:** the WebSocket endpoint has none. Put a reverse proxy in front of it for `wss://`.
 - **User:** the image runs as a non-root user.
+
+## Watch stations with `listen`
+
+The same image runs `aprscli listen`, for example to log a few stations to OpenTelemetry or a capture file. The
+health check works for it too: `listen` writes the health file on each login and on every line the server sends,
+its `#` keepalives (about every 20 s) included, so a filter that matches nothing for hours still shows a live link.
+While it is disconnected or reconnecting the file isn't touched, and the check fails once the file is over 90 s old.
+
+```sh
+docker run -d --name aprs-monitor aprscli \
+  listen -c YOURCALL-13 -f "b/WA0RC-B/KD0JWD-5" --reconnect --max-silence off --format json
+docker ps --filter name=aprs-monitor   # healthy within a minute of the login
+```
+
+```yaml
+services:
+  aprs-monitor:
+    image: ghcr.io/aprs-net/aprscli:<version>
+    command: listen -c YOURCALL-13 -f "b/WA0RC-B/KD0JWD-5" --reconnect --max-silence off -q --log-packets
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4317
+    restart: unless-stopped
+    mem_limit: 128m
+    # No healthcheck section: the image's own check covers listen.
+```
+
+- `--reconnect` keeps it going after a drop; without it `listen` exits on the first one, and the container stops.
+  A first login that fails also ends the run, so `restart: unless-stopped` retries it.
+- Use `--health-file <path>` (or `-e APRSCLI_HEALTH_FILE=<path>`) to write it elsewhere, and match the path with
+  `--health-cmd "dotnet /app/aprscli.dll health --file <path>"`. Set `APRSCLI_HEALTH_FILE=` (empty) to stop writing it.
+- `aprscli health --file /tmp/aprscli.health --max-age 2m` checks it by hand: exit 0 while the file is younger than
+  `--max-age` (default 90 s), 1 with the reason when it's older or missing.
+- Other long-running commands (`tnc listen`, `tnc share`, `gps`) don't write the file, so give them
+  `--no-healthcheck` (compose `healthcheck: disable: true`) or their own check.
+- **Memory:** a `listen` container uses about 15 MiB of heap; `docker stats` shows more (about 45 MiB after a day)
+  because it counts the page cache of the files the process reads and writes (its assemblies, a capture file). The
+  kernel gives that back under pressure, so a `mem_limit` of 128m is plenty. To cap the .NET heap itself, set
+  `DOTNET_GCHeapHardLimit` (for example `0x4000000`, 64 MiB); the image already uses workstation GC, the default for
+  console apps.
 
 ## Published images
 

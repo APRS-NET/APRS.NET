@@ -1250,6 +1250,24 @@ public class ListenTests
     }
 
     [Fact]
+    public async Task QuietWithLogPacketsRuns()
+    {
+        // The packets still go somewhere, to OpenTelemetry, as a container that only feeds a collector runs it.
+        var harness = WithPackets(_packets);
+        harness.Environment["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4318";
+        harness.Transport.Close();
+
+        var result = await harness.RunAsync(
+            ["listen", "-c", "NZ0P", "-q", "--log-packets"],
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.Equal(2, result.ExitCode); // the server closed, not a usage error
+        Assert.Equal("", result.Out);
+        Assert.Equal(3, harness.Logs.Entries.Count(e => e.Category == "aprscli.packets"));
+    }
+
+    [Fact]
     public async Task LogPacketsWithoutAnOtlpEndpointIsAUsageError()
     {
         var harness = WithPackets(_packets);
@@ -1313,6 +1331,36 @@ public class ListenTests
             result.Error,
             StringComparison.Ordinal
         );
+    }
+
+    [Fact]
+    public async Task StatsArePrintedOnTheIntervalEvenWhenNoPacketArrives()
+    {
+        // The summary keeps its own time: a quiet feed (one packet, then only silence) still prints one every interval,
+        // at whole intervals rather than whenever the next packet happens to arrive.
+        var token = TestContext.Current.CancellationToken;
+        var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(
+            new DateTimeOffset(2026, 11, 17, 12, 0, 0, TimeSpan.Zero)
+        );
+        var harness = new CliHarness { Clock = clock }.LoginAccepted();
+        harness.Transport.Server("W1AW>APRS:>one");
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
+        var run = harness.RunAsync(["listen", "-c", "NZ0P", "--stats", "10s"], stop.Token);
+        await harness.Transport.WaitUntilReadingAsync();
+
+        // Under the 90 s idle timeout, so the connection stays up without keepalives.
+        for (var second = 0; second < 25; second++)
+        {
+            clock.Advance(TimeSpan.FromSeconds(1));
+            await Task.Delay(20, token);
+        }
+
+        await stop.CancelAsync();
+        var result = await run.WaitAsync(TimeSpan.FromSeconds(10), token);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("aprscli: 10s: 1 packets (", result.Error, StringComparison.Ordinal);
+        Assert.Contains("aprscli: 20s: 1 packets (", result.Error, StringComparison.Ordinal);
     }
 
     [Fact]

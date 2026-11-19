@@ -119,6 +119,14 @@ internal sealed class ListenCommand
             + "malformed, unsupported and messages to your callsign.",
     };
 
+    private readonly Option<string?> _healthFile = new("--health-file")
+    {
+        Description =
+            "Keep this file's timestamp current while connected: on each login and each line from the server, "
+            + "keepalives included. 'aprscli health --file' checks it, for a container HEALTHCHECK. Default: "
+            + $"${HealthFile.Variable}, if set.",
+    };
+
     private readonly Option<string> _format = new("--format")
     {
         Description =
@@ -167,6 +175,7 @@ internal sealed class ListenCommand
                 _reconnect,
                 _maxSilence,
                 _stats,
+                _healthFile,
                 _format,
                 _color,
             }
@@ -278,14 +287,16 @@ internal sealed class ListenCommand
             return false;
         }
 
+        // --log-packets is an output too: a container feeding only a collector runs -q --log-packets.
         var quiet = parseResult.GetValue(_quiet);
-        if (quiet && capture is null && count is null && duration is null)
+        var logPackets = parseResult.GetValue(_logPackets);
+        if (quiet && capture is null && count is null && duration is null && !logPackets)
         {
-            error = "--quiet without --capture, --count or --duration would run silently with no result.";
+            error =
+                "--quiet without --capture, --log-packets, --count or --duration would run silently with no result.";
             return false;
         }
 
-        var logPackets = parseResult.GetValue(_logPackets);
         if (logPackets && !Logging.IsOtlpConfigured(_environment.GetEnvironmentVariable))
         {
             error =
@@ -339,6 +350,7 @@ internal sealed class ListenCommand
             Reconnect = reconnect,
             MaxSilence = maxSilence,
             StatsInterval = statsInterval,
+            HealthFile = HealthFile.Resolve(parseResult.GetValue(_healthFile), _environment.GetEnvironmentVariable),
         };
         error = "";
         return true;

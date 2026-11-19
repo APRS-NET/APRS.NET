@@ -25,8 +25,11 @@ COPY --from=build /app .
 USER $APP_UID
 # 14580: APRS-IS clients. 14590: WebSocket clients and /health, with --http 0.0.0.0:14590.
 EXPOSE 14580 14590
-# Asks the gateway's /health, so it needs 'serve --http 0.0.0.0:14590' (or 127.0.0.1:14590).
+# 'listen' and 'serve' keep this file current while they receive (listen: each line, keepalives included; serve: while
+# any source is up), and the HEALTHCHECK fails once it is older than 90s. One-shot commands ignore it. If you change
+# the variable, change the HEALTHCHECK's path too.
+ENV APRSCLI_HEALTH_FILE=/tmp/aprscli.health
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD ["dotnet", "/app/aprscli.dll", "health", "http://127.0.0.1:14590/health"]
+    CMD ["dotnet", "/app/aprscli.dll", "health", "--file", "/tmp/aprscli.health"]
 ENTRYPOINT ["dotnet", "/app/aprscli.dll"]
 CMD ["--help"]

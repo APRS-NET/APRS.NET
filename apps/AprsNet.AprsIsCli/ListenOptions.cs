@@ -47,5 +47,8 @@ internal sealed record ListenOptions
     /// <summary>Print a summary to standard error this often, and once at the end. Null turns statistics off.</summary>
     public TimeSpan? StatsInterval { get; init; }
 
+    /// <summary>Keep this file's timestamp current while lines arrive, for <c>aprscli health --file</c>. Null: none.</summary>
+    public string? HealthFile { get; init; }
+
     public override string ToString() => $"{Callsign}@{Endpoint}"; // no passcode, even by accident
 }
