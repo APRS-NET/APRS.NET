@@ -192,3 +192,5 @@ AprsNet.AprsIsTcpClient.AprsIsTrafficKind.Packet = 3 -> AprsNet.AprsIsTcpClient.
 AprsNet.AprsIsTcpClient.AprsIsTrafficKind.PacketSent = 5 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
 AprsNet.AprsIsTcpClient.AprsIsTrafficKind.ServerComment = 2 -> AprsNet.AprsIsTcpClient.AprsIsTrafficKind
 static AprsNet.AprsIsTcpClient.AprsIsTrafficKindExtensions.Describe(this AprsNet.AprsIsTcpClient.AprsIsTrafficKind kind) -> string!
+[APRSNET_IS2]AprsNet.AprsIsTcpClient.AprsIsClient.SendWithReceptionAsync(AprsNet.Packets.AprsPacket! packet, AprsNet.Packets.Is2.ReceptionMetadata? reception, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+[APRSNET_IS2]AprsNet.AprsIsTcpClient.AprsIsConnection.SendWithReceptionAsync(AprsNet.Packets.AprsPacket! packet, AprsNet.Packets.Is2.ReceptionMetadata? reception, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask

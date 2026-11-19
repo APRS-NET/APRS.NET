@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
+using AprsNet.AprsIsTcpClient.Is2;
 using AprsNet.Packets;
+using AprsNet.Packets.Is2;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -236,7 +239,35 @@ public sealed class AprsIsConnection : IAsyncDisposable
     /// The connection has not been started or is closed, or the login is not verified.
     /// </exception>
     /// <exception cref="ArgumentException">The packet cannot be sent; see <see cref="AprsIsClient.SendAsync"/>.</exception>
-    public async ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default)
+    public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken = default) =>
+        SendCoreAsync(packet, client => client.SendAsync(packet, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// Sends a packet with how it was heard on the air, as
+    /// <see cref="AprsIsClient.SendWithReceptionAsync"/> does, waiting for a
+    /// connection as <see cref="SendAsync(AprsPacket, CancellationToken)"/> does. If the connection ends before the
+    /// packet is written, both lines are sent again on the next connection: the metadata never goes alone.
+    /// </summary>
+    /// <remarks>Experimental: IS2 is still a work in progress upstream, and this method may change or go.</remarks>
+    /// <exception cref="InvalidOperationException">As for <see cref="SendAsync(AprsPacket, CancellationToken)"/>.</exception>
+    /// <exception cref="ArgumentException">The packet cannot be sent; see <see cref="AprsIsClient.SendAsync(AprsPacket, CancellationToken)"/>.</exception>
+    [Experimental(Is2Diagnostics.Id)]
+    public ValueTask SendWithReceptionAsync(
+        AprsPacket packet,
+        ReceptionMetadata? reception,
+        CancellationToken cancellationToken = default
+    ) =>
+        SendCoreAsync(
+            packet,
+            client => client.SendWithReceptionAsync(packet, reception, cancellationToken),
+            cancellationToken
+        );
+
+    private async ValueTask SendCoreAsync(
+        AprsPacket packet,
+        Func<AprsIsClient, ValueTask> send,
+        CancellationToken cancellationToken
+    )
     {
         ArgumentNullException.ThrowIfNull(packet);
         if (_options.ListenOnly)
@@ -249,7 +280,7 @@ public sealed class AprsIsConnection : IAsyncDisposable
             var client = await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                await client.SendAsync(packet, cancellationToken).ConfigureAwait(false);
+                await send(client).ConfigureAwait(false);
                 return;
             }
             catch (Exception ex)

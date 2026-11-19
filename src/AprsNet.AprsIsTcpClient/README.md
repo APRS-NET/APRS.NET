@@ -67,6 +67,25 @@ it hands back.
 
 A login filter of `g/<callsign>` makes sure messages and acknowledgements addressed to the station reach it.
 
+### Reception metadata for IS2 servers (experimental)
+
+An igate can tell IS2 servers (aprsc 3.0, the `is2.aprs2.net` pool) how it heard a packet: RSSI, SNR, modem, bit rate
+and frequency. `SendWithReceptionAsync` sends an `#is2-meta` line just before the packet, as
+[aprsc's IS2PLAIN](https://github.com/hessu/aprsc/blob/main/doc/IS2PLAIN.md) describes; other servers ignore the line,
+and the packet itself is unchanged.
+
+```csharp
+#pragma warning disable APRSNET_IS2 // IS2 is still changing upstream, and so may this API
+await client.SendWithReceptionAsync(
+    packet,
+    new ReceptionMetadata { Modem = ReceptionModem.Ax25, BitRate = 1200, FrequencyHz = 144_390_000 },
+    cancellationToken);
+```
+
+Nothing is sent between the two lines, and a reconnect sends both again. Values the server would ignore are left
+out. `SendAsync` never sends the metadata line. The types are in `AprsNet.Packets.Is2` and the API is marked
+`[Experimental("APRSNET_IS2")]`: it may change or go as IS2 does.
+
 ## Staying connected
 
 `AprsIsClient` is single-use: when its connection ends, so does its stream. For an app that should stay online, use
