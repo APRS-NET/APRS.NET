@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.2...v0.9.0-alpha.3) (2026-11-20)
+
+
+### Features
+
+* **aprs-is:** send IS2 reception metadata with a packet (experimental) ([f289b38](https://github.com/APRS-NET/APRS.NET/commit/f289b3817cff9fe6cbb47cd5eeddd2133d012105)), closes [#421](https://github.com/APRS-NET/APRS.NET/issues/421)
+* **igate:** carry IS2 reception metadata from the gate to APRS-IS (experimental) ([2bc60de](https://github.com/APRS-NET/APRS.NET/commit/2bc60de4dc2569d9d4ce60bb9ae049e201a6610a)), closes [#422](https://github.com/APRS-NET/APRS.NET/issues/422)
+
+
+### Bug Fixes
+
+* **cli:** take the health file's throttle time with its stamp ([1eb2e1c](https://github.com/APRS-NET/APRS.NET/commit/1eb2e1c226bc5e3297fb520760086a23446513a4)), closes [#435](https://github.com/APRS-NET/APRS.NET/issues/435)
+
 ## [0.9.0-alpha.2](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.1...v0.9.0-alpha.2) (2026-11-19)
 
 
