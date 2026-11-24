@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # The merge queue: CI runs once on the queued pull requests together, on top of main, and ci-ok gates the merge.
+  merge_group:
   # The deviceid workflow starts CI on its branch this way: a pull request it opens does not start workflows itself.
   workflow_dispatch:
 
@@ -32,7 +34,7 @@ jobs:
           persist-credentials: false
       - id: filter
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
         run: |
           # Without a usable base (a new branch, or history that was rewritten) everything runs.
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2> /dev/null; then
@@ -42,7 +44,7 @@ jobs:
             exit 0
           fi
           changed="$(git diff --name-only "$(git merge-base "$BASE" "$GITHUB_SHA")" "$GITHUB_SHA")"
-          ignored='^(docs/|LICENSE$|\.release-please-manifest\.json$|\.github/dependabot\.yml$|\.github/workflows/(pr-title|symbols|packages|milestone|deviceid)\.yml$)|\.md$'
+          ignored='^(docs/|LICENSE$|\.release-please-manifest\.json$|\.github/dependabot\.yml$|\.github/workflows/(pr-title|symbols|packages|milestone|deviceid|dependabot-automerge)\.yml$)|\.md$'
           code="$(printf '%s\n' "$changed" | grep -v -E "$ignored" | grep -v '^$' || true)"
           corpus="$(printf '%s\n' "$changed" | grep '^tests/corpus/' || true)"
           if [ -n "$code$corpus" ]; then
@@ -308,9 +310,12 @@ jobs:
           output: trivy.sarif
       - name: Upload the scan to code scanning
         # Dependabot's and forks' pull requests get a read-only token, which can't upload; their scan still gates below.
+        # Merge queue runs are on short-lived branches, so their scans would only add noise to code scanning.
         if: >-
-          github.event_name != 'pull_request'
-          || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+          github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+          || (github.event_name == 'pull_request'
+              && github.event.pull_request.head.repo.full_name == github.repository
+              && github.actor != 'dependabot[bot]')
         uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           sarif_file: trivy.sarif

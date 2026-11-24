@@ -48,6 +48,12 @@ them. The release that follows publishes an image on the new base only when the 
 `PUBLISH_CONTAINER` is `true` ([the container guide](guides/container.md#published-images)); otherwise the release is
 just the packages. Its GitHub Actions and .NET SDK updates are `chore(deps):` and don't release.
 
+Dependabot groups its updates, one pull request a week for each group, and sends each major version alone. The
+`dependabot-automerge` workflow turns on auto-merge for the low-risk groups: GitHub Actions (`actions`), build and test
+packages (`dev`: dotnet tools, analyzers, MinVer, xUnit and the like), new digests of the .NET 10 base images
+(`base-images`) and the container test's images (`test-images`). They merge through the merge queue once `ci-ok`
+passes. Majors and the `shipped` group, what the packages and `aprscli` ship with, are merged by hand.
+
 ## Notes
 
 - The alpha versioning comes from `release-please-config.json`: `"versioning": "prerelease"`, `"prerelease": true`
