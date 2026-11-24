@@ -111,9 +111,14 @@ public sealed class TncShareTests : IDisposable
             ],
             events
         );
+        // In either order: the share passes a heard frame to the apps before logging it, so the app's reply can be
+        // logged first.
         Assert.Equal(
             ["Heard from N1ABC: N1ABC>APRS:>heard on RF", "Sent for an app from N0CALL: N0CALL>APZNET:>from an app"],
-            harness.Logs.Entries.Where(e => e.Category == "aprscli.packets").Select(e => e.Message)
+            harness
+                .Logs.Entries.Where(e => e.Category == "aprscli.packets")
+                .Select(e => e.Message)
+                .Order(StringComparer.Ordinal)
         );
     }
 
