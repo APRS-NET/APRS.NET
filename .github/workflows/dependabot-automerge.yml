@@ -1,0 +1,42 @@
+name: dependabot-automerge
+
+# Turns on auto-merge for Dependabot's low-risk groups (.github/dependabot.yml), so they merge, through the merge queue,
+# once ci-ok passes. Nothing here skips a check: a group that breaks the build or the tests stays open.
+#
+# - actions: GitHub Actions, minor and patch (pinned by SHA; CI runs them all).
+# - dev: dotnet tools, analyzers, MinVer and test packages, minor and patch: build and test only, never shipped.
+# - base-images: new digests of the same .NET 10 SDK and runtime images, usually OS and runtime security fixes; the
+#   container job builds, smoke-tests and scans the image.
+# - test-images: the container test's collector and Python images, which never ship.
+#
+# Major versions and the shipped group (what the packages and aprscli ship with) are left for a maintainer to merge.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  automerge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'APRS-NET/APRS.NET'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Enable auto-merge for a low-risk group
+        if: >-
+          contains(fromJSON('["actions", "dev", "base-images", "test-images"]'), steps.metadata.outputs.dependency-group)
+          && steps.metadata.outputs.update-type != 'version-update:semver-major'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GROUP: ${{ steps.metadata.outputs.dependency-group }}
+        run: |
+          echo "Group '$GROUP' is low risk: it merges once ci-ok passes."
+          gh pr merge --auto --rebase "$PR_URL"
