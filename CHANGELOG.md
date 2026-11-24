@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.3...v0.9.0-alpha.4) (2026-11-24)
+
+
+### Bug Fixes
+
+* **deps:** Bump csharpier from 1.4.0 to 1.4.1 ([5a862c9](https://github.com/APRS-NET/APRS.NET/commit/5a862c993b32a9891864e31dc010ff584bea5a49))
+* **deps:** Bump cyclonedx from 6.3.1 to 6.3.2 ([fd5ff1c](https://github.com/APRS-NET/APRS.NET/commit/fd5ff1c1a6d56a03dad631492dc836645e89fef4))
+* **deps:** Bump dotnet-reportgenerator-globaltool from 5.6.0 to 5.6.1 ([b3f0b37](https://github.com/APRS-NET/APRS.NET/commit/b3f0b3717c27f7aa673196289690018eb058f973))
+* **deps:** Bump dotnet/runtime from `64a5380` to `0a0e20d` ([7902e8b](https://github.com/APRS-NET/APRS.NET/commit/7902e8b0b6c86870451fb54c60213961f3aa1caa))
+* **deps:** Bump dotnet/sdk from `bef136a` to `8c6edfb` ([3e38e51](https://github.com/APRS-NET/APRS.NET/commit/3e38e519cdac9fd5b70475ab876cb8c459856ee7))
+
 ## [0.9.0-alpha.3](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.2...v0.9.0-alpha.3) (2026-11-20)
 
 
