@@ -208,7 +208,7 @@ public sealed class HealthFileTests : IDisposable
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(token);
         var run = ServeAsync(clock, ((IPEndPoint)tnc.LocalEndpoint).Port, stop.Token);
 
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
         while (!File.Exists(HealthPath) && DateTime.UtcNow < deadline)
         {
@@ -347,12 +347,5 @@ public sealed class HealthFileTests : IDisposable
         var result = await new CliHarness().RunAsync(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(3, result.ExitCode);
-    }
-
-    private static int FreePort()
-    {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
-        listener.Start();
-        return ((IPEndPoint)listener.LocalEndpoint).Port;
     }
 }

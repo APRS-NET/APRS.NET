@@ -36,7 +36,7 @@ public sealed class TncDigiTests : IDisposable
             ["tnc", "digi", "--tnc", TncAddress, "--call", "n0dig-1", "--transmit-limit", "off"],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         await using var client = new KissStreamClient(radio.GetStream(), ownsStream: false);
         var heard = client.ReadFramesAsync(Token).GetAsyncEnumerator(Token);
 
@@ -79,7 +79,7 @@ public sealed class TncDigiTests : IDisposable
             ["tnc", "digi", "--tnc", TncAddress, "-c", "N0DIG-1", "--wide", "--transmit-limit", "off", "-q"],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         await using var client = new KissStreamClient(radio.GetStream(), ownsStream: false);
         var heard = client.ReadFramesAsync(Token).GetAsyncEnumerator(Token);
 
@@ -196,12 +196,5 @@ public sealed class TncDigiTests : IDisposable
                 await Task.Delay(100, Token);
             }
         }
-    }
-
-    private static int FreePort()
-    {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        return ((IPEndPoint)probe.LocalEndpoint).Port;
     }
 }

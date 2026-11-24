@@ -338,11 +338,4 @@ public sealed partial class KissAudioEndToEndTests
         process.BeginErrorReadLine();
         return process;
     }
-
-    private static int FreePort()
-    {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        return ((IPEndPoint)probe.LocalEndpoint).Port;
-    }
 }

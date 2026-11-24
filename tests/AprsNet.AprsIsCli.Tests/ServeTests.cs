@@ -108,7 +108,7 @@ public class ServeTests
             stop.Token
         );
 
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         using var client = await ConnectAsync(port, token);
         using var reader = await LogInAsync(client, "p/N", token);
         await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>heard on RF"), token);
@@ -143,7 +143,7 @@ public class ServeTests
             stop.Token
         );
 
-        using (var radio = await tnc.AcceptTcpClientAsync(token))
+        using (var radio = await tnc.AcceptFromAsync(run, token))
         {
             await radio.GetStream().WriteAsync(Kiss("N1ABC>APRS,WIDE1-1:>heard on RF"), token);
             await WaitUntilAsync(() => harness.Logs.Entries.Any(e => e.Category == "aprscli.packets"), token);
@@ -210,7 +210,7 @@ public class ServeTests
             ],
             stop.Token
         );
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         await WaitForHealthAsync(webPort, "200", "\"connected\":true,\"quiet\":false");
 
         clock.Advance(TimeSpan.FromMinutes(30));
@@ -279,7 +279,7 @@ public class ServeTests
             stop.Token
         );
 
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         using var socket = new System.Net.WebSockets.ClientWebSocket();
         var url = new Uri($"ws://127.0.0.1:{webPort}/aprs?filter=p/N");
         for (var attempt = 0; ; attempt++)
@@ -356,7 +356,7 @@ public class ServeTests
             stop.Token
         );
 
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         using var client = await ConnectAsync(port, token);
         using var reader = await LogInAsync(client, "p/N", token);
         harness.Transport.Server("N1ABC>APRS,WIDE1-1,qAR,IGATE:>hello");
@@ -394,13 +394,6 @@ public class ServeTests
         Assert.StartsWith("# logresp N0CALL unverified", await reader.ReadLineAsync(token));
         Assert.Equal($"# filter {filter} active", await reader.ReadLineAsync(token));
         return reader;
-    }
-
-    private static int FreePort()
-    {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        return ((IPEndPoint)probe.LocalEndpoint).Port;
     }
 
     private static async Task<TcpClient> ConnectAsync(int port, CancellationToken token)

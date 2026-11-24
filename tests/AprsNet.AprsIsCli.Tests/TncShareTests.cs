@@ -38,7 +38,7 @@ public sealed class TncShareTests : IDisposable
             ["tnc", "share", "--tnc", TncAddress, "--listen", $"127.0.0.1:{port}", "--gap", "0"],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         await using var first = await App.ConnectAsync(port);
         await using var second = await App.ConnectAsync(port);
 
@@ -82,7 +82,7 @@ public sealed class TncShareTests : IDisposable
             ["tnc", "share", "--tnc", TncAddress, "--listen", $"127.0.0.1:{port}", "--gap", "0", "-q", "--log-packets"],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         string remote;
         await using (var app = await App.ConnectAsync(port))
         {
@@ -127,7 +127,7 @@ public sealed class TncShareTests : IDisposable
             ["tnc", "share", "--tnc", TncAddress, "--listen", $"127.0.0.1:{port}", "-q"],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         await using var first = await App.ConnectAsync(port);
         await using var second = await App.ConnectAsync(port);
         var tnc = new App(radio);
@@ -193,7 +193,7 @@ public sealed class TncShareTests : IDisposable
             ["tnc", "share", "--tnc", TncAddress, "--listen", $"127.0.0.1:{port}", "--max-clients", "1"],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         await using var first = await App.ConnectAsync(port);
         await Task.Delay(200, Token);
         await using var second = await App.ConnectAsync(port);
@@ -270,7 +270,7 @@ public sealed class TncShareTests : IDisposable
             ],
             stop.Token
         );
-        using var radio = await _tnc.AcceptTcpClientAsync(Token);
+        using var radio = await _tnc.AcceptFromAsync(run, Token);
         var source = $"\"{TncAddress}\":{{\"connected\":true,\"quiet\":";
         await WaitForHealthAsync(web, "200", source + "false");
         await using var app = await App.ConnectAsync(port);
@@ -355,13 +355,6 @@ public sealed class TncShareTests : IDisposable
 
         Assert.Equal(3, result.ExitCode);
         Assert.Contains(message, result.Error, StringComparison.Ordinal);
-    }
-
-    private static int FreePort()
-    {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        return ((IPEndPoint)probe.LocalEndpoint).Port;
     }
 
     /// <summary>A KISS app connected to the shared TNC, or the TNC's side of its connection.</summary>
