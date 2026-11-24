@@ -55,9 +55,12 @@ echo "$count of $expected packets"
 [ "$count" -eq "$expected" ] || fail "parse --file printed $count packets, expected $expected"
 
 echo "--- user"
-uid="$("${run[@]}" --entrypoint id "$image" -u)"
-echo "uid $uid"
-[ "$uid" != "0" ] || fail "the image runs as root"
+# Read from the image config: the chiseled base has no shell or coreutils to run id in.
+user="$(docker image inspect --format '{{.Config.User}}' "$image")"
+echo "user $user"
+case "${user%%:*}" in
+  "" | 0 | root) fail "the image runs as root" ;;
+esac
 
 echo "--- size"
 bytes="$(docker history --human=false --format '{{.Size}}' "$image" | awk '{ s += $1 } END { printf "%d", s }')"

@@ -57,6 +57,10 @@ services:
   `--max-age` (default 90 s), 1 with the reason when it's older or missing.
 - Other long-running commands (`tnc listen`, `tnc share`, `gps`) don't write the file, so give them
   `--no-healthcheck` (compose `healthcheck: disable: true`) or their own check.
+- **No shell:** the image is built on the chiseled .NET runtime, which has only what .NET needs: no shell, package
+  manager or tools such as `ls` or `id`, so `docker exec -it <container> sh` doesn't work. That keeps the OS packages
+  aprscli never uses, and their CVEs, out of the image. Use `docker logs`, `aprscli health`, the `/health` endpoint, or
+  `docker cp` to read a file. It runs in .NET's invariant globalization mode; aprscli formats everything that way.
 - **Memory:** a `listen` container uses about 15 MiB of heap; `docker stats` shows more (about 45 MiB after a day)
   because it counts the page cache of the files the process reads and writes (its assemblies, a capture file). The
   kernel gives that back under pressure, so a `mem_limit` of 128m is plenty. To cap the .NET heap itself, set
