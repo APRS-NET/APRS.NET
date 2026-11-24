@@ -18,7 +18,11 @@ ARG VERSION=0.0.0-dev
 RUN dotnet publish apps/AprsNet.AprsIsCli -c Release -o /app \
     -p:MinVerSkip=true -p:Version=${VERSION} -p:PackAsTool=false -p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:0a0e20d12b84b081fb737fddb92d8d205edce9ac2dc62796d2aab30f03804498
+# Chiseled: only the .NET runtime and what it needs, with no shell, package manager or coreutils, so the image carries
+# none of the OS packages aprscli never runs (util-linux, tar, dash, gnutls, systemd libraries...) or their CVEs. It
+# runs in .NET's invariant globalization mode, as aprscli formats everything with the invariant culture anyway, and
+# sets the non-root user's APP_UID. Every command below is exec form, so nothing needs a shell.
+FROM mcr.microsoft.com/dotnet/runtime:10.0-noble-chiseled@sha256:1b234cef150624fe8cc7d027e8d742c0f03a16aef2484dc469eb8c872167255e
 WORKDIR /app
 COPY --from=build /app .
 # The image's non-root user.
