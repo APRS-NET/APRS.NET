@@ -9,7 +9,7 @@
 # The base images are pinned by digest, so a build gets the same bases until Dependabot's docker update moves them.
 # The build stage runs on the builder's own platform for every target: aprscli is framework-dependent IL, so the same
 # output runs on amd64 and arm64, and an arm64 image builds without emulating the SDK.
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:bef136a371963aaa46ec97882845ef6f54dec15728bb4b128b1c2a400ffbc9b4 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0@sha256:8c6edfb26c85153f236d26efebd9ad349aec403583f343f201ee67838b23658d AS build
 WORKDIR /src
 COPY . .
 ARG VERSION=0.0.0-dev
@@ -18,7 +18,7 @@ ARG VERSION=0.0.0-dev
 RUN dotnet publish apps/AprsNet.AprsIsCli -c Release -o /app \
     -p:MinVerSkip=true -p:Version=${VERSION} -p:PackAsTool=false -p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:64a538092439382d055c87c0f49092efb8bca883c736c54ae523da7fd8e02d18
+FROM mcr.microsoft.com/dotnet/runtime:10.0@sha256:0a0e20d12b84b081fb737fddb92d8d205edce9ac2dc62796d2aab30f03804498
 WORKDIR /app
 COPY --from=build /app .
 # The image's non-root user.
