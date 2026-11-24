@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0-alpha.5](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.4...v0.9.0-alpha.5) (2026-11-24)
+
+
+### Bug Fixes
+
+* build the aprscli image on the chiseled .NET runtime ([98ea4ba](https://github.com/APRS-NET/APRS.NET/commit/98ea4ba06e21bd0eb7bb721e252c379e4fa55e8d))
+
 ## [0.9.0-alpha.4](https://github.com/APRS-NET/APRS.NET/compare/v0.9.0-alpha.3...v0.9.0-alpha.4) (2026-11-24)
 
 
