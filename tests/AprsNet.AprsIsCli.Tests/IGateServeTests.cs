@@ -123,7 +123,7 @@ public class IGateServeTests
             stop.Token
         );
 
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         foreach (
             var line in new[]
             {
@@ -201,7 +201,7 @@ public class IGateServeTests
             ],
             stop.Token
         );
-        using var radio = await tnc.AcceptTcpClientAsync(token);
+        using var radio = await tnc.AcceptFromAsync(run, token);
         await using var onAir = new KissStreamClient(radio.GetStream(), ownsStream: false);
         var transmitted = onAir.ReadPacketsAsync(token).GetAsyncEnumerator(token);
 
@@ -427,11 +427,4 @@ public class IGateServeTests
 
     private static byte[] Kiss(string line) =>
         KissFrame.ForAx25(Ax25Frame.FromAprsPacket(AprsPacket.Parse(line))).Encode();
-
-    private static int FreePort()
-    {
-        using var probe = new TcpListener(IPAddress.Loopback, 0);
-        probe.Start();
-        return ((IPEndPoint)probe.LocalEndpoint).Port;
-    }
 }

@@ -27,6 +27,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/TestPorts.cs" Link="TestPorts.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
+    <Using Include="AprsNet.Tests.Shared.TestPorts" Static="true" />
   </ItemGroup>
 </Project>
