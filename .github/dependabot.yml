@@ -6,6 +6,9 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(deps)"
+    # Skip a release for a few days, so one that is pulled or fixed straight away never reaches a pull request.
+    cooldown:
+      default-days: 5
     groups:
       actions:
         patterns: ["*"]
@@ -18,13 +21,31 @@ updates:
       interval: weekly
     commit-message:
       prefix: "fix(deps)"
+    cooldown:
+      default-days: 5
+    # One pull request a week for each kind of risk; a package goes in the first group it matches. Major versions are
+    # in no group, so each one comes alone, to be read before it is merged.
     groups:
-      microsoft-extensions:
-        patterns: ["Microsoft.Extensions.*"]
-      opentelemetry:
-        patterns: ["OpenTelemetry*"]
-      test:
-        patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "coverlet.*"]
+      # Build and test only, never shipped: dotnet tools, analyzers, MinVer and the test packages. The
+      # dependabot-automerge workflow merges these once CI passes.
+      dev:
+        patterns:
+          - "csharpier"
+          - "dotnet-reportgenerator-globaltool"
+          - "cyclonedx"
+          - "MinVer"
+          - "Microsoft.CodeAnalysis.*"
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet.*"
+          - "GitHubActionsTestLogger"
+          - "Microsoft.Extensions.TimeProvider.Testing"
+          - "BenchmarkDotNet"
+        update-types: ["minor", "patch"]
+      # What the packages and aprscli ship with: merged by hand.
+      shipped:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
     ignore:
       # The libraries target .NET 10 (LTS), and a package's dependency versions are the lowest its users may have.
       # Microsoft.Extensions majors track the .NET major (11.x is .NET 11), so taking one forces every app using
@@ -59,6 +80,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+    # The SDK and runtime images move together, so one pull request carries both digests.
+    groups:
+      base-images:
+        patterns: ["*"]
 
   # The images the container end-to-end test runs next to aprscli (a collector and Python for the fake APRS-IS server).
   # They never ship, so chore(deps).
